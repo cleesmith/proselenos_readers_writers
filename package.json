@@ -1,0 +1,21 @@
+{
+  "name": "@proselenosebooks/monorepo",
+  "private": true,
+  "repository": "proselenosebooks/proselenosebooks",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-web": "pnpm --filter @proselenosebooks/proselenosebooks-app build-web",
+    "start-web": "pnpm --filter @proselenosebooks/proselenosebooks-app start-web"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.9.1",
+    "@sindresorhus/tsconfig": "^6.0.0",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.6",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,6 @@
+packages:
+  - 'apps/*'
+  - 'packages/foliate-js'
+  - 'packages/auth-core'
+  - 'packages/github-repo'
+  - 'packages/master-tracker'

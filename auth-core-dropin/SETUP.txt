@@ -1,0 +1,23 @@
+DROP-IN INSTRUCTIONS (2 edits + env):
+
+1) Copy ./packages/auth-core into your repo (next to packages/foliate-js). 
+   In pnpm-workspace.yaml either:
+     - add 'packages/*' OR
+     - add 'packages/auth-core' explicitly.
+
+2) In YOUR app create: app/api/auth/[...nextauth]/route.ts
+   -------------------------------------------------------
+   import NextAuth from 'next-auth';
+   import { authOptions } from '@clee/auth-core/lib/auth';
+   const handler = NextAuth(authOptions);
+   export { handler as GET, handler as POST };
+
+3) Optional (only if you use next-auth client hooks or UI):
+   - Wrap <SessionProvider> in your app/layout.tsx body.
+   (SignInCard/SignOutButton will work fine either way.)
+
+4) Add env in your app/.env.local:
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=<long random string>
+   GOOGLE_CLIENT_ID=<your>.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=<your secret>

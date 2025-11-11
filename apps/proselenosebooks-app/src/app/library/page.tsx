@@ -1,0 +1,796 @@
+'use client';
+
+import clsx from 'clsx';
+import { parseOpenWithFiles, getCurrentWebview } from '@/utils/desktop-stubs';
+import * as React from 'react';
+import { useState, useRef, useEffect, Suspense, useCallback } from 'react';
+import { ReadonlyURLSearchParams, useRouter, useSearchParams } from 'next/navigation';
+import { OverlayScrollbarsComponent, OverlayScrollbarsComponentRef } from 'overlayscrollbars-react';
+import 'overlayscrollbars/overlayscrollbars.css';
+
+import { Book } from '@/types/book';
+import { AppService, DeleteAction } from '@/types/system';
+import { navigateToReader } from '@/utils/nav';
+import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
+import { eventDispatcher } from '@/utils/event';
+import { getFilename } from '@/utils/path';
+import { isWebAppPlatform } from '@/services/environment';
+
+import { useEnv } from '@/context/EnvContext';
+import { useSession } from 'next-auth/react';
+import { useThemeStore } from '@/store/themeStore';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useLibraryStore } from '@/store/libraryStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useTheme } from '@/hooks/useTheme';
+import { useUICSS } from '@/hooks/useUICSS';
+import { useDemoBooks } from './hooks/useDemoBooks';
+import { useBooksSync } from './hooks/useBooksSync';
+import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
+import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
+import { useBookUpload } from '@/hooks/useBookUpload';
+
+import { BookMetadata } from '@/libs/document';
+import { ensureGitHubRepo } from '@/app/actions/github-books';
+import { AboutWindow } from '@/components/AboutWindow';
+import { BookDetailModal } from '@/components/metadata';
+import { useDragDropImport } from './hooks/useDragDropImport';
+import { Toast } from '@/components/Toast';
+import Spinner from '@/components/Spinner';
+import LibraryHeader from './components/LibraryHeader';
+import Bookshelf from './components/Bookshelf';
+import useShortcuts from '@/hooks/useShortcuts';
+import DropIndicator from '@/components/DropIndicator';
+import SettingsDialog from '@/components/settings/SettingsDialog';
+import Dialog from '@/components/Dialog';
+
+const LibraryPageWithSearchParams = () => {
+  const searchParams = useSearchParams();
+  return <LibraryPageContent searchParams={searchParams} />;
+};
+
+const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchParams | null }) => {
+  const router = useRouter();
+  const { envConfig, appService } = useEnv();
+  const { data: session } = useSession();
+  const user = session?.user;
+  const token = session ? 'authenticated' : null; // NextAuth uses session, not separate token
+  const {
+    library: libraryBooks,
+    isSyncing,
+    syncProgress,
+    updateBook,
+    setLibrary,
+    getGroupName,
+    refreshGroups,
+  } = useLibraryStore();
+  const _ = useTranslation();
+  const { selectFiles } = useFileSelector(appService, _);
+  const { safeAreaInsets: insets, isRoundedWindow } = useThemeStore();
+  const { settings, setSettings, saveSettings } = useSettingsStore();
+  const { isSettingsDialogOpen, setSettingsDialogOpen } = useSettingsStore();
+  const [loading, setLoading] = useState(false);
+  const [libraryLoaded, setLibraryLoaded] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [isSelectAll, setIsSelectAll] = useState(false);
+  const [isSelectNone, setIsSelectNone] = useState(false);
+  const [showDetailsBook, setShowDetailsBook] = useState<Book | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importUrlValue, setImportUrlValue] = useState('');
+  const [isImportingFromUrl, setIsImportingFromUrl] = useState(false);
+  const [booksTransferProgress, _setBooksTransferProgress] = useState<{
+    [key: string]: number | null;
+  }>({});
+  const [pendingNavigationBookIds, setPendingNavigationBookIds] = useState<string[] | null>(null);
+  const isInitiating = useRef(false);
+  const githubRepoChecked = useRef(false);
+
+  const viewSettings = settings.globalViewSettings;
+  const demoBooks = useDemoBooks();
+  const osRef = useRef<OverlayScrollbarsComponentRef>(null);
+  const containerRef: React.MutableRefObject<HTMLDivElement | null> = useRef(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  useTheme({ systemUIVisible: true, appThemeColor: 'base-200' });
+  useUICSS();
+
+
+  const { pullLibrary, pushLibrary } = useBooksSync();
+  const { isDragging } = useDragDropImport();
+  const { uploadBookToGitHub } = useBookUpload();
+
+  usePullToRefresh(containerRef, pullLibrary);
+  useScreenWakeLock(settings.screenWakeLock);
+
+  useShortcuts({
+    onToggleFullscreen: async () => {
+      // No Desktop - web-only app
+    },
+    onCloseWindow: async () => {
+      // No Desktop - web-only app
+    },
+    onQuitApp: async () => {
+      // No Desktop - web-only app
+    },
+    onOpenFontLayoutSettings: () => {
+      setSettingsDialogOpen(true);
+    },
+    onOpenBooks: () => {
+      handleImportBooks();
+    },
+  });
+
+  // No Desktop - removed update checking and screen orientation locking
+
+  const handleRefreshLibrary = useCallback(async () => {
+    const appService = await envConfig.getAppService();
+    const settings = await appService.loadSettings();
+    const library = await appService.loadLibraryBooks();
+    setSettings(settings);
+    setLibrary(library);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [envConfig, appService]);
+
+  useEffect(() => {
+    if (appService?.hasWindow) {
+      const currentWebview = getCurrentWebview();
+      const unlisten = currentWebview.listen('close-reader-window', async () => {
+        handleRefreshLibrary();
+      });
+      return () => {
+        unlisten.then((fn) => fn());
+      };
+    }
+    return;
+  }, [appService, handleRefreshLibrary]);
+
+  const handleImportBookFiles = useCallback(async (event: CustomEvent) => {
+    const selectedFiles: SelectedFile[] = event.detail.files;
+    const groupId: string = event.detail.groupId || '';
+    if (selectedFiles.length === 0) return;
+    await importBooks(selectedFiles, groupId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    eventDispatcher.on('import-book-files', handleImportBookFiles);
+    return () => {
+      eventDispatcher.off('import-book-files', handleImportBookFiles);
+    };
+  }, [handleImportBookFiles]);
+
+  useEffect(() => {
+    refreshGroups();
+    if (!libraryBooks.some((book) => !book.deletedAt)) {
+      handleSetSelectMode(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [libraryBooks]);
+
+  const processOpenWithFiles = useCallback(
+    async (appService: AppService, openWithFiles: string[], libraryBooks: Book[]) => {
+      const settings = await appService.loadSettings();
+      const bookIds: string[] = [];
+      for (const file of openWithFiles) {
+        console.log('Open with book:', file);
+        try {
+          const temp = appService.isMobile ? false : !settings.autoImportBooksOnOpen;
+          const book = await appService.importBook(file, libraryBooks, true, true, false, temp);
+          if (book) {
+            bookIds.push(book.hash);
+          }
+        } catch (error) {
+          console.log('Failed to import book:', file, error);
+        }
+      }
+      setLibrary(libraryBooks);
+      appService.saveLibraryBooks(libraryBooks);
+
+      console.log('Opening books:', bookIds);
+      if (bookIds.length > 0) {
+        setPendingNavigationBookIds(bookIds);
+        return true;
+      }
+      return false;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const handleOpenLastBooks = async (
+    appService: AppService,
+    lastBookIds: string[],
+    libraryBooks: Book[],
+  ) => {
+    if (lastBookIds.length === 0) return false;
+    const bookIds: string[] = [];
+    for (const bookId of lastBookIds) {
+      const book = libraryBooks.find((b) => b.hash === bookId);
+      if (book && (await appService.isBookAvailable(book))) {
+        bookIds.push(book.hash);
+      }
+    }
+    console.log('Opening last books:', bookIds);
+    if (bookIds.length > 0) {
+      setPendingNavigationBookIds(bookIds);
+      return true;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    if (pendingNavigationBookIds) {
+      const bookIds = pendingNavigationBookIds;
+      setPendingNavigationBookIds(null);
+      if (bookIds.length > 0) {
+        navigateToReader(router, bookIds);
+      }
+    }
+  }, [pendingNavigationBookIds, appService, router]);
+
+  useEffect(() => {
+    if (isInitiating.current) return;
+    isInitiating.current = true;
+
+    const initLogin = async () => {
+      const appService = await envConfig.getAppService();
+      const settings = await appService.loadSettings();
+      if (token && user) {
+        if (!settings.keepLogin) {
+          settings.keepLogin = true;
+          setSettings(settings);
+          saveSettings(envConfig, settings);
+        }
+      }
+    };
+
+    const loadingTimeout = setTimeout(() => setLoading(true), 300);
+    const initLibrary = async () => {
+      const appService = await envConfig.getAppService();
+      const settings = await appService.loadSettings();
+      setSettings(settings);
+
+      // Reuse the library from the store when we return from the reader
+      const library = libraryBooks.length > 0 ? libraryBooks : await appService.loadLibraryBooks();
+      let opened = false;
+      opened = await handleOpenWithBooks(appService, library);
+      if (!opened && settings.openLastBooks) {
+        opened = await handleOpenLastBooks(appService, settings.lastOpenBooks, library);
+      }
+
+      setLibrary(library);
+      setLibraryLoaded(true);
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      setLoading(false);
+    };
+
+    const handleOpenWithBooks = async (appService: AppService, library: Book[]) => {
+      const openWithFiles = (await parseOpenWithFiles()) || [];
+
+      if (openWithFiles.length > 0) {
+        return await processOpenWithFiles(appService, openWithFiles, library);
+      }
+      return false;
+    };
+
+    initLogin();
+    initLibrary();
+    return () => {
+      isInitiating.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Ensure GitHub repo exists for authenticated user
+  useEffect(() => {
+    if (user && !githubRepoChecked.current) {
+      githubRepoChecked.current = true;
+      ensureGitHubRepo().then((result) => {
+        if (result.success) {
+          console.log('GitHub repo ready:', result.repoName, result.created ? '(created)' : '(exists)');
+        } else {
+          console.error('Failed to ensure GitHub repo:', result.error);
+        }
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (demoBooks.length > 0 && libraryLoaded) {
+      const newLibrary = [...libraryBooks];
+      for (const book of demoBooks) {
+        const idx = newLibrary.findIndex((b) => b.hash === book.hash);
+        if (idx === -1) {
+          newLibrary.push(book);
+        } else {
+          newLibrary[idx] = book;
+        }
+      }
+      setLibrary(newLibrary);
+      appService?.saveLibraryBooks(newLibrary);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoBooks, libraryLoaded]);
+
+  const importBooks = async (files: SelectedFile[], groupId?: string) => {
+    setLoading(true);
+    const { library } = useLibraryStore.getState();
+    const failedImports: Array<{ filename: string; errorMessage: string }> = [];
+    const errorMap: [string, string][] = [
+      ['No chapters detected', _('No chapters detected')],
+      ['Failed to parse EPUB', _('Failed to parse the EPUB file')],
+      ['Unsupported format', _('This book format is not supported')],
+      ['Failed to open file', _('Failed to open the book file')],
+      ['Invalid or empty book file', _('The book file is empty')],
+      ['Unsupported or corrupted book file', _('The book file is corrupted')],
+    ];
+
+    const processFile = async (selectedFile: SelectedFile) => {
+      const file = selectedFile.file || selectedFile.path;
+      if (!file) return;
+      try {
+        const book = await appService?.importBook(file, library);
+        if (book && groupId) {
+          book.groupId = groupId;
+          book.groupName = getGroupName(groupId);
+          await updateBook(envConfig, book);
+        }
+        if (user && book && !book.uploadedAt && settings.autoUpload) {
+          console.log('Uploading book:', book.title);
+          handleBookUpload(book, false);
+        }
+      } catch (error) {
+        const filename = typeof file === 'string' ? file : file.name;
+        const baseFilename = getFilename(filename);
+        const errorMessage =
+          error instanceof Error
+            ? errorMap.find(([str]) => error.message.includes(str))?.[1] || error.message
+            : '';
+        failedImports.push({ filename: baseFilename, errorMessage });
+        console.error('Failed to import book:', filename, error);
+      }
+    };
+
+    const concurrency = 4;
+    for (let i = 0; i < files.length; i += concurrency) {
+      const batch = files.slice(i, i + concurrency);
+      await Promise.all(batch.map(processFile));
+    }
+    pushLibrary();
+
+    if (failedImports.length > 0) {
+      const filenames = failedImports.map((f) => f.filename);
+      const errorMessage = failedImports.find((f) => f.errorMessage)?.errorMessage || '';
+
+      eventDispatcher.dispatch('toast', {
+        message:
+          _('Failed to import book(s): {{filenames}}', {
+            filenames: listFormater(false).format(filenames),
+          }) + (errorMessage ? `\n${errorMessage}` : ''),
+        type: 'error',
+      });
+    }
+
+    setLibrary([...library]);
+    appService?.saveLibraryBooks(library);
+    setLoading(false);
+  };
+
+  const handleBookUpload = useCallback(
+    async (book: Book, _syncBooks = true) => {
+      try {
+        // Show uploading message (persists until replaced)
+        eventDispatcher.dispatch('toast', {
+          type: 'warning',
+          message: _('Uploading ebook, please stand by...'),
+          timeout: 0, // Persist indefinitely
+        });
+
+        const result = await uploadBookToGitHub(book);
+
+        if (result.success) {
+          // Update book with uploadedAt timestamp
+          book.uploadedAt = Date.now();
+          await updateBook(envConfig, book);
+
+          eventDispatcher.dispatch('toast', {
+            type: 'success',
+            message: _('Ebook uploaded successfully'),
+          });
+          return true;
+        } else {
+          eventDispatcher.dispatch('toast', {
+            type: 'error',
+            message: result.error || _('Failed to upload ebook'),
+          });
+          return false;
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        eventDispatcher.dispatch('toast', {
+          type: 'error',
+          message: error instanceof Error ? error.message : _('Failed to upload ebook'),
+        });
+        return false;
+      }
+    },
+    [uploadBookToGitHub, updateBook, envConfig, _],
+  );
+
+  const handleBookDownload = useCallback(
+    async (_book: Book, _redownload = false) => {
+      // Book Repo disabled
+      eventDispatcher.dispatch('toast', {
+        type: 'info',
+        message: _('Book Repo is disabled'),
+      });
+      return false;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [appService],
+  );
+
+  const handleBookDelete = (deleteAction: DeleteAction) => {
+    return async (book: Book, syncBooks = true) => {
+      const deletionMessages = {
+        both: _('Book deleted: {{title}}', { title: book.title }),
+        cloud: _('Deleted Book Repo backup of the book: {{title}}', { title: book.title }),
+        local: _('Deleted local copy of the book: {{title}}', { title: book.title }),
+      };
+      const deletionFailMessages = {
+        both: _('Failed to delete book: {{title}}', { title: book.title }),
+        cloud: _('Failed to delete Book Repo backup of the book: {{title}}', { title: book.title }),
+        local: _('Failed to delete local copy of the book: {{title}}', { title: book.title }),
+      };
+      try {
+        await appService?.deleteBook(book, deleteAction);
+
+        // For 'both' action, remove book from library entirely
+        if (deleteAction === 'both') {
+          const updatedLibrary = libraryBooks.filter((b) => b.hash !== book.hash);
+          setLibrary(updatedLibrary);
+          await appService?.saveLibraryBooks(updatedLibrary);
+        } else {
+          // For 'local' or 'cloud' only, update the book
+          await updateBook(envConfig, book);
+        }
+
+        if (syncBooks) pushLibrary();
+        eventDispatcher.dispatch('toast', {
+          type: 'info',
+          timeout: 2000,
+          message: deletionMessages[deleteAction],
+        });
+        return true;
+      } catch {
+        eventDispatcher.dispatch('toast', {
+          message: deletionFailMessages[deleteAction],
+          type: 'error',
+        });
+        return false;
+      }
+    };
+  };
+
+  const handleUpdateMetadata = async (book: Book, metadata: BookMetadata) => {
+    book.metadata = metadata;
+    book.title = formatTitle(metadata.title);
+    book.author = formatAuthors(metadata.author);
+    book.primaryLanguage = getPrimaryLanguage(metadata.language);
+    book.updatedAt = Date.now();
+    if (metadata.coverImageBlobUrl || metadata.coverImageUrl || metadata.coverImageFile) {
+      book.coverImageUrl = metadata.coverImageBlobUrl || metadata.coverImageUrl;
+      try {
+        await appService?.updateCoverImage(
+          book,
+          metadata.coverImageBlobUrl || metadata.coverImageUrl,
+          metadata.coverImageFile,
+        );
+      } catch (error) {
+        console.warn('Failed to update cover image:', error);
+      }
+    }
+    if (isWebAppPlatform()) {
+      // Clear HTTP cover image URL if cover is updated with a local file
+      if (metadata.coverImageBlobUrl) {
+        metadata.coverImageUrl = undefined;
+      }
+    } else {
+      metadata.coverImageUrl = undefined;
+    }
+    metadata.coverImageBlobUrl = undefined;
+    metadata.coverImageFile = undefined;
+    await updateBook(envConfig, book);
+  };
+
+  const handleImportBooks = async () => {
+    setIsSelectMode(false);
+    setShowImportModal(true);
+  };
+
+  const handleImportFromLocalFile = () => {
+    setShowImportModal(false);
+    console.log('Importing books...');
+    selectFiles({ type: 'books', multiple: true }).then((result) => {
+      if (result.files.length === 0 || result.error) return;
+      const groupId = searchParams?.get('group') || '';
+      importBooks(result.files, groupId);
+    });
+  };
+
+  const handleImportFromUrl = async () => {
+    const url = importUrlValue.trim();
+    if (!url) {
+      eventDispatcher.dispatch('toast', {
+        type: 'error',
+        message: _('Please enter a URL'),
+      });
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      eventDispatcher.dispatch('toast', {
+        type: 'error',
+        message: _('Invalid URL format'),
+      });
+      return;
+    }
+
+    setIsImportingFromUrl(true);
+
+    try {
+      // Fetch the EPUB from URL
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const filename = url.split('/').pop() || 'book.epub';
+
+      // Create File object from blob
+      const file = new File([blob], filename, { type: 'application/epub+zip' });
+
+      // Close modal and import
+      setShowImportModal(false);
+      setImportUrlValue('');
+
+      const groupId = searchParams?.get('group') || '';
+      await importBooks([{ file }], groupId);
+
+      eventDispatcher.dispatch('toast', {
+        type: 'info',
+        message: _('Book downloaded and imported successfully'),
+      });
+    } catch (error) {
+      console.error('Failed to download from URL:', error);
+      eventDispatcher.dispatch('toast', {
+        type: 'error',
+        message: _('Failed to download book: {{error}}', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      });
+    } finally {
+      setIsImportingFromUrl(false);
+    }
+  };
+
+  const handleSetSelectMode = (selectMode: boolean) => {
+    // No Desktop - haptic feedback removed
+    setIsSelectMode(selectMode);
+    setIsSelectAll(false);
+    setIsSelectNone(false);
+  };
+
+  const handleSelectAll = () => {
+    setIsSelectAll(true);
+    setIsSelectNone(false);
+  };
+
+  const handleDeselectAll = () => {
+    setIsSelectNone(true);
+    setIsSelectAll(false);
+  };
+
+  const handleShowDetailsBook = (book: Book) => {
+    setShowDetailsBook(book);
+  };
+
+  if (!appService || !insets) {
+    return <div className={clsx('h-[100vh]', !appService?.isLinuxApp && 'bg-base-200')} />;
+  }
+
+  const showBookshelf = libraryLoaded || libraryBooks.length > 0;
+
+  return (
+    <div
+      ref={pageRef}
+      aria-label='Your Library'
+      className={clsx(
+        'library-page text-base-content flex h-[100vh] select-none flex-col overflow-hidden',
+        viewSettings?.isEink ? 'bg-base-100' : 'bg-base-200',
+        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+      )}
+    >
+      <div
+        className='top-0 z-40 w-full'
+        role='banner'
+        tabIndex={-1}
+        aria-label={_('Library Header')}
+      >
+        <LibraryHeader
+          isSelectMode={isSelectMode}
+          isSelectAll={isSelectAll}
+          onImportBooks={handleImportBooks}
+          onToggleSelectMode={() => handleSetSelectMode(!isSelectMode)}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+        />
+      </div>
+      {(loading || isSyncing) && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center'>
+          <Spinner loading />
+        </div>
+      )}
+      {showBookshelf &&
+        (libraryBooks.some((book) => !book.deletedAt) ? (
+          <OverlayScrollbarsComponent
+            defer
+            aria-label=''
+            ref={osRef}
+            className='flex-grow'
+            options={{ scrollbars: { autoHide: 'scroll' } }}
+            events={{
+              initialized: (instance) => {
+                const { content } = instance.elements();
+                if (content) {
+                  containerRef.current = content as HTMLDivElement;
+                }
+              },
+            }}
+          >
+            <div
+              className={clsx('scroll-container drop-zone flex-grow', isDragging && 'drag-over')}
+              style={{
+                paddingTop: '0px',
+                paddingRight: `${insets.right}px`,
+                paddingBottom: `${insets.bottom}px`,
+                paddingLeft: `${insets.left}px`,
+              }}
+            >
+              <progress
+                className={clsx(
+                  'progress progress-success absolute left-0 right-0 top-[2px] z-30 h-1 transition-opacity duration-200',
+                  isSyncing ? 'opacity-100' : 'opacity-0',
+                )}
+                value={syncProgress * 100}
+                max='100'
+              ></progress>
+              <DropIndicator />
+              <Bookshelf
+                libraryBooks={libraryBooks}
+                isSelectMode={isSelectMode}
+                isSelectAll={isSelectAll}
+                isSelectNone={isSelectNone}
+                handleImportBooks={handleImportBooks}
+                handleBookUpload={handleBookUpload}
+                handleBookDownload={handleBookDownload}
+                handleBookDelete={handleBookDelete('both')}
+                handleSetSelectMode={handleSetSelectMode}
+                handleShowDetailsBook={handleShowDetailsBook}
+                booksTransferProgress={booksTransferProgress}
+                handlePushLibrary={pushLibrary}
+              />
+            </div>
+          </OverlayScrollbarsComponent>
+        ) : (
+          <div className='hero drop-zone h-screen items-center justify-center'>
+            <DropIndicator />
+            <div className='hero-content text-neutral-content text-center'>
+              <div className='max-w-md'>
+                <h1 className='mb-5 text-5xl font-bold'>{_('Your Library')}</h1>
+                <p className='mb-5'>
+                  {_(
+                    'Welcome to your library. You can import your books here and read them anytime.',
+                  )}
+                </p>
+                <button className='btn btn-primary rounded-xl' onClick={handleImportBooks}>
+                  {_('Import Books')}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      {showDetailsBook && (
+        <BookDetailModal
+          isOpen={!!showDetailsBook}
+          book={showDetailsBook}
+          onClose={() => setShowDetailsBook(null)}
+          handleBookUpload={user ? handleBookUpload : undefined}
+          handleBookDelete={handleBookDelete('both')}
+          handleBookMetadataUpdate={handleUpdateMetadata}
+        />
+      )}
+      <AboutWindow />
+      {isSettingsDialogOpen && <SettingsDialog bookKey={''} />}
+      <Dialog
+        isOpen={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          setImportUrlValue('');
+        }}
+        title={_('Import Book')}
+      >
+        <div className='flex flex-col gap-6 p-4'>
+          {/* Local File Import */}
+          <div className='flex flex-col gap-2'>
+            <h3 className='text-lg font-semibold'>{_('From Local File')}</h3>
+            <p className='text-sm text-base-content/70'>
+              {_('Select an EPUB file from your device')}
+            </p>
+            <button
+              className='btn btn-primary'
+              onClick={handleImportFromLocalFile}
+              disabled={isImportingFromUrl}
+            >
+              {_('Choose File')}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className='divider'>{_('OR')}</div>
+
+          {/* URL Import */}
+          <div className='flex flex-col gap-2'>
+            <h3 className='text-lg font-semibold'>{_('From URL')}</h3>
+            <p className='text-sm text-base-content/70'>
+              {_('Download an EPUB from a website')}
+            </p>
+            <input
+              type='url'
+              placeholder='https://example.com/book.epub'
+              className='input input-bordered w-full'
+              value={importUrlValue}
+              onChange={(e) => setImportUrlValue(e.target.value)}
+              disabled={isImportingFromUrl}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isImportingFromUrl) {
+                  handleImportFromUrl();
+                }
+              }}
+            />
+            <button
+              className='btn btn-primary'
+              onClick={handleImportFromUrl}
+              disabled={isImportingFromUrl || !importUrlValue.trim()}
+            >
+              {isImportingFromUrl ? (
+                <>
+                  <span className='loading loading-spinner'></span>
+                  {_('Downloading...')}
+                </>
+              ) : (
+                _('Download and Import')
+              )}
+            </button>
+          </div>
+        </div>
+      </Dialog>
+      <Toast />
+    </div>
+  );
+};
+
+const LibraryPage = () => {
+  return (
+    <Suspense fallback={<div className='h-[100vh]' />}>
+      <LibraryPageWithSearchParams />
+    </Suspense>
+  );
+};
+
+export default LibraryPage;
