@@ -1,4 +1,5 @@
-// lib/publish-actions.ts
+// apps/proselenos-app/src/lib/publish-actions.ts
+
 'use server';
 
 import 'server-only';
@@ -660,7 +661,7 @@ async function generateEPUB(chapters: Chapter[], metadata: any, _projectFolderId
 </container>`;
   zip.file('META-INF/container.xml', containerXML);
 
-  // 3. Cover images disabled for now - will be generated server-side with canvas in future
+  // 3. user does their own cover outside of this app:
   const hasCover = false;
 
   // 4. Create title page
@@ -1336,6 +1337,8 @@ async function createPDF(chapters: Chapter[], metadata: any): Promise<{ pdfData:
     throw new Error(`EB Garamond Bold font file not found at: ${boldFontPath}`);
   }
 
+  // CRITICAL: Use custom font from constructor to prevent pdfkit from loading Helvetica.afm
+  // In Next.js server actions, pdfkit's bundled fonts aren't accessible
   const doc = new PDFDocument({
     size: [432, 648], // 6" x 9"
     margins: {
@@ -1346,7 +1349,8 @@ async function createPDF(chapters: Chapter[], metadata: any): Promise<{ pdfData:
     },
     autoFirstPage: false,
     displayTitle: false,
-    bufferPages: true
+    bufferPages: true,
+    font: regularFontPath
   });
 
   // Register fonts

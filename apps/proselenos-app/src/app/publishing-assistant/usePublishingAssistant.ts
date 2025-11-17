@@ -2,9 +2,31 @@
 // State management for publishing progress workflow
 
 import { useState, useCallback } from 'react';
-import { PublishingAssistantState, FileType, PublishingProgress } from '@/lib/publishing-assistant/types';
-import { INITIAL_PUBLISHING_STEPS, executePublishingWithProgress, generateIndividualFile } from '@/lib/publishing-assistant/execution-engine';
+import { PublishingAssistantState, FileType, PublishingStep } from '@/lib/publishing-assistant/types';
+import { generateHTMLOnlyAction, generateEPUBOnlyAction, generatePDFOnlyAction } from '@/lib/publish-actions';
 import { listTxtFilesAction, checkManuscriptFilesExistAction, deleteManuscriptOutputAction } from '@/lib/github-project-actions';
+
+// File type configurations for UI display
+const INITIAL_PUBLISHING_STEPS: PublishingStep[] = [
+  {
+    id: 'html',
+    name: 'Convert to HTML',
+    description: 'Convert manuscript .txt to HTML format...',
+    status: 'pending'
+  },
+  {
+    id: 'epub',
+    name: 'Convert to EPUB',
+    description: 'Convert manuscript .txt to EPUB 3 e-book format...',
+    status: 'pending'
+  },
+  {
+    id: 'pdf',
+    name: 'Convert to PDF',
+    description: 'Convert manuscript .txt to PDF format (KDP ready)...',
+    status: 'pending'
+  }
+];
 
 export function usePublishingAssistant(
   currentProjectId: string | null
@@ -115,41 +137,6 @@ export function usePublishingAssistant(
     }
   }, [currentProjectId]);
 
-  // Start publishing process
-  const startPublishing = useCallback(async () => {
-    if (!state.selectedManuscript || !currentProjectId) return;
-
-    setState(prev => ({
-      ...prev,
-      progress: {
-        ...prev.progress,
-        isProcessing: true,
-        isComplete: false,
-        currentStep: 0,
-        steps: [...INITIAL_PUBLISHING_STEPS]
-      }
-    }));
-
-    // Progress update callback
-    const onProgressUpdate = (progress: PublishingProgress) => {
-      setState(prev => ({
-        ...prev,
-        progress
-      }));
-    };
-
-    // Execute publishing with progress tracking
-    await executePublishingWithProgress(
-      state.selectedManuscript.path,
-      currentProjectId,
-      onProgressUpdate
-    );
-
-    // Final state update is handled by executePublishingWithProgress
-    // through the onProgressUpdate callback
-
-  }, [state.selectedManuscript, currentProjectId]);
-
   // Reset to file selection
   const resetToFileSelection = useCallback(() => {
     setState(prev => ({
@@ -195,11 +182,21 @@ export function usePublishingAssistant(
         // Proceed even if delete fails; generation will overwrite if supported
       }
 
-      const result = await generateIndividualFile(
-        fileType,
-        state.selectedManuscript.path,
-        currentProjectId
-      );
+      // Call the appropriate generation action directly
+      let result;
+      switch (fileType) {
+        case 'html':
+          result = await generateHTMLOnlyAction(state.selectedManuscript.path, currentProjectId);
+          break;
+        case 'epub':
+          result = await generateEPUBOnlyAction(state.selectedManuscript.path, currentProjectId);
+          break;
+        case 'pdf':
+          result = await generatePDFOnlyAction(state.selectedManuscript.path, currentProjectId);
+          break;
+        default:
+          result = { success: false, error: `Unknown file type: ${fileType}` };
+      }
 
       setState(prev => ({
         ...prev,
@@ -234,7 +231,6 @@ export function usePublishingAssistant(
       openModal,
       closeModal,
       selectManuscript,
-      startPublishing,
       resetToFileSelection,
       generateFile
     }

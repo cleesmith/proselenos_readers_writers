@@ -6,6 +6,9 @@ node_modules/
 cls*
 zzz*
 
+# rsync temp files
+.!*
+
 # dependencies
 /node_modules
 /.pnp

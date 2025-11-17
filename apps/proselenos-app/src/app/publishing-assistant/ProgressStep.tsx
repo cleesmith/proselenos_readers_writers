@@ -81,9 +81,9 @@ export default function ProgressStep({
           </div>
         )}
         
-        {/* Error Message */}
+        {/* Error Message from step */}
         {step.error && (
-          <div 
+          <div
             style={{
               fontSize: '11px',
               color: '#dc3545',
@@ -91,6 +91,34 @@ export default function ProgressStep({
             }}
           >
             Error: {step.error}
+          </div>
+        )}
+
+        {/* Error Message from fileState - THE MISSING PIECE */}
+        {fileState?.error && (
+          <div
+            style={{
+              fontSize: '11px',
+              color: '#dc3545',
+              fontStyle: 'italic',
+              marginTop: '4px'
+            }}
+          >
+            Error: {fileState.error}
+          </div>
+        )}
+
+        {/* Success Message when file exists */}
+        {fileState?.exists && !fileState.isProcessing && (
+          <div
+            style={{
+              fontSize: '11px',
+              color: '#28a745',
+              fontStyle: 'italic',
+              marginTop: '4px'
+            }}
+          >
+            ✓ File created successfully
           </div>
         )}
       </div>
