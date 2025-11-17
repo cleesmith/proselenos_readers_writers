@@ -9,7 +9,7 @@ Proselenos for both readers and writers.
 
 ---
 
-### READERS setup on github
+### READERS <i>setup on github</i>
 
 - **master_proselenosebooks**
 
@@ -20,7 +20,7 @@ Proselenos for both readers and writers.
 	- Ebook storage for google sign in user 101441964303966098868
 
 
-### WRITERS setup on github:
+### WRITERS <i>setup on github</i>
 
 - **proselenos-template**
 
