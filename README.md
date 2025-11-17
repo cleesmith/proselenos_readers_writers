@@ -9,15 +9,15 @@ Proselenos for both readers and writers.
 
 ---
 
-### READERS on github:
+### __READERS on github__
 
 - **master_proselenosebooks**
 
-	Master tracking for all ebooks and user repos; via json lists
+	- Master tracking for all ebooks and user repos; via json lists
 
 - **101441964303966098868_proselenosebooks**
 
-	Ebook storage for user 101441964303966098868
+	- Ebook storage for user 101441964303966098868
 
 
 ### WRITERS on github:
