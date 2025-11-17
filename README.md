@@ -13,24 +13,24 @@ Proselenos for both readers and writers.
 
 - **master_proselenosebooks**
 
-	- Master tracking for all ebooks and user repos; via json lists
+	- <i>Master tracking for all ebooks and user repos; via json lists</i>
 
 - **101441964303966098868_proselenosebooks**
 
-	- Ebook storage for google sign in user 101441964303966098868
+	- <i>Ebook storage for google sign in user 101441964303966098868</i>
 
 
 ### WRITERS <i>setup on github</i>
 
 - **proselenos-template**
 
-	- Template repo for all Proselenos private repos of user manuscripts/reports storage
-	- Super fast way to duplicate tool-prompts folder of AI prompts used for editing/writing
+	- <i>Template repo for all Proselenos private repos of user manuscripts/reports storage</i>
+	- <i>Super fast way to duplicate tool-prompts folder of AI prompts used for editing/writing</i>
 
 - **101441964303966098868_proselenos**
 
-	- Proselenos user manuscripts/reports storage
-	- Created using **proselenos-template**
+	- <i>Proselenos user manuscripts/reports storage</i>
+	- <i>Created using **proselenos-template**</i>
 
 ---
 
