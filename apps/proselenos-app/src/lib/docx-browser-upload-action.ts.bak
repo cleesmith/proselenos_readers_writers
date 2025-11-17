@@ -1,0 +1,89 @@
+// lib/docx-browser-upload-action.ts
+
+// Simple server action that receives text extracted in the browser and uploads to Google Drive
+
+'use server';
+
+import {
+  getAuthClient,
+  getDriveClient,
+  uploadManuscript
+} from '@/lib/googleDrive';
+
+type ActionResult<T = any> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+};
+
+async function getAuthenticatedClients(accessToken: string) {
+  if (!accessToken) {
+    return { error: 'Not authenticated' };
+  }
+
+  const authClient = await getAuthClient(accessToken);
+  const drive = await getDriveClient(authClient);
+  
+  return {
+    authClient,
+    drive
+  };
+}
+
+// Upload browser-extracted text to Google Drive
+export async function uploadBrowserExtractedTextAction(
+  accessToken: string,
+  text: string,
+  fileName: string,
+  projectFolderId: string
+): Promise<ActionResult> {
+  try {
+    const clients = await getAuthenticatedClients(accessToken);
+    if ('error' in clients) {
+      return { success: false, error: clients.error };
+    }
+
+    const { drive } = clients;
+    
+    if (!text || !fileName || !projectFolderId) {
+      return { success: false, error: 'Missing required parameters' };
+    }
+
+    // Ensure .txt extension
+    let finalFileName = fileName.trim();
+    if (!finalFileName.toLowerCase().endsWith('.txt')) {
+      finalFileName += '.txt';
+    }
+
+    // Upload to Google Drive using existing uploadManuscript function
+    const uploadResult = await uploadManuscript(
+      drive,
+      text,
+      projectFolderId,
+      finalFileName
+    );
+    
+    // Count stats for user feedback
+    const chapterMatches = text.match(/(^|\n)\s*Chapter\s*\d+/gi);
+    const chapterCount = chapterMatches ? chapterMatches.length : 0;
+    const characterCount = text.length;
+    
+    return { 
+      success: true, 
+      data: {
+        fileId: uploadResult.id,
+        fileName: uploadResult.name || finalFileName,
+        chapterCount,
+        characterCount
+      },
+      message: `Successfully uploaded. Found ${chapterCount} chapters.`
+    };
+  } catch (error: any) {
+    console.error('Error in uploadBrowserExtractedTextAction:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to upload text' 
+    };
+  }
+}

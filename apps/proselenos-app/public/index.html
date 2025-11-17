@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proselenos - AI-Powered Manuscript Assistant</title>
+    <style>
+        :root {
+            --orange: #ed8936;
+            --orange-dark: #dd6b20;
+            --orange-light: #f6ad55;
+            --blue: #667eea;
+            --blue-dark: #4c63d2;
+            --blue-light: #818cf8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #4a5568 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            margin: 0 auto 20px;
+            display: block;
+        }
+
+        .logo img {
+            width: 200px;
+            height: 100px;
+        }
+
+        .main-title {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .title-prose {
+            color: var(--orange);
+        }
+
+        .title-lenos {
+            color: var(--blue);
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #cbd5e0;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+
+        .section {
+            background: rgba(45, 55, 72, 0.7);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(74, 85, 104, 0.3);
+        }
+
+        .section h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #f7fafc;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section p {
+            font-size: 16px;
+            color: #cbd5e0;
+            margin-bottom: 16px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .feature-card {
+            background: rgba(26, 32, 44, 0.6);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(74, 85, 104, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card.orange-accent::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--orange);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card.blue-accent::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--blue);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .feature-card.orange-accent:hover {
+            border-color: var(--orange);
+        }
+
+        .feature-card.blue-accent:hover {
+            border-color: var(--blue);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f7fafc;
+            margin-bottom: 12px;
+        }
+
+        .feature-description {
+            font-size: 14px;
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+
+        .cta-section {
+            text-align: center;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--orange) 0%, var(--blue) 100%);
+            color: #f7fafc;
+            padding: 18px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(237, 137, 54, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(237, 137, 54, 0.4);
+            background: linear-gradient(135deg, var(--blue) 0%, var(--orange) 100%);
+        }
+
+        .privacy-note {
+            font-size: 14px;
+            color: #a0aec0;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .main-title {
+                font-size: 36px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .section {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <img src="icon.png" alt="Proselenos Logo" />
+                <img src="proselenos.png" alt="Proselenos" />
+            </div>
+            <p class="subtitle">Your manuscript editing assistant</p>
+        </div>
+
+        <div class="section">
+            <h2><span style="color: var(--orange);">📝</span> What is Proselenos?</h2>
+            <p>Proselenos is a powerful manuscript editing platform designed specifically for writers working on full-length projects. Whether you're editing a novel, memoir, or extensive non-fiction work, Proselenos provides comprehensive tools to refine and polish your complete manuscript.</p>
+            <p>Upload your entire manuscript and get detailed editing assistance, structural analysis, and formatting help to bring your work to professional publishing standards.</p>
+        </div>
+
+        <div class="section">
+            <h2><span style="color: var(--blue);">⚙️</span> Key Features</h2>
+            <div class="features-grid">
+                <div class="feature-card orange-accent">
+                    <span class="feature-icon" style="color: var(--orange);">📖</span>
+                    <div class="feature-title">Full Manuscript Editing</div>
+                    <div class="feature-description">Comprehensive editing of entire manuscripts with chapter-by-chapter analysis, consistency checking, and narrative flow optimization.</div>
+                </div>
+                
+                <div class="feature-card blue-accent">
+                    <span class="feature-icon" style="color: var(--blue);">🔧</span>
+                    <div class="feature-title">Advanced Editing Tools</div>
+                    <div class="feature-description">Professional-grade editing tools including grammar checking, style analysis, pacing optimization, and structural improvements.</div>
+                </div>
+                
+                <div class="feature-card orange-accent">
+                    <span class="feature-icon" style="color: var(--orange);">📄</span>
+                    <div class="feature-title">Document Management</div>
+                    <div class="feature-description">Import and export Word documents, manage multiple drafts, and maintain complete control of your editing process.</div>
+                </div>
+                
+                <div class="feature-card blue-accent">
+                    <span class="feature-icon" style="color: var(--blue);">📚</span>
+                    <div class="feature-title">Publishing Preparation</div>
+                    <div class="feature-description">Generate publication-ready formats including professionally formatted EPUB and PDF files for both digital and print publishing.</div>
+                </div>
+                
+                <div class="feature-card orange-accent">
+                    <span class="feature-icon" style="color: var(--orange);">⚡</span>
+                    <div class="feature-title">Project Organization</div>
+                    <div class="feature-description">Organize multiple manuscript projects with progress tracking, project settings, and easy switching between different works.</div>
+                </div>
+                
+                <div class="feature-card blue-accent">
+                    <span class="feature-icon" style="color: var(--blue);">🔒</span>
+                    <div class="feature-title">Secure Storage</div>
+                    <div class="feature-description">Your manuscripts are securely stored with enterprise-grade encryption and complete privacy protection.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><span style="color: var(--blue);">🛡️</span> Privacy & Security</h2>
+            <p>Your stories remain yours, always.</p>
+        </div>
+
+        <div class="section cta-section">
+            <h2><span style="color: var(--orange);">🚀</span> Ready to Edit Your Manuscript?</h2>
+            <p>Launch Proselenos to start editing your complete manuscript with professional-grade tools</p>
+            <a href="https://proselenos.com" class="cta-button">Launch Proselenos</a>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.feature-card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

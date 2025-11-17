@@ -1,0 +1,114 @@
+// CLIENT COMPONENT - DocxToTxtUpload.tsx
+'use client';
+
+import { useState } from 'react';
+import mammoth from 'mammoth';
+import { uploadTextToDrive } from './actions';
+
+export default function DocxToTxtUpload() {
+  const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState('');
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.docx')) {
+      alert('Please upload a .docx file');
+      return;
+    }
+
+    setUploading(true);
+    setStatus('Extracting text from document...');
+
+    try {
+      // Read the .docx file
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Extract text using mammoth
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const text = result.value;
+
+      setStatus('Uploading to Google Drive...');
+
+      // Create .txt filename from original .docx name
+      const txtFileName = file.name.replace('.docx', '.txt');
+      const projectFolderId = 'YOUR_GOOGLE_DRIVE_FOLDER_ID'; // Pass as prop
+
+      // Upload text to Google Drive
+      const response = await uploadTextToDrive(text, txtFileName, projectFolderId);
+
+      setStatus(`Upload complete! File ID: ${response.fileId}`);
+      alert('Successfully uploaded to Google Drive!');
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setStatus('Upload failed');
+      alert('Upload failed. Check console for details.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <input
+        type="file"
+        accept=".docx"
+        onChange={handleUpload}
+        disabled={uploading}
+      />
+      {status && <div>{status}</div>}
+    </div>
+  );
+}
+
+
+// SERVER ACTIONS - actions.ts
+'use server';
+
+import { google } from 'googleapis';
+import { Readable } from 'stream';
+
+async function getAuthClient() {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  });
+  return auth.getClient();
+}
+
+export async function uploadTextToDrive(
+  text: string,
+  fileName: string,
+  folderId: string
+) {
+  const auth = await getAuthClient();
+  const drive = google.drive({ version: 'v3', auth });
+
+  // Convert text string to a readable stream
+  const bufferStream = new Readable();
+  bufferStream.push(text);
+  bufferStream.push(null);
+
+  const fileMetadata = {
+    name: fileName,
+    parents: [folderId],
+    mimeType: 'text/plain',
+  };
+
+  const media = {
+    mimeType: 'text/plain',
+    body: bufferStream,
+  };
+
+  const response = await drive.files.create({
+    requestBody: fileMetadata,
+    media: media,
+    fields: 'id, name',
+  });
+
+  return {
+    fileId: response.data.id,
+    fileName: response.data.name,
+  };
+}

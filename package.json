@@ -4,8 +4,15 @@
   "repository": "proselenosebooks/proselenosebooks",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-web": "pnpm --filter @proselenosebooks/proselenosebooks-app build-web",
-    "start-web": "pnpm --filter @proselenosebooks/proselenosebooks-app start-web"
+    "dev": "pnpm --filter @proselenosebooks/proselenos-app dev",
+    "dev-web": "pnpm --filter @proselenosebooks/proselenos-app dev-web",
+    "build": "pnpm --filter @proselenosebooks/proselenos-app build",
+    "build-web": "pnpm --filter @proselenosebooks/proselenos-app build-web",
+    "start": "pnpm --filter @proselenosebooks/proselenos-app start",
+    "start-web": "pnpm --filter @proselenosebooks/proselenos-app start-web",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "check": "pnpm lint && pnpm typecheck"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
@@ -17,5 +24,12 @@
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0",
+      "next-auth": "4.24.13"
+    }
   }
 }
