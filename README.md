@@ -1,19 +1,15 @@
+
+# this app will replace Proselenos.com
+
+---
+
 # proselenos_readers_writers
 
 Proselenos for both readers and writers.
 
 ---
 
-# this app will replace Proselenos.com
-
----
-
-## proselenos_readers_writers
-
-	Proselenos for both readers and writers
-
-
-### I. READERS
+### I. READERS on github
 
 1. master_proselenosebooks
 
@@ -24,7 +20,7 @@ Proselenos for both readers and writers.
 	Ebook storage for user 101441964303966098868
 
 
-### II. WRITERS
+### II. WRITERS on github
 
 1. proselenos-template
 
