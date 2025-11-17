@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { parseWebViewInfo } from '@/utils/ua';
@@ -20,6 +21,7 @@ export const setAboutDialogVisible = (visible: boolean) => {
 };
 
 export const AboutWindow = () => {
+  const { data: session } = useSession();
   const _ = useTranslation();
   const { appService } = useEnv();
   const [browserInfo, setBrowserInfo] = useState('');
@@ -69,6 +71,29 @@ export const AboutWindow = () => {
                 {_('Version {{version}}', { version: getAppVersion() })} {`(${browserInfo})`}
               </p>
             </div>
+
+            {session?.user?.name && session?.user?.email && (
+              <>
+                <hr className='border-base-300 my-4 w-full' />
+                <div className='flex items-center gap-3'>
+                  {session.user.image && (
+                    <Image
+                      src={session.user.image}
+                      alt='User profile'
+                      className='rounded-full'
+                      width={48}
+                      height={48}
+                    />
+                  )}
+                  <div className='text-neutral-content text-sm font-medium'>
+                    <p className='mb-0'>Welcome, {session.user.name}</p>
+                    <p className='mb-0'>of {session.user.email}</p>
+                    <p className='mb-0'>with Google Id of</p>
+                    <p className='mb-0'>{session.user.id}</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <hr className='border-base-300 my-12 w-full sm:my-4' />
