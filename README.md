@@ -25,7 +25,7 @@ Proselenos for both readers and writers.
 - **proselenos-template**
 
 	- <i>Template repo for all Proselenos private repos of user manuscripts/reports storage</i>
-	- <i>Super fast way to duplicate tool-prompts folder of AI prompts used for editing/writing</i>
+	- <i>Super fast way to duplicate **tool-prompts** folder of AI prompts used for editing/writing</i>
 
 - **101441964303966098868_proselenos**
 
