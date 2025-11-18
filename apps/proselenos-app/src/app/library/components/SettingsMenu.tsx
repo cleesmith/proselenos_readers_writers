@@ -290,7 +290,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
       <hr aria-hidden='true' className='border-base-200 my-1' />
       {user && (
         <MenuItem
-          label={_('Authors and Writers:')}
+          label={_('Authors and Writers')}
           description={_('use AI to help edit, write, and publish your manuscripts')}
           Icon={PiPencil}
           buttonClass='bg-blue-600/20 hover:!bg-blue-600/30'
