@@ -108,8 +108,8 @@ export default function ProgressStep({
           </div>
         )}
 
-        {/* Success Message when file exists */}
-        {fileState?.exists && !fileState.isProcessing && (
+        {/* Success Message when file was created in this session */}
+        {fileState?.createdInSession && !fileState.isProcessing && (
           <div
             style={{
               fontSize: '11px',

@@ -191,6 +191,54 @@ export async function generateEPUBOnlyAction(
 }
 
 /**
+ * Generate EPUB for local import (uploads to GitHub AND returns base64 for local import)
+ * This combines upload + local import in one operation
+ * manuscriptFilePath: path like "projectName/manuscript.txt"
+ * projectName: the project folder name
+ */
+export async function generateEPUBForLocalImportAction(
+  manuscriptFilePath: string,
+  projectName: string
+): Promise<ActionResult<{epubBase64: string; epubFilename: string; fileId: string}>> {
+  try {
+    const prepResult = await prepareManuscriptData(manuscriptFilePath, projectName);
+    if (!prepResult.success || !prepResult.data) {
+      return { success: false, error: prepResult.error };
+    }
+
+    const { userId, chapters, metadata } = prepResult.data;
+
+    // Generate EPUB (only once!)
+    const epubBuffer = await generateEPUB(chapters, metadata, projectName);
+    const epubFilename = 'manuscript.epub';
+    const epubPath = `${projectName}/${epubFilename}`;
+
+    // Convert Buffer to ArrayBuffer for uploadFile
+    const epubArrayBuffer = epubBuffer.buffer.slice(
+      epubBuffer.byteOffset,
+      epubBuffer.byteOffset + epubBuffer.byteLength
+    ) as ArrayBuffer;
+
+    // Upload EPUB file to GitHub (author's repo backup)
+    await uploadFile(userId, 'proselenos', epubPath, epubArrayBuffer, `Generate ${epubFilename}`);
+
+    // Also convert to base64 for local import
+    const epubBase64 = epubBuffer.toString('base64');
+
+    return {
+      success: true,
+      data: {
+        epubBase64,
+        epubFilename,
+        fileId: epubPath
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to generate EPUB for local import' };
+  }
+}
+
+/**
  * Generate PDF file only
  * manuscriptFilePath: path like "projectName/manuscript.txt"
  * projectName: the project folder name

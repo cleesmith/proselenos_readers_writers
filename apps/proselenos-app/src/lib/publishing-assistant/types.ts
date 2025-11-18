@@ -6,8 +6,8 @@ export type PublishingStepId = 'html' | 'cover' | 'epub' | 'pdf' | 'complete';
 export type FileType = 'html' | 'epub' | 'pdf';
 
 export interface FileState {
-  exists: boolean;
-  isProcessing: boolean;
+  isProcessing: boolean;     // Currently generating this file
+  createdInSession: boolean; // File was successfully created in THIS session
   error?: string;
 }
 

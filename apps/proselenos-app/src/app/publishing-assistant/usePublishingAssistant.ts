@@ -1,10 +1,11 @@
-// Publishing Assistant Hook
-// State management for publishing progress workflow
+// apps/proselenos-app/src/app/publishing-assistant/usePublishingAssistant.ts
 
 import { useState, useCallback } from 'react';
 import { PublishingAssistantState, FileType, PublishingStep } from '@/lib/publishing-assistant/types';
-import { generateHTMLOnlyAction, generateEPUBOnlyAction, generatePDFOnlyAction } from '@/lib/publish-actions';
-import { listTxtFilesAction, checkManuscriptFilesExistAction, deleteManuscriptOutputAction } from '@/lib/github-project-actions';
+import { generateHTMLOnlyAction, generateEPUBForLocalImportAction, generatePDFOnlyAction } from '@/lib/publish-actions';
+import { listTxtFilesAction, deleteManuscriptOutputAction } from '@/lib/github-project-actions';
+import { useEnv } from '@/context/EnvContext';
+import { useLibraryStore } from '@/store/libraryStore';
 
 // File type configurations for UI display
 const INITIAL_PUBLISHING_STEPS: PublishingStep[] = [
@@ -31,6 +32,10 @@ const INITIAL_PUBLISHING_STEPS: PublishingStep[] = [
 export function usePublishingAssistant(
   currentProjectId: string | null
 ) {
+  // Get app service and library for local import
+  const { appService, envConfig } = useEnv();
+  const { library, updateBook } = useLibraryStore();
+
   const [state, setState] = useState<PublishingAssistantState>({
     isModalOpen: false,
     selectedManuscript: null,
@@ -44,9 +49,9 @@ export function usePublishingAssistant(
       generatedFiles: []
     },
     fileStates: {
-      html: { exists: false, isProcessing: false },
-      epub: { exists: false, isProcessing: false },
-      pdf: { exists: false, isProcessing: false }
+      html: { isProcessing: false, createdInSession: false },
+      epub: { isProcessing: false, createdInSession: false },
+      pdf: { isProcessing: false, createdInSession: false }
     }
   });
 
@@ -66,9 +71,9 @@ export function usePublishingAssistant(
         generatedFiles: []
       },
       fileStates: {
-        html: { exists: false, isProcessing: false },
-        epub: { exists: false, isProcessing: false },
-        pdf: { exists: false, isProcessing: false }
+        html: { isProcessing: false, createdInSession: false },
+        epub: { isProcessing: false, createdInSession: false },
+        pdf: { isProcessing: false, createdInSession: false }
       }
     }));
 
@@ -101,9 +106,9 @@ export function usePublishingAssistant(
         generatedFiles: []
       },
       fileStates: {
-        html: { exists: false, isProcessing: false },
-        epub: { exists: false, isProcessing: false },
-        pdf: { exists: false, isProcessing: false }
+        html: { isProcessing: false, createdInSession: false },
+        epub: { isProcessing: false, createdInSession: false },
+        pdf: { isProcessing: false, createdInSession: false }
       }
     }));
   }, []);
@@ -117,24 +122,6 @@ export function usePublishingAssistant(
       selectedManuscript: file,
       showFileSelector: false
     }));
-
-    // Check for existing manuscript files
-    try {
-      const existsResult = await checkManuscriptFilesExistAction(currentProjectId);
-      if (existsResult.success && existsResult.data) {
-        const data = existsResult.data;
-        setState(prev => ({
-          ...prev,
-          fileStates: {
-            html: { exists: data.html, isProcessing: false },
-            epub: { exists: data.epub, isProcessing: false },
-            pdf: { exists: data.pdf, isProcessing: false }
-          }
-        }));
-      }
-    } catch (error) {
-      console.error('Error checking file existence:', error);
-    }
   }, [currentProjectId]);
 
   // Reset to file selection
@@ -151,14 +138,15 @@ export function usePublishingAssistant(
         generatedFiles: []
       },
       fileStates: {
-        html: { exists: false, isProcessing: false },
-        epub: { exists: false, isProcessing: false },
-        pdf: { exists: false, isProcessing: false }
+        html: { isProcessing: false, createdInSession: false },
+        epub: { isProcessing: false, createdInSession: false },
+        pdf: { isProcessing: false, createdInSession: false }
       }
     }));
   }, []);
 
   // Individual file generation
+  // For EPUB: uploads to GitHub AND imports into local reader library
   const generateFile = useCallback(async (fileType: FileType) => {
     if (!state.selectedManuscript || !currentProjectId) return;
 
@@ -189,7 +177,45 @@ export function usePublishingAssistant(
           result = await generateHTMLOnlyAction(state.selectedManuscript.path, currentProjectId);
           break;
         case 'epub':
-          result = await generateEPUBOnlyAction(state.selectedManuscript.path, currentProjectId);
+          // EPUB: Upload to GitHub AND import into local reader library
+          const localResult = await generateEPUBForLocalImportAction(
+            state.selectedManuscript.path,
+            currentProjectId
+          );
+
+          if (!localResult.success || !localResult.data) {
+            throw new Error(localResult.error || 'Failed to generate EPUB');
+          }
+
+          // Convert base64 to Uint8Array (same pattern as useBookRepo)
+          const binaryString = atob(localResult.data.epubBase64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          // Create File object from the binary data
+          const epubFile = new File(
+            [bytes],
+            localResult.data.epubFilename,
+            { type: 'application/epub+zip' }
+          );
+
+          // Import into IndexedDB via appService (same as big + button)
+          if (!appService) {
+            throw new Error('App service not available');
+          }
+
+          const importedBook = await appService.importBook(epubFile, library);
+          if (!importedBook) {
+            throw new Error('Failed to import generated EPUB into library');
+          }
+
+          // Mark as downloaded and update library
+          importedBook.downloadedAt = Date.now();
+          await updateBook(envConfig, importedBook);
+
+          result = { success: true };
           break;
         case 'pdf':
           result = await generatePDFOnlyAction(state.selectedManuscript.path, currentProjectId);
@@ -203,8 +229,8 @@ export function usePublishingAssistant(
         fileStates: {
           ...prev.fileStates,
           [fileType]: {
-            exists: result.success,
             isProcessing: false,
+            createdInSession: result.success,
             error: result.error
           }
         }
@@ -223,7 +249,7 @@ export function usePublishingAssistant(
         }
       }));
     }
-  }, [state.selectedManuscript, currentProjectId]);
+  }, [state.selectedManuscript, currentProjectId, appService, envConfig, library, updateBook]);
 
   return {
     state,
