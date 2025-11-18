@@ -123,6 +123,9 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
             <p className='text-neutral-content text-sm'>{formatBytes(fileSize) || _('Unknown')}</p>
           </div>
         </div>
+        <div className='text-neutral-content text-xs font-mono break-all mb-2'>
+          {book.hash}
+        </div>
         <div>
           <span className='font-bold'>{_('Description')}</span>
           <p
