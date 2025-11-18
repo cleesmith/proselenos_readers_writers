@@ -1,6 +1,5 @@
 import clsx from 'clsx';
-import Image from 'next/image';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import { Book } from '@/types/book';
 import { LibraryCoverFitType, LibraryViewModeType } from '@/types/settings';
 import { formatAuthors, formatTitle } from '@/utils/book';
@@ -26,39 +25,55 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
     isPreview,
   }) => {
     const coverRef = useRef<HTMLDivElement>(null);
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
+    const [showFallback, setShowFallback] = useState(false);
 
-    const shouldShowSpine = showSpine && imageLoaded && !imageError;
-
-    const toggleImageVisibility = (showImage: boolean) => {
-      if (coverRef.current) {
-        const coverImage = coverRef.current.querySelector('.cover-image');
-        const fallbackCover = coverRef.current.querySelector('.fallback-cover');
-        if (coverImage) {
-          coverImage.classList.toggle('invisible', !showImage);
-        }
-        if (fallbackCover) {
-          fallbackCover.classList.toggle('invisible', showImage);
-        }
-      }
-    };
+    const coverUrl = book.metadata?.coverImageUrl || book.coverImageUrl;
+    const shouldShowSpine = showSpine && !showFallback;
 
     const handleImageLoad = () => {
-      setImageLoaded(true);
-      setImageError(false);
-      toggleImageVisibility(true);
+      setShowFallback(false);
     };
 
     const handleImageError = () => {
-      setImageLoaded(false);
-      setImageError(true);
-      toggleImageVisibility(false);
+      setShowFallback(true);
     };
 
-    useEffect(() => {
-      toggleImageVisibility(true);
-    }, [book.metadata?.coverImageUrl, book.coverImageUrl]);
+    // If no cover URL, show fallback immediately
+    if (!coverUrl || coverUrl.trim() === '') {
+      return (
+        <div className={clsx('book-cover-container relative flex h-full w-full', className)}>
+          <div
+            className={clsx(
+              'fallback-cover absolute inset-0 rounded-none p-2',
+              'text-white text-center font-serif font-medium',
+              'bg-[#00517b]',
+            )}
+          >
+            <div className='flex h-1/2 items-center justify-center'>
+              <span
+                className={clsx(
+                  isPreview ? 'line-clamp-2' : mode === 'grid' ? 'line-clamp-3' : 'line-clamp-2',
+                  isPreview ? 'text-[0.5em]' : mode === 'grid' ? 'text-lg' : 'text-sm',
+                )}
+              >
+                {formatTitle(book.title)}
+              </span>
+            </div>
+            <div className='h-1/6'></div>
+            <div className='flex h-1/3 items-center justify-center'>
+              <span
+                className={clsx(
+                  'text-white/70 line-clamp-1',
+                  isPreview ? 'text-[0.4em]' : mode === 'grid' ? 'text-base' : 'text-xs',
+                )}
+              >
+                {formatAuthors(book.author)}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -67,11 +82,15 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
       >
         {coverFit === 'crop' ? (
           <>
-            <Image
-              src={book.metadata?.coverImageUrl || book.coverImageUrl!}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverUrl}
               alt={book.title}
-              fill={true}
-              className={clsx('cover-image crop-cover-img object-cover', imageClassName)}
+              className={clsx(
+                'cover-image crop-cover-img object-cover absolute inset-0 w-full h-full',
+                imageClassName,
+                showFallback && 'hidden',
+              )}
               onLoad={handleImageLoad}
               onError={handleImageError}
             />
@@ -87,15 +106,14 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
             )}
           >
             <div className='relative inline-block'>
-              <Image
-                src={book.metadata?.coverImageUrl || book.coverImageUrl!}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={coverUrl}
                 alt={book.title}
-                width={0}
-                height={0}
-                sizes='100vw'
                 className={clsx(
                   'cover-image fit-cover-img h-auto max-h-full w-auto max-w-full shadow-md',
                   imageClassName,
+                  showFallback && 'hidden',
                 )}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
@@ -109,9 +127,10 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
 
         <div
           className={clsx(
-            'fallback-cover invisible absolute inset-0 rounded-none p-2',
-            'text-neutral-content text-center font-serif font-medium',
-            isPreview ? 'bg-base-200/50' : 'bg-base-100',
+            'fallback-cover absolute inset-0 rounded-none p-2',
+            'text-white text-center font-serif font-medium',
+            'bg-[#00517b]',
+            !showFallback && 'hidden',
           )}
         >
           <div className='flex h-1/2 items-center justify-center'>
@@ -128,7 +147,7 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
           <div className='flex h-1/3 items-center justify-center'>
             <span
               className={clsx(
-                'text-neutral-content/50 line-clamp-1',
+                'text-white/70 line-clamp-1',
                 isPreview ? 'text-[0.4em]' : mode === 'grid' ? 'text-base' : 'text-xs',
               )}
             >
@@ -141,8 +160,8 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
   },
   (prevProps, nextProps) => {
     return (
-      prevProps.book.coverImageUrl === nextProps.book.coverImageUrl &&
-      prevProps.book.metadata?.coverImageUrl === nextProps.book.metadata?.coverImageUrl &&
+      prevProps.book.title === nextProps.book.title &&
+      prevProps.book.author === nextProps.book.author &&
       prevProps.book.updatedAt === nextProps.book.updatedAt &&
       prevProps.mode === nextProps.mode &&
       prevProps.coverFit === nextProps.coverFit &&

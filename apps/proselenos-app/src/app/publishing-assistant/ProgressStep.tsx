@@ -6,9 +6,9 @@
 import { ProgressStepProps } from '@/lib/publishing-assistant/types';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
-export default function ProgressStep({ 
-  step, 
-  isActive, 
+export default function ProgressStep({
+  step,
+  isActive: _isActive, // Unused, kept for type compatibility
   theme,
   fileState,
   onAction
@@ -28,19 +28,15 @@ export default function ProgressStep({
   };
 
   return (
-    <div 
+    <div
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
         padding: '12px',
         marginBottom: '8px',
-        backgroundColor: isActive 
-          ? (theme.isDarkMode ? 'rgba(255, 193, 7, 0.1)' : 'rgba(255, 193, 7, 0.05)')
-          : 'transparent',
-        border: isActive 
-          ? '1px solid rgba(255, 193, 7, 0.3)'
-          : '1px solid transparent',
+        backgroundColor: 'transparent',
+        border: '1px solid transparent',
         borderRadius: '6px',
         transition: 'all 0.3s ease'
       }}
@@ -118,7 +114,9 @@ export default function ProgressStep({
               marginTop: '4px'
             }}
           >
-            ✓ File created successfully
+            {step.id === 'epub'
+              ? '✓ File created successfully - now available in ereader library'
+              : '✓ File created successfully'}
           </div>
         )}
       </div>
