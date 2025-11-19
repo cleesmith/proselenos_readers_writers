@@ -17,7 +17,6 @@ export const metadata = {
   title,
   description,
   generator: 'Next.js',
-  manifest: '/manifest.json',
   keywords: ['epub', 'pdf', 'ebook', 'reader', 'proselenosebooks', 'pwa'],
   authors: [
     {
@@ -54,7 +53,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name='apple-mobile-web-app-title' content='Proselenos' />
         <link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />
         <link rel='icon' href='/favicon.ico' />
-        <link rel='manifest' href='/manifest.json' />
         <meta name='description' content={description} />
         <meta property='og:url' content={url} />
         <meta property='og:type' content='website' />
