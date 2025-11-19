@@ -154,7 +154,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
 
   const switchToAuthorsMode = () => {
     setIsDropdownOpen?.(false);
-    router.push('/authors'); // Navigate to authors page
+    // router.push('/authors'); // Navigate to authors page
+
+    // open in a new tab ('_blank') instead of navigating in the current window
+    // window.open('/authors', '_blank');
+
+    // force the browser to reuse the existing tab if it's already open:
+    window.open('/authors', 'proselenos_authors_mode');
   };
 
   const handleSetSavedBookCoverForLockScreen = () => {

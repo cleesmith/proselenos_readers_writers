@@ -1,5 +1,6 @@
 // app/proselenos/proselenosHeader.tsx
-// Header Component
+
+// Header menu bar Component
 
 'use client';
 
@@ -52,7 +53,15 @@ export default function ProselenosHeader({
   const router = useRouter();
 
   const handleExitClick = () => {
-    router.push('/library'); // Navigate to library/ereader
+    // FIX: Robust check for the opener tab.
+    // 1. window.opener must exist (we were opened by another tab)
+    // 2. window.opener.closed must be FALSE (the original tab is still open)
+    if (window.opener && !window.opener.closed) {
+      window.close(); // Safe to close: The user will see the Library tab behind this one.
+    } else {
+      // If the user closed the Library tab, we navigate there instead of closing the app.
+      router.push('/library'); 
+    }
   };
 
   return (
