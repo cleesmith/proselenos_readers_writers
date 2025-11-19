@@ -59,8 +59,13 @@ export function useBookRepo() {
           throw new Error(result.error || 'Failed to download book');
         }
 
-        // 2. Use SHARED importer (Handles Base64 -> File -> IndexedDB -> Save Library)
-        await importEpubBase64(result.epubBase64, result.epubFilename);
+        // 2. Use SHARED importer with NO deduplication
+        // We want to treat downloaded books as specific editions/files
+        await importEpubBase64(
+          result.epubBase64, 
+          result.epubFilename,
+          { deduplicate: false } // <--- Explicitly disabled
+        );
 
         // 3. Remove from available list in UI
         setAvailableBooks((prev) => prev.filter((b) => b.hash !== book.hash));

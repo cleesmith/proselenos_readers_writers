@@ -184,11 +184,12 @@ export function usePublishingAssistant(
             throw new Error(localResult.error || 'Failed to generate EPUB');
           }
 
-          // 2. Use SHARED importer to save to Library
-          // This handles Base64 conversion -> File -> IndexedDB -> Save Library JSON
+          // 2. Import to Library with DEDUPLICATION enabled
+          // This ensures we replace the "old" draft with this "new" draft
           await importEpubBase64(
             localResult.data.epubBase64,
-            localResult.data.epubFilename
+            localResult.data.epubFilename,
+            { deduplicate: true } // <--- The Key Change
           );
 
           result = { success: true };

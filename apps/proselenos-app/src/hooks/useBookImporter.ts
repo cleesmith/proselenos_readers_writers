@@ -11,28 +11,49 @@ export function useBookImporter() {
 
   /**
    * Core logic to import a File object into IndexedDB and persist the library.
-   * This encapsulates the "dirty work" done by the Ereader.
+   * * @param file The EPUB file to import
+   * @param options Configuration options
+   * @param options.deduplicate If true, removes older non-identical books with the same Title & Author
    */
-  const importEpubFile = useCallback(async (file: File): Promise<Book> => {
+  const importEpubFile = useCallback(async (file: File, options: { deduplicate?: boolean } = {}): Promise<Book> => {
     if (!appService) throw new Error('App service not available');
 
-    // 1. Import into IndexedDB (extracts metadata, cover, creates config.json)
-    // Note: This mutates the passed 'library' array in memory
+    // 1. Import the NEW book into IndexedDB
     const importedBook = await appService.importBook(file, library);
 
     if (!importedBook) {
       throw new Error('Failed to import book');
     }
 
-    // 2. Persist the updated library metadata to IndexedDB (library.json)
+    // 2. OPTIONAL Deduplication (Only runs if requested)
+    if (options.deduplicate) {
+      // Find other books with the SAME Title & Author but DIFFERENT Hash
+      const duplicates = library.filter((b) => 
+        b.hash !== importedBook.hash && 
+        !b.deletedAt &&
+        b.title === importedBook.title &&
+        b.author === importedBook.author
+      );
+
+      if (duplicates.length > 0) {
+        console.log(`[Importer] Removing ${duplicates.length} older version(s) of "${importedBook.title}"`);
+        
+        // Delete the older versions
+        for (const duplicate of duplicates) {
+          await appService.deleteBook(duplicate, 'local');
+        }
+      }
+    }
+
+    // 3. Persist the updated library metadata
     await appService.saveLibraryBooks(library);
     
-    // 3. Update the store state so the UI reflects the new book immediately
+    // 4. Update the store state
     if (setLibrary) {
       setLibrary([...library]);
     }
 
-    // 4. Mark as downloaded and update book-specific metadata
+    // 5. Mark as downloaded and update book-specific metadata
     importedBook.downloadedAt = Date.now();
     await updateBook(envConfig, importedBook);
 
@@ -40,9 +61,9 @@ export function useBookImporter() {
   }, [appService, envConfig, library, updateBook, setLibrary]);
 
   /**
-   * Helper to handle Base64 strings (used by both Repo Download and Publishing Assistant)
+   * Helper to handle Base64 strings
    */
-  const importEpubBase64 = useCallback(async (base64Data: string, filename: string): Promise<Book> => {
+  const importEpubBase64 = useCallback(async (base64Data: string, filename: string, options: { deduplicate?: boolean } = {}): Promise<Book> => {
     // Convert Base64 to Byte Array
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
@@ -53,8 +74,8 @@ export function useBookImporter() {
     // Create File object
     const file = new File([bytes], filename, { type: 'application/epub+zip' });
 
-    // Delegate to main import function
-    return importEpubFile(file);
+    // Delegate to main import function with options
+    return importEpubFile(file, options);
   }, [importEpubFile]);
 
   return {
