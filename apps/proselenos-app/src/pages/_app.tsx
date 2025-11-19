@@ -13,13 +13,13 @@ function MyApp({ Component, pageProps }: AppProps) {
           name='viewport'
           content='minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover'
         />
-        <meta name='application-name' content='Proselenosebooks' />
+        <meta name='application-name' content='Proselenos' />
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
-        <meta name='apple-mobile-web-app-title' content='Proselenosebooks' />
+        <meta name='apple-mobile-web-app-title' content='Proselenos' />
         <meta
           name='description'
-          content='Proselenosebooks is an open-source eBook reader supporting EPUB, PDF, and sync across devices.'
+          content='Proselenos is an open-source eBook reader and an AI assistant for editing, writing, and publishing manuscripts.'
         />
         <meta name='format-detection' content='telephone=no' />
         <meta name='mobile-web-app-capable' content='yes' />

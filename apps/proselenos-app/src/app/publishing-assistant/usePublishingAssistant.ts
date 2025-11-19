@@ -4,8 +4,7 @@ import { useState, useCallback } from 'react';
 import { PublishingAssistantState, FileType, PublishingStep } from '@/lib/publishing-assistant/types';
 import { generateHTMLOnlyAction, generateEPUBForLocalImportAction, generatePDFOnlyAction } from '@/lib/publish-actions';
 import { listTxtFilesAction, deleteManuscriptOutputAction } from '@/lib/github-project-actions';
-import { useEnv } from '@/context/EnvContext';
-import { useLibraryStore } from '@/store/libraryStore';
+import { useBookImporter } from '@/hooks/useBookImporter';
 
 // File type configurations for UI display
 const INITIAL_PUBLISHING_STEPS: PublishingStep[] = [
@@ -32,9 +31,8 @@ const INITIAL_PUBLISHING_STEPS: PublishingStep[] = [
 export function usePublishingAssistant(
   currentProjectId: string | null
 ) {
-  // Get app service and library for local import
-  const { appService, envConfig } = useEnv();
-  const { library, updateBook } = useLibraryStore();
+  // Use the shared importer hook
+  const { importEpubBase64 } = useBookImporter();
 
   const [state, setState] = useState<PublishingAssistantState>({
     isModalOpen: false,
@@ -146,7 +144,6 @@ export function usePublishingAssistant(
   }, []);
 
   // Individual file generation
-  // For EPUB: uploads to GitHub AND imports into local reader library
   const generateFile = useCallback(async (fileType: FileType) => {
     if (!state.selectedManuscript || !currentProjectId) return;
 
@@ -177,7 +174,7 @@ export function usePublishingAssistant(
           result = await generateHTMLOnlyAction(state.selectedManuscript.path, currentProjectId);
           break;
         case 'epub':
-          // EPUB: Upload to GitHub AND import into local reader library
+          // 1. Generate EPUB on server (returns base64)
           const localResult = await generateEPUBForLocalImportAction(
             state.selectedManuscript.path,
             currentProjectId
@@ -187,33 +184,12 @@ export function usePublishingAssistant(
             throw new Error(localResult.error || 'Failed to generate EPUB');
           }
 
-          // Convert base64 to Uint8Array (same pattern as useBookRepo)
-          const binaryString = atob(localResult.data.epubBase64);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-
-          // Create File object from the binary data
-          const epubFile = new File(
-            [bytes],
-            localResult.data.epubFilename,
-            { type: 'application/epub+zip' }
+          // 2. Use SHARED importer to save to Library
+          // This handles Base64 conversion -> File -> IndexedDB -> Save Library JSON
+          await importEpubBase64(
+            localResult.data.epubBase64,
+            localResult.data.epubFilename
           );
-
-          // Import into IndexedDB via appService (same as big + button)
-          if (!appService) {
-            throw new Error('App service not available');
-          }
-
-          const importedBook = await appService.importBook(epubFile, library);
-          if (!importedBook) {
-            throw new Error('Failed to import generated EPUB into library');
-          }
-
-          // Mark as downloaded and update library
-          importedBook.downloadedAt = Date.now();
-          await updateBook(envConfig, importedBook);
 
           result = { success: true };
           break;
@@ -249,7 +225,7 @@ export function usePublishingAssistant(
         }
       }));
     }
-  }, [state.selectedManuscript, currentProjectId, appService, envConfig, library, updateBook]);
+  }, [state.selectedManuscript, currentProjectId, importEpubBase64]);
 
   return {
     state,
