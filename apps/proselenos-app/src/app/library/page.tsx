@@ -121,7 +121,16 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     },
   });
 
-  // No Desktop - removed update checking and screen orientation locking
+  // Clear the window name on mount. 
+  // If this tab was previously the "Authors" tab (navigated here via Exit),
+  // we must clear the name 'proselenos_authors_mode'.
+  // This ensures that clicking "Authors" again spawns a NEW tab instead of reusing this one.
+  useEffect(() => {
+    if (window.name === 'proselenos_authors_mode') {
+      // console.log('Clearing sticky window name to restore separate tab behavior');
+      window.name = '';
+    }
+  }, []);
 
   const handleRefreshLibrary = useCallback(async () => {
     const appService = await envConfig.getAppService();
