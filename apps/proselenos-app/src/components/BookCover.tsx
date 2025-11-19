@@ -1,3 +1,5 @@
+// apps/proselenos-app/src/components/BookCover.tsx
+
 import clsx from 'clsx';
 import { memo, useRef, useState } from 'react';
 import { Book } from '@/types/book';
@@ -25,9 +27,17 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
     isPreview,
   }) => {
     const coverRef = useRef<HTMLDivElement>(null);
-    const [showFallback, setShowFallback] = useState(false);
+    
+    // FIX: Ensure coverUrl is strictly 'string | undefined' (never null).
+    // The '|| undefined' converts any falsy value (null, empty string) to undefined.
+    const coverUrl = book.metadata?.coverImageUrl || book.coverImageUrl || undefined;
 
-    const coverUrl = book.metadata?.coverImageUrl || book.coverImageUrl;
+    // Check URL validity.
+    const hasValidCoverUrl = coverUrl && coverUrl.trim().length > 0 && coverUrl !== 'undefined' && coverUrl !== 'null';
+    
+    // Initialize state based on whether we have a valid URL
+    const [showFallback, setShowFallback] = useState(!hasValidCoverUrl);
+
     const shouldShowSpine = showSpine && !showFallback;
 
     const handleImageLoad = () => {
@@ -38,8 +48,8 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
       setShowFallback(true);
     };
 
-    // If no cover URL, show fallback immediately
-    if (!coverUrl || coverUrl.trim() === '') {
+    // 1. If we know there is no valid cover, render the fallback directly.
+    if (showFallback) {
       return (
         <div className={clsx('book-cover-container relative flex h-full w-full', className)}>
           <div
@@ -75,6 +85,7 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
       );
     }
 
+    // 2. If we have a URL, render the image.
     return (
       <div
         ref={coverRef}
@@ -124,7 +135,8 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
             </div>
           </div>
         )}
-
+        
+        {/* Render hidden fallback for DOM consistency if image errors out later */}
         <div
           className={clsx(
             'fallback-cover absolute inset-0 rounded-none p-2',

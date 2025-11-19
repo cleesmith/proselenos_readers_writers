@@ -25,7 +25,7 @@ const ImportMenu: React.FC<ImportMenuProps> = ({ setIsDropdownOpen, onImportBook
         appService?.isMobile ? 'no-triangle' : 'dropdown-center',
       )}
     >
-      <MenuItem label={_('From Local File')} onClick={handleImportBooks} />
+      <MenuItem label={_('Upload File')} onClick={handleImportBooks} />
     </Menu>
   );
 };

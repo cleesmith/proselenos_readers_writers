@@ -1,3 +1,5 @@
+// apps/proselenos-app/src/services/appService.ts
+
 import { v4 as uuidv4 } from 'uuid';
 import { SystemSettings } from '@/types/settings';
 import {
@@ -513,6 +515,13 @@ export abstract class BaseAppService implements AppService {
   }
 
   async generateCoverImageUrl(book: Book): Promise<string> {
+    // FIX: Check if the cover file exists before generating a URL.
+    // This prevents "blob:..." URLs for non-existent covers, which cause 404s.
+    const coverExists = await this.fs.exists(getCoverFilename(book), 'Books');
+    if (!coverExists) {
+      return '';
+    }
+    
     return this.appPlatform === 'web'
       ? await this.getCoverImageBlobUrl(book)
       : this.getCoverImageUrl(book);
