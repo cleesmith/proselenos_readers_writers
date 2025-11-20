@@ -5,11 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "pnpm --filter @proselenosebooks/proselenos-app dev",
-    "dev-web": "pnpm --filter @proselenosebooks/proselenos-app dev-web",
     "build": "pnpm --filter @proselenosebooks/proselenos-app build",
-    "build-web": "pnpm --filter @proselenosebooks/proselenos-app build-web",
     "start": "pnpm --filter @proselenosebooks/proselenos-app start",
-    "start-web": "pnpm --filter @proselenosebooks/proselenos-app start-web",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "check": "pnpm lint && pnpm typecheck"
