@@ -33,6 +33,7 @@ import { useBookUpload } from '@/hooks/useBookUpload';
 
 import { BookMetadata } from '@/libs/document';
 import { ensureGitHubRepo } from '@/app/actions/github-books';
+import { generateStandardEbookAction } from '@/app/actions/standard-ebooks';
 import { AboutWindow } from '@/components/AboutWindow';
 import { BookDetailModal } from '@/components/metadata';
 import { useDragDropImport } from './hooks/useDragDropImport';
@@ -79,6 +80,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUrlValue, setImportUrlValue] = useState('');
   const [isImportingFromUrl, setIsImportingFromUrl] = useState(false);
+  const [standardEbooksUrl, setStandardEbooksUrl] = useState('');
+  const [isImportingFromStandardEbooks, setIsImportingFromStandardEbooks] = useState(false);
   const [booksTransferProgress, _setBooksTransferProgress] = useState<{
     [key: string]: number | null;
   }>({});
@@ -588,6 +591,75 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     }
   };
 
+  const handleImportFromStandardEbooks = async () => {
+    const url = standardEbooksUrl.trim();
+    if (!url) {
+      eventDispatcher.dispatch('toast', {
+        type: 'error',
+        message: _('Please enter a GitHub URL'),
+      });
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      const urlObj = new URL(url);
+      if (!urlObj.hostname.includes('github.com')) {
+        throw new Error('Not a GitHub URL');
+      }
+    } catch {
+      eventDispatcher.dispatch('toast', {
+        type: 'error',
+        message: _('Invalid GitHub URL format'),
+      });
+      return;
+    }
+
+    setIsImportingFromStandardEbooks(true);
+
+    try {
+      // Call the server action to generate the EPUB
+      const result = await generateStandardEbookAction(url);
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Failed to generate EPUB');
+      }
+
+      // Convert base64 to blob
+      const binaryString = atob(result.data.base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/epub+zip' });
+
+      // Create File object from blob
+      const file = new File([blob], result.data.filename, { type: 'application/epub+zip' });
+
+      // Close modal and import
+      setShowImportModal(false);
+      setStandardEbooksUrl('');
+
+      const groupId = searchParams?.get('group') || '';
+      await importBooks([{ file }], groupId);
+
+      eventDispatcher.dispatch('toast', {
+        type: 'info',
+        message: _('Standard Ebooks book generated and imported successfully'),
+      });
+    } catch (error) {
+      console.error('Failed to import from Standard Ebooks:', error);
+      eventDispatcher.dispatch('toast', {
+        type: 'error',
+        message: _('Failed to generate book: {{error}}', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      });
+    } finally {
+      setIsImportingFromStandardEbooks(false);
+    }
+  };
+
   const handleSetSelectMode = (selectMode: boolean) => {
     // No Desktop - haptic feedback removed
     setIsSelectMode(selectMode);
@@ -731,6 +803,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         onClose={() => {
           setShowImportModal(false);
           setImportUrlValue('');
+          setStandardEbooksUrl('');
         }}
         title={_('Import Book')}
       >
@@ -784,6 +857,44 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
                 </>
               ) : (
                 _('Download and Import')
+              )}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className='divider'>{_('OR')}</div>
+
+          {/* Standard Ebooks Import */}
+          <div className='flex flex-col gap-2'>
+            <h3 className='text-lg font-semibold'>{_('From Standard Ebooks')}</h3>
+            <p className='text-sm text-base-content/70'>
+              {_('Generate EPUB from Standard Ebooks GitHub repository')}
+            </p>
+            <input
+              type='url'
+              placeholder='https://github.com/standardebooks/herman-melville_moby-dick'
+              className='input input-bordered w-full'
+              value={standardEbooksUrl}
+              onChange={(e) => setStandardEbooksUrl(e.target.value)}
+              disabled={isImportingFromStandardEbooks}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isImportingFromStandardEbooks) {
+                  handleImportFromStandardEbooks();
+                }
+              }}
+            />
+            <button
+              className='btn btn-primary'
+              onClick={handleImportFromStandardEbooks}
+              disabled={isImportingFromStandardEbooks || !standardEbooksUrl.trim()}
+            >
+              {isImportingFromStandardEbooks ? (
+                <>
+                  <span className='loading loading-spinner'></span>
+                  {_('Generating...')}
+                </>
+              ) : (
+                _('Generate and Import')
               )}
             </button>
           </div>
