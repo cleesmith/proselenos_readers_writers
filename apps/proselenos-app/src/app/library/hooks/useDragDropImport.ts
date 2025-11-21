@@ -1,3 +1,5 @@
+// apps/proselenos-app/src/app/library/hooks/useDragDropImport.ts
+
 import { useEffect, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { impactFeedback, getCurrentWebview } from '@/utils/desktop-stubs';
