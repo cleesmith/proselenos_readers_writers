@@ -1,4 +1,3 @@
-import { getUserLocale } from '@/utils/misc';
 import { TTSClient, TTSMessageEvent } from './TTSClient';
 import { EdgeSpeechTTS, EdgeTTSPayload } from '@/libs/edgeTTS';
 import { parseSSMLMarks } from '@/utils/ssml';
@@ -263,11 +262,10 @@ export class EdgeTTSClient implements TTSClient {
   }
 
   async getVoices(lang: string) {
-    const locale = lang === 'en' ? getUserLocale(lang) || lang : lang;
     const voices = await this.getAllVoices();
-    const filteredVoices = voices.filter(
-      (v) => v.lang.startsWith(locale) || (lang === 'en' && ['en-US', 'en-GB'].includes(v.lang)),
-    );
+    // Normalize English variants (en-US, en-GB, etc.) to just 'en' to show all English voices
+    const baseLang = lang.startsWith('en-') ? 'en' : lang;
+    const filteredVoices = voices.filter((v) => v.lang.startsWith(baseLang));
 
     const voicesGroup: TTSVoicesGroup = {
       id: 'edge-tts',
