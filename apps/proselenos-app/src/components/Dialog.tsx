@@ -202,8 +202,8 @@ const Dialog: React.FC<DialogProps> = ({
           'modal-box settings-content absolute z-20 flex flex-col rounded-none rounded-tl-2xl rounded-tr-2xl p-0 sm:rounded-2xl',
           'h-full max-h-full w-full max-w-full',
           window.innerWidth < window.innerHeight
-            ? 'sm:h-[50%] sm:w-3/4'
-            : 'sm:h-[65%] sm:w-1/2 sm:max-w-[600px]',
+            ? 'sm:h-[75%] sm:w-3/4'
+            : 'sm:h-[85%] sm:w-1/2 sm:max-w-[600px]',
           boxClassName,
         )}
         style={{
