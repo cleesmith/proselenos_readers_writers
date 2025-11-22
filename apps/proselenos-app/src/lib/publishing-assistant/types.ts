@@ -51,6 +51,7 @@ export interface PublishingAssistantState {
     epub: FileState;
     pdf: FileState;
   };
+  publishToStore: boolean;
 }
 
 export interface PublishingAssistantModalProps {

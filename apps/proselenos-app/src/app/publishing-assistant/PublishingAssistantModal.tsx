@@ -211,14 +211,44 @@ export default function PublishingAssistantModal({
                   };
 
                   return (
-                    <ProgressStep
-                      key={step.id}
-                      step={step}
-                      isActive={index === state.progress.currentStep}
-                      theme={theme}
-                      fileState={getFileState()}
-                      onAction={getOnAction()}
-                    />
+                    <div key={step.id}>
+                      <ProgressStep
+                        step={step}
+                        isActive={index === state.progress.currentStep}
+                        theme={theme}
+                        fileState={getFileState()}
+                        onAction={getOnAction()}
+                      />
+                      {/* Show bookstore checkbox after EPUB step */}
+                      {step.id === 'epub' && (
+                        <div
+                          style={{
+                            padding: '4px 4px',
+                            marginLeft: '20px',
+                            marginTop: '-10px',
+                            marginBottom: '8px',
+                            border: '1px solid #FF8C00',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            cursor: 'pointer'
+                          }}
+                          onClick={actions.togglePublishToStore}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={state.publishToStore}
+                            onChange={() => actions.togglePublishToStore()}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                          />
+                          <span style={{ fontSize: '13px', color: theme.text, cursor: 'pointer' }}>
+                            List EPUB in Bookstore
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

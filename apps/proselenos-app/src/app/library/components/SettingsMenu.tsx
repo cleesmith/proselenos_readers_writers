@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { PiUserCircleCheck, PiGear, PiSignIn, PiPencil } from 'react-icons/pi';
+import { PiUserCircleCheck, PiGear, PiSignIn, PiPencil, PiStorefront } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
 import { VscRepo } from 'react-icons/vsc';
@@ -163,6 +163,11 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
     window.open('/authors', 'proselenos_authors_mode');
   };
 
+  const openBookstore = () => {
+    setIsDropdownOpen?.(false);
+    router.push('/store');
+  };
+
   const handleSetSavedBookCoverForLockScreen = () => {
     const newValue = settings.savedBookCoverForLockScreen ? '' : 'default';
     saveSysSettings(envConfig, 'savedBookCoverForLockScreen', newValue);
@@ -274,6 +279,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
           onClick={toggleAlwaysShowStatusBar}
         />
       )}
+      <MenuItem
+        label={_('Bookstore')}
+        description={_('browse and import free ebooks')}
+        Icon={PiStorefront}
+        buttonClass='bg-green-600/20 hover:!bg-green-600/30'
+        onClick={openBookstore}
+      />
       <MenuItem
         label={_('Keep Screen Awake')}
         toggled={isScreenWakeLock}

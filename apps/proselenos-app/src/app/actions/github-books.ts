@@ -3,6 +3,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { ensureUserRepoExists } from '@/libs/book-storage';
+import { ensureLibraryRepoExists } from '@/app/actions/store-catalog';
 
 /**
  * Ensure the authenticated user has a GitHub repo for their ebooks
@@ -36,6 +37,9 @@ export async function ensureGitHubRepo(): Promise<{
 
     // Ensure repo exists (creates if needed)
     const result = await ensureUserRepoExists(userId);
+
+    // Ensure the public bookstore repo exists
+    await ensureLibraryRepoExists();
 
     return {
       success: true,

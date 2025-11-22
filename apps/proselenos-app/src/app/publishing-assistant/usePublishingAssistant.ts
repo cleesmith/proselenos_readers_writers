@@ -3,8 +3,9 @@
 import { useState, useCallback } from 'react';
 import { PublishingAssistantState, FileType, PublishingStep } from '@/lib/publishing-assistant/types';
 import { generateHTMLOnlyAction, generateEPUBForLocalImportAction, generatePDFOnlyAction } from '@/lib/publish-actions';
-import { listTxtFilesAction, deleteManuscriptOutputAction } from '@/lib/github-project-actions';
+import { listTxtFilesAction, deleteManuscriptOutputAction, loadBookMetadataAction } from '@/lib/github-project-actions';
 import { useBookImporter } from '@/hooks/useBookImporter';
+import { publishToPublicCatalog, removeFromPublicCatalog } from '@/app/actions/store-catalog';
 
 // File type configurations for UI display
 const INITIAL_PUBLISHING_STEPS: PublishingStep[] = [
@@ -50,7 +51,8 @@ export function usePublishingAssistant(
       html: { isProcessing: false, createdInSession: false },
       epub: { isProcessing: false, createdInSession: false },
       pdf: { isProcessing: false, createdInSession: false }
-    }
+    },
+    publishToStore: false
   });
 
   // Open modal and load manuscript files
@@ -143,6 +145,11 @@ export function usePublishingAssistant(
     }));
   }, []);
 
+  // Toggle publish to store option
+  const togglePublishToStore = useCallback(() => {
+    setState(prev => ({ ...prev, publishToStore: !prev.publishToStore }));
+  }, []);
+
   // Individual file generation
   const generateFile = useCallback(async (fileType: FileType) => {
     if (!state.selectedManuscript || !currentProjectId) return;
@@ -186,11 +193,35 @@ export function usePublishingAssistant(
 
           // 2. Import to Library with DEDUPLICATION enabled
           // This ensures we replace the "old" draft with this "new" draft
-          await importEpubBase64(
+          const importedBook = await importEpubBase64(
             localResult.data.epubBase64,
             localResult.data.epubFilename,
-            { deduplicate: true } // <--- The Key Change
+            { deduplicate: true }
           );
+
+          // 3. Handle bookstore listing based on checkbox state
+          if (state.publishToStore && importedBook) {
+            // Publish to the public catalog
+            let description = '';
+            try {
+              const metadataResult = await loadBookMetadataAction(currentProjectId);
+              if (metadataResult.success && metadataResult.data?.aboutAuthor) {
+                description = metadataResult.data.aboutAuthor;
+              }
+            } catch {
+              // Continue without description if metadata load fails
+            }
+
+            await publishToPublicCatalog(currentProjectId, {
+              hash: importedBook.hash,
+              title: importedBook.title,
+              author: importedBook.author,
+              description
+            });
+          } else {
+            // Remove from catalog if it exists (checkbox unchecked)
+            await removeFromPublicCatalog(currentProjectId);
+          }
 
           result = { success: true };
           break;
@@ -226,7 +257,7 @@ export function usePublishingAssistant(
         }
       }));
     }
-  }, [state.selectedManuscript, currentProjectId, importEpubBase64]);
+  }, [state.selectedManuscript, state.publishToStore, currentProjectId, importEpubBase64]);
 
   return {
     state,
@@ -235,6 +266,7 @@ export function usePublishingAssistant(
       closeModal,
       selectManuscript,
       resetToFileSelection,
+      togglePublishToStore,
       generateFile
     }
   };

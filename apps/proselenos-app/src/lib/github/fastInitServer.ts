@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { getProselenosConfig } from '@/lib/github-config-storage';
 import { ensureUserRepoExists, listFiles } from '@/lib/github-storage';
+import { ensureLibraryRepoExists } from '@/app/actions/store-catalog';
 
 export type Config = {
   settings: {
@@ -58,6 +59,9 @@ export async function fastInitForUser(): Promise<InitPayloadForClient> {
 
     // Ensure user's GitHub repo exists
     await ensureUserRepoExists(userId, 'proselenos', 'Proselenos user storage');
+
+    // Ensure the public library repo exists
+    await ensureLibraryRepoExists();
 
     // Load config and all files in parallel
     const [config, allFiles] = await Promise.all([

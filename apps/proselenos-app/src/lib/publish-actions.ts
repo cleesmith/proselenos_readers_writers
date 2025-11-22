@@ -676,6 +676,14 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Convert markdown links [text](url) to HTML <a> tags
+ * Applied after escapeHtml since markdown links don't contain <>
+ */
+function processMarkdownLinks(text: string): string {
+  return text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
+}
+
 function countWords(text: string): number {
   return text.split(/\s+/).filter(word => word.length > 0).length;
 }
@@ -861,7 +869,7 @@ ${tocItems}
  */
 function createChapterHTML(chapter: Chapter, _metadata: any): string {
   const paragraphs = chapter.content
-    .map(p => `    <p>${escapeHtml(p)}</p>`)
+    .map(p => `    <p>${processMarkdownLinks(escapeHtml(p))}</p>`)
     .join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>

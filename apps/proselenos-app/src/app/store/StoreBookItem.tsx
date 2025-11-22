@@ -1,0 +1,125 @@
+'use client';
+
+import { useState } from 'react';
+import clsx from 'clsx';
+import { FaBookOpen } from 'react-icons/fa';
+import { Book } from '@/types/book';
+import { StoreEntry, importBookFromStore } from '@/app/actions/store-catalog';
+import { useEnv } from '@/context/EnvContext';
+import BookCover from '@/components/BookCover';
+
+interface StoreBookItemProps {
+  entry: StoreEntry;
+}
+
+export default function StoreBookItem({ entry }: StoreBookItemProps) {
+  const { appService } = useEnv();
+  const [isImporting, setIsImporting] = useState(false);
+
+  // Map StoreEntry to Book shape for BookCover component
+  const pseudoBook: Book = {
+    hash: entry.bookHash,
+    format: 'EPUB',
+    title: entry.title,
+    author: entry.author,
+    createdAt: entry.publishedAt,
+    updatedAt: entry.updatedAt,
+  };
+
+  // Format published date
+  const publishedDate = new Date(entry.publishedAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  const handleImport = async () => {
+    if (isImporting) return;
+
+    setIsImporting(true);
+    try {
+      const result = await importBookFromStore(entry.bookHash);
+
+      if (result.success && result.data) {
+        const { epubData, filename } = result.data;
+        const file = new File([epubData], filename, { type: 'application/epub+zip' });
+
+        if (appService) {
+          const library = await appService.loadLibraryBooks();
+          await appService.importBook(file, library);
+          await appService.saveLibraryBooks(library);
+        }
+
+        window.location.href = '/library';
+      } else {
+        console.error('Failed to import book:', result.error);
+      }
+    } catch (error) {
+      console.error('Error importing book:', error);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  return (
+    <div className='group relative flex h-full flex-col px-0 py-4 sm:px-4'>
+      <div
+        className={clsx(
+          'relative flex aspect-[28/41] justify-center',
+          'overflow-visible shadow-md items-end cursor-pointer'
+        )}
+      >
+        <BookCover mode="grid" book={pseudoBook} coverFit="crop" showSpine={false} />
+
+        {/* Centered book icon (always visible) */}
+        <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
+          <div className='bg-black/30 rounded-full p-3'>
+            <FaBookOpen className='text-white/80 text-2xl' />
+          </div>
+        </div>
+
+        {/* Hover overlay - expands beyond cover */}
+        <div
+          className={clsx(
+            'absolute -inset-2 bg-black/90 rounded-lg flex flex-col justify-between p-4 z-20',
+            'opacity-0 group-hover:opacity-100 transition-opacity duration-200',
+            'min-w-[140px]'
+          )}
+          onClick={handleImport}
+        >
+          {/* Title by Author */}
+          <div className='flex-1 flex items-center'>
+            <p className='text-white text-sm font-medium leading-tight'>
+              &ldquo;{entry.title}&rdquo;
+              <span className='text-white/70 font-normal'> by {entry.author}</span>
+            </p>
+          </div>
+
+          {/* Published date */}
+          <div className='text-white/60 text-[10px] mt-2'>
+            Published: {publishedDate}
+          </div>
+
+          {/* Import button */}
+          <button
+            className={clsx(
+              'mt-2 w-full py-1.5 rounded text-xs font-medium',
+              'bg-green-600 hover:bg-green-500 text-white',
+              'transition-colors duration-150'
+            )}
+            disabled={isImporting}
+          >
+            {isImporting ? 'Importing...' : 'Import to Library'}
+          </button>
+        </div>
+
+        {/* Loading spinner overlay */}
+        {isImporting && (
+          <div className='absolute inset-0 flex items-center justify-center bg-black/50 z-10'>
+            <span className='loading loading-spinner loading-md text-white'></span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
