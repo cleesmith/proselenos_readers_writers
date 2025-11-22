@@ -18,6 +18,7 @@ export interface StoreEntry {
   ownerId: string;
   publishedAt: number;
   updatedAt: number;
+  coverColor?: string;  // muted background color for cover, e.g. "#4a5568"
 }
 
 // Catalog is just an array of StoreEntry
@@ -26,6 +27,55 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+/**
+ * Generate a muted color from ownerId and bookHash
+ * Same author's books get similar colors (same hue family)
+ * Different books by same author get slight variations
+ */
+function generateMutedColor(ownerId: string, bookHash: string): string {
+  // Author's base hue from Google ID
+  let ownerNum = 0;
+  for (let i = 0; i < ownerId.length; i++) {
+    ownerNum = ((ownerNum << 5) - ownerNum + ownerId.charCodeAt(i)) | 0;
+  }
+  const baseHue = Math.abs(ownerNum) % 360;
+
+  // Book variation from hash (±15°)
+  let bookNum = 0;
+  for (let i = 0; i < bookHash.length; i++) {
+    bookNum = ((bookNum << 5) - bookNum + bookHash.charCodeAt(i)) | 0;
+  }
+  const variation = (Math.abs(bookNum) % 31) - 15;
+  const hue = (baseHue + variation + 360) % 360;
+
+  // Saturation: 35-45% (muted)
+  const saturation = 35 + (Math.abs(bookNum) % 11);
+  // Lightness: 28-38% (dark enough for white text)
+  const lightness = 28 + (Math.abs(bookNum) % 11);
+
+  // Convert HSL to hex
+  const h = hue / 360;
+  const s = saturation / 100;
+  const l = lightness / 100;
+
+  const hueToRgb = (p: number, q: number, t: number) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p) * 6 * t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
+  };
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const r = Math.round(hueToRgb(p, q, h + 1/3) * 255);
+  const g = Math.round(hueToRgb(p, q, h) * 255);
+  const b = Math.round(hueToRgb(p, q, h - 1/3) * 255);
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 /**
@@ -157,6 +207,7 @@ export async function publishToPublicCatalog(
       ownerId: userId,
       publishedAt: existingEntry ? existingEntry.publishedAt : now,
       updatedAt: now,
+      coverColor: generateMutedColor(userId, bookData.hash),
     };
 
     if (existingEntry) {

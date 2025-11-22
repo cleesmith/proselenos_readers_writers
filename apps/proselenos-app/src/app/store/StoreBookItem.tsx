@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { FaBookOpen } from 'react-icons/fa';
-import { Book } from '@/types/book';
 import { StoreEntry, importBookFromStore } from '@/app/actions/store-catalog';
 import { useEnv } from '@/context/EnvContext';
-import BookCover from '@/components/BookCover';
 
 interface StoreBookItemProps {
   entry: StoreEntry;
@@ -16,22 +14,15 @@ export default function StoreBookItem({ entry }: StoreBookItemProps) {
   const { appService } = useEnv();
   const [isImporting, setIsImporting] = useState(false);
 
-  // Map StoreEntry to Book shape for BookCover component
-  const pseudoBook: Book = {
-    hash: entry.bookHash,
-    format: 'EPUB',
-    title: entry.title,
-    author: entry.author,
-    createdAt: entry.publishedAt,
-    updatedAt: entry.updatedAt,
-  };
-
   // Format published date
   const publishedDate = new Date(entry.publishedAt).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
+
+  // Cover background color: use stored color or fallback to blue
+  const coverBgColor = entry.coverColor || '#00517b';
 
   const handleImport = async () => {
     if (isImporting) return;
@@ -69,7 +60,18 @@ export default function StoreBookItem({ entry }: StoreBookItemProps) {
           'overflow-visible shadow-md items-end cursor-pointer'
         )}
       >
-        <BookCover mode="grid" book={pseudoBook} coverFit="crop" showSpine={false} />
+        {/* Custom colored background for cover */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-between p-3 text-center"
+          style={{ backgroundColor: coverBgColor }}
+        >
+          <span className="text-white font-serif text-sm font-semibold leading-tight line-clamp-3">
+            {entry.title}
+          </span>
+          <span className="text-white/80 text-xs line-clamp-2">
+            {entry.author}
+          </span>
+        </div>
 
         {/* Centered book icon (always visible) */}
         <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
