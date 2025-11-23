@@ -200,6 +200,59 @@ export async function logUserRepo(userId: string, repoName: string): Promise<voi
 }
 
 /**
+ * Update user info in master tracking on sign in
+ */
+export async function updateUserRepoInfo(
+  userId: string,
+  userInfo: {
+    name?: string | null;
+    email?: string | null;
+  }
+): Promise<void> {
+  // Ensure master repo and file exist
+  await ensureMasterRepoExists();
+  await ensureFileExists(USER_REPOS_FILE);
+
+  // Read current data
+  const { data, sha } = await readJsonFile<UserReposData>(USER_REPOS_FILE);
+
+  // Find user's repo entry
+  const existingRepo = data.repos.find((repo) => repo.userId === userId);
+
+  if (!existingRepo) {
+    // User not found in master tracker - they may not have a repo yet
+    return;
+  }
+
+  // Update the user's entry with new info
+  const updatedRepos = data.repos.map((repo) =>
+    repo.userId === userId
+      ? {
+          userId: repo.userId,
+          repoName: repo.repoName,
+          createdAt: repo.createdAt,
+          user_name: userInfo.name || repo.user_name,
+          user_email: userInfo.email || repo.user_email,
+          last_sign_in: new Date().toISOString(),
+        }
+      : repo
+  );
+
+  const updatedData: UserReposData = {
+    ...data,
+    repos: updatedRepos,
+  };
+
+  // Write back
+  await writeJsonFile(
+    USER_REPOS_FILE,
+    updatedData,
+    `Update user info: ${userId}`,
+    sha,
+  );
+}
+
+/**
  * Log a book upload to master tracking (with deduplication)
  */
 export async function logBook(book: { hash: string; title: string }): Promise<boolean> {

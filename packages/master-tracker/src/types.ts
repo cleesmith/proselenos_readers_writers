@@ -5,6 +5,10 @@ export interface UserRepo {
   userId: string;
   repoName: string;
   createdAt: string;
+  // Google SSO user info (added on sign in)
+  user_name?: string;
+  user_email?: string;
+  last_sign_in?: string;
 }
 
 /**

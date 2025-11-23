@@ -40,7 +40,7 @@ export default function StoreContent({ entries }: StoreContentProps) {
           onClick={handleBack}
           className='btn btn-ghost btn-sm'
         >
-          ← Back
+          ← Library
         </button>
         <h1 className='text-lg font-bold'>Bookstore</h1>
         <div className='w-16' /> {/* Spacer for centering */}

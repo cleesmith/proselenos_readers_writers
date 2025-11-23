@@ -2,4 +2,4 @@
 export type { UserRepo, UserReposData, BookEntry, BooksData } from './types';
 
 // Function exports
-export { logUserRepo, logBook } from './tracker';
+export { logUserRepo, logBook, updateUserRepoInfo } from './tracker';

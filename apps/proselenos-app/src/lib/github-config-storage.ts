@@ -15,6 +15,11 @@ export interface ProselenosConfig {
   selectedAiModel: string;
   author_name: string;
   isDarkMode?: boolean;
+  // Google SSO user info (added on sign in)
+  user_name?: string;
+  user_email?: string;
+  user_id?: string;
+  last_sign_in?: string;
 }
 
 // Settings structure
@@ -170,4 +175,23 @@ export async function saveProselenosSettings(userId: string, settings: Proseleno
     settingsContent,
     'Update Proselenos settings'
   );
+}
+
+/**
+ * Update user info from Google SSO on sign in
+ */
+export async function updateUserInfo(
+  userId: string,
+  userInfo: {
+    name?: string | null;
+    email?: string | null;
+    id?: string;
+  }
+): Promise<void> {
+  const config = await getProselenosConfig(userId);
+  if (userInfo.name) config.user_name = userInfo.name;
+  if (userInfo.email) config.user_email = userInfo.email;
+  if (userInfo.id) config.user_id = userInfo.id;
+  config.last_sign_in = new Date().toISOString();
+  await saveProselenosConfig(userId, config);
 }
