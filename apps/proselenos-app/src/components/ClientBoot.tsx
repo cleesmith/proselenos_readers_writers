@@ -29,7 +29,6 @@ import { showAlert, showStickyErrorWithLogout } from '../app/shared/alerts';
 import AboutModal from '../components/AboutModal';
 import {
   getproselenosConfigAction,
-  validateCurrentProjectAction,
   installToolPromptsAction,
   updateProviderAndModelAction,
   updateSelectedModelAction,
@@ -140,6 +139,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     if (init.config?.settings.current_project) {
       projectActions.setCurrentProject(init.config.settings.current_project);
       projectActions.setCurrentProjectId(init.config.settings.current_project_folder_id);
+      projectActions.setUploadStatus(`✅ Project loaded: ${init.config.settings.current_project}`);
     }
     if (init.config?.selectedApiProvider) {
       setCurrentProvider(init.config.selectedApiProvider);
@@ -410,30 +410,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     }
   }, [session?.accessToken, currentProvider, checkApiKey]);
 
-  // Validate current project if it exists
-  useEffect(() => {
-    const validateProject = async () => {
-      if (!session?.accessToken || !projectState.currentProject || !projectState.currentProjectId) return;
-      
-      try {
-        const validateResult = await withTimeout(
-          validateCurrentProjectAction(),
-          12000,
-          'Validating project'
-        );
-        if (validateResult.success && validateResult.data?.isValid) {
-          projectActions.setUploadStatus(`✅ Project loaded: ${projectState.currentProject}`);
-        } else {
-          projectActions.setUploadStatus('⚠️ Previous project no longer exists. Please select a project.');
-        }
-      } catch (error) {
-        console.error('Error validating project:', error);
-      }
-    };
-    
-    validateProject();
-  }, [session, projectState.currentProject, projectState.currentProjectId, projectActions.setUploadStatus, init]);
-
   // Load full config (including settings decryption) when needed
   const loadFullConfig = useCallback(async () => {
     if (!session || isLoadingConfig) return;
@@ -460,22 +436,11 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
           setCurrentModel(config.selectedAiModel);
         }
         
-        // Only set project if it exists and is valid
+        // Set project if it exists in config
         if (current_project && current_project_folder_id) {
-          // Validate project still exists
-          const validateResult = await withTimeout(
-            validateCurrentProjectAction(),
-            12000,
-            'Validating project'
-          );
-          
-          if (validateResult.success && validateResult.data?.isValid) {
-            projectActions.setCurrentProject(current_project);
-            projectActions.setCurrentProjectId(current_project_folder_id);
-            projectActions.setUploadStatus(`✅ Project loaded: ${current_project}`);
-          } else {
-            projectActions.setUploadStatus('⚠️ Previous project no longer exists. Please select a project.');
-          }
+          projectActions.setCurrentProject(current_project);
+          projectActions.setCurrentProjectId(current_project_folder_id);
+          projectActions.setUploadStatus(`✅ Project loaded: ${current_project}`);
         }
       }
     } catch (error) {

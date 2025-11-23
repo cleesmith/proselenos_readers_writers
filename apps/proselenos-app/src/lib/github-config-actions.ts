@@ -101,6 +101,13 @@ export async function updateDarkModeAction(isDark: boolean): Promise<ActionResul
 
 /**
  * Validate current project (check if it exists in repo)
+ *
+ * NOTE: This function is no longer called. It was previously used by a useEffect
+ * in ClientBoot.tsx that re-validated the project on dependency changes. This caused
+ * 12-second timeout errors during AI tool execution. Since users cannot delete their
+ * own projects mid-session (private GitHub repos), this validation was unnecessary
+ * paranoid code inherited from the Google Drive storage era. Kept for reference.
+ * — Nov 2025
  */
 export async function validateCurrentProjectAction(): Promise<ActionResult> {
   try {
@@ -125,6 +132,12 @@ export async function validateCurrentProjectAction(): Promise<ActionResult> {
 
 /**
  * Install tool prompts (not needed - template already has them)
+ *
+ * NOTE: This is a no-op stub. The GitHub template repo already includes the
+ * tool-prompts folder, so no installation is needed. This function is still
+ * called from ClientBoot.tsx during first-time user setup, but it just returns
+ * success immediately. Kept for backwards compatibility with the initialization flow.
+ * — Nov 2025
  */
 export async function installToolPromptsAction(): Promise<ActionResult> {
   // Tool prompts are already in the template repo, so this is a no-op
