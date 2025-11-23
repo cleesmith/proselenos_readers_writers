@@ -146,7 +146,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
                   ? _("Search the descriptions and metadata of {{count}} ebooks (not their text!)...", {
                       count: currentBooksCount,
                     })
-                  : _('No books...')
+                  : _('Search the descriptions and metadata of {{count}} ebooks (not their text!)...')
               }
               onChange={handleSearchChange}
               spellCheck='false'

@@ -66,6 +66,13 @@ export async function executeToolAction(
   manuscriptContent: string
 ): Promise<ToolExecutionResult> {
   try {
+    // ============== FAKE TEST ===============
+    // Simulate Vercel 504 timeout after 5 seconds - REMOVE AFTER TESTING
+    // await new Promise((_, reject) =>
+    //   setTimeout(() => reject(new Error('An unexpected response was received from the server.')), 5000)
+    // );
+    // ============== FAKE TEST ===============
+
     const result = await executeToolInternal(toolId, manuscriptContent);
     return result;
   } catch (error) {

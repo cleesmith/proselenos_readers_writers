@@ -285,12 +285,10 @@ export function useToolsManager(): [ToolsManagerState, ToolsManagerActions] {
       setToolResult(`❌ Execution Error: ${error instanceof Error ? error.message : String(error)}`);
       console.error('Tool execution error:', error);
     } finally {
-      // Only set false if still executing (handles early exits)
-      if (toolExecuting) {
-        setToolExecuting(false);
-        clearInterval(interval);
-        setTimerInterval(null);
-      }
+      // Always clean up timer and execution state
+      setToolExecuting(false);
+      clearInterval(interval);
+      setTimerInterval(null);
     }
   }, [selectedTool, selectedManuscriptForTool, timerInterval]);
 
