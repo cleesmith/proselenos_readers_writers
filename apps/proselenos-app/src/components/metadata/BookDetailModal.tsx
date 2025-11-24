@@ -2,7 +2,9 @@ import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 
 import { Book } from '@/types/book';
-import { BookMetadata } from '@/libs/document';
+import { BookMetadata, EXTS } from '@/libs/document';
+import { getLocalBookFilename } from '@/utils/book';
+import { makeSafeFilename } from '@/utils/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -149,6 +151,21 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     }
   };
 
+  const handleDownloadLocal = async () => {
+    const appService = await envConfig.getAppService();
+    const epubFilename = getLocalBookFilename(book);
+    const epubFile = await appService.openFile(epubFilename, 'Books');
+    const arrayBuffer = await epubFile.arrayBuffer();
+
+    const blob = new Blob([arrayBuffer], { type: 'application/epub+zip' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${makeSafeFilename(book.title)}.${EXTS[book.format]}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const currentDeleteConfig = activeDeleteAction ? deleteConfigs[activeDeleteAction] : null;
 
   if (!bookMeta)
@@ -198,6 +215,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onDelete={handleBookDelete ? handleDelete : undefined}
                 onDownload={undefined}
                 onUpload={handleBookUpload ? handleReupload : undefined}
+                onDownloadLocal={handleDownloadLocal}
               />
             )}
           </div>

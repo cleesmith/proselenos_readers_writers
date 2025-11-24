@@ -4,6 +4,7 @@ import {
   MdOutlineCloudUpload,
   MdOutlineDelete,
   MdOutlineEdit,
+  MdOutlineFileDownload,
 } from 'react-icons/md';
 
 import { Book } from '@/types/book';
@@ -27,6 +28,7 @@ interface BookDetailViewProps {
   onDelete?: () => void;
   onDownload?: () => void;
   onUpload?: () => void;
+  onDownloadLocal?: () => void;
 }
 
 const BookDetailView: React.FC<BookDetailViewProps> = ({
@@ -37,6 +39,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onDelete,
   onDownload,
   onUpload,
+  onDownloadLocal,
 }) => {
   const _ = useTranslation();
 
@@ -74,6 +77,11 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
             {book.downloadedAt && onUpload && (
               <button onClick={onUpload}>
                 <MdOutlineCloudUpload className='fill-base-content' />
+              </button>
+            )}
+            {onDownloadLocal && (
+              <button onClick={onDownloadLocal} title={_('Download ebook')}>
+                <MdOutlineFileDownload className='fill-base-content hover:fill-green-500' />
               </button>
             )}
           </div>

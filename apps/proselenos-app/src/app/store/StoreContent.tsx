@@ -42,7 +42,7 @@ export default function StoreContent({ entries }: StoreContentProps) {
         >
           ← Library
         </button>
-        <h1 className='text-lg font-bold'>Bookstore</h1>
+        <h1 className='text-lg font-bold'>Proselenos Bookstore</h1>
         <div className='w-16' /> {/* Spacer for centering */}
       </div>
 
