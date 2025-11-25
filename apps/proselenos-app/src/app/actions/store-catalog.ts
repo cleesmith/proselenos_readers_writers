@@ -19,6 +19,7 @@ export interface StoreEntry {
   publishedAt: number;
   updatedAt: number;
   coverColor?: string;  // muted background color for cover, e.g. "#4a5568"
+  hasCover?: boolean;   // true if cover thumbnail exists at covers/{bookHash}.jpg
 }
 
 // Catalog is just an array of StoreEntry
@@ -141,6 +142,7 @@ export async function getPublicCatalog(): Promise<ActionResult<StoreEntry[]>> {
 
 /**
  * Publish a book to the public catalog
+ * @param coverThumbnailBase64 - Optional cover thumbnail as base64 data URL (will be uploaded to covers/{bookHash}.jpg)
  */
 export async function publishToPublicCatalog(
   projectId: string,
@@ -149,6 +151,7 @@ export async function publishToPublicCatalog(
     title: string;
     author: string;
     description?: string;
+    coverThumbnailBase64?: string;
   }
 ): Promise<ActionResult> {
   try {
@@ -197,6 +200,70 @@ export async function publishToPublicCatalog(
     const now = Date.now();
     const existingEntry = entries.find(e => e.projectId === projectId);
 
+    // If existing entry has a different bookHash and had a cover, delete the old cover
+    // This prevents orphaned cover files from accumulating when covers are updated
+    if (existingEntry && existingEntry.hasCover && existingEntry.bookHash !== bookData.hash) {
+      try {
+        const oldCoverPath = `covers/${existingEntry.bookHash}.jpg`;
+        const oldCoverResponse = await octokit.repos.getContent({
+          owner,
+          repo: LIBRARY_REPO,
+          path: oldCoverPath,
+        });
+        if ('sha' in oldCoverResponse.data) {
+          await octokit.repos.deleteFile({
+            owner,
+            repo: LIBRARY_REPO,
+            path: oldCoverPath,
+            message: `Remove old cover: ${existingEntry.title}`,
+            sha: oldCoverResponse.data.sha,
+          });
+        }
+      } catch {
+        // Old cover doesn't exist or couldn't be deleted - continue anyway
+      }
+    }
+
+    // Upload cover thumbnail if provided
+    let hasCover = false;
+    if (bookData.coverThumbnailBase64) {
+      try {
+        // Remove data URL prefix if present
+        const base64Data = bookData.coverThumbnailBase64.replace(/^data:image\/\w+;base64,/, '');
+        const coverPath = `covers/${bookData.hash}.jpg`;
+
+        // Check if cover already exists (to get SHA for update)
+        let coverSha: string | undefined;
+        try {
+          const existingCover = await octokit.repos.getContent({
+            owner,
+            repo: LIBRARY_REPO,
+            path: coverPath,
+          });
+          if ('sha' in existingCover.data) {
+            coverSha = existingCover.data.sha;
+          }
+        } catch {
+          // Cover doesn't exist yet, that's fine
+        }
+
+        // Upload cover thumbnail
+        await octokit.repos.createOrUpdateFileContents({
+          owner,
+          repo: LIBRARY_REPO,
+          path: coverPath,
+          message: `Add cover: ${bookData.title}`,
+          content: base64Data,
+          sha: coverSha,
+        });
+
+        hasCover = true;
+      } catch (error) {
+        console.error('Failed to upload cover thumbnail:', error);
+        // Continue without cover - not a fatal error
+      }
+    }
+
     const entry: StoreEntry = {
       projectId,
       bookHash: bookData.hash,
@@ -208,6 +275,7 @@ export async function publishToPublicCatalog(
       publishedAt: existingEntry ? existingEntry.publishedAt : now,
       updatedAt: now,
       coverColor: generateMutedColor(userId, bookData.hash),
+      hasCover: hasCover || existingEntry?.hasCover,
     };
 
     if (existingEntry) {
@@ -291,6 +359,29 @@ export async function removeFromPublicCatalog(
     const removedEntry = entries[existingIndex];
     const removedTitle = removedEntry?.title || 'Unknown';
     entries.splice(existingIndex, 1);
+
+    // Delete the cover file if it exists
+    if (removedEntry?.hasCover && removedEntry?.bookHash) {
+      try {
+        const coverPath = `covers/${removedEntry.bookHash}.jpg`;
+        const coverResponse = await octokit.repos.getContent({
+          owner,
+          repo: LIBRARY_REPO,
+          path: coverPath,
+        });
+        if ('sha' in coverResponse.data) {
+          await octokit.repos.deleteFile({
+            owner,
+            repo: LIBRARY_REPO,
+            path: coverPath,
+            message: `Remove cover: ${removedTitle}`,
+            sha: coverResponse.data.sha,
+          });
+        }
+      } catch {
+        // Cover doesn't exist or couldn't be deleted - continue anyway
+      }
+    }
 
     // Write updated catalog
     const jsonContent = JSON.stringify(entries, null, 2);

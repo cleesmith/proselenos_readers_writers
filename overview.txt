@@ -1,0 +1,103 @@
+1. HOMEPAGE HERO
+
+Title + tagline:
+
+Proselenos
+A DRM-free reading and writing space where you keep control of your books.
+
+Subpoints:
+
+E-Reader Mode - A personal EPUB library that lives on your device, with an optional Book Repo for backup and restore.
+
+Authors Mode - An AI-assisted writing studio with manuscript tools and a path to publish into the Proselenos Bookstore.
+
+
+2. FOR READERS SECTION
+
+For readers
+
+Proselenos is for people who want a digital library without the usual lock-in.
+
+You own your library. Your books are stored locally in the app so you can read offline and keep your collection independent of any one store.
+
+Standard EPUBs. Bring your own .epub files. Proselenos treats them like real books, not rentals.
+
+Book Repo (optional). After you sign in with Google, you get a private Book Repo. You can upload books from your library to back them up, then restore them later if needed.
+
+Built-in Bookstore. Browse free titles that authors have chosen to share. When you grab a book, it goes straight into your library, not a locked ecosystem.
+
+Comfortable reading. Clean EPUB rendering, themes, reading progress, highlights and notes, and read-aloud with sentence highlighting.
+
+
+3. FOR WRITERS SECTION
+
+For writers
+
+Authors Mode turns Proselenos into a focused writing and publishing studio.
+
+Private workspace. Your manuscripts live in a secure space managed by Proselenos.
+
+AI as assistant, not boss. Bring your OpenRouter API key and choose from models by Anthropic, Google, OpenAI, and others. Use them for line-edits, suggestions, and structural feedback inside a writing environment built for long-form work.
+
+Hear your own prose. Text-to-speech reads your manuscript sentence by sentence. A simple way to catch rhythm issues, clunky lines, and missing words.
+
+Publish on your terms. Turn a manuscript into an EPUB and optionally list it in the Proselenos Bookstore so readers can discover it.
+
+One app, two modes. Read in E-Reader Mode, then open Authors Mode in a separate window when it's time to write, revise, or publish.
+
+
+4. PHILOSOPHY SECTION
+
+What Proselenos stands for:
+
+Most ebook platforms behave like rental services pretending to be bookstores. They wrap books in DRM, tie them to one account, and can quietly remove or alter your library.
+
+Proselenos goes the other way:
+
+No DRM. Proselenos works with standard files you can back up, move, and keep. The app does not try to control how you use the books you already own.
+
+Local-first. Your library lives on your device. If you want extra safety, use your Book Repo to back up books and restore them through the app.
+
+Author-friendly. Writers get a private workspace, AI tools they control, and a simple path to publish. No black-box platform that owns everything.
+
+Goodwill over lock-in. We assume readers and writers are here in good faith.
+
+The aim is simple: a reading and writing environment where ownership, trust, and curiosity matter more than DRM and dashboards.
+
+
+5. IN-APP ONBOARDING
+
+Welcome to Reader Mode
+
+This is your personal EPUB library.
+
+Add .epub files to start reading. Your books are stored locally so you can read offline.
+
+After you sign in with Google, you can use your Book Repo to back up books from this device and restore them later.
+
+No DRM, no subscription. Just you and your books.
+
+
+Authors Mode welcome:
+
+This is your writing studio.
+
+Your manuscripts are stored in a private workspace managed by Proselenos. 
+You can export them as DOCX at any time.
+
+Add your OpenRouter API key to get AI-powered editing help, suggestions, and structural feedback. Choose from models by Anthropic, OpenAI, Meta, and others.
+
+When ready, turn a manuscript into: 
+1. HTML page
+2. EPUB (optionally list it in the Proselenos Bookstore)
+3. PDF (KDP print-ready)
+
+Proselenos helps you write and publish without swallowing your work into a black box.
+
+
+6. BOOK REPO HELPER TEXT
+
+What is Book Repo?
+
+After you sign in with Google, Proselenos creates a private Book Repo for your account. You can use it to back up books from your library and restore them later through the app.
+

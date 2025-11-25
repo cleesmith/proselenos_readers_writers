@@ -6,6 +6,9 @@ import { FaBookOpen } from 'react-icons/fa';
 import { StoreEntry, importBookFromStore } from '@/app/actions/store-catalog';
 import { useEnv } from '@/context/EnvContext';
 
+// Cover image base URL from GitHub Pages
+const COVER_BASE_URL = 'https://covers.proselenos.com/covers';
+
 interface StoreBookItemProps {
   entry: StoreEntry;
 }
@@ -13,6 +16,7 @@ interface StoreBookItemProps {
 export default function StoreBookItem({ entry }: StoreBookItemProps) {
   const { appService } = useEnv();
   const [isImporting, setIsImporting] = useState(false);
+  const [coverImageError, setCoverImageError] = useState(false);
 
   // Format published date
   const publishedDate = new Date(entry.publishedAt).toLocaleDateString(undefined, {
@@ -23,6 +27,10 @@ export default function StoreBookItem({ entry }: StoreBookItemProps) {
 
   // Cover background color: use stored color or fallback to blue
   const coverBgColor = entry.coverColor || '#00517b';
+
+  // Cover image URL (only if hasCover is true and no error loading)
+  const showCoverImage = entry.hasCover && !coverImageError;
+  const coverImageUrl = `${COVER_BASE_URL}/${entry.bookHash}.jpg`;
 
   const handleImport = async () => {
     if (isImporting) return;
@@ -60,25 +68,38 @@ export default function StoreBookItem({ entry }: StoreBookItemProps) {
           'overflow-visible shadow-md items-end cursor-pointer'
         )}
       >
-        {/* Custom colored background for cover */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-between p-3 text-center"
-          style={{ backgroundColor: coverBgColor }}
-        >
-          <span className="text-white font-serif text-sm font-semibold leading-tight line-clamp-3">
-            {entry.title}
-          </span>
-          <span className="text-white/80 text-xs line-clamp-2">
-            {entry.author}
-          </span>
-        </div>
+        {/* Cover display: actual image or colored fallback */}
+        {showCoverImage ? (
+          /* Actual cover image from GitHub Pages */
+          <img
+            src={coverImageUrl}
+            alt={`Cover of ${entry.title}`}
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={() => setCoverImageError(true)}
+          />
+        ) : (
+          /* Fallback: colored background with title/author */
+          <>
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-between p-3 text-center"
+              style={{ backgroundColor: coverBgColor }}
+            >
+              <span className="text-white font-serif text-sm font-semibold leading-tight line-clamp-3">
+                {entry.title}
+              </span>
+              <span className="text-white/80 text-xs line-clamp-2">
+                {entry.author}
+              </span>
+            </div>
 
-        {/* Centered book icon (always visible) */}
-        <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
-          <div className='bg-black/30 rounded-full p-3'>
-            <FaBookOpen className='text-white/80 text-2xl' />
-          </div>
-        </div>
+            {/* Centered book icon (only on fallback) */}
+            <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
+              <div className='bg-black/30 rounded-full p-3'>
+                <FaBookOpen className='text-white/80 text-2xl' />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Hover overlay - expands beyond cover */}
         <div

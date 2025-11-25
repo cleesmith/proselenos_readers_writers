@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { PublishingAssistantModalProps } from '@/lib/publishing-assistant/types';
 import { usePublishingAssistant } from './usePublishingAssistant';
 import ProgressStep from './ProgressStep';
@@ -19,6 +19,19 @@ export default function PublishingAssistantModal({
 }: PublishingAssistantModalProps) {
 
   const { state, actions } = usePublishingAssistant(currentProjectId);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle cover file selection
+  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      actions.setCoverImage(file);
+    }
+    // Reset input so same file can be selected again
+    if (coverInputRef.current) {
+      coverInputRef.current.value = '';
+    }
+  };
 
   // Handle modal open
   useEffect(() => {
@@ -219,34 +232,143 @@ export default function PublishingAssistantModal({
                         fileState={getFileState()}
                         onAction={getOnAction()}
                       />
-                      {/* Show bookstore checkbox after EPUB step */}
+                      {/* Show cover upload and bookstore checkbox after EPUB step */}
                       {step.id === 'epub' && (
-                        <div
-                          style={{
-                            padding: '4px 4px',
-                            marginLeft: '20px',
-                            marginTop: '-10px',
-                            marginBottom: '8px',
-                            border: '1px solid #FF8C00',
-                            borderRadius: '6px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            cursor: 'pointer'
-                          }}
-                          onClick={actions.togglePublishToStore}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={state.publishToStore}
-                            onChange={() => actions.togglePublishToStore()}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                          />
-                          <span style={{ fontSize: '13px', color: theme.text, cursor: 'pointer' }}>
-                            List EPUB in Bookstore
-                          </span>
-                        </div>
+                        <>
+                          {/* Cover Image Upload Section */}
+                          <div
+                            style={{
+                              padding: '12px',
+                              marginLeft: '20px',
+                              marginTop: '-10px',
+                              marginBottom: '8px',
+                              border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)'}`,
+                              borderRadius: '6px',
+                              backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'
+                            }}
+                          >
+                            <div style={{ fontSize: '13px', color: theme.text, marginBottom: '8px', fontWeight: 500 }}>
+                              Cover Image (optional)
+                            </div>
+
+                            {/* Hidden file input */}
+                            <input
+                              ref={coverInputRef}
+                              type="file"
+                              accept=".jpg,.jpeg,.png"
+                              onChange={handleCoverFileChange}
+                              style={{ display: 'none' }}
+                            />
+
+                            {state.coverImage.previewUrl ? (
+                              /* Show preview when image is selected */
+                              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                <img
+                                  src={state.coverImage.previewUrl}
+                                  alt="Cover preview"
+                                  style={{
+                                    width: '80px',
+                                    height: 'auto',
+                                    maxHeight: '120px',
+                                    objectFit: 'contain',
+                                    borderRadius: '4px',
+                                    border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                                  }}
+                                />
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '4px' }}>
+                                    {state.coverImage.width} x {state.coverImage.height} px
+                                  </div>
+                                  {state.coverImage.warning && (
+                                    <div style={{ fontSize: '12px', color: '#f59e0b', marginBottom: '8px' }}>
+                                      ⚠️ {state.coverImage.warning}
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                      onClick={() => coverInputRef.current?.click()}
+                                      style={{
+                                        padding: '4px 10px',
+                                        fontSize: '12px',
+                                        borderRadius: '4px',
+                                        border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'}`,
+                                        backgroundColor: 'transparent',
+                                        color: theme.text,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Change
+                                    </button>
+                                    <button
+                                      onClick={actions.clearCoverImage}
+                                      style={{
+                                        padding: '4px 10px',
+                                        fontSize: '12px',
+                                        borderRadius: '4px',
+                                        border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'}`,
+                                        backgroundColor: 'transparent',
+                                        color: theme.textSecondary,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : state.coverImage.isProcessing ? (
+                              /* Show loading state */
+                              <div style={{ fontSize: '12px', color: theme.textSecondary }}>
+                                Processing image...
+                              </div>
+                            ) : (
+                              /* Show upload button */
+                              <button
+                                onClick={() => coverInputRef.current?.click()}
+                                style={{
+                                  padding: '8px 16px',
+                                  fontSize: '12px',
+                                  borderRadius: '4px',
+                                  border: `1px dashed ${isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}`,
+                                  backgroundColor: 'transparent',
+                                  color: theme.textSecondary,
+                                  cursor: 'pointer',
+                                  width: '100%'
+                                }}
+                              >
+                                Select cover image (JPG or PNG)
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Bookstore Checkbox */}
+                          <div
+                            style={{
+                              padding: '4px 4px',
+                              marginLeft: '20px',
+                              marginTop: '0',
+                              marginBottom: '8px',
+                              border: '1px solid #FF8C00',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={actions.togglePublishToStore}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={state.publishToStore}
+                              onChange={() => actions.togglePublishToStore()}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                            />
+                            <span style={{ fontSize: '13px', color: theme.text, cursor: 'pointer' }}>
+                              List EPUB in Bookstore
+                            </span>
+                          </div>
+                        </>
                       )}
                     </div>
                   );

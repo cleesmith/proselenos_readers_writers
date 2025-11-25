@@ -40,6 +40,16 @@ export interface PublishingProgress {
   };
 }
 
+export interface CoverImageState {
+  file: File | null;
+  previewUrl: string | null;
+  base64: string | null;        // For sending to server actions
+  width: number | null;
+  height: number | null;
+  warning: string | null;       // Warning if image is too small
+  isProcessing: boolean;
+}
+
 export interface PublishingAssistantState {
   isModalOpen: boolean;
   selectedManuscript: any | null;
@@ -52,6 +62,7 @@ export interface PublishingAssistantState {
     pdf: FileState;
   };
   publishToStore: boolean;
+  coverImage: CoverImageState;
 }
 
 export interface PublishingAssistantModalProps {

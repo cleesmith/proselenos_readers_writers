@@ -1,11 +1,23 @@
 // apps/proselenos-app/src/app/publishing-assistant/usePublishingAssistant.ts
 
 import { useState, useCallback } from 'react';
-import { PublishingAssistantState, FileType, PublishingStep } from '@/lib/publishing-assistant/types';
+import { PublishingAssistantState, FileType, PublishingStep, CoverImageState } from '@/lib/publishing-assistant/types';
 import { generateHTMLOnlyAction, generateEPUBForLocalImportAction, generatePDFOnlyAction } from '@/lib/publish-actions';
 import { listTxtFilesAction, deleteManuscriptOutputAction, loadBookMetadataAction } from '@/lib/github-project-actions';
 import { useBookImporter } from '@/hooks/useBookImporter';
 import { publishToPublicCatalog, removeFromPublicCatalog } from '@/app/actions/store-catalog';
+import { processCoverImage, generateCoverThumbnail } from '@/utils/image';
+
+// Initial cover image state
+const INITIAL_COVER_STATE: CoverImageState = {
+  file: null,
+  previewUrl: null,
+  base64: null,
+  width: null,
+  height: null,
+  warning: null,
+  isProcessing: false
+};
 
 // File type configurations for UI display
 const INITIAL_PUBLISHING_STEPS: PublishingStep[] = [
@@ -52,7 +64,8 @@ export function usePublishingAssistant(
       epub: { isProcessing: false, createdInSession: false },
       pdf: { isProcessing: false, createdInSession: false }
     },
-    publishToStore: false
+    publishToStore: false,
+    coverImage: { ...INITIAL_COVER_STATE }
   });
 
   // Open modal and load manuscript files
@@ -74,7 +87,8 @@ export function usePublishingAssistant(
         html: { isProcessing: false, createdInSession: false },
         epub: { isProcessing: false, createdInSession: false },
         pdf: { isProcessing: false, createdInSession: false }
-      }
+      },
+      coverImage: { ...INITIAL_COVER_STATE }
     }));
 
     try {
@@ -93,6 +107,10 @@ export function usePublishingAssistant(
 
   // Close modal
   const closeModal = useCallback(() => {
+    // Clean up cover image preview URL to avoid memory leaks
+    if (state.coverImage.previewUrl) {
+      URL.revokeObjectURL(state.coverImage.previewUrl);
+    }
     setState(prev => ({
       ...prev,
       isModalOpen: false,
@@ -109,9 +127,10 @@ export function usePublishingAssistant(
         html: { isProcessing: false, createdInSession: false },
         epub: { isProcessing: false, createdInSession: false },
         pdf: { isProcessing: false, createdInSession: false }
-      }
+      },
+      coverImage: { ...INITIAL_COVER_STATE }
     }));
-  }, []);
+  }, [state.coverImage.previewUrl]);
 
   // Select manuscript file
   const selectManuscript = useCallback(async (file: any) => {
@@ -126,6 +145,10 @@ export function usePublishingAssistant(
 
   // Reset to file selection
   const resetToFileSelection = useCallback(() => {
+    // Clean up cover image preview URL
+    if (state.coverImage.previewUrl) {
+      URL.revokeObjectURL(state.coverImage.previewUrl);
+    }
     setState(prev => ({
       ...prev,
       selectedManuscript: null,
@@ -141,9 +164,59 @@ export function usePublishingAssistant(
         html: { isProcessing: false, createdInSession: false },
         epub: { isProcessing: false, createdInSession: false },
         pdf: { isProcessing: false, createdInSession: false }
-      }
+      },
+      coverImage: { ...INITIAL_COVER_STATE }
     }));
-  }, []);
+  }, [state.coverImage.previewUrl]);
+
+  // Set cover image from file input
+  const setCoverImage = useCallback(async (file: File) => {
+    // Clean up previous preview URL
+    if (state.coverImage.previewUrl) {
+      URL.revokeObjectURL(state.coverImage.previewUrl);
+    }
+
+    setState(prev => ({
+      ...prev,
+      coverImage: { ...prev.coverImage, isProcessing: true, warning: null }
+    }));
+
+    try {
+      const processed = await processCoverImage(file);
+      setState(prev => ({
+        ...prev,
+        coverImage: {
+          file,
+          previewUrl: processed.previewUrl,
+          base64: processed.base64,
+          width: processed.width,
+          height: processed.height,
+          warning: processed.warning || null,
+          isProcessing: false
+        }
+      }));
+    } catch (error) {
+      console.error('Error processing cover image:', error);
+      setState(prev => ({
+        ...prev,
+        coverImage: {
+          ...INITIAL_COVER_STATE,
+          warning: error instanceof Error ? error.message : 'Failed to process image'
+        }
+      }));
+    }
+  }, [state.coverImage.previewUrl]);
+
+  // Clear cover image
+  const clearCoverImage = useCallback(() => {
+    if (state.coverImage.previewUrl) {
+      URL.revokeObjectURL(state.coverImage.previewUrl);
+    }
+    setState(prev => ({
+      ...prev,
+      coverImage: { ...INITIAL_COVER_STATE }
+    }));
+  }, [state.coverImage.previewUrl]);
 
   // Toggle publish to store option
   const togglePublishToStore = useCallback(() => {
@@ -182,9 +255,11 @@ export function usePublishingAssistant(
           break;
         case 'epub':
           // 1. Generate EPUB on server (returns base64)
+          // Pass cover image base64 if provided
           const localResult = await generateEPUBForLocalImportAction(
             state.selectedManuscript.path,
-            currentProjectId
+            currentProjectId,
+            state.coverImage.base64 || undefined
           );
 
           if (!localResult.success || !localResult.data) {
@@ -212,11 +287,22 @@ export function usePublishingAssistant(
               // Continue without description if metadata load fails
             }
 
+            // Generate thumbnail if cover image is provided
+            let coverThumbnailBase64: string | undefined;
+            if (state.coverImage.base64) {
+              try {
+                coverThumbnailBase64 = await generateCoverThumbnail(state.coverImage.base64);
+              } catch (e) {
+                console.error('Failed to generate cover thumbnail:', e);
+              }
+            }
+
             await publishToPublicCatalog(currentProjectId, {
               hash: importedBook.hash,
               title: importedBook.title,
               author: importedBook.author,
-              description
+              description,
+              coverThumbnailBase64
             });
           } else {
             // Remove from catalog if it exists (checkbox unchecked)
@@ -257,7 +343,7 @@ export function usePublishingAssistant(
         }
       }));
     }
-  }, [state.selectedManuscript, state.publishToStore, currentProjectId, importEpubBase64]);
+  }, [state.selectedManuscript, state.publishToStore, state.coverImage.base64, currentProjectId, importEpubBase64]);
 
   return {
     state,
@@ -267,7 +353,9 @@ export function usePublishingAssistant(
       selectManuscript,
       resetToFileSelection,
       togglePublishToStore,
-      generateFile
+      generateFile,
+      setCoverImage,
+      clearCoverImage
     }
   };
 }

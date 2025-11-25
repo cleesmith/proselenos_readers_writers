@@ -198,7 +198,8 @@ export async function generateEPUBOnlyAction(
  */
 export async function generateEPUBForLocalImportAction(
   manuscriptFilePath: string,
-  projectName: string
+  projectName: string,
+  coverImageBase64?: string
 ): Promise<ActionResult<{epubBase64: string; epubFilename: string; fileId: string}>> {
   try {
     const prepResult = await prepareManuscriptData(manuscriptFilePath, projectName);
@@ -208,8 +209,16 @@ export async function generateEPUBForLocalImportAction(
 
     const { userId, chapters, metadata } = prepResult.data;
 
+    // Convert cover image base64 to buffer if provided
+    let coverImageBuffer: Buffer | undefined;
+    if (coverImageBase64) {
+      // Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
+      const base64Data = coverImageBase64.replace(/^data:image\/\w+;base64,/, '');
+      coverImageBuffer = Buffer.from(base64Data, 'base64');
+    }
+
     // Generate EPUB (only once!)
-    const epubBuffer = await generateEPUB(chapters, metadata, projectName);
+    const epubBuffer = await generateEPUB(chapters, metadata, projectName, coverImageBuffer);
     const epubFilename = 'manuscript.epub';
     const epubPath = `${projectName}/${epubFilename}`;
 
@@ -700,8 +709,9 @@ async function cleanupExistingManuscriptFiles(_projectName: string): Promise<voi
 
 /**
  * Generate EPUB file from chapters and metadata
+ * @param coverImageBuffer - Optional cover image as a Buffer (JPEG format)
  */
-async function generateEPUB(chapters: Chapter[], metadata: any, _projectFolderId: string): Promise<Buffer> {
+async function generateEPUB(chapters: Chapter[], metadata: any, _projectFolderId: string, coverImageBuffer?: Buffer): Promise<Buffer> {
   const JSZip = require('jszip');
   const zip = new JSZip();
 
@@ -717,8 +727,16 @@ async function generateEPUB(chapters: Chapter[], metadata: any, _projectFolderId
 </container>`;
   zip.file('META-INF/container.xml', containerXML);
 
-  // 3. user does their own cover outside of this app:
-  const hasCover = false;
+  // 3. Handle cover image if provided
+  const hasCover = !!coverImageBuffer;
+  if (coverImageBuffer) {
+    // Add cover image file
+    zip.file('OEBPS/images/cover.jpg', coverImageBuffer);
+
+    // Add cover page XHTML
+    const coverXHTML = createCoverPage();
+    zip.file('OEBPS/cover.xhtml', coverXHTML);
+  }
 
   // 4. Create title page
   const titlePageHTML = createTitlePage(metadata);
@@ -923,6 +941,26 @@ ${aboutContent}
 }
 
 /**
+ * Create cover page XHTML for EPUB
+ */
+function createCoverPage(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>Cover</title>
+  <style type="text/css">
+    body { margin: 0; padding: 0; text-align: center; }
+    img { max-width: 100%; max-height: 100%; }
+  </style>
+</head>
+<body epub:type="cover">
+  <img src="images/cover.jpg" alt="Cover"/>
+</body>
+</html>`;
+}
+
+/**
  * Create EPUB 3.0 content.opf file
  */
 function createEpub3ContentOPF(chapters: Chapter[], metadata: any, coverImageId: string | null = null): string {
@@ -932,17 +970,21 @@ function createEpub3ContentOPF(chapters: Chapter[], metadata: any, coverImageId:
   // Cover metadata and manifest
   let coverMeta = '';
   let coverManifest = '';
-  
+  let coverPageManifest = '';
+
   if (coverImageId) {
     coverMeta = `    <meta name="cover" content="${coverImageId}"/>`;
     coverManifest = `    <item id="${coverImageId}" href="images/cover.jpg" media-type="image/jpeg" properties="cover-image"/>`;
+    coverPageManifest = `    <item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
   }
 
   const manifest = chapters
     .map(ch => `    <item id="${ch.id}" href="${ch.id}.xhtml" media-type="application/xhtml+xml"/>`)
     .join('\n');
 
+  // Build spine items - cover page first if present
   const spineItems = [
+    ...(coverImageId ? ['    <itemref idref="cover-page"/>'] : []),
     '    <itemref idref="title-page"/>',
     '    <itemref idref="copyright"/>',
     '    <itemref idref="contents"/>',
@@ -966,6 +1008,7 @@ ${coverMeta}
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
     <item id="toc" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+${coverPageManifest}
     <item id="title-page" href="title-page.xhtml" media-type="application/xhtml+xml"/>
     <item id="copyright" href="copyright.xhtml" media-type="application/xhtml+xml"/>
     <item id="contents" href="contents.xhtml" media-type="application/xhtml+xml"/>
