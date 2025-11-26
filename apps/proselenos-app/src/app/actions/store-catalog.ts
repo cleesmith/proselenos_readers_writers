@@ -97,8 +97,8 @@ async function ensureLibraryRepoExistsInternal(octokit: Octokit, owner: string):
     if (octokitError.status === 404) {
       await octokit.repos.createForAuthenticatedUser({
         name: LIBRARY_REPO,
-        description: 'Public book catalog for Proselenos',
-        private: true,
+        description: 'Public book catalog for Proselenos Bookstore',
+        private: false,  // PUBLIC for raw.githubusercontent.com access
         auto_init: true,
       });
     } else {

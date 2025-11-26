@@ -9,9 +9,10 @@ import StoreBookItem from './StoreBookItem';
 
 interface StoreContentProps {
   entries: StoreEntry[];
+  githubOwner: string;
 }
 
-export default function StoreContent({ entries }: StoreContentProps) {
+export default function StoreContent({ entries, githubOwner }: StoreContentProps) {
   const router = useRouter();
   const { isDarkMode } = useThemeStore();
 
@@ -60,7 +61,7 @@ export default function StoreContent({ entries }: StoreContentProps) {
             )}
           >
             {entries.map((entry) => (
-              <StoreBookItem key={entry.projectId} entry={entry} />
+              <StoreBookItem key={entry.projectId} entry={entry} githubOwner={githubOwner} />
             ))}
           </div>
         )}

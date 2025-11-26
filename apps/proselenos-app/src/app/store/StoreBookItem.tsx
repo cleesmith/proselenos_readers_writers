@@ -6,14 +6,12 @@ import { FaBookOpen } from 'react-icons/fa';
 import { StoreEntry, importBookFromStore } from '@/app/actions/store-catalog';
 import { useEnv } from '@/context/EnvContext';
 
-// Cover image base URL from GitHub Pages
-const COVER_BASE_URL = 'https://covers.proselenos.com/covers';
-
 interface StoreBookItemProps {
   entry: StoreEntry;
+  githubOwner: string;
 }
 
-export default function StoreBookItem({ entry }: StoreBookItemProps) {
+export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps) {
   const { appService } = useEnv();
   const [isImporting, setIsImporting] = useState(false);
   const [coverImageError, setCoverImageError] = useState(false);
@@ -30,7 +28,7 @@ export default function StoreBookItem({ entry }: StoreBookItemProps) {
 
   // Cover image URL (only if hasCover is true and no error loading)
   const showCoverImage = entry.hasCover && !coverImageError;
-  const coverImageUrl = `${COVER_BASE_URL}/${entry.bookHash}.jpg`;
+  const coverImageUrl = `https://raw.githubusercontent.com/${githubOwner}/proselenos-bookstore/refs/heads/main/covers/${entry.bookHash}.jpg`;
 
   const handleImport = async () => {
     if (isImporting) return;

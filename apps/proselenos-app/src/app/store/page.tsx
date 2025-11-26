@@ -3,6 +3,7 @@
 
 import { Metadata } from 'next';
 import { getPublicCatalog } from '@/app/actions/store-catalog';
+import { getGitHubOwner } from '@/lib/github-storage';
 import StoreContent from './StoreContent';
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export const dynamic = 'force-dynamic';
 export default async function StorePage() {
   const result = await getPublicCatalog();
   const entries = result.success ? result.data || [] : [];
+  const githubOwner = getGitHubOwner();
 
-  return <StoreContent entries={entries} />;
+  return <StoreContent entries={entries} githubOwner={githubOwner} />;
 }
