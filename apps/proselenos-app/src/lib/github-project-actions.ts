@@ -582,3 +582,44 @@ export async function saveBookMetadataAction(
     };
   }
 }
+
+/**
+ * Download a file from a project for browser download
+ * Returns base64-encoded content for client-side download
+ */
+export async function downloadFileForBrowserAction(
+  projectName: string,
+  filePath: string
+): Promise<ActionResult<{ content: string; filename: string }>> {
+  try {
+    const session = await getServerSession(authOptions) as ExtendedSession;
+    if (!session || !session.user?.id) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const userId = session.user.id;
+
+    if (!projectName || !filePath) {
+      return { success: false, error: 'Project name and file path are required' };
+    }
+
+    const { content, filename } = await downloadFile(userId, 'proselenos', filePath);
+
+    // Convert ArrayBuffer to base64 for transfer to client
+    const base64Content = Buffer.from(content).toString('base64');
+
+    return {
+      success: true,
+      data: {
+        content: base64Content,
+        filename: filename
+      },
+      message: 'File downloaded successfully'
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to download file'
+    };
+  }
+}

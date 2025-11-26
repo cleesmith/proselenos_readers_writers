@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import { NON_AI_TOOLS } from './useNonAITools';
 import PublishingAssistantModal from '../publishing-assistant/PublishingAssistantModal';
+import DownloadFileModal from './DownloadFileModal';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface NonAIToolsSectionProps {
@@ -67,6 +68,9 @@ export default function NonAIToolsSection({
   // Publishing Assistant state
   const [showPublishingAssistant, setShowPublishingAssistant] = useState(false);
 
+  // Download modal state
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
   // Helper function to get appropriate file type label
   const getFileTypeLabel = (toolName: string): string => {
     if (toolName === 'DOCX: Extract Comments as Text') {
@@ -102,16 +106,26 @@ export default function NonAIToolsSection({
           color: theme.text,
           marginBottom: 0
         }}>
-          Run a non-AI tool:
+          Non-AI tools:
         </h2>
-        <StyledSmallButton
-          onClick={() => setShowPublishingAssistant(true)}
-          disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
-          theme={theme}
-          styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '22px', lineHeight: 1 }}
-        >
-          📚 Publishing Assistant
-        </StyledSmallButton>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <StyledSmallButton
+            onClick={() => setShowDownloadModal(true)}
+            disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
+            theme={theme}
+            styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '22px', lineHeight: 1 }}
+          >
+            Download
+          </StyledSmallButton>
+          <StyledSmallButton
+            onClick={() => setShowPublishingAssistant(true)}
+            disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
+            theme={theme}
+            styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '22px', lineHeight: 1 }}
+          >
+            📚 Publishing Assistant
+          </StyledSmallButton>
+        </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -219,6 +233,17 @@ export default function NonAIToolsSection({
           onClose={() => setShowPublishingAssistant(false)}
           currentProject={currentProject}
           currentProjectId={currentProjectId}
+          theme={theme}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {/* Download File Modal */}
+      {showDownloadModal && (
+        <DownloadFileModal
+          isOpen={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          currentProject={currentProject}
           theme={theme}
           isDarkMode={isDarkMode}
         />

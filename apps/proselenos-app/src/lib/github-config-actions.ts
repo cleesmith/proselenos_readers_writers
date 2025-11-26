@@ -104,10 +104,7 @@ export async function updateDarkModeAction(isDark: boolean): Promise<ActionResul
  *
  * NOTE: This function is no longer called. It was previously used by a useEffect
  * in ClientBoot.tsx that re-validated the project on dependency changes. This caused
- * 12-second timeout errors during AI tool execution. Since users cannot delete their
- * own projects mid-session (private GitHub repos), this validation was unnecessary
- * paranoid code inherited from the Google Drive storage era. Kept for reference.
- * — Nov 2025
+ * 12-second timeout errors during AI tool execution.
  */
 export async function validateCurrentProjectAction(): Promise<ActionResult> {
   try {

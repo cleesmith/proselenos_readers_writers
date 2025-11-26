@@ -244,7 +244,7 @@ https://proselenos.com
               marginBottom: 0,
             }}
           >
-            Run an AI tool:
+            AI tools:
           </h2>
           {/* <StyledSmallButton
             onClick={handleReloadClick}
