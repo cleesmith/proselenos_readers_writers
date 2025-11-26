@@ -41,7 +41,7 @@ export default function StoreContent({ entries, githubOwner }: StoreContentProps
           onClick={handleBack}
           className='btn btn-ghost btn-sm'
         >
-          ← Library
+          ← Your Library
         </button>
         <h1 className='text-lg font-bold'>Proselenos Bookstore</h1>
         <div className='w-16' /> {/* Spacer for centering */}
