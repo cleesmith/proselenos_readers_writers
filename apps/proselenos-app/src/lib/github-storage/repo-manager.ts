@@ -1,5 +1,5 @@
 import { createGitHubClient, getGitHubOwner } from './client';
-// import { logUserRepo } from '@proselenosebooks/master-tracker';
+import { logUserRepo } from '@proselenosebooks/master-tracker';
 
 /**
  * Generate repo name from user ID and app suffix
@@ -53,12 +53,15 @@ export async function createUserRepo(
     include_all_branches: false,
   });
 
+  // Wait for GitHub to fully initialize repo from template
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
   // Log to master tracking (don't fail if this errors)
-  // try {
-  //   await logUserRepo(userId, repo);
-  // } catch (error) {
-  //   console.error('Failed to log user repo to master tracking:', error);
-  // }
+  try {
+    await logUserRepo(userId, repo);
+  } catch (error) {
+    console.error('Failed to log user repo to master tracking:', error);
+  }
 }
 
 /**

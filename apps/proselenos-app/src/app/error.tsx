@@ -109,7 +109,7 @@ export default function Error({ error, reset }: ErrorPageProps) {
           <div className='border-base-300 mt-8 border-t pt-6'>
             <p className='text-base-content/60 text-sm'>
               {_('Need help?')}{' '}
-              <a href='mailto:support@proselenosebooks.com' className='link link-primary'>
+              <a href='mailto:support@proselenos.com' className='link link-primary'>
                 {_('Contact Support')}
               </a>
             </p>

@@ -1,31 +1,31 @@
+// apps/proselenos-app/src/app/layout.tsx
+
 import * as React from 'react';
 import { EnvProvider } from '@/context/EnvContext';
 import Providers from '@/components/Providers';
 
 import '../styles/globals.css';
 
-const url = 'https://web.proselenosebooks.com/';
 const title = 'Proselenos — Read and Write';
+const url = 'https://proselenos.com';
 const description =
-  'Discover Proselenos, the ultimate online ebook reader for immersive and organized reading. ' +
-  'Enjoy seamless access to your digital library, powerful tools for highlighting, bookmarking, ' +
-  'and note-taking, and support for multiple book views. ' +
-  'Perfect for deep reading, analysis, and understanding. Explore now!';
-const previewImage = 'https://cdn.proselenosebooks.com/images/open_graph_preview_read_now.png';
+  'Proselenos is an ebook reader for EPUB files with text-to-speech read-aloud, highlighting, notes, and access to a bookstore. ' +
+  'Authors and Writers offers AI chat, a Writing Assistant for brainstorming, outlining, world-building, and chapter writing, AI editing tools, and an editor with read-aloud. ' +
+  'The Publishing Assistant converts a manuscript text file into HTML, EPUB, and PDF, with options to add the EPUB to your ereader library or list it in the bookstore.';
 
 export const metadata = {
   title,
   description,
   generator: 'Next.js',
-  keywords: ['epub', 'pdf', 'ebook', 'reader', 'proselenosebooks', 'pwa'],
+  keywords: ['epub', 'ebook', 'reader', 'writing', 'publishing', 'AI'],
   authors: [
     {
-      name: 'proselenosebooks',
-      url: 'https://github.com/proselenosebooks/proselenosebooks',
+      name: 'proselenos',
+      url: 'https://github.com/cleesmith/proselenos_readers_writers',
     },
   ],
   icons: [
-    { rel: 'apple-touch-icon', url: '/apple-touch-icon.png' },
+    { rel: 'apple-touch-icon', url: '/icon_180x180.png' },
     { rel: 'icon', url: '/icon.png' },
   ],
 };
@@ -51,20 +51,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
         <meta name='apple-mobile-web-app-title' content='Proselenos' />
-        <link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />
+        <link rel='apple-touch-icon' sizes='180x180' href='/icon_180x180.png' />
         <link rel='icon' href='/favicon.ico' />
         <meta name='description' content={description} />
         <meta property='og:url' content={url} />
         <meta property='og:type' content='website' />
         <meta property='og:title' content={title} />
         <meta property='og:description' content={description} />
-        <meta property='og:image' content={previewImage} />
-        <meta name='twitter:card' content='summary_large_image' />
-        <meta property='twitter:domain' content='web.proselenosebooks.com' />
-        <meta property='twitter:url' content={url} />
-        <meta name='twitter:title' content={title} />
-        <meta name='twitter:description' content={description} />
-        <meta name='twitter:image' content={previewImage} />
       </head>
       <body>
         <EnvProvider>

@@ -589,17 +589,6 @@ export const CJK_FONTS_PATTENS = new RegExp(
 
 export const BOOK_IDS_SEPARATOR = '+';
 
-export const DOWNLOAD_PROSELENOSEBOOKS_URL = 'https://proselenosebooks.com?utm_source=proselenosebooks_web';
-
-export const PROSELENOSEBOOKS_WEB_BASE_URL = 'https://web.proselenosebooks.com';
-export const PROSELENOSEBOOKS_NODE_BASE_URL = 'https://node.proselenosebooks.com';
-
-const LATEST_DOWNLOAD_BASE_URL = 'https://download.proselenosebooks.com/releases';
-
-export const PROSELENOSEBOOKS_UPDATER_FILE = `${LATEST_DOWNLOAD_BASE_URL}/latest.json`;
-
-export const PROSELENOSEBOOKS_CHANGELOG_FILE = `${LATEST_DOWNLOAD_BASE_URL}/release-notes.json`;
-
 export const SYNC_PROGRESS_INTERVAL_SEC = 3;
 export const SYNC_NOTES_INTERVAL_SEC = 5;
 export const SYNC_BOOKS_INTERVAL_SEC = 5;

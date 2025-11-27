@@ -5,10 +5,6 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
-    <loc>https://proselenos.com/library</loc>
-    <changefreq>weekly</changefreq>
-  </url>
-  <url>
     <loc>https://proselenos.com/store</loc>
     <changefreq>daily</changefreq>
   </url>

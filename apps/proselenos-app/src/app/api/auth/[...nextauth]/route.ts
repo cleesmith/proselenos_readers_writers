@@ -12,7 +12,8 @@ const handler = NextAuth({
     async signIn({ user }) {
       // Update user info on every sign in
       if (user?.id) {
-        // Update proselenos-config.json in user's repo
+
+        // Update user's repo: [user.id]_proselenos/proselenos-config.json
         try {
           await updateUserInfo(user.id, {
             name: user.name,
@@ -21,10 +22,11 @@ const handler = NextAuth({
           });
         } catch (error) {
           // Log but don't block sign-in if config update fails
-          console.error('Failed to update user info in config:', error);
+          console.log("\nNextAuth in: proselenosebooks/apps/proselenosebooks-app/api/auth/[...nextauth]/route.ts");
+          console.error("Failed to update user info in userId_proselenos/proselenos-config.json:\n", error);
         }
 
-        // Update user_repos.json in master_proselenosebooks
+        // Update master_proselenosebooks/user_repos.json
         try {
           await updateUserRepoInfo(user.id, {
             name: user.name,
@@ -32,7 +34,8 @@ const handler = NextAuth({
           });
         } catch (error) {
           // Log but don't block sign-in if master tracker update fails
-          console.error('Failed to update user info in master tracker:', error);
+          console.log("\nNextAuth in: proselenosebooks/apps/proselenosebooks-app/api/auth/[...nextauth]/route.ts");
+          console.error("Failed to update user info in master_proselenosebooks/user_repos.json:\n", error);
         }
       }
     },

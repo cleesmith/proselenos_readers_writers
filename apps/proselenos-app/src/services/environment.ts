@@ -1,5 +1,4 @@
 import { AppService } from '@/types/system';
-import { PROSELENOSEBOOKS_NODE_BASE_URL, PROSELENOSEBOOKS_WEB_BASE_URL } from './constants';
 
 declare global {
   interface Window {
@@ -11,19 +10,10 @@ export const isDesktopAppPlatform = () => process.env['NEXT_PUBLIC_APP_PLATFORM'
 export const isWebAppPlatform = () => process.env['NEXT_PUBLIC_APP_PLATFORM'] === 'web';
 export const hasCli = () => window.__PROSELENOSEBOOKS_CLI_ACCESS === true;
 export const isPWA = () => window.matchMedia('(display-mode: standalone)').matches;
-export const getBaseUrl = () => process.env['NEXT_PUBLIC_API_BASE_URL'] ?? PROSELENOSEBOOKS_WEB_BASE_URL;
-export const getNodeBaseUrl = () =>
-  process.env['NEXT_PUBLIC_NODE_BASE_URL'] ?? PROSELENOSEBOOKS_NODE_BASE_URL;
 
-const isWebDevMode = () => process.env['NODE_ENV'] === 'development' && isWebAppPlatform();
-
-// Dev API only in development mode and web platform
-// with command `pnpm dev-web`
-// for production build or desktop app use the production Web API
-export const getAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getBaseUrl()}/api`);
-
-// For Node.js API that currently not supported in some edge runtimes
-export const getNodeAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getNodeBaseUrl()}/api`);
+// API is always relative for web-only Next.js app on Vercel
+export const getAPIBaseUrl = () => '/api';
+export const getNodeAPIBaseUrl = () => '/api';
 
 export interface EnvConfigType {
   getAppService: () => Promise<AppService>;
