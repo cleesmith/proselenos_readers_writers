@@ -455,6 +455,16 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
 
   // Handle file selection for upload
   const selectUploadFile = useCallback((file: File) => {
+    // Validate file size (25MB max)
+    const MAX_FILE_SIZE_MB = 25;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      showAlert(`File too large (${sizeMB}MB). Maximum is ${MAX_FILE_SIZE_MB}MB.`, 'error', undefined, false);
+      return;
+    }
+
     setSelectedUploadFile(file);
   }, []);
 

@@ -20,6 +20,7 @@ interface ProjectSectionProps {
   isDocxDialogOpen?: boolean; // DOCX selector or filename dialog open
   isTxtConverting: boolean; // TXT -> DOCX conversion pending
   isTxtDialogOpen?: boolean; // TXT selector or filename dialog open
+  isUploading?: boolean; // File upload in progress
   onSelectProject: () => void;
   onProjectSettings: () => void;
   onFileUpload: () => void;
@@ -40,6 +41,7 @@ export default function ProjectSection({
   isDocxDialogOpen = false,
   isTxtConverting,
   isTxtDialogOpen = false,
+  isUploading = false,
   onSelectProject,
   onProjectSettings,
   onFileUpload,
@@ -124,10 +126,10 @@ export default function ProjectSection({
           
           <StyledSmallButton
             onClick={onFileUpload}
-            disabled={uploadDisabled}
+            disabled={uploadDisabled || isUploading}
             theme={theme}
           >
-            Upload
+            {isUploading ? 'Uploading...' : 'Upload'}
           </StyledSmallButton>
 
           <StyledSmallButton
