@@ -281,7 +281,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
       )}
       <MenuItem
         label={_('Bookstore')}
-        description={_('browse and import free ebooks')}
+        description={_('browse and import ebooks')}
         Icon={PiStorefront}
         buttonClass='bg-green-600/20 hover:!bg-green-600/30'
         onClick={openBookstore}

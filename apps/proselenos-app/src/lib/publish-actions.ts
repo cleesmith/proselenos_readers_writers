@@ -87,11 +87,8 @@ async function prepareManuscriptData(manuscriptFilePath: string, projectName: st
       publisher: 'Independent Publisher',
       language: 'en',
       description: 'Created with manuscript publishing system',
-      copyright: '',
-      dedication: '',
       aboutAuthor: '',
-      buyUrl: '',
-      pov: ''
+      buyUrl: ''
     };
   }
 
@@ -816,8 +813,9 @@ function createTitlePage(metadata: any): string {
  */
 function createCopyrightPage(metadata: any): string {
   const year = new Date().getFullYear();
-  
-  let copyrightContent = `    <p>Copyright © ${year} ${escapeHtml(metadata.author)}</p>
+
+  // Standard copyright template (like Vellum)
+  const copyrightContent = `    <p>Copyright © ${year} ${escapeHtml(metadata.author)}</p>
     <p></p>
     <p>All rights reserved.</p>
     <p></p>
@@ -826,13 +824,6 @@ function createCopyrightPage(metadata: any): string {
     <p>This is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously. Any resemblance to actual persons, living or dead, events, or locales is entirely coincidental.</p>
     <p></p>
     <p>First Edition: ${year}</p>`;
-
-  // Add user's custom copyright text if available
-  if (metadata.copyright && metadata.copyright.trim()) {
-    copyrightContent += '\n    <p></p>\n' + metadata.copyright.split('\n')
-      .map((line: string) => line.trim() ? `    <p>${escapeHtml(line.trim())}</p>` : '    <p></p>')
-      .join('\n');
-  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -1374,15 +1365,15 @@ function createPDFTitlePage(doc: any, metadata: any): void {
 function createPDFCopyrightPage(doc: any, metadata: any): void {
   // Add new page for copyright
   doc.addPage();
-  
+
   const pageWidth = 432;
   const pageHeight = 648;
   const leftMargin = 63;
   const bottomMargin = 72;
   const year = new Date().getFullYear();
-  
-  // Build copyright text array with proper blank lines
-  let copyrightText = [
+
+  // Standard copyright template (like Vellum)
+  const copyrightText = [
     `Copyright © ${year} ${metadata.author}`,
     '',
     'All rights reserved.',
@@ -1394,22 +1385,15 @@ function createPDFCopyrightPage(doc: any, metadata: any): void {
     'fictitiously. Any resemblance to actual persons, living or dead,',
     'events, or locales is entirely coincidental.'
   ];
-  
-  // Add user's custom copyright text if available
-  if (metadata.copyright && metadata.copyright.trim()) {
-    copyrightText.push('', '');
-    const userLines = metadata.copyright.split('\n').map((line: string) => line.trim()).filter((line: string) => line);
-    copyrightText = copyrightText.concat(userLines);
-  }
-  
+
   // Calculate starting Y position to place text at BOTTOM of page
   const lineHeight = 14;
   const totalHeight = copyrightText.length * lineHeight;
-  const startY = pageHeight - bottomMargin - totalHeight - 50; // Near bottom with 50px padding
-  
+  const startY = pageHeight - bottomMargin - totalHeight - 50;
+
   // Set font and size
   doc.font('regular').fontSize(10);
-  
+
   // Draw each line
   let currentY = startY;
   copyrightText.forEach((line: string) => {

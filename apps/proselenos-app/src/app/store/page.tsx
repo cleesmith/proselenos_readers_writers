@@ -7,8 +7,8 @@ import { getGitHubOwner } from '@/lib/github-storage';
 import StoreContent from './StoreContent';
 
 export const metadata: Metadata = {
-  title: 'Free Ebooks - Proselenos Bookstore',
-  description: 'Browse and download free ebooks from indie authors',
+  title: 'Ebooks - Proselenos Bookstore',
+  description: 'Browse and download ebooks from authors',
 };
 
 export const dynamic = 'force-dynamic';

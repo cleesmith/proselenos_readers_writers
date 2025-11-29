@@ -2,8 +2,10 @@
 
 'use client';
 
+import { useState } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
+import DownloadFileModal from '../non-ai-tools/DownloadFileModal';
 
 interface ProjectSectionProps {
   currentProject: string | null;
@@ -44,6 +46,8 @@ export default function ProjectSection({
   onDocxImport,
   onTxtExport
 }: ProjectSectionProps) {
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+
   const importDisabled =
     isSystemInitializing ||
     isStorageOperationPending ||
@@ -118,12 +122,20 @@ export default function ProjectSection({
             Project Settings
           </StyledSmallButton>
           
-          <StyledSmallButton 
+          <StyledSmallButton
             onClick={onFileUpload}
             disabled={uploadDisabled}
             theme={theme}
           >
-            UPLOAD
+            Upload
+          </StyledSmallButton>
+
+          <StyledSmallButton
+            onClick={() => setShowDownloadModal(true)}
+            disabled={uploadDisabled}
+            theme={theme}
+          >
+            Download
           </StyledSmallButton>
           
           <StyledSmallButton 
@@ -171,6 +183,17 @@ export default function ProjectSection({
         }}>
           {uploadStatus}
         </div>
+      )}
+
+      {/* Download File Modal */}
+      {showDownloadModal && (
+        <DownloadFileModal
+          isOpen={showDownloadModal}
+          onClose={() => setShowDownloadModal(false)}
+          currentProject={currentProject}
+          theme={theme}
+          isDarkMode={isDarkMode}
+        />
       )}
     </div>
   );

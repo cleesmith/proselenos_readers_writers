@@ -20,6 +20,7 @@ export interface StoreEntry {
   updatedAt: number;
   coverColor?: string;  // muted background color for cover, e.g. "#4a5568"
   hasCover?: boolean;   // true if cover thumbnail exists at covers/{bookHash}.jpg
+  epubFilename?: string;  // undefined defaults to 'manuscript.epub'
 }
 
 // Catalog is just an array of StoreEntry
@@ -152,6 +153,7 @@ export async function publishToPublicCatalog(
     author: string;
     description?: string;
     coverThumbnailBase64?: string;
+    epubFilename?: string;  // undefined defaults to 'manuscript.epub'
   }
 ): Promise<ActionResult> {
   try {
@@ -276,6 +278,7 @@ export async function publishToPublicCatalog(
       updatedAt: now,
       coverColor: generateMutedColor(userId, bookData.hash),
       hasCover: hasCover || existingEntry?.hasCover,
+      epubFilename: bookData.epubFilename,
     };
 
     if (existingEntry) {
@@ -432,8 +435,9 @@ export async function importBookFromStore(
     const owner = getGitHubOwner();
 
     // Fetch epub directly from author's repo
-    // Path pattern: {projectId}/manuscript.epub
-    const epubPath = `${entry.projectId}/manuscript.epub`;
+    // Path pattern: {projectId}/{epubFilename} (defaults to manuscript.epub)
+    const epubFilename = entry.epubFilename || 'manuscript.epub';
+    const epubPath = `${entry.projectId}/${epubFilename}`;
 
     const fileResponse = await octokit.repos.getContent({
       owner,
@@ -455,7 +459,7 @@ export async function importBookFromStore(
       success: true,
       data: {
         epubData,
-        filename: 'manuscript.epub',
+        filename: epubFilename,
         title: entry.title,
         author: entry.author,
       },

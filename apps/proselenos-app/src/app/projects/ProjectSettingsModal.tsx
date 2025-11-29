@@ -12,10 +12,7 @@ export interface ProjectMetadata {
   author: string;
   publisher: string;
   buyUrl: string;
-  copyright: string;
-  dedication: string;
   aboutAuthor: string;
-  pov: string;
 }
 
 interface ProjectSettingsModalProps {
@@ -36,10 +33,7 @@ const defaultMetadata: ProjectMetadata = {
   author: '',
   publisher: '',
   buyUrl: '',
-  copyright: '',
-  dedication: '',
-  aboutAuthor: '',
-  pov: ''
+  aboutAuthor: ''
 };
 
 export default function ProjectSettingsModal({
@@ -264,70 +258,6 @@ export default function ProjectSettingsModal({
               />
             </div>
 
-            {/* Copyright */}
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: theme.text
-              }}>
-                Copyright
-              </label>
-              <textarea
-                value={metadata.copyright}
-                onChange={(e) => handleChange('copyright', e.target.value)}
-                placeholder={isLoading ? "Loading data..." : "Enter copyright information..."}
-                disabled={isLoading || isSaving}
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  resize: 'none',
-                  outline: 'none'
-                }}
-              />
-            </div>
-
-            {/* Dedication */}
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: theme.text
-              }}>
-                Dedication
-              </label>
-              <textarea
-                value={metadata.dedication}
-                onChange={(e) => handleChange('dedication', e.target.value)}
-                placeholder={isLoading ? "Loading data..." : "Enter dedication..."}
-                disabled={isLoading || isSaving}
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  resize: 'none',
-                  outline: 'none'
-                }}
-              />
-            </div>
-
             {/* About Author */}
             <div>
               <label style={{
@@ -360,45 +290,6 @@ export default function ProjectSettingsModal({
               />
             </div>
 
-            {/* Point of View */}
-            <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: theme.text
-              }}>
-                Point of View
-                <span style={{
-                  fontSize: '12px',
-                  fontStyle: 'italic',
-                  fontWeight: 'normal',
-                  color: theme.textMuted,
-                  marginLeft: '8px'
-                }}>
-                  -- only used by Chapter Writer
-                </span>
-              </label>
-              <input
-                type="text"
-                value={metadata.pov}
-                onChange={(e) => handleChange('pov', e.target.value)}
-                placeholder={isLoading ? "Loading data..." : "Enter POV..."}
-                disabled={isLoading || isSaving}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  outline: 'none'
-                }}
-              />
-            </div>
           </div>
         </div>
 

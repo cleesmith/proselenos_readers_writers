@@ -333,6 +333,52 @@ export async function listTxtFilesAction(projectName: string): Promise<ActionRes
 }
 
 /**
+ * List only EPUB files in a project folder
+ */
+export async function listEpubFilesAction(projectName: string): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions) as ExtendedSession;
+    if (!session || !session.user?.id) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const userId = session.user.id;
+
+    if (!projectName) {
+      return { success: false, error: 'Project name is required' };
+    }
+
+    // Get all files in the project folder
+    const files = await listFiles(userId, 'proselenos', `${projectName}/`);
+
+    // Filter for .epub files only
+    const epubFiles = files
+      .filter(file => file.name.toLowerCase().endsWith('.epub'))
+      .map(file => ({
+        id: file.sha,
+        name: file.name,
+        path: file.path,
+        mimeType: 'application/epub+zip'
+      }));
+
+    return {
+      success: true,
+      data: {
+        files: epubFiles,
+        currentFolder: { name: projectName, id: projectName },
+        rootFolder: { name: 'Projects', id: 'root' }
+      },
+      message: `Found ${epubFiles.length} EPUB files in ${projectName}`
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to list EPUB files'
+    };
+  }
+}
+
+/**
  * Upload a file to a project folder (supports txt, docx, epub, pdf)
  */
 export async function uploadFileToProjectAction(
@@ -517,10 +563,7 @@ export async function loadBookMetadataAction(
         author: '',
         publisher: '',
         buyUrl: '',
-        copyright: '',
-        dedication: '',
-        aboutAuthor: '',
-        pov: ''
+        aboutAuthor: ''
       };
 
       return {

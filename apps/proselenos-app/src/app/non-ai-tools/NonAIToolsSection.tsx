@@ -6,8 +6,9 @@
 import { useState } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import { NON_AI_TOOLS } from './useNonAITools';
-import PublishingAssistantModal from '../publishing-assistant/PublishingAssistantModal';
-import DownloadFileModal from './DownloadFileModal';
+import EpubModal from '../publishing-assistant/EpubModal';
+import PdfModal from '../publishing-assistant/PdfModal';
+import HtmlModal from '../publishing-assistant/HtmlModal';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface NonAIToolsSectionProps {
@@ -65,11 +66,10 @@ export default function NonAIToolsSection({
   onShowAlert: _onShowAlert
 }: NonAIToolsSectionProps) {
 
-  // Publishing Assistant state
-  const [showPublishingAssistant, setShowPublishingAssistant] = useState(false);
-
-  // Download modal state
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  // Modal states
+  const [showEpubModal, setShowEpubModal] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [showHtmlModal, setShowHtmlModal] = useState(false);
 
   // Helper function to get appropriate file type label
   const getFileTypeLabel = (toolName: string): string => {
@@ -108,23 +108,42 @@ export default function NonAIToolsSection({
         }}>
           Non-AI tools:
         </h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <StyledSmallButton
-            onClick={() => setShowDownloadModal(true)}
-            disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
-            theme={theme}
-            styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '22px', lineHeight: 1 }}
-          >
-            Download
-          </StyledSmallButton>
-          <StyledSmallButton
-            onClick={() => setShowPublishingAssistant(true)}
-            disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
-            theme={theme}
-            styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '22px', lineHeight: 1 }}
-          >
-            📚 Publishing Assistant
-          </StyledSmallButton>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Publishing buttons group */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            padding: '3px 6px',
+            border: '1px solid #FF8C00',
+            borderRadius: '4px',
+            backgroundColor: isDarkMode ? 'rgba(255, 140, 0, 0.08)' : 'rgba(255, 140, 0, 0.05)'
+          }}>
+            <span style={{ fontSize: '9px', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Publish:</span>
+            <StyledSmallButton
+              onClick={() => setShowEpubModal(true)}
+              disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
+              theme={theme}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+            >
+              EPUB
+            </StyledSmallButton>
+            <StyledSmallButton
+              onClick={() => setShowPdfModal(true)}
+              disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
+              theme={theme}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+            >
+              PDF
+            </StyledSmallButton>
+            <StyledSmallButton
+              onClick={() => setShowHtmlModal(true)}
+              disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
+              theme={theme}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+            >
+              HTML
+            </StyledSmallButton>
+          </div>
         </div>
       </div>
 
@@ -226,24 +245,34 @@ export default function NonAIToolsSection({
       }}>
       </div>
       
-      {/* Publishing Assistant Modal */}
-      {showPublishingAssistant && (
-        <PublishingAssistantModal
-          isOpen={showPublishingAssistant}
-          onClose={() => setShowPublishingAssistant(false)}
-          currentProject={currentProject}
+      {/* EPUB Modal */}
+      {showEpubModal && (
+        <EpubModal
+          isOpen={showEpubModal}
+          onClose={() => setShowEpubModal(false)}
           currentProjectId={currentProjectId}
           theme={theme}
           isDarkMode={isDarkMode}
         />
       )}
 
-      {/* Download File Modal */}
-      {showDownloadModal && (
-        <DownloadFileModal
-          isOpen={showDownloadModal}
-          onClose={() => setShowDownloadModal(false)}
-          currentProject={currentProject}
+      {/* PDF Modal */}
+      {showPdfModal && (
+        <PdfModal
+          isOpen={showPdfModal}
+          onClose={() => setShowPdfModal(false)}
+          currentProjectId={currentProjectId}
+          theme={theme}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {/* HTML Modal */}
+      {showHtmlModal && (
+        <HtmlModal
+          isOpen={showHtmlModal}
+          onClose={() => setShowHtmlModal(false)}
+          currentProjectId={currentProjectId}
           theme={theme}
           isDarkMode={isDarkMode}
         />
