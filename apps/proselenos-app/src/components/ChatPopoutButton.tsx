@@ -13,6 +13,7 @@ interface ChatPopoutButtonProps {
   isDarkMode?: boolean;
   currentProject?: string | null;
   currentProjectId?: string | null;
+  styleOverrides?: React.CSSProperties;
 }
 
 /**
@@ -25,6 +26,7 @@ export default function ChatPopoutButton({
   isDarkMode = false,
   currentProject,
   currentProjectId,
+  styleOverrides
 }: ChatPopoutButtonProps): React.JSX.Element {
   const theme = getTheme(isDarkMode);
 
@@ -92,6 +94,7 @@ export default function ChatPopoutButton({
       onClick={openChatWindow}
       disabled={!currentProject || !currentProjectId}
       theme={theme}
+      styleOverrides={styleOverrides}
     >
       TabChat
     </StyledSmallButton>

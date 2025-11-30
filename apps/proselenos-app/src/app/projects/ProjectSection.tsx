@@ -2,10 +2,8 @@
 
 'use client';
 
-import { useState } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import DownloadFileModal from '../non-ai-tools/DownloadFileModal';
 
 interface ProjectSectionProps {
   currentProject: string | null;
@@ -20,12 +18,12 @@ interface ProjectSectionProps {
   isDocxDialogOpen?: boolean; // DOCX selector or filename dialog open
   isTxtConverting: boolean; // TXT -> DOCX conversion pending
   isTxtDialogOpen?: boolean; // TXT selector or filename dialog open
-  isUploading?: boolean; // File upload in progress
   onSelectProject: () => void;
   onProjectSettings: () => void;
-  onFileUpload: () => void;
+  onFilesClick: () => void;
   onDocxImport: () => void | Promise<void>;
   onTxtExport: () => void | Promise<void>;
+  onEditorClick: () => void;
 }
 
 export default function ProjectSection({
@@ -41,15 +39,13 @@ export default function ProjectSection({
   isDocxDialogOpen = false,
   isTxtConverting,
   isTxtDialogOpen = false,
-  isUploading = false,
   onSelectProject,
   onProjectSettings,
-  onFileUpload,
+  onFilesClick,
   onDocxImport,
-  onTxtExport
+  onTxtExport,
+  onEditorClick
 }: ProjectSectionProps) {
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
-
   const importDisabled =
     isSystemInitializing ||
     isStorageOperationPending ||
@@ -108,68 +104,102 @@ export default function ProjectSection({
           flex: '1',
           justifyContent: 'space-evenly'
         }}>
-          <StyledSmallButton 
+          <StyledSmallButton
             onClick={onSelectProject}
             disabled={false}
             theme={theme}
           >
             Select Project
           </StyledSmallButton>
-          
-          <StyledSmallButton 
-            onClick={onProjectSettings}
-            disabled={settingsDisabled}
-            theme={theme}
-          >
-            Project Settings
-          </StyledSmallButton>
-          
+
           <StyledSmallButton
-            onClick={onFileUpload}
-            disabled={uploadDisabled || isUploading}
+            onClick={onEditorClick}
+            disabled={isSystemInitializing || isStorageOperationPending || toolExecuting || !currentProject}
             theme={theme}
+            styleOverrides={{ marginLeft: '4px' }}
           >
-            {isUploading ? 'Uploading...' : 'Upload'}
+            Editor
           </StyledSmallButton>
 
           <StyledSmallButton
-            onClick={() => setShowDownloadModal(true)}
+            onClick={onFilesClick}
             disabled={uploadDisabled}
             theme={theme}
           >
-            Download
+            Files
           </StyledSmallButton>
           
-          <StyledSmallButton 
-            onClick={onDocxImport}
-            disabled={importDisabled}
-            title={importDisabled ? 'Please wait…' : 'Import a DOCX file'}
-            theme={theme}
-            styleOverrides={{ padding: '3px 6px' }}
-            aria-busy={isDocxConverting}
-          >
-            {isDocxConverting ? 'Converting…' : 'IMPORT .docx'}
-          </StyledSmallButton>
-          
-          <StyledSmallButton 
-            onClick={onTxtExport}
-            disabled={exportDisabled}
-            title={exportDisabled ? 'Please wait…' : 'Export a TXT to DOCX'}
-            theme={theme}
-            styleOverrides={{ padding: '3px 6px' }}
-            aria-busy={isTxtConverting}
-          >
-            {isTxtConverting ? 'Exporting…' : 'EXPORT .docx'}
-          </StyledSmallButton>
+          {/* Word import/export buttons group - orange box style */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            padding: '3px 6px',
+            border: `1px solid ${isDarkMode ? '#888' : '#666'}`,
+            borderRadius: '4px',
+            backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)'
+          }}>
+            <span style={{ fontSize: '9px', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Word:</span>
+            <StyledSmallButton
+              onClick={onDocxImport}
+              disabled={importDisabled}
+              title={importDisabled ? 'Please wait…' : 'Import a DOCX file'}
+              theme={theme}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+              aria-busy={isDocxConverting}
+            >
+              {isDocxConverting ? 'Converting…' : 'Import'}
+            </StyledSmallButton>
+            <StyledSmallButton
+              onClick={onTxtExport}
+              disabled={exportDisabled}
+              title={exportDisabled ? 'Please wait…' : 'Export a TXT to DOCX'}
+              theme={theme}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+              aria-busy={isTxtConverting}
+            >
+              {isTxtConverting ? 'Exporting…' : 'Export'}
+            </StyledSmallButton>
+          </div>
         </div>
       </div>
       
       <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
         fontSize: '20px',
         fontWeight: 'bold',
         color: theme.text,
         marginBottom: '10px'
       }}>
+        {currentProject && (
+          <button
+            onClick={onProjectSettings}
+            disabled={settingsDisabled}
+            title="Project Settings"
+            style={{
+              background: 'none',
+              border: `1.5px solid ${isDarkMode ? '#888' : '#666'}`,
+              borderRadius: '50%',
+              width: '18px',
+              height: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: settingsDisabled ? 'not-allowed' : 'pointer',
+              opacity: settingsDisabled ? 0.5 : 1,
+              color: isDarkMode ? '#aaa' : '#555',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              fontStyle: 'italic',
+              fontFamily: 'Georgia, serif',
+              padding: 0,
+              lineHeight: 1
+            }}
+          >
+            i
+          </button>
+        )}
         {currentProject || 'No Project Selected'}
       </div>
 
@@ -185,17 +215,6 @@ export default function ProjectSection({
         }}>
           {uploadStatus}
         </div>
-      )}
-
-      {/* Download File Modal */}
-      {showDownloadModal && (
-        <DownloadFileModal
-          isOpen={showDownloadModal}
-          onClose={() => setShowDownloadModal(false)}
-          currentProject={currentProject}
-          theme={theme}
-          isDarkMode={isDarkMode}
-        />
       )}
     </div>
   );

@@ -6,8 +6,6 @@
 
 import { useRouter } from 'next/navigation';
 import { ThemeConfig } from '../shared/theme';
-import ChatButton from '@/components/ChatButton';
-import ChatPopoutButton from '@/components/ChatPopoutButton';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface ProselenosHeaderProps {
@@ -24,9 +22,6 @@ interface ProselenosHeaderProps {
   currentProjectId?: string | null;
   isSystemInitializing: boolean;
   onThemeToggle: () => void;
-  onModelsClick: () => void;
-  onSettingsClick: () => void;
-  onEditorClick: () => void;
   onAboutClick: () => void;
 }
 
@@ -38,15 +33,12 @@ export default function ProselenosHeader({
   currentModel,
   hasConfiguredProvider,
   hasApiKey: _hasApiKey,
-  isStorageOperationPending,
-  toolExecuting,
-  currentProject,
-  currentProjectId,
-  isSystemInitializing,
+  isStorageOperationPending: _isStorageOperationPending,
+  toolExecuting: _toolExecuting,
+  currentProject: _currentProject,
+  currentProjectId: _currentProjectId,
+  isSystemInitializing: _isSystemInitializing,
   onThemeToggle,
-  onModelsClick,
-  onSettingsClick,
-  onEditorClick,
   onAboutClick
 }: ProselenosHeaderProps) {
 
@@ -140,45 +132,6 @@ export default function ProselenosHeader({
         {/* Right - Control Buttons */}
         {session && (
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-
-            <ChatButton
-              className="ml-2"
-              isDarkMode={isDarkMode}
-              currentProject={currentProject}
-              currentProjectId={currentProjectId}
-              isSystemInitializing={isSystemInitializing}
-            />
-            <ChatPopoutButton
-              className="ml-1"
-              isDarkMode={isDarkMode}
-              currentProject={currentProject}
-              currentProjectId={currentProjectId}
-            />
-
-            <StyledSmallButton
-              onClick={onModelsClick}
-              disabled={isSystemInitializing || !currentProject}
-              theme={theme}
-            >
-              Models
-            </StyledSmallButton>
-            <StyledSmallButton
-              onClick={onSettingsClick}
-              disabled={isSystemInitializing || isStorageOperationPending || !currentProject}
-              theme={theme}
-            >
-              AI API key
-            </StyledSmallButton>
-            <StyledSmallButton
-              onClick={() => {
-                console.log('Editor button clicked:', { isStorageOperationPending, toolExecuting });
-                onEditorClick();
-              }}
-              disabled={isSystemInitializing || isStorageOperationPending || toolExecuting || !currentProject}
-              theme={theme}
-            >
-              Editor
-            </StyledSmallButton>
             <StyledSmallButton onClick={onAboutClick} theme={theme}>About</StyledSmallButton>
             <StyledSmallButton onClick={handleExitClick} theme={theme}>Exit</StyledSmallButton>
           </div>

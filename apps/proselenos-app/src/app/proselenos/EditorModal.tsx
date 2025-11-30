@@ -688,13 +688,7 @@ export default function EditorModal({
             gap: '0.5rem',
           }}
         >
-          <span>
-            <span role="img" aria-label="note">
-              📝
-            </span>{' '}
-            Editor: {currentProject || 'New Project'}
-            {currentFileName && ` - ${currentFileName}`}
-          </span>
+          <span>{currentFileName || 'New File'}</span>
           <span>{wordCount.toLocaleString()} words</span>
           {isSpeaking && sentences.length > 0 && (
             <span>

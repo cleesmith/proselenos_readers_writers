@@ -11,6 +11,8 @@ import ToolResponseDisplay from './ToolResponseDisplay';
 import DualPanelEditor from './DualPanelEditor';
 import WritingAssistantModal from '../writing-assistant/WritingAssistantModal';
 import { getToolPromptAction } from '@/lib/tools-actions';
+import ChatButton from '@/components/ChatButton';
+import ChatPopoutButton from '@/components/ChatPopoutButton';
 
 interface AIToolsSectionProps {
   // Session
@@ -60,6 +62,8 @@ interface AIToolsSectionProps {
   onClearTool: () => void;
   onExecuteTool: () => void;
   onLoadFileIntoEditor?: (content: string, fileName: string, fileId?: string) => void;
+  onModelsClick: () => void;
+  onSettingsClick: () => void;
 }
 
 export default function AIToolsSection({
@@ -91,6 +95,8 @@ export default function AIToolsSection({
   onClearTool,
   onExecuteTool,
   onLoadFileIntoEditor,
+  onModelsClick,
+  onSettingsClick,
 }: AIToolsSectionProps) {
   
   // Dual panel editor state
@@ -234,7 +240,7 @@ https://proselenos.com
           marginBottom: '6px',
         }}
       >
-        {/* Left group: heading and reload button */}
+        {/* Left group: heading and AI settings buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <h2
             style={{
@@ -246,20 +252,57 @@ https://proselenos.com
           >
             AI tools:
           </h2>
-          {/* <StyledSmallButton
-            onClick={handleReloadClick}
-            disabled={
-              isReloading ||
-              isSystemInitializing ||
-              isStorageOperationPending ||
-              isInstallingToolPrompts ||
-              toolExecuting
-            }
-            theme={theme}
-            styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '22px', lineHeight: 1 }}
-          >
-            {isReloading ? 'Reloading...' : 'Reload Tools'}
-          </StyledSmallButton> */}
+          {/* AI settings buttons group - orange box style */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            padding: '3px 6px',
+            border: `1px solid ${isDarkMode ? '#888' : '#666'}`,
+            borderRadius: '4px',
+            backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)'
+          }}>
+            <span style={{ fontSize: '9px', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}> </span>
+            <StyledSmallButton
+              onClick={onModelsClick}
+              disabled={isSystemInitializing || !currentProject}
+              theme={theme}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+            >
+              Models
+            </StyledSmallButton>
+            <StyledSmallButton
+              onClick={onSettingsClick}
+              disabled={isSystemInitializing || isStorageOperationPending || !currentProject}
+              theme={theme}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+            >
+              Key
+            </StyledSmallButton>
+          </div>
+          {/* Chat buttons group - orange box style (no label) */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            padding: '3px 6px',
+            border: `1px solid ${isDarkMode ? '#888' : '#666'}`,
+            borderRadius: '4px',
+            backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)',
+            marginLeft: '12px'
+          }}>
+            <ChatButton
+              isDarkMode={isDarkMode}
+              currentProject={currentProject}
+              currentProjectId={currentProjectId}
+              isSystemInitializing={isSystemInitializing}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+            />
+            <ChatPopoutButton
+              isDarkMode={isDarkMode}
+              currentProject={currentProject}
+              currentProjectId={currentProjectId}
+              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+            />
+          </div>
         </div>
         {/* Right-hand button: AI Writing Assistant stays on far right */}
         <StyledSmallButton

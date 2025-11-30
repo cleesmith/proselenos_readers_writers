@@ -3,7 +3,7 @@
 
 'use server';
 
-import { listFiles, uploadFile, downloadFile } from '@/lib/github-storage';
+import { listFiles, uploadFile, downloadFile, deleteFile } from '@/lib/github-storage';
 import { updateCurrentProject } from '@/lib/github-config-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
@@ -663,6 +663,40 @@ export async function downloadFileForBrowserAction(
     return {
       success: false,
       error: error.message || 'Failed to download file'
+    };
+  }
+}
+
+/**
+ * Delete a file from a project folder
+ */
+export async function deleteProjectFileAction(
+  projectName: string,
+  filePath: string
+): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions) as ExtendedSession;
+    if (!session || !session.user?.id) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    if (!projectName || !filePath) {
+      return { success: false, error: 'Project name and file path are required' };
+    }
+
+    const userId = session.user.id;
+
+    // filePath already includes project folder (e.g., "ProjectName/filename.epub")
+    await deleteFile(userId, 'proselenos', filePath, `Delete ${filePath}`);
+
+    return {
+      success: true,
+      message: `File deleted: ${filePath}`
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to delete file'
     };
   }
 }

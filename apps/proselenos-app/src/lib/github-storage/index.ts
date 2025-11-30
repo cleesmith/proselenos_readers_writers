@@ -9,3 +9,6 @@ export { uploadFile, uploadFiles } from './file-upload';
 
 // File download
 export { listFiles, downloadFile, downloadBinaryFile, downloadFileBySha } from './file-download';
+
+// File delete
+export { deleteFile } from './file-delete';

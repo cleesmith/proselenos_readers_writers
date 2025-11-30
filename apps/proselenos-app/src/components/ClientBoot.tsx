@@ -17,7 +17,7 @@ import ProjectSection from '../app/projects/ProjectSection';
 import ProjectSelectorModal from '../app/projects/ProjectSelectorModal';
 import LocalDocxImportModal from '../app/projects/LocalDocxImportModal';
 import ExportModal from '../app/projects/ExportModal';
-import UploadModal from '../app/projects/UploadModal';
+import FilesModal from '../app/projects/FilesModal';
 import { useProjectManager } from '../app/projects/useProjectManager';
 import AIToolsSection from '../app/ai-tools/AIToolsSection';
 import FileSelectorModal from '../app/ai-tools/FileSelectorModal';
@@ -693,19 +693,20 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     projectActions.handleTxtExport(session, isDarkMode, setIsStorageOperationPending);
   };
 
-  const handleFileUpload = () => {
-    projectActions.handleFileUpload(isDarkMode, setIsStorageOperationPending);
+  const handleFilesClick = () => {
+    // Directly open the Files modal
+    projectActions.setShowUploadModal(true);
   };
-  
+
   const handleUploadFileSelect = (file: File) => {
     projectActions.selectUploadFile(file);
   };
-  
+
   const handlePerformUpload = () => {
     projectActions.performFileUpload(session, isDarkMode);
   };
-  
-  const handleCloseUploadModal = () => {
+
+  const handleCloseFilesModal = () => {
     projectActions.setShowUploadModal(false);
   };
   
@@ -1067,9 +1068,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
           currentProjectId={projectState.currentProjectId}
           isSystemInitializing={isSystemInitializing}
           onThemeToggle={toggleTheme}
-          onModelsClick={handleModelsClick}
-          onSettingsClick={handleOpenSettings}
-          onEditorClick={openEditor}
           onAboutClick={handleOpenAbout}
         />
       )}
@@ -1474,12 +1472,12 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             isDocxDialogOpen={projectState.showDocxSelector || projectState.showFilenameDialog}
             isTxtConverting={projectState.isConvertingTxt}
             isTxtDialogOpen={projectState.showTxtSelector || projectState.showTxtFilenameDialog}
-            isUploading={projectState.isUploading}
             onSelectProject={handleSelectProject}
             onProjectSettings={handleProjectSettings}
-            onFileUpload={handleFileUpload}
+            onFilesClick={handleFilesClick}
             onDocxImport={handleDocxImport}
             onTxtExport={handleTxtExport}
+            onEditorClick={openEditor}
           />
           
           {/* AI Tools Section */}
@@ -1512,6 +1510,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             onClearTool={toolsActions.clearTool}
             onExecuteTool={handleExecuteTool}
             onLoadFileIntoEditor={handleLoadFileIntoEditor}
+            onModelsClick={handleModelsClick}
+            onSettingsClick={handleOpenSettings}
           />
           
           {/* Non-AI Tools Section */}
@@ -1634,8 +1634,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         onConfirmConversion={() => projectActions.performTxtConversion(session, isDarkMode)}
       />
       
-      {/* Upload Modal */}
-      <UploadModal
+      {/* Files Modal (Upload/Download/Delete) */}
+      <FilesModal
         isOpen={projectState.showUploadModal}
         theme={theme}
         isDarkMode={isDarkMode}
@@ -1643,7 +1643,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         selectedUploadFile={projectState.selectedUploadFile}
         uploadFileName={projectState.uploadFileName}
         isUploading={projectState.isUploading}
-        onClose={handleCloseUploadModal}
+        onClose={handleCloseFilesModal}
         onFileSelect={handleUploadFileSelect}
         onFileNameChange={projectActions.setUploadFileName}
         onUpload={handlePerformUpload}

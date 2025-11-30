@@ -15,6 +15,7 @@ interface ChatButtonProps {
   currentProject?: string | null;
   currentProjectId?: string | null;
   isSystemInitializing?: boolean;
+  styleOverrides?: React.CSSProperties;
 }
 
 export default function ChatButton({
@@ -22,7 +23,8 @@ export default function ChatButton({
   isDarkMode = false,
   currentProject,
   currentProjectId,
-  isSystemInitializing = false
+  isSystemInitializing = false,
+  styleOverrides
 }: ChatButtonProps): React.JSX.Element {
   
   // Explicit state typing
@@ -49,6 +51,7 @@ export default function ChatButton({
         onClick={handleClick}
         disabled={!currentProject || !currentProjectId || isSystemInitializing}
         theme={theme}
+        styleOverrides={styleOverrides}
       >
         Chat
       </StyledSmallButton>

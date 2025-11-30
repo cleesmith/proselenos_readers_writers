@@ -114,9 +114,9 @@ export default function NonAIToolsSection({
             display: 'flex',
             gap: '4px',
             padding: '3px 6px',
-            border: '1px solid #FF8C00',
+            border: `1px solid ${isDarkMode ? '#888' : '#666'}`,
             borderRadius: '4px',
-            backgroundColor: isDarkMode ? 'rgba(255, 140, 0, 0.08)' : 'rgba(255, 140, 0, 0.05)'
+            backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)'
           }}>
             <span style={{ fontSize: '9px', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Publish:</span>
             <StyledSmallButton
