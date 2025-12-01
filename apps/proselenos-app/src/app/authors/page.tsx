@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { fastInitForUser } from '@/lib/github/fastInitServer';
+import { cleanupOldBlobsAction } from '@/lib/blob-cleanup-action';
 import ClientBoot from '@/components/ClientBoot';
 import { redirect } from 'next/navigation';
 
@@ -17,6 +18,9 @@ export default async function AuthorsPage() {
   if (!session?.accessToken) {
     redirect('/library');
   }
+
+  // Opportunistic cleanup of old Vercel Blob files (fire-and-forget, don't block page load)
+  cleanupOldBlobsAction().catch(() => {});
 
   if (session?.user?.email) {
     const timestamp = new Date().toLocaleString('en-US', {

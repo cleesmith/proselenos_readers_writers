@@ -65,24 +65,54 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // This runs server-side after blob upload completes
         // Vercel calls this webhook - won't work on localhost
 
+        // Helper to delete blob - always called at end
+        const deleteBlob = async () => {
+          try {
+            await del(blob.url);
+          } catch (delError) {
+            console.error('Failed to delete blob:', delError);
+          }
+        };
+
+        // Helper to retry an async operation
+        const withRetry = async <T>(
+          operation: () => Promise<T>,
+          maxRetries: number = 2,
+          delayMs: number = 500
+        ): Promise<T> => {
+          let lastError: Error | undefined;
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+              return await operation();
+            } catch (error) {
+              lastError = error instanceof Error ? error : new Error(String(error));
+              if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
+              }
+            }
+          }
+          throw lastError;
+        };
+
         try {
           const { userId, projectName, fileName } = JSON.parse(tokenPayload || '{}');
 
           if (!userId || !projectName || !fileName) {
             console.error('Missing required fields in tokenPayload:', { userId, projectName, fileName });
+            await deleteBlob();
             return;
           }
 
-          // Fetch file from Vercel Blob (use downloadUrl for reliability)
+          // Fetch file from Vercel Blob with retry
           const fetchUrl = blob.downloadUrl || blob.url;
-          const blobResponse = await fetch(fetchUrl);
+          const arrayBuffer = await withRetry(async () => {
+            const response = await fetch(fetchUrl);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch blob: ${response.status}`);
+            }
+            return response.arrayBuffer();
+          });
 
-          if (!blobResponse.ok) {
-            console.error(`Failed to fetch blob: ${blobResponse.status}`, { url: fetchUrl });
-            return;
-          }
-
-          const arrayBuffer = await blobResponse.arrayBuffer();
           const filePath = `${projectName}/${fileName}`;
           const fileNameLower = fileName.toLowerCase();
 
@@ -97,20 +127,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             content = arrayBuffer;
           }
 
-          // Upload to GitHub
+          // Upload to GitHub with retry
           const commitMessage = `Upload ${fileName}`;
-          await uploadFile(userId, 'proselenos', filePath, content, commitMessage);
+          await withRetry(async () => {
+            await uploadFile(userId, 'proselenos', filePath, content, commitMessage);
+          });
 
-          // Delete blob from Vercel storage (cleanup)
-          try {
-            await del(blob.url);
-          } catch (delError) {
-            console.error('Failed to delete blob:', delError);
-          }
-
+          // Success - delete blob
+          await deleteBlob();
           console.log(`Uploaded ${fileName} to GitHub for user ${userId}`);
         } catch (error) {
           console.error('onUploadCompleted error:', error);
+          // Still try to delete blob even if something failed
+          await deleteBlob();
         }
       },
     });
