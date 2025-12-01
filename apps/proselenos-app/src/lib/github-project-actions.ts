@@ -8,6 +8,7 @@ import { updateCurrentProject } from '@/lib/github-config-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { ProjectMetadata } from '@/app/projects/ProjectSettingsModal';
+import { del } from '@vercel/blob';
 
 interface ExtendedSession {
   user: {
@@ -399,12 +400,12 @@ export async function uploadFileToProjectAction(
     }
 
     // Validate file type
-    const allowedExtensions = ['.docx', '.txt', '.epub', '.pdf'];
+    const allowedExtensions = ['.docx', '.txt', '.html', '.epub', '.pdf'];
     const fileName = file.name.toLowerCase();
     const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
 
     if (!hasValidExtension) {
-      return { success: false, error: 'Only .txt, .docx, .epub, and .pdf files are allowed' };
+      return { success: false, error: 'Only .txt, .html, .docx, .epub, and .pdf files are allowed' };
     }
 
     // Use custom filename if provided, otherwise use original file name
@@ -415,7 +416,7 @@ export async function uploadFileToProjectAction(
     const arrayBuffer = await file.arrayBuffer();
 
     let content: string | ArrayBuffer;
-    if (fileName.endsWith('.txt')) {
+    if (fileName.endsWith('.txt') || fileName.endsWith('.html')) {
       // Text files: convert to UTF-8 string
       const decoder = new TextDecoder('utf-8');
       content = decoder.decode(arrayBuffer);
@@ -697,6 +698,85 @@ export async function deleteProjectFileAction(
     return {
       success: false,
       error: error.message || 'Failed to delete file'
+    };
+  }
+}
+
+/**
+ * Copy a file from Vercel Blob storage to GitHub project, then delete from Blob
+ * Used for two-step upload flow: client uploads to Blob, then this action copies to GitHub
+ */
+export async function copyBlobToProjectAction(
+  blobUrl: string,
+  projectName: string,
+  fileName: string
+): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions) as ExtendedSession;
+    if (!session || !session.user?.id) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const userId = session.user.id;
+
+    if (!blobUrl || !projectName || !fileName) {
+      return { success: false, error: 'Blob URL, project name, and file name are required' };
+    }
+
+    // Validate file extension
+    const allowedExtensions = ['.docx', '.txt', '.html', '.epub', '.pdf'];
+    const fileNameLower = fileName.toLowerCase();
+    const hasValidExtension = allowedExtensions.some(ext => fileNameLower.endsWith(ext));
+
+    if (!hasValidExtension) {
+      return { success: false, error: 'Only .txt, .html, .docx, .epub, and .pdf files are allowed' };
+    }
+
+    // Fetch file from Vercel Blob
+    const blobResponse = await fetch(blobUrl);
+    if (!blobResponse.ok) {
+      return { success: false, error: `Failed to fetch file from Blob storage: ${blobResponse.status}` };
+    }
+
+    const arrayBuffer = await blobResponse.arrayBuffer();
+    const filePath = `${projectName}/${fileName}`;
+
+    // Determine content type for GitHub upload
+    let content: string | ArrayBuffer;
+    if (fileNameLower.endsWith('.txt') || fileNameLower.endsWith('.html')) {
+      // Text files: convert to UTF-8 string
+      const decoder = new TextDecoder('utf-8');
+      content = decoder.decode(arrayBuffer);
+    } else {
+      // Binary files (docx, epub, pdf): pass ArrayBuffer directly
+      content = arrayBuffer;
+    }
+
+    // Upload to GitHub
+    const commitMessage = `Upload ${fileName}`;
+    await uploadFile(userId, 'proselenos', filePath, content, commitMessage);
+
+    // Delete blob from Vercel storage (cleanup)
+    try {
+      await del(blobUrl);
+    } catch (delError) {
+      // Log but don't fail - file is already in GitHub
+      console.error('Failed to delete blob:', delError);
+    }
+
+    return {
+      success: true,
+      data: {
+        fileName,
+        filePath,
+        size: arrayBuffer.byteLength
+      },
+      message: `File uploaded successfully: ${fileName}`
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to copy file from Blob to GitHub'
     };
   }
 }

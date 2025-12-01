@@ -2,16 +2,20 @@
 // Extracted from app/page.tsx - handles all project-related state and operations
 
 import { useState, useMemo, useCallback } from 'react';
+import { upload } from '@vercel/blob/client';
 import { showAlert } from '../shared/alerts';
 import {
   listProjectsAction,
   createProjectAction,
   selectProjectAction,
   listProjectFilesAction,
-  uploadFileToProjectAction,
   listTxtFilesAction
 } from '@/lib/github-project-actions';
 import { convertTxtToDocxActionGitHub } from '@/lib/docx-conversion-actions';
+
+// Get max upload size from env (default 30MB)
+const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'] || '30', 10);
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 interface ProjectManagerState {
   // Project state
@@ -455,10 +459,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
 
   // Handle file selection for upload
   const selectUploadFile = useCallback((file: File) => {
-    // Validate file size (25MB max)
-    const MAX_FILE_SIZE_MB = 25;
-    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
+    // Validate file size using env var (default 30MB)
     if (file.size > MAX_FILE_SIZE_BYTES) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
       showAlert(`File too large (${sizeMB}MB). Maximum is ${MAX_FILE_SIZE_MB}MB.`, 'error', undefined, false);
@@ -468,7 +469,8 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
     setSelectedUploadFile(file);
   }, []);
 
-  // Perform the actual file upload
+  // Perform the actual file upload using Vercel Blob with onUploadCompleted webhook
+  // The webhook handles server-to-server GitHub upload (bypasses 4.5MB limit)
   const performFileUpload = useCallback(
     async (_session: any, isDarkMode: boolean) => {
       if (!selectedUploadFile || !currentProject) {
@@ -476,29 +478,47 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
         return;
       }
 
+      const finalFileName = uploadFileName?.trim() || selectedUploadFile.name;
+
+      // Check if running locally - webhook won't work on localhost
+      const isLocalDev = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+      if (isLocalDev) {
+        showAlert(
+          'File upload to GitHub requires the Vercel webhook, which cannot reach localhost. ' +
+          'Deploy to Vercel to test the full upload flow.',
+          'warning',
+          'Local Dev Limitation',
+          isDarkMode
+        );
+        return;
+      }
+
       setIsUploading(true);
       setShowUploadModal(false);
-      setUploadStatus(`Uploading ${uploadFileName || selectedUploadFile.name}...`);
+      setUploadStatus(`Uploading ${finalFileName}...`);
 
       try {
-        const result = await uploadFileToProjectAction(
-          selectedUploadFile,
-          currentProject,
-          uploadFileName
-        );
+        // Upload to Vercel Blob with clientPayload containing project info
+        // The onUploadCompleted webhook handles the GitHub upload server-side
+        await upload(selectedUploadFile.name, selectedUploadFile, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+          clientPayload: JSON.stringify({
+            projectName: currentProject,
+            fileName: finalFileName
+          }),
+        });
 
-        if (result.success) {
-          setUploadStatus(`✅ File uploaded: ${result.data?.fileName}`);
-          showAlert(
-            `File uploaded successfully: ${result.data?.fileName}`,
-            'success',
-            undefined,
-            isDarkMode
-          );
-        } else {
-          setUploadStatus(`❌ Upload failed: ${result.error}`);
-          showAlert(`Upload failed: ${result.error}`, 'error', undefined, isDarkMode);
-        }
+        // If we get here, the blob upload succeeded and the webhook processed it
+        setUploadStatus(`✅ File uploaded: ${finalFileName}`);
+        showAlert(
+          `File uploaded successfully: ${finalFileName}`,
+          'success',
+          undefined,
+          isDarkMode
+        );
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         showAlert(`Upload error: ${errorMsg}`, 'error', undefined, isDarkMode);

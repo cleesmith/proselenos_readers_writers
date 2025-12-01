@@ -21,6 +21,7 @@
     "@proselenosebooks/github-repo": "workspace:*",
     "@proselenosebooks/master-tracker": "workspace:*",
     "@uiw/react-md-editor": "^4.0.8",
+    "@vercel/blob": "^2.0.0",
     "@xmldom/xmldom": "^0.9.8",
     "@zip.js/zip.js": "^2.7.53",
     "abortcontroller-polyfill": "^1.7.8",

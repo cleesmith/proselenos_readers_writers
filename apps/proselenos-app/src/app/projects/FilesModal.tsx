@@ -30,7 +30,7 @@ interface FileItem {
   path: string;
 }
 
-// Only allow these file extensions
+// Only allow these file extensions (keep in sync with upload validation)
 const ALLOWED_EXTENSIONS = ['.txt', '.html', '.docx', '.epub', '.pdf'];
 
 export default function FilesModal({
@@ -91,12 +91,12 @@ export default function FilesModal({
     const file = event.target.files?.[0];
     if (file) {
       // Validate file type
-      const allowedExtensions = ['.txt', '.docx', '.epub', '.pdf'];
+      const allowedExtensions = ['.txt', '.html', '.docx', '.epub', '.pdf'];
       const fileName = file.name.toLowerCase();
       const isValidFile = allowedExtensions.some(ext => fileName.endsWith(ext));
 
       if (!isValidFile) {
-        showAlert('Please select a .txt, .docx, .epub, or .pdf file only.', 'warning', undefined, isDarkMode);
+        showAlert('Please select a .txt, .html, .docx, .epub, or .pdf file only.', 'warning', undefined, isDarkMode);
         return;
       }
 
@@ -232,7 +232,7 @@ export default function FilesModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.docx,.epub,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/epub+zip,application/pdf"
+              accept=".txt,.html,.docx,.epub,.pdf,text/plain,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/epub+zip,application/pdf"
               onChange={handleFileChange}
               style={{ display: 'none' }}
               disabled={isUploading}
@@ -242,7 +242,7 @@ export default function FilesModal({
               Upload a file
             </StyledSmallButton>
             <span style={{ fontSize: '10px', color: theme.textMuted }}>
-              .txt .docx .epub .pdf
+              .txt .html .docx .epub .pdf
             </span>
 
             {selectedUploadFile && (
