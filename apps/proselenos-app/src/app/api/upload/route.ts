@@ -2,7 +2,7 @@
 // Handles token generation and onUploadCompleted webhook for server-to-server GitHub upload
 
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
-import { del } from '@vercel/blob';
+import { del, head, list } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
@@ -80,6 +80,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           if (!userId || !projectName || !fileName) {
             console.error('Missing required fields in tokenPayload:', { userId, projectName, fileName });
             return;
+          }
+
+          // DEBUG: Use SDK to check blob exists
+          console.log('=== SDK DEBUG ===');
+          try {
+            const metadata = await head(blob.url);
+            console.log('head() found blob:', metadata);
+          } catch (headError) {
+            console.error('head() failed:', headError);
+          }
+
+          // List all blobs to compare URLs
+          try {
+            const { blobs: allBlobs } = await list();
+            console.log('All blobs in store:', allBlobs.map(b => ({ url: b.url, pathname: b.pathname })));
+          } catch (listError) {
+            console.error('list() failed:', listError);
           }
 
           // Try downloadUrl instead of url (debugging 404 issue)
