@@ -68,15 +68,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         try {
           const { userId, projectName, fileName } = JSON.parse(tokenPayload || '{}');
 
+          // DEBUG: Log everything
+          console.log('=== onUploadCompleted DEBUG ===');
+          console.log('Blob URL:', blob.url);
+          console.log('Blob downloadUrl:', blob.downloadUrl);
+          console.log('Blob pathname:', blob.pathname);
+          console.log('Token payload:', { userId, projectName, fileName });
+          console.log('GitHub repo:', `${userId}_proselenos`);
+          console.log('File path:', `${projectName}/${fileName}`);
+
           if (!userId || !projectName || !fileName) {
             console.error('Missing required fields in tokenPayload:', { userId, projectName, fileName });
             return;
           }
 
+          // Try downloadUrl instead of url (debugging 404 issue)
+          const fetchUrl = blob.downloadUrl || blob.url;
+          console.log('Fetching from:', fetchUrl);
+
           // Fetch file from Vercel Blob (server-to-server)
-          const blobResponse = await fetch(blob.url);
+          const blobResponse = await fetch(fetchUrl);
+          console.log('Fetch response status:', blobResponse.status);
+
           if (!blobResponse.ok) {
             console.error(`Failed to fetch blob: ${blobResponse.status}`);
+            console.error('Response headers:', Object.fromEntries(blobResponse.headers.entries()));
             return;
           }
 
