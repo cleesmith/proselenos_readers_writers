@@ -3,15 +3,34 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { upload } from '@vercel/blob/client';
-import { showAlert } from '../shared/alerts';
+import { showAlert, showConfirm } from '../shared/alerts';
 import {
   listProjectsAction,
   createProjectAction,
   selectProjectAction,
   listProjectFilesAction,
-  listTxtFilesAction
+  listTxtFilesAction,
+  checkManuscriptFilesExistAction
 } from '@/lib/github-project-actions';
 import { convertTxtToDocxActionGitHub } from '@/lib/docx-conversion-actions';
+
+// Manuscript file types - only 1 of each allowed, renamed to manuscript.{ext}
+const MANUSCRIPT_EXTENSIONS = ['.epub', '.pdf', '.html'];
+
+/**
+ * Sanitize filename for .txt and .docx files to avoid URL issues
+ * Removes leading underscores, replaces special chars with underscores
+ */
+function sanitizeFilename(name: string): string {
+  const ext = name.slice(name.lastIndexOf('.'));
+  const base = name.slice(0, name.lastIndexOf('.'));
+  const sanitized = base
+    .replace(/^_+/, '')              // Remove leading underscores
+    .replace(/[^a-zA-Z0-9_-]/g, '_') // Replace special chars (periods, spaces, etc.)
+    .replace(/_+/g, '_')             // Collapse multiple underscores
+    .replace(/^_|_$/g, '');          // Remove leading/trailing underscores
+  return (sanitized || 'file') + ext; // Fallback to 'file' if empty
+}
 
 // Get max upload size from env (default 30MB)
 const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'] || '30', 10);
@@ -472,13 +491,18 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
   // Perform the actual file upload using Vercel Blob with onUploadCompleted webhook
   // The webhook handles server-to-server GitHub upload (bypasses 4.5MB limit)
   const performFileUpload = useCallback(
-    async (_session: any, isDarkMode: boolean) => {
+    async (session: any, isDarkMode: boolean) => {
       if (!selectedUploadFile || !currentProject) {
         showAlert('No file selected or no project selected', 'error', undefined, isDarkMode);
         return;
       }
 
-      const finalFileName = uploadFileName?.trim() || selectedUploadFile.name;
+      // Get userId from session (Google ID)
+      const userId = session?.user?.id;
+      if (!userId) {
+        showAlert('Could not determine user identity', 'error', undefined, isDarkMode);
+        return;
+      }
 
       // Check if running locally - webhook won't work on localhost
       const isLocalDev = typeof window !== 'undefined' &&
@@ -495,26 +519,63 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
         return;
       }
 
+      // Determine file extension and type
+      const originalName = selectedUploadFile.name;
+      const ext = originalName.slice(originalName.lastIndexOf('.')).toLowerCase();
+      const isManuscriptType = MANUSCRIPT_EXTENSIONS.includes(ext);
+
+      let githubFileName: string;
+      let blobPathname: string;
+
+      if (isManuscriptType) {
+        // Manuscript files: always named manuscript.{ext}
+        githubFileName = `manuscript${ext}`;
+
+        // Check if manuscript file already exists
+        const existsResult = await checkManuscriptFilesExistAction(currentProject);
+        if (existsResult.success && existsResult.data) {
+          const extKey = ext.slice(1) as 'epub' | 'pdf' | 'html';
+          if (existsResult.data[extKey]) {
+            // File exists - warn user
+            const confirmed = await showConfirm(
+              `A ${githubFileName} already exists in this project.\n\nDo you want to replace it?`,
+              isDarkMode,
+              'Replace Existing File?',
+              'Replace',
+              'Cancel'
+            );
+            if (!confirmed) {
+              return; // User cancelled
+            }
+          }
+        }
+      } else {
+        // Regular files (.txt, .docx): sanitize original name
+        githubFileName = sanitizeFilename(originalName);
+      }
+
+      // Blob pathname includes userId to avoid conflicts between users
+      blobPathname = `${userId}-${githubFileName}`;
+
       setIsUploading(true);
-      setShowUploadModal(false);
-      setUploadStatus(`Uploading ${finalFileName}...`);
+      setUploadStatus(`Uploading ${githubFileName}...`);
 
       try {
-        // Upload to Vercel Blob with clientPayload containing project info
+        // Upload to Vercel Blob with userId-prefixed pathname
         // The onUploadCompleted webhook handles the GitHub upload server-side
-        await upload(selectedUploadFile.name, selectedUploadFile, {
+        await upload(blobPathname, selectedUploadFile, {
           access: 'public',
           handleUploadUrl: '/api/upload',
           clientPayload: JSON.stringify({
             projectName: currentProject,
-            fileName: finalFileName
+            fileName: githubFileName  // This is the name used on GitHub
           }),
         });
 
         // If we get here, the blob upload succeeded and the webhook processed it
-        setUploadStatus(`✅ File uploaded: ${finalFileName}`);
+        setUploadStatus(`✅ File uploaded: ${githubFileName}`);
         showAlert(
-          `File uploaded successfully: ${finalFileName}`,
+          `File uploaded successfully: ${githubFileName}`,
           'success',
           undefined,
           isDarkMode

@@ -2,7 +2,7 @@
 // Handles token generation and onUploadCompleted webhook for server-to-server GitHub upload
 
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
-import { del, head, list } from '@vercel/blob';
+import { del } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           throw new Error('Could not determine user identity');
         }
 
-        // Validate file extension
+        // Validate file extension (extract from pathname which may have userId prefix)
         const ext = pathname.toLowerCase().slice(pathname.lastIndexOf('.'));
         if (!ALLOWED_EXTENSIONS.includes(ext)) {
           throw new Error(`File type ${ext} not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`);
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           tokenPayload: JSON.stringify({
             userId,
             projectName: payload.projectName,
-            fileName: payload.fileName
+            fileName: payload.fileName  // This is the GitHub filename (not blob pathname)
           }),
         };
       },
@@ -68,48 +68,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         try {
           const { userId, projectName, fileName } = JSON.parse(tokenPayload || '{}');
 
-          // DEBUG: Log everything
-          console.log('=== onUploadCompleted DEBUG ===');
-          console.log('Blob URL:', blob.url);
-          console.log('Blob downloadUrl:', blob.downloadUrl);
-          console.log('Blob pathname:', blob.pathname);
-          console.log('Token payload:', { userId, projectName, fileName });
-          console.log('GitHub repo:', `${userId}_proselenos`);
-          console.log('File path:', `${projectName}/${fileName}`);
-
           if (!userId || !projectName || !fileName) {
             console.error('Missing required fields in tokenPayload:', { userId, projectName, fileName });
             return;
           }
 
-          // DEBUG: Use SDK to check blob exists
-          console.log('=== SDK DEBUG ===');
-          try {
-            const metadata = await head(blob.url);
-            console.log('head() found blob:', metadata);
-          } catch (headError) {
-            console.error('head() failed:', headError);
-          }
-
-          // List all blobs to compare URLs
-          try {
-            const { blobs: allBlobs } = await list();
-            console.log('All blobs in store:', allBlobs.map(b => ({ url: b.url, pathname: b.pathname })));
-          } catch (listError) {
-            console.error('list() failed:', listError);
-          }
-
-          // Try downloadUrl instead of url (debugging 404 issue)
+          // Fetch file from Vercel Blob (use downloadUrl for reliability)
           const fetchUrl = blob.downloadUrl || blob.url;
-          console.log('Fetching from:', fetchUrl);
-
-          // Fetch file from Vercel Blob (server-to-server)
           const blobResponse = await fetch(fetchUrl);
-          console.log('Fetch response status:', blobResponse.status);
 
           if (!blobResponse.ok) {
-            console.error(`Failed to fetch blob: ${blobResponse.status}`);
-            console.error('Response headers:', Object.fromEntries(blobResponse.headers.entries()));
+            console.error(`Failed to fetch blob: ${blobResponse.status}`, { url: fetchUrl });
             return;
           }
 
@@ -139,7 +108,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             console.error('Failed to delete blob:', delError);
           }
 
-          console.log(`Successfully uploaded ${fileName} to GitHub for user ${userId}`);
+          console.log(`Uploaded ${fileName} to GitHub for user ${userId}`);
         } catch (error) {
           console.error('onUploadCompleted error:', error);
         }

@@ -47,6 +47,7 @@ export default function FilesModal({
   onUpload
 }: FilesModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const wasUploadingRef = useRef(false);
 
   // File list state
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -61,6 +62,15 @@ export default function FilesModal({
       fetchFiles();
     }
   }, [isOpen, currentProject]);
+
+  // Refresh file list when upload completes (isUploading: true -> false)
+  useEffect(() => {
+    if (wasUploadingRef.current && !isUploading && isOpen && currentProject) {
+      // Upload just finished - refresh the file list
+      fetchFiles();
+    }
+    wasUploadingRef.current = isUploading;
+  }, [isUploading, isOpen, currentProject]);
 
   const fetchFiles = async () => {
     if (!currentProject) return;
@@ -197,7 +207,6 @@ export default function FilesModal({
         zIndex: 1000,
         padding: '20px'
       }}
-      onClick={onClose}
     >
       <div
         style={{
@@ -213,69 +222,76 @@ export default function FilesModal({
           flexDirection: 'column',
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
         }}
-        onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header - Upload button on left, Close on right */}
+        {/* Modal Header - Close button always at top right */}
         <div
           style={{
-            padding: '16px 20px',
+            padding: '12px 20px',
             borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
-            flexShrink: 0,
-            gap: '10px'
+            flexShrink: 0
           }}
         >
-          {/* Left side - Upload */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', flex: 1 }}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".txt,.html,.docx,.epub,.pdf,text/plain,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/epub+zip,application/pdf"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-              disabled={isUploading}
-            />
-
-            <StyledSmallButton onClick={handleUploadClick} disabled={isUploading} theme={theme}>
-              Upload a file
-            </StyledSmallButton>
-            <span style={{ fontSize: '10px', color: theme.textMuted }}>
-              .txt .html .docx .epub .pdf
-            </span>
-
-            {selectedUploadFile && (
-              <>
-                <span style={{ fontSize: '12px', color: theme.textMuted }}>
-                  {selectedUploadFile.name} ({Math.round(selectedUploadFile.size / 1024)}KB)
-                </span>
-                <input
-                  type="text"
-                  value={uploadFileName}
-                  onChange={(e) => onFileNameChange(e.target.value)}
-                  placeholder="Save as..."
-                  style={{
-                    padding: '4px 8px',
-                    backgroundColor: theme.inputBg,
-                    color: theme.text,
-                    border: `1px solid ${theme.border}`,
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    width: '150px'
-                  }}
-                />
-                <StyledSmallButton onClick={onUpload} disabled={isUploading} theme={theme}>
-                  {isUploading ? 'Uploading...' : 'Upload'}
-                </StyledSmallButton>
-              </>
-            )}
-          </div>
-
-          {/* Right side - Close */}
           <StyledSmallButton onClick={onClose} disabled={isUploading || deletingFile !== null} theme={theme}>
             Close
           </StyledSmallButton>
+        </div>
+
+        {/* Upload Controls Section */}
+        <div
+          style={{
+            padding: '12px 20px',
+            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+            flexShrink: 0
+          }}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.html,.docx,.epub,.pdf,text/plain,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/epub+zip,application/pdf"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+            disabled={isUploading}
+          />
+
+          <StyledSmallButton onClick={handleUploadClick} disabled={isUploading} theme={theme}>
+            Upload a file
+          </StyledSmallButton>
+          <span style={{ fontSize: '10px', color: theme.textMuted }}>
+            .txt .html .docx .epub .pdf
+          </span>
+
+          {selectedUploadFile && (
+            <>
+              <span style={{ fontSize: '12px', color: theme.textMuted, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedUploadFile.name} ({Math.round(selectedUploadFile.size / 1024)}KB)
+              </span>
+              <input
+                type="text"
+                value={uploadFileName}
+                onChange={(e) => onFileNameChange(e.target.value)}
+                placeholder="Save as..."
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: theme.inputBg,
+                  color: theme.text,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  width: '150px'
+                }}
+              />
+              <StyledSmallButton onClick={onUpload} disabled={isUploading} theme={theme}>
+                {isUploading ? 'Uploading...' : 'Upload'}
+              </StyledSmallButton>
+            </>
+          )}
         </div>
 
         {/* File List Section */}
