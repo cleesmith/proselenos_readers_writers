@@ -17,23 +17,28 @@ export default function StepActions({
   onOpenChatForBrainstorm // Add this new prop
 }: StepActionsProps) {
   
+  const isBrainstorm = step.id === 'brainstorm';
+  const smallStyle = isBrainstorm ? { padding: '2px 6px', fontSize: '10px' } : {};
+
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
       {/* Run Button - Always visible */}
       <StyledSmallButton
         onClick={onExecute}
         disabled={isExecuting || isAnyStepExecuting}
         theme={theme}
+        styleOverrides={smallStyle}
       >
-        {isExecuting ? 'Running...' : 'Run'}
+        {isExecuting ? '...' : 'Run'}
       </StyledSmallButton>
 
       {/* Chat Button - Only for brainstorm step */}
-      {step.id === 'brainstorm' && onOpenChatForBrainstorm && (
+      {isBrainstorm && onOpenChatForBrainstorm && (
         <StyledSmallButton
           onClick={() => onOpenChatForBrainstorm(onClose)}
           disabled={isExecuting || isAnyStepExecuting}
           theme={theme}
+          styleOverrides={smallStyle}
         >
           Chat
         </StyledSmallButton>

@@ -6,20 +6,20 @@ import Swal from 'sweetalert2';
 import { signOut } from 'next-auth/react';
 
 export const showAlert = (
-  message: string, 
-  type: 'success' | 'error' | 'info' | 'warning' = 'info', 
-  customTitle?: string, 
+  message: string,
+  type: 'success' | 'error' | 'info' | 'warning' = 'info',
+  customTitle?: string,
   isDarkMode: boolean = true
 ) => {
   document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-  
+
   const titles = {
     success: 'Success!',
     error: 'Error',
     warning: 'Warning',
     info: 'Information'
   };
-  
+
   const hasNewlines = message.includes('\n');
   const alertOptions: any = {
     title: customTitle || titles[type],
@@ -27,13 +27,25 @@ export const showAlert = (
     background: isDarkMode ? '#222' : '#fff',
     color: isDarkMode ? '#fff' : '#333',
     confirmButtonColor: '#3085d6',
-    confirmButtonText: 'OK'
+    confirmButtonText: 'OK',
+    // Ensure alert appears above modals (which use z-index 2000-3000)
+    customClass: {
+      container: 'swal-above-modal'
+    }
   };
 
   if (hasNewlines) {
     alertOptions.html = message.replace(/\n/g, '<br>');
   } else {
     alertOptions.text = message;
+  }
+
+  // Add style for high z-index if not already present
+  if (!document.getElementById('swal-high-z-style')) {
+    const style = document.createElement('style');
+    style.id = 'swal-high-z-style';
+    style.textContent = '.swal-above-modal { z-index: 10000 !important; }';
+    document.head.appendChild(style);
   }
 
   Swal.fire(alertOptions);

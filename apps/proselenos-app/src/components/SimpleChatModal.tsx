@@ -42,7 +42,7 @@ export default function SimpleChatModal({
   // Filename input state
   const [showFilenameInput, setShowFilenameInput] = useState<boolean>(false);
   const [filename, setFilename] = useState<string>('');
-  
+
   // Timer state for current request
   const [_startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
@@ -68,6 +68,8 @@ export default function SimpleChatModal({
       setElapsedTime(0);
     } else {
       loadProviderModel();
+      // Focus textarea when modal opens
+      setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [isOpen, timerInterval]);
 
@@ -217,20 +219,11 @@ export default function SimpleChatModal({
         currentProject,
         filename.trim()
       );
-      
-      if (result.success) {
-        showAlert(result.message, 'success', undefined, isDarkMode);
-        setMessages([]);
-        // Reset timer when clearing chat
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          setTimerInterval(null);
-        }
-        setStartTime(null);
-        setElapsedTime(0);
-      } else {
+
+      if (!result.success) {
         showAlert(`Failed to save: ${result.message}`, 'error', undefined, isDarkMode);
       }
+      // Success: button state change is sufficient feedback
     } catch (error: unknown) {
       showAlert(`Error saving chat: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error', undefined, isDarkMode);
     } finally {
@@ -491,6 +484,7 @@ export default function SimpleChatModal({
               onKeyDown={handleKeyDown}
               placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
               rows={3}
+              autoFocus
               style={{
                 flex: 1,
                 padding: '8px 12px',

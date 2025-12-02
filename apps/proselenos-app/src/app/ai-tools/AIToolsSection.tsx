@@ -12,7 +12,6 @@ import DualPanelEditor from './DualPanelEditor';
 import WritingAssistantModal from '../writing-assistant/WritingAssistantModal';
 import { getToolPromptAction } from '@/lib/tools-actions';
 import ChatButton from '@/components/ChatButton';
-import ChatPopoutButton from '@/components/ChatPopoutButton';
 
 interface AIToolsSectionProps {
   // Session
@@ -252,7 +251,7 @@ https://proselenos.com
           >
             AI tools:
           </h2>
-          {/* AI settings buttons group - orange box style */}
+          {/* AI settings and Chat buttons group */}
           <div style={{
             display: 'flex',
             gap: '4px',
@@ -278,17 +277,6 @@ https://proselenos.com
             >
               Key
             </StyledSmallButton>
-          </div>
-          {/* Chat buttons group - orange box style (no label) */}
-          <div style={{
-            display: 'flex',
-            gap: '4px',
-            padding: '3px 6px',
-            border: `1px solid ${isDarkMode ? '#888' : '#666'}`,
-            borderRadius: '4px',
-            backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)',
-            marginLeft: '12px'
-          }}>
             <ChatButton
               isDarkMode={isDarkMode}
               currentProject={currentProject}
@@ -296,23 +284,16 @@ https://proselenos.com
               isSystemInitializing={isSystemInitializing}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             />
-            <ChatPopoutButton
-              isDarkMode={isDarkMode}
-              currentProject={currentProject}
-              currentProjectId={currentProjectId}
+            <StyledSmallButton
+              onClick={() => setShowWritingAssistant(true)}
+              disabled={isSystemInitializing || !currentProject || isStorageOperationPending || toolExecuting}
+              theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
-            />
+            >
+              Writing Assistant
+            </StyledSmallButton>
           </div>
         </div>
-        {/* Right-hand button: AI Writing Assistant stays on far right */}
-        <StyledSmallButton
-          onClick={() => setShowWritingAssistant(true)}
-          disabled={isSystemInitializing || !currentProject || isStorageOperationPending || toolExecuting}
-          theme={theme}
-          styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '22px', lineHeight: 1 }}
-        >
-          ✨ AI Writing Assistant
-        </StyledSmallButton>
       </div>
       
       <div
@@ -425,7 +406,7 @@ https://proselenos.com
           }
           theme={theme}
         >
-          {isLoadingPrompt ? 'Loading...' : 'edit prompt'}
+          {isLoadingPrompt ? 'Loading...' : 'Prompt'}
         </StyledSmallButton>
         
         <StyledSmallButton

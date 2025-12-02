@@ -3,7 +3,6 @@
 'use client';
 
 import { WorkflowStepProps } from './types';
-import StepActions from './StepActions';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 export default function WorkflowStep({
@@ -11,7 +10,7 @@ export default function WorkflowStep({
   isActive: _isActive,
   onExecute,
   onView,
-  onRedo,
+  onRedo: _onRedo,
   onEditPrompt,
   isExecuting,
   isAnyStepExecuting,
@@ -111,8 +110,28 @@ export default function WorkflowStep({
             theme={theme}
             styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
           >
-            {isLoadingPrompt ? 'loading...' : 'edit prompt'}
+            {isLoadingPrompt ? '...' : 'Prompt'}
           </StyledSmallButton>
+          {/* Run button */}
+          <StyledSmallButton
+            onClick={() => onExecute(step.id)}
+            disabled={isExecuting || isAnyStepExecuting}
+            theme={theme}
+            styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
+          >
+            {isExecuting ? '...' : 'Run'}
+          </StyledSmallButton>
+          {/* Chat button - Brainstorm only */}
+          {step.id === 'brainstorm' && onOpenChatForBrainstorm && (
+            <StyledSmallButton
+              onClick={() => onOpenChatForBrainstorm(onClose)}
+              disabled={isExecuting || isAnyStepExecuting}
+              theme={theme}
+              styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
+            >
+              Chat
+            </StyledSmallButton>
+          )}
         </div>
         <div
           style={{
@@ -161,7 +180,7 @@ export default function WorkflowStep({
           onClick={() => onView(step.id)}
           disabled={isAnyStepExecuting}
           theme={theme}
-          styleOverrides={{ padding: '4px 8px', marginLeft: '12px' }}
+          styleOverrides={{ padding: '2px 6px', fontSize: '10px', marginLeft: '8px' }}
         >
           {step.fileName}
         </StyledSmallButton>
@@ -182,19 +201,6 @@ export default function WorkflowStep({
           Failed
         </div>
       )}
-
-      {/* Actions */}
-      <StepActions
-        step={step}
-        onExecute={() => onExecute(step.id)}
-        onView={() => onView(step.id)}
-        onRedo={() => onRedo(step.id)}
-        isExecuting={isExecuting}
-        isAnyStepExecuting={isAnyStepExecuting}
-        theme={theme}
-        onClose={onClose}
-        onOpenChatForBrainstorm={onOpenChatForBrainstorm} // Pass it down here
-      />
     </div>
   );
 }

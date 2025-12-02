@@ -87,7 +87,7 @@ export default function WritingAssistantModal({
               color: theme.text
             }}
           >
-            AI Writing Assistant
+            Writing Assistant
           </h3>
           <StyledSmallButton
             onClick={() => {

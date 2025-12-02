@@ -699,7 +699,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   };
 
   const handleUploadFileSelect = (file: File) => {
-    projectActions.selectUploadFile(file);
+    projectActions.selectUploadFile(file, isDarkMode);
   };
 
   const handlePerformUpload = () => {

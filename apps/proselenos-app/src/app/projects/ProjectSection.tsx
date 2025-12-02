@@ -94,7 +94,7 @@ export default function ProjectSection({
           color: theme.text,
           margin: '0'
         }}>
-          Writing Project:
+          Project:
         </h2>
         
         <div style={{ 
@@ -109,7 +109,7 @@ export default function ProjectSection({
             disabled={false}
             theme={theme}
           >
-            Select Project
+            Select
           </StyledSmallButton>
 
           <StyledSmallButton
@@ -132,6 +132,7 @@ export default function ProjectSection({
           {/* Word import/export buttons group - orange box style */}
           <div style={{
             display: 'flex',
+            alignItems: 'center',
             gap: '4px',
             padding: '3px 6px',
             border: `1px solid ${isDarkMode ? '#888' : '#666'}`,
@@ -176,7 +177,7 @@ export default function ProjectSection({
           <button
             onClick={onProjectSettings}
             disabled={settingsDisabled}
-            title="Project Settings"
+            title="Settings"
             style={{
               background: 'none',
               border: `1.5px solid ${isDarkMode ? '#888' : '#666'}`,

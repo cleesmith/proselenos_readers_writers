@@ -137,7 +137,7 @@ interface ProjectManagerActions {
     isDarkMode: boolean,
     setIsStorageOperationPending: (loading: boolean) => void
   ) => void;
-  selectUploadFile: (file: File) => void;
+  selectUploadFile: (file: File, isDarkMode: boolean) => void;
   setUploadFileName: (name: string) => void;
   performFileUpload: (session: any, isDarkMode: boolean) => Promise<void>;
   setShowUploadModal: (show: boolean) => void;
@@ -477,11 +477,11 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
   };
 
   // Handle file selection for upload
-  const selectUploadFile = useCallback((file: File) => {
+  const selectUploadFile = useCallback((file: File, isDarkMode: boolean) => {
     // Validate file size using env var (default 30MB)
     if (file.size > MAX_FILE_SIZE_BYTES) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      showAlert(`File too large (${sizeMB}MB). Maximum is ${MAX_FILE_SIZE_MB}MB.`, 'error', undefined, false);
+      showAlert(`File too large (${sizeMB}MB). Maximum is ${MAX_FILE_SIZE_MB}MB.`, 'error', undefined, isDarkMode);
       return;
     }
 
