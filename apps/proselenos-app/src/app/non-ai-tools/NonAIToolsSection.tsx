@@ -94,15 +94,17 @@ export default function NonAIToolsSection({
       borderRadius: '8px',
       padding: '12px'
     }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'flex-start', 
-        marginBottom: '6px' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'flex-start',
+        gap: '16px',
+        alignItems: 'flex-start',
+        marginBottom: '6px'
       }}>
-        <h2 style={{ 
-          fontSize: '16px', 
-          fontWeight: 'bold', 
+        <h2 style={{
+          fontSize: '16px',
+          fontWeight: 'bold',
+          fontStyle: 'italic',
           color: theme.text,
           marginBottom: 0
         }}>
@@ -118,7 +120,7 @@ export default function NonAIToolsSection({
             borderRadius: '4px',
             backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)'
           }}>
-            <span style={{ fontSize: '9px', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Publish:</span>
+            <span style={{ fontSize: '9px', fontStyle: 'italic', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Publish:</span>
             <StyledSmallButton
               onClick={() => setShowEpubModal(true)}
               disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}

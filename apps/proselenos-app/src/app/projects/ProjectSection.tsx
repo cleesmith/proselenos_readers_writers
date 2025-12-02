@@ -75,34 +75,34 @@ export default function ProjectSection({
     !currentProject;
 
   return (
-    <div style={{ 
-      marginBottom: '12px',
+    <div style={{
+      marginBottom: '24px',
       backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
       border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
       borderRadius: '8px',
       padding: '12px'
     }}>
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        gap: '16px',
         marginBottom: '8px'
       }}>
-        <h2 style={{ 
-          fontSize: '16px', 
-          fontWeight: 'bold', 
+        <h2 style={{
+          fontSize: '16px',
+          fontWeight: 'bold',
+          fontStyle: 'italic',
           color: theme.text,
           margin: '0'
         }}>
           Project:
         </h2>
         
-        <div style={{ 
-          display: 'flex', 
-          gap: '8px', 
-          marginLeft: '20px',
-          flex: '1',
-          justifyContent: 'space-evenly'
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          justifyContent: 'flex-start'
         }}>
           <StyledSmallButton
             onClick={onSelectProject}
@@ -139,7 +139,7 @@ export default function ProjectSection({
             borderRadius: '4px',
             backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)'
           }}>
-            <span style={{ fontSize: '9px', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Word:</span>
+            <span style={{ fontSize: '9px', fontStyle: 'italic', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Word:</span>
             <StyledSmallButton
               onClick={onDocxImport}
               disabled={importDisabled}

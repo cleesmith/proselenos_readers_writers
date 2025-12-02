@@ -224,7 +224,7 @@ https://proselenos.com
   return (
     <div
       style={{
-        marginBottom: '12px',
+        marginBottom: '24px',
         backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
         border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
         borderRadius: '8px',
@@ -245,6 +245,7 @@ https://proselenos.com
             style={{
               fontSize: '16px',
               fontWeight: 'bold',
+              fontStyle: 'italic',
               color: theme.text,
               marginBottom: 0,
             }}
@@ -299,6 +300,7 @@ https://proselenos.com
       <div
         style={{
           fontSize: '14px',
+          fontStyle: 'italic',
           color: theme.textSecondary,
           marginBottom: '8px',
         }}
@@ -339,6 +341,7 @@ https://proselenos.com
       <div
         style={{
           fontSize: '14px',
+          fontStyle: 'italic',
           color: theme.textSecondary,
           marginBottom: '8px',
         }}
