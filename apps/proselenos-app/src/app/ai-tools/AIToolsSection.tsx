@@ -7,7 +7,6 @@ import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { showAlert } from '../shared/alerts';
 import ToolProgressIndicator from './ToolProgressIndicator';
-import ToolResponseDisplay from './ToolResponseDisplay';
 import DualPanelEditor from './DualPanelEditor';
 import WritingAssistantModal from '../writing-assistant/WritingAssistantModal';
 import { getToolPromptAction } from '@/lib/tools-actions';
@@ -525,9 +524,7 @@ https://proselenos.com
           <strong>Selected manuscript:</strong> {selectedManuscriptForTool.name}
         </div>
       )}
-      
-      <ToolResponseDisplay toolResult={toolResult} theme={theme} />
-      
+
       {/* Dual Panel Editor Modal */}
       {showDualEditor && selectedManuscriptForTool && (
         <DualPanelEditor
