@@ -12,9 +12,6 @@ interface ProselenosHeaderProps {
   session: any;
   theme: ThemeConfig;
   isDarkMode: boolean;
-  currentProvider: string;
-  currentModel: string;
-  hasConfiguredProvider: boolean;
   hasApiKey: boolean;
   isStorageOperationPending: boolean;
   toolExecuting: boolean;
@@ -29,9 +26,6 @@ export default function ProselenosHeader({
   session,
   theme,
   isDarkMode,
-  currentProvider,
-  currentModel,
-  hasConfiguredProvider,
   hasApiKey: _hasApiKey,
   isStorageOperationPending: _isStorageOperationPending,
   toolExecuting: _toolExecuting,
@@ -99,34 +93,13 @@ export default function ProselenosHeader({
               height: '32px'
             }}
           />
-          <div style={{ 
-            fontSize: '18px', 
-            fontWeight: 'bold', 
-            color: theme.text 
+          <div style={{
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: theme.text
           }}>
             Proselenos
           </div>
-          {session && (
-            <div 
-              style={{ 
-                fontSize: '10px', 
-                color: '#4285F4',
-                fontFamily: 'monospace',
-                marginLeft: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              {hasConfiguredProvider ? (
-                <span title={`Provider: ${currentProvider}, Model: ${currentModel}`}>
-                  {currentProvider}:{currentModel}
-                </span>
-              ) : (
-                <span style={{ color: '#dc3545' }}>No AI provider</span>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Right - Control Buttons */}

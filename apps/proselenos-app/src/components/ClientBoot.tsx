@@ -30,7 +30,6 @@ import AboutModal from '../components/AboutModal';
 import {
   getproselenosConfigAction,
   installToolPromptsAction,
-  updateProviderAndModelAction,
   updateSelectedModelAction,
   updateDarkModeAction,
 } from '@/lib/github-config-actions';
@@ -96,7 +95,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
   const [currentProvider, setCurrentProvider] = useState('openrouter');
-  const [currentModel, setCurrentModel] = useState('google/gemini-2.5-flash');
+  const [currentModel, setCurrentModel] = useState('');
   const [hasConfiguredProvider, setHasConfiguredProvider] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
   const [isStorageOperationPending, setIsStorageOperationPending] = useState(false);
@@ -582,40 +581,15 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     }
   };
 
-  // Settings save handler (API key only)
-  const handleSettingsSave = async (provider: string) => {
+  // Settings save handler (API key only - provider is always openrouter)
+  const handleSettingsSave = async (_provider: string) => {
     if (!session?.accessToken) {
       projectActions.setUploadStatus('❌ Not authenticated');
       return;
     }
-    
-    projectActions.setUploadStatus(`Saving settings for ${provider}...`);
-    
-    try {
-      // Set local state first
-      setCurrentProvider(provider);
-      setHasConfiguredProvider(true);
 
-      // Save the provider to the GitHub config file
-      const updateResult = await updateProviderAndModelAction(
-        provider,
-        'google/gemini-2.5-flash-lite' // Default model - almost free for testing
-      );
-
-      if (!updateResult.success) {
-        throw new Error(updateResult.error || 'Failed to update provider config');
-      }
-      
-      // Set default model in local state too
-      setCurrentModel('google/gemini-2.5-flash-lite');
-      
-      // Check API key status after save
-      await checkApiKey();
-      projectActions.setUploadStatus(`✅ Settings saved for ${provider}. Click Models button to select your preferred model.`);
-    } catch (error) {
-      projectActions.setUploadStatus(`❌ Failed to save settings: ${error instanceof Error ? error.message : String(error)}`);
-      console.error('Settings save error:', error);
-    }
+    // Just refresh API key status after save
+    await checkApiKey();
   };
 
   // Project action handlers
@@ -1058,9 +1032,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
           session={session}
           theme={theme}
           isDarkMode={isDarkMode}
-          currentProvider={currentProvider}
-          currentModel={currentModel}
-          hasConfiguredProvider={hasConfiguredProvider}
           hasApiKey={hasApiKey === true}
           isStorageOperationPending={isStorageOperationPending}
           toolExecuting={toolsState.toolExecuting}
@@ -1504,6 +1475,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             isDarkMode={isDarkMode}
             currentProvider={currentProvider}
             currentModel={currentModel}
+            hasConfiguredProvider={hasConfiguredProvider}
+            hasApiKey={hasApiKey === true}
             onCategoryChange={handleCategoryChange}
             onToolChange={toolsActions.setSelectedTool}
             onSetupTool={handleSetupTool}

@@ -15,6 +15,7 @@ interface ChatButtonProps {
   currentProject?: string | null;
   currentProjectId?: string | null;
   isSystemInitializing?: boolean;
+  hasApiKey?: boolean;
   styleOverrides?: React.CSSProperties;
 }
 
@@ -24,6 +25,7 @@ export default function ChatButton({
   currentProject,
   currentProjectId,
   isSystemInitializing = false,
+  hasApiKey = false,
   styleOverrides
 }: ChatButtonProps): React.JSX.Element {
   
@@ -49,7 +51,7 @@ export default function ChatButton({
       <StyledSmallButton
         className={className}
         onClick={handleClick}
-        disabled={!currentProject || !currentProjectId || isSystemInitializing}
+        disabled={!currentProject || !currentProjectId || isSystemInitializing || !hasApiKey}
         theme={theme}
         styleOverrides={styleOverrides}
       >

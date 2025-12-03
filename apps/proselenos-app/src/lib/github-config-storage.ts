@@ -51,7 +51,7 @@ export async function getProselenosConfig(userId: string): Promise<ProselenosCon
         current_project_folder_id: null
       },
       selectedApiProvider: 'openrouter',
-      selectedAiModel: 'google/gemini-2.5-flash',
+      selectedAiModel: '',
       author_name: 'Anonymous',
       isDarkMode: false
     };

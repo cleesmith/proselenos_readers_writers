@@ -1,7 +1,7 @@
 // aiInternal.ts - Internal AI functions (not exposed as public API)
 // Only callable from within the app, never accessible from outside
 
-import { createApiService, getCurrentProviderAndModel } from './aiService';
+import { createApiService, getCurrentProviderAndModel, getCurrentProvider } from './aiService';
 import { AIConfig, StreamOptions, ModelData } from './providers/openrouter';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
@@ -91,9 +91,10 @@ export async function getModelsInternal(): Promise<ModelData[]> {
     // Get user session for caching
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id || 'anonymous';
-    
-    const { provider, model } = await getCurrentProviderAndModel(session?.accessToken as string);
-    const aiService = await createApiService(provider, model, userId);
+
+    // Only need provider to fetch model list (not a specific model)
+    const provider = await getCurrentProvider(session?.accessToken as string);
+    const aiService = await createApiService(provider, undefined, userId);
     if (!aiService) return [];
     return await aiService.getAvailableModels();
   } catch (error: any) {

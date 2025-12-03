@@ -17,7 +17,7 @@ export interface AIServiceClass {
 interface ServiceCacheEntry {
   service: any;
   provider: AIProvider;
-  model: string;
+  model?: string;
   created: number;
 }
 
@@ -79,6 +79,30 @@ export async function getCurrentProviderAndModel(_accessToken: string): Promise<
 }
 
 /**
+ * Gets just the current provider (doesn't require model to be set)
+ * Use this when you only need the provider, e.g., for fetching available models
+ * @param accessToken - (unused, kept for backwards compatibility)
+ * @returns The provider, or throws error if not configured
+ */
+export async function getCurrentProvider(_accessToken: string): Promise<AIProvider> {
+  try {
+    const result = await getproselenosConfigAction();
+    if (!result.success || !result.data) {
+      throw new Error('Failed to load Proselenos configuration');
+    }
+
+    const provider = result.data.selectedApiProvider as AIProvider;
+    if (!provider) {
+      throw new Error('No AI provider configured');
+    }
+
+    return provider;
+  } catch (error: any) {
+    throw new Error(`Failed to get provider: ${error.message}`);
+  }
+}
+
+/**
  * Creates an AI service based on the selected provider (with per-user caching)
  * @param provider - The AI provider to use
  * @param modelName - The model name to use
@@ -126,12 +150,8 @@ export async function createApiService(provider: AIProvider = 'openrouter', mode
         throw new Error(`Unknown AI provider: ${provider}`);
     }
     
-    // Create instance with API key and model
-    if (!modelName) {
-      throw new Error(`Model name not provided for provider ${provider}`);
-    }
-    
-    const service = new ApiServiceClass({ 
+    // Create instance with API key and model (model optional for operations like getAvailableModels)
+    const service = new ApiServiceClass({
       apiKey: result.apiKey,
       model_name: modelName
     });

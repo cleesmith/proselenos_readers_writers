@@ -89,27 +89,36 @@ export default function NonAIToolsSection({
 
   return (
     <div style={{ 
+      position: 'relative',
       backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
       border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
       borderRadius: '8px',
-      padding: '12px'
+      padding: '12px',
+      marginTop: '12px'
     }}>
+      <h2 style={{
+        position: 'absolute',
+        top: '-10px',
+        left: '12px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        color: theme.text,
+        backgroundColor: theme.bg,
+        paddingLeft: '6px',
+        paddingRight: '6px',
+        margin: 0
+      }}>
+        Free tools: <span style={{ fontSize: '12px', color: theme.textMuted, fontWeight: 'normal' }}>(no AI involved)</span>
+      </h2>
       <div style={{
         display: 'flex',
         justifyContent: 'flex-start',
         gap: '16px',
         alignItems: 'flex-start',
-        marginBottom: '6px'
+        marginBottom: '8px',
+        marginTop: '16px'
       }}>
-        <h2 style={{
-          fontSize: '16px',
-          fontWeight: 'bold',
-          fontStyle: 'italic',
-          color: theme.text,
-          marginBottom: 0
-        }}>
-          Non-AI tools:
-        </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Publishing buttons group */}
           <div style={{
@@ -149,6 +158,18 @@ export default function NonAIToolsSection({
         </div>
       </div>
 
+      {/* Divider line */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        margin: '16px 0',
+        color: theme.textMuted
+      }}>
+        <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
+        <span style={{ padding: '0 12px', fontSize: '11px', fontStyle: 'italic' }}>or</span>
+        <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
+      </div>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
         <select
           value={selectedNonAITool}
@@ -166,7 +187,7 @@ export default function NonAIToolsSection({
             cursor: selectDisabled ? 'not-allowed' : 'pointer'
           }}
         >
-          <option value="">Select a tool first</option>
+          <option value="">Select a tool to run</option>
           {NON_AI_TOOLS.map(tool => (
             <option key={tool} value={tool}>{tool}</option>
           ))}

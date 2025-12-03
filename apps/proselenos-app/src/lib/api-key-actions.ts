@@ -41,6 +41,28 @@ export async function storeApiKeyAction(
   }
 }
 
+// Server action for validating OpenRouter API key
+export async function validateOpenRouterKeyAction(
+  apiKey: string
+): Promise<{ success: boolean; valid: boolean; error?: string }> {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/auth/key", {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    return { success: true, valid: response.ok };
+  } catch (error) {
+    return {
+      success: false,
+      valid: false,
+      error: error instanceof Error ? error.message : 'Network error'
+    };
+  }
+}
+
 // Server action for getting API key
 export async function getApiKeyAction(
   keyName: string

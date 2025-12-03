@@ -53,6 +53,8 @@ interface AIToolsSectionProps {
   // AI model info for report formatting
   currentProvider?: string;
   currentModel?: string;
+  hasConfiguredProvider?: boolean;
+  hasApiKey?: boolean;
   
   // Callbacks
   onCategoryChange: (category: string) => void;
@@ -88,6 +90,8 @@ export default function AIToolsSection({
   isDarkMode,
   currentProvider = 'unknown',
   currentModel = 'unknown',
+  hasConfiguredProvider: _hasConfiguredProvider = false,
+  hasApiKey = false,
   onCategoryChange,
   onToolChange,
   onSetupTool,
@@ -224,13 +228,50 @@ https://proselenos.com
   return (
     <div
       style={{
+        position: 'relative',
         marginBottom: '24px',
         backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-        border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+        border: `2px solid ${isDarkMode ? 'rgba(120, 180, 120, 0.6)' : 'rgba(80, 140, 80, 0.5)'}`,
         borderRadius: '8px',
         padding: '12px',
       }}
     >
+      {/* Title positioned on border */}
+      <h2 style={{
+        position: 'absolute',
+        top: '-10px',
+        left: '12px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        color: theme.text,
+        backgroundColor: theme.bg,
+        paddingLeft: '6px',
+        paddingRight: '6px',
+        margin: 0
+      }}>
+        AI tools:
+      </h2>
+
+      {/* Provider:Model display line */}
+      <div style={{
+        fontSize: '10px',
+        color: (hasApiKey && currentModel) ? '#4285F4' : '#dc3545',
+        fontFamily: 'monospace',
+        marginBottom: '12px',
+        marginTop: '8px'
+      }}>
+        {!hasApiKey ? (
+          <span>No AI API key</span>
+        ) : !currentModel ? (
+          <span>No AI model selected</span>
+        ) : (
+          <span title={`Provider: ${currentProvider}, Model: ${currentModel}`}>
+            {currentProvider}:{currentModel}
+          </span>
+        )}
+      </div>
+
       <div
         style={{
           display: 'flex',
@@ -239,19 +280,8 @@ https://proselenos.com
           marginBottom: '6px',
         }}
       >
-        {/* Left group: heading and AI settings buttons */}
+        {/* Left group: AI settings buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <h2
-            style={{
-              fontSize: '16px',
-              fontWeight: 'bold',
-              fontStyle: 'italic',
-              color: theme.text,
-              marginBottom: 0,
-            }}
-          >
-            AI tools:
-          </h2>
           {/* AI settings and Chat buttons group */}
           <div style={{
             display: 'flex',
@@ -283,11 +313,12 @@ https://proselenos.com
               currentProject={currentProject}
               currentProjectId={currentProjectId}
               isSystemInitializing={isSystemInitializing}
+              hasApiKey={hasApiKey}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             />
             <StyledSmallButton
               onClick={() => setShowWritingAssistant(true)}
-              disabled={isSystemInitializing || !currentProject || isStorageOperationPending || toolExecuting}
+              disabled={isSystemInitializing || !currentProject || isStorageOperationPending || toolExecuting || !hasApiKey}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
@@ -296,7 +327,19 @@ https://proselenos.com
           </div>
         </div>
       </div>
-      
+
+      {/* Divider line */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        margin: '16px 0',
+        color: theme.textMuted
+      }}>
+        <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
+        <span style={{ padding: '0 12px', fontSize: '11px', fontStyle: 'italic' }}>or</span>
+        <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
+      </div>
+
       <div
         style={{
           fontSize: '14px',
@@ -305,13 +348,13 @@ https://proselenos.com
           marginBottom: '8px',
         }}
       >
-        Category:
+        Tool categories:
       </div>
       
       <select
         value={selectedCategory}
         onChange={(e) => handleCategoryChange(e.target.value)}
-        disabled={!toolsReady || toolExecuting || !currentProject}
+        disabled={!toolsReady || toolExecuting || !currentProject || !hasApiKey}
         style={{
           width: '100%',
           maxWidth: '300px',
@@ -355,7 +398,7 @@ https://proselenos.com
         <select
           value={selectedTool}
           onChange={(e) => handleToolChange(e.target.value)}
-          disabled={!selectedCategory || !toolsReady || toolExecuting || !currentProject}
+          disabled={!selectedCategory || !toolsReady || toolExecuting || !currentProject || !hasApiKey}
           style={{
             flex: '1',
             maxWidth: '300px',
@@ -405,7 +448,8 @@ https://proselenos.com
             !selectedTool ||
             !toolsReady ||
             toolExecuting ||
-            isLoadingPrompt
+            isLoadingPrompt ||
+            !hasApiKey
           }
           theme={theme}
         >
@@ -420,7 +464,8 @@ https://proselenos.com
             !toolsReady ||
             !currentProject ||
             isStorageOperationPending ||
-            toolExecuting
+            toolExecuting ||
+            !hasApiKey
           }
           theme={theme}
         >
@@ -447,7 +492,8 @@ https://proselenos.com
             toolExecuting ||
             !toolsReady ||
             isStorageOperationPending ||
-            toolJustFinished
+            toolJustFinished ||
+            !hasApiKey
           }
           theme={theme}
         >

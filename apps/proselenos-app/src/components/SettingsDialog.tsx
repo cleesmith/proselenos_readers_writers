@@ -4,7 +4,8 @@
 
 import { useState, useEffect } from 'react';
 import { showAlert } from '@/app/shared/alerts';
-import { getKeyAndStatusAction, storeApiKeyAction } from '@/lib/api-key-actions';
+import { getKeyAndStatusAction, storeApiKeyAction, removeApiKeyAction, validateOpenRouterKeyAction } from '@/lib/api-key-actions';
+import { updateSelectedModelAction } from '@/lib/github-config-actions';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface SettingsDialogProps {
@@ -78,14 +79,33 @@ export default function SettingsDialog({
     setSaving(true);
 
     try {
-      // Only store API key if one was entered
+      // Store new key OR delete existing key if field was cleared
       if (apiKey.trim()) {
+        // Validate the API key first
+        const validateResult = await validateOpenRouterKeyAction(apiKey.trim());
+        if (!validateResult.valid) {
+          showAlert('Invalid API key. Please check and try again.', 'error', undefined, isDarkMode);
+          setSaving(false);
+          return;
+        }
+
+        // User entered a valid key - save it
         const result = await storeApiKeyAction(selectedProvider, apiKey.trim());
         if (!result.success) {
           showAlert(`Failed to save API key: ${result.error}`, 'error', undefined, isDarkMode);
           setSaving(false);
           return;
         }
+      } else if (hasKey) {
+        // User cleared the field and had an existing key - delete it
+        const result = await removeApiKeyAction(selectedProvider);
+        if (!result.success) {
+          showAlert(`Failed to remove API key: ${result.error}`, 'error', undefined, isDarkMode);
+          setSaving(false);
+          return;
+        }
+        // Also clear the selected model
+        await updateSelectedModelAction('');
       }
 
       // Call parent save handler with selected provider only
