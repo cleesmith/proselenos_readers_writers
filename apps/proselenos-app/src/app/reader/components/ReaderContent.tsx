@@ -34,7 +34,7 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
   const { bookKeys, dismissBook, getNextBookKey } = useBooksManager();
   const { sideBarBookKey, setSideBarBookKey } = useSidebarStore();
   const { saveSettings } = useSettingsStore();
-  const { getConfig, getBookData, saveConfig } = useBookDataStore();
+  const { booksData: _booksData, getConfig, getBookData, saveConfig } = useBookDataStore();
   const { getView, setBookKeys, getViewSettings } = useReaderStore();
   const { initViewState, getViewState, clearViewState } = useReaderStore();
   const [showDetailsBook, setShowDetailsBook] = useState<Book | null>(null);
@@ -179,13 +179,13 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
   const bookData = getBookData(bookKeys[0]!);
   const viewSettings = getViewSettings(bookKeys[0]!);
   if (!bookData || !bookData.book || !bookData.bookDoc || !viewSettings) {
-    setTimeout(() => setLoading(true), 200);
+    if (!loading) {
+      setTimeout(() => setLoading(true), 200);
+    }
     return (
-      loading && (
-        <div className='hero hero-content h-[100vh]'>
-          <Spinner loading={true} />
-        </div>
-      )
+      <div className='hero hero-content h-[100vh]'>
+        {loading && <Spinner loading={true} />}
+      </div>
     );
   }
 
