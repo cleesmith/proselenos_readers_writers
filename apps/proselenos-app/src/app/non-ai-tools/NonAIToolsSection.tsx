@@ -88,13 +88,13 @@ export default function NonAIToolsSection({
   const selectDisabled = !currentProject || isStorageOperationPending || toolExecuting || isPublishing;
 
   return (
-    <div style={{ 
+    <div style={{
       position: 'relative',
       backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
       border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
       borderRadius: '8px',
       padding: '12px',
-      marginTop: '12px'
+      marginTop: '8px'
     }}>
       <h2 style={{
         position: 'absolute',
@@ -113,8 +113,9 @@ export default function NonAIToolsSection({
       </h2>
       <div style={{
         display: 'flex',
+        flexWrap: 'wrap',
         justifyContent: 'flex-start',
-        gap: '16px',
+        gap: '8px',
         alignItems: 'flex-start',
         marginBottom: '8px',
         marginTop: '16px'
@@ -162,7 +163,7 @@ export default function NonAIToolsSection({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        margin: '16px 0',
+        margin: '8px 0',
         color: theme.textMuted
       }}>
         <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
@@ -170,13 +171,14 @@ export default function NonAIToolsSection({
         <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+      {/* Tool dropdown - separate row for mobile */}
+      <div style={{ marginBottom: '8px' }}>
         <select
           value={selectedNonAITool}
           onChange={(e) => onToolChange(e.target.value)}
           disabled={selectDisabled}
           style={{
-            flex: '1',
+            width: '100%',
             maxWidth: '300px',
             padding: '4px 8px',
             backgroundColor: selectDisabled ? '#666' : theme.inputBg,
@@ -192,6 +194,10 @@ export default function NonAIToolsSection({
             <option key={tool} value={tool}>{tool}</option>
           ))}
         </select>
+      </div>
+
+      {/* Tool action buttons - separate row beneath dropdown for mobile */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
         <StyledSmallButton
           disabled={isSetupDisabled}
           onClick={onSetupTool}

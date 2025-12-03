@@ -77,8 +77,8 @@ export default function ProjectSection({
   return (
     <div style={{
       position: 'relative',
-      marginTop: '16px',
-      marginBottom: '24px',
+      marginTop: '8px',
+      marginBottom: '12px',
       backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
       border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
       borderRadius: '8px',
@@ -101,16 +101,17 @@ export default function ProjectSection({
       </h2>
       <div style={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        gap: '16px',
+        gap: '8px',
         marginBottom: '8px',
         marginTop: '8px'
       }}>
-        
+
         <div style={{
           display: 'flex',
-          gap: '16px',
+          gap: '8px',
           justifyContent: 'flex-start'
         }}>
           <StyledSmallButton
@@ -125,7 +126,6 @@ export default function ProjectSection({
             onClick={onEditorClick}
             disabled={isSystemInitializing || isStorageOperationPending || toolExecuting || !currentProject}
             theme={theme}
-            styleOverrides={{ marginLeft: '4px' }}
           >
             Editor
           </StyledSmallButton>

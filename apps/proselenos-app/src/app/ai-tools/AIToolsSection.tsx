@@ -228,7 +228,7 @@ https://proselenos.com
     <div
       style={{
         position: 'relative',
-        marginBottom: '24px',
+        marginBottom: '12px',
         backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
         border: `2px solid ${isDarkMode ? 'rgba(120, 180, 120, 0.6)' : 'rgba(80, 140, 80, 0.5)'}`,
         borderRadius: '8px',
@@ -331,7 +331,7 @@ https://proselenos.com
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        margin: '16px 0',
+        margin: '8px 0',
         color: theme.textMuted
       }}>
         <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
@@ -339,17 +339,6 @@ https://proselenos.com
         <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
       </div>
 
-      <div
-        style={{
-          fontSize: '14px',
-          fontStyle: 'italic',
-          color: theme.textSecondary,
-          marginBottom: '8px',
-        }}
-      >
-        Tool categories:
-      </div>
-      
       <select
         value={selectedCategory}
         onChange={(e) => handleCategoryChange(e.target.value)}
@@ -379,27 +368,15 @@ https://proselenos.com
         {/* <option value="AI Writing Tools">AI Writing Tools</option> */}
         <option value="User Tools">User Tools</option>
       </select>
-      
-      <div
-        style={{
-          fontSize: '14px',
-          fontStyle: 'italic',
-          color: theme.textSecondary,
-          marginBottom: '8px',
-        }}
-      >
-        Tool:
-      </div>
-      
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}
-      >
+
+      {/* Tool dropdown - separate row for mobile */}
+      <div style={{ marginBottom: '8px' }}>
         <select
           value={selectedTool}
           onChange={(e) => handleToolChange(e.target.value)}
           disabled={!selectedCategory || !toolsReady || toolExecuting || !currentProject || !hasApiKey}
           style={{
-            flex: '1',
+            width: '100%',
             maxWidth: '300px',
             padding: '4px 8px',
             backgroundColor:
@@ -422,7 +399,7 @@ https://proselenos.com
               ? 'Select a tool...'
               : 'Please select a category first'}
           </option>
-          
+
           {/* Sorted tool options */}
           {[...toolsInCategory]
             .sort((a, b) => {
@@ -439,7 +416,12 @@ https://proselenos.com
               </option>
             ))}
         </select>
-        
+      </div>
+
+      {/* Tool action buttons - separate row beneath dropdown for mobile */}
+      <div
+        style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '8px' }}
+      >
         <StyledSmallButton
           onClick={handlePromptEdit}
           disabled={
@@ -454,7 +436,7 @@ https://proselenos.com
         >
           {isLoadingPrompt ? 'Loading...' : 'Prompt'}
         </StyledSmallButton>
-        
+
         <StyledSmallButton
           onClick={onSetupTool}
           disabled={
@@ -470,7 +452,7 @@ https://proselenos.com
         >
           Select
         </StyledSmallButton>
-        
+
         <StyledSmallButton
           onClick={onClearTool}
           disabled={
@@ -482,7 +464,7 @@ https://proselenos.com
         >
           Clear
         </StyledSmallButton>
-        
+
         <StyledSmallButton
           onClick={onExecuteTool}
           disabled={
@@ -498,7 +480,7 @@ https://proselenos.com
         >
           {toolExecuting ? 'Running...' : 'Run'}
         </StyledSmallButton>
-        
+
         <ToolProgressIndicator
           toolExecuting={toolExecuting}
           elapsedTime={elapsedTime}

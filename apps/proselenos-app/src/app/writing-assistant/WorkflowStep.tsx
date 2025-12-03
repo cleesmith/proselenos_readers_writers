@@ -86,10 +86,11 @@ export default function WorkflowStep({
       </div>
 
       {/* Step Info */}
-      <div style={{ flexGrow: 1 }}>
+      <div style={{ flexGrow: 1, minWidth: 0 }}>
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
             gap: '8px',
             marginBottom: '4px'
@@ -132,6 +133,17 @@ export default function WorkflowStep({
               Chat
             </StyledSmallButton>
           )}
+          {/* File button for completed steps */}
+          {step.status === 'completed' && step.fileName && (
+            <StyledSmallButton
+              onClick={() => onView(step.id)}
+              disabled={isAnyStepExecuting}
+              theme={theme}
+              styleOverrides={{ padding: '2px 4px', fontSize: '8px' }}
+            >
+              {step.fileName}
+            </StyledSmallButton>
+          )}
         </div>
         <div
           style={{
@@ -172,18 +184,6 @@ export default function WorkflowStep({
             {Math.floor((step.elapsedTime || 0) / 60).toString().padStart(2, '0')}:{((step.elapsedTime || 0) % 60).toString().padStart(2, '0')}
           </span>
         </div>
-      )}
-      
-      {/* Show file name button for completed steps */}
-      {step.status === 'completed' && step.fileName && (
-        <StyledSmallButton
-          onClick={() => onView(step.id)}
-          disabled={isAnyStepExecuting}
-          theme={theme}
-          styleOverrides={{ padding: '2px 6px', fontSize: '10px', marginLeft: '8px' }}
-        >
-          {step.fileName}
-        </StyledSmallButton>
       )}
       
       {/* Show failed badge for error status */}

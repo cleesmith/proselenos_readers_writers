@@ -100,18 +100,6 @@ export default function WritingAssistantModal({
           </StyledSmallButton>
         </div>
 
-        {/* Description */}
-        <p
-          style={{
-            margin: '0 0 20px 0',
-            color: theme.textSecondary,
-            fontSize: '13px',
-            lineHeight: '1.4'
-          }}
-        >
-          Create your story from scratch with guided AI assistance. Follow the workflow to build from idea to rough draft chapters.
-        </p>
-
         {/* Loading State */}
         {state.isLoading && (
           <div
