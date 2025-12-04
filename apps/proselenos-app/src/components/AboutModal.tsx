@@ -95,7 +95,7 @@ export default function AboutModal({
             </p>
             
               {/* Step 1: Create First Project */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div style={{
                   background: '#10b981',
                   color: 'white',
@@ -119,8 +119,7 @@ export default function AboutModal({
                   </div>
                 </div>
               </div>
-            </div>
-            
+
             {/* Step 2: Add OpenRouter API Key */}
             <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div style={{
@@ -168,7 +167,7 @@ export default function AboutModal({
                   Choose AI Model
                 </div>
                 <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                  Click &quot;Models&quot; button and select <strong>google/gemini-2.5-flash</strong> for fast, affordable editing
+                  Click &quot;Models&quot; button and select a model
                 </div>
               </div>
             </div>
@@ -198,6 +197,7 @@ export default function AboutModal({
                 </div>
               </div>
             </div>
+          </div>
 
           {/* How Projects Work */}
           <div style={{ marginBottom: '32px' }}>
@@ -212,7 +212,7 @@ export default function AboutModal({
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
               Projects are a way to organize your writing:
             </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '20px' }}>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
               <li style={{ marginBottom: '8px' }}>Each project is a separate folder in storage</li>
               <li style={{ marginBottom: '8px' }}>Upload manuscript files (.docx or .txt) to your project folder</li>
               <li style={{ marginBottom: '8px' }}>AI tools work on/with .txt files within your selected project</li>
@@ -233,7 +233,7 @@ export default function AboutModal({
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
               Proselenos offers powerful AI-powered editing tools:
             </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '20px' }}>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
               <li style={{ marginBottom: '8px' }}><strong>Grammar & Style:</strong> Fix grammar, improve sentence structure, enhance readability</li>
               <li style={{ marginBottom: '8px' }}><strong>Content Analysis:</strong> Character development, plot consistency, pacing feedback</li>
               <li style={{ marginBottom: '8px' }}><strong>Genre-Specific:</strong> Tools tailored for fiction, non-fiction (a few)</li>
@@ -254,8 +254,8 @@ export default function AboutModal({
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
               OpenRouter provides a good AI experience for writers:
             </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '20px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Model Variety:</strong> Access to GPT-5, Claude, Gemini, and more from one API key</li>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
+              <li style={{ marginBottom: '8px' }}><strong>Model Variety:</strong> Access to OpenAI, Anthropic, Google, and more from one API key</li>
               <li style={{ marginBottom: '8px' }}><strong>Flexibility:</strong> Switch between models based on your specific editing needs</li>
               <li style={{ marginBottom: '8px' }}><strong>Reliability:</strong> Automatic fallbacks if one model is unavailable</li>
               <li style={{ marginBottom: '8px' }}><strong>Competitive Pricing:</strong> Sometimes cheaper than direct provider APIs</li>
@@ -275,7 +275,7 @@ export default function AboutModal({
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
               Proselenos isn&apos;t just for editing - it&apos;s also a writing companion:
             </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '20px' }}>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
               <li style={{ marginBottom: '8px' }}><strong>Writer&apos;s Block:</strong> Overcome creative blocks with AI-generated rough draft writing</li>
               <li style={{ marginBottom: '8px' }}><strong>Brainstorming:</strong> Develop characters, plot ideas, and settings</li>
               <li style={{ marginBottom: '8px' }}><strong>Outling:</strong> Generate initial drafts, outlines, and story structures</li>
@@ -297,8 +297,8 @@ export default function AboutModal({
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
               Get your manuscript ready for Kindle Direct Publishing (KDP) and other booksellers:
             </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '20px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Format Optimization:</strong> Prepare your manuscript for both ebook and paperback formats</li>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
+              <li style={{ marginBottom: '8px' }}><strong>Format Optimization:</strong> Prepare your manuscript for both ebook (.epub) and paperback formats (.pdf)</li>
               <li style={{ marginBottom: '8px' }}><strong>Metadata Generation:</strong> Create compelling book descriptions, keywords, and categories</li>
             </ul>
           </div>

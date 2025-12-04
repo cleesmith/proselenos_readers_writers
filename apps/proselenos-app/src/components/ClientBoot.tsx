@@ -937,7 +937,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
                   Choose AI Model
                 </div>
                 <div style="font-size: 13px; color: ${isDarkMode ? '#9ca3af' : '#6b7280'}; line-height: 1.4;">
-                  Click "Models" button and select <strong>google/gemini-2.5-flash</strong> for fast, affordable editing
+                  Click "Models" button and select a model
                 </div>
               </div>
             </div>
