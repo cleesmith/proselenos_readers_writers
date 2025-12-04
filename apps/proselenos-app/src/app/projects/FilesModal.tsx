@@ -40,11 +40,11 @@ export default function FilesModal({
   isDarkMode,
   currentProject,
   selectedUploadFile,
-  uploadFileName,
+  uploadFileName: _uploadFileName,
   isUploading,
   onClose,
   onFileSelect,
-  onFileNameChange,
+  onFileNameChange: _onFileNameChange,
   onUpload
 }: FilesModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,7 +112,7 @@ export default function FilesModal({
       }
 
       onFileSelect(file);
-      onFileNameChange(file.name);
+      _onFileNameChange(file.name);
     }
   };
 
@@ -270,9 +270,8 @@ export default function FilesModal({
             padding: '12px 20px',
             borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: 'column',
             gap: '10px',
-            flexWrap: 'wrap',
             flexShrink: 0
           }}
         >
@@ -285,36 +284,29 @@ export default function FilesModal({
             disabled={isUploading}
           />
 
-          <StyledSmallButton onClick={handleUploadClick} disabled={isUploading} theme={theme}>
-            Upload a file
-          </StyledSmallButton>
-          <span style={{ fontSize: '10px', color: theme.textMuted }}>
-            .txt .html .docx .epub .pdf
-          </span>
+          {/* Row 1: Upload button + file types */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <StyledSmallButton onClick={handleUploadClick} disabled={isUploading} theme={theme}>
+              Upload a file
+            </StyledSmallButton>
+            <span style={{ fontSize: '10px', color: theme.textMuted }}>
+              .txt .html .docx .epub .pdf
+            </span>
+          </div>
 
           {selectedUploadFile && (
             <>
-              <span style={{ fontSize: '12px', color: theme.textMuted, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {/* Row 2: Selected filename */}
+              <div style={{ fontSize: '12px', color: theme.text }}>
                 {selectedUploadFile.name} ({Math.round(selectedUploadFile.size / 1024)}KB)
-              </span>
-              <input
-                type="text"
-                value={uploadFileName}
-                onChange={(e) => onFileNameChange(e.target.value)}
-                placeholder="Save as..."
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: theme.inputBg,
-                  color: theme.text,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  width: '150px'
-                }}
-              />
-              <StyledSmallButton onClick={onUpload} disabled={isUploading} theme={theme}>
-                {isUploading ? 'Uploading...' : 'Upload'}
-              </StyledSmallButton>
+              </div>
+
+              {/* Row 3: Upload button */}
+              <div>
+                <StyledSmallButton onClick={onUpload} disabled={isUploading} theme={theme}>
+                  {isUploading ? 'Uploading...' : 'Upload'}
+                </StyledSmallButton>
+              </div>
             </>
           )}
         </div>

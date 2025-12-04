@@ -142,6 +142,7 @@ interface ProjectManagerActions {
     setIsStorageOperationPending: (loading: boolean) => void
   ) => void;
   selectUploadFile: (file: File, isDarkMode: boolean) => void;
+  setSelectedUploadFile: (file: File | null) => void;
   setUploadFileName: (name: string) => void;
   performFileUpload: (session: any, isDarkMode: boolean) => Promise<void>;
   setShowUploadModal: (show: boolean) => void;
@@ -686,6 +687,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       setSelectedTxtFile,
       handleFileUpload,
       selectUploadFile,
+      setSelectedUploadFile,
       setUploadFileName,
       performFileUpload,
       setShowUploadModal,

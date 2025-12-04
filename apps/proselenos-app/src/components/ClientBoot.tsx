@@ -682,6 +682,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
 
   const handleCloseFilesModal = () => {
     projectActions.setShowUploadModal(false);
+    projectActions.setSelectedUploadFile(null);
   };
   
   // Project modal handlers
