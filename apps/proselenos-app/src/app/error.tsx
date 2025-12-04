@@ -48,7 +48,7 @@ export default function Error({ error, reset }: ErrorPageProps) {
 
           <p className='text-base-content/70 mb-8 text-lg'>
             {_(
-              "Something went wrong. Don't worry, our team has been notified and we're working on a fix.",
+              "Something went wrong.",
             )}
           </p>
 

@@ -60,7 +60,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
           </div>
           <div className='flex flex-wrap items-center gap-x-4'>
             {onEdit && (
-              <button onClick={onEdit} title={_('Edit Metadata')}>
+              <button onClick={onEdit} title={_('Edit Ebook Metadata')}>
                 <MdOutlineEdit className='fill-base-content hover:fill-blue-500' />
               </button>
             )}
@@ -70,12 +70,12 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
               </button>
             )}
             {book.uploadedAt && onDownload && (
-              <button onClick={onDownload}>
+              <button onClick={onDownload} title={_('Download from Private Ebooks')}>
                 <MdOutlineCloudDownload className='fill-base-content' />
               </button>
             )}
             {book.downloadedAt && onUpload && (
-              <button onClick={onUpload}>
+              <button onClick={onUpload} title={_('Back up to Private Ebooks')}>
                 <MdOutlineCloudUpload className='fill-base-content' />
               </button>
             )}

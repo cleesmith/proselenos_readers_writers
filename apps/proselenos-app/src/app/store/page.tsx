@@ -7,7 +7,7 @@ import { getGitHubOwner } from '@/lib/github-storage';
 import StoreContent from './StoreContent';
 
 export const metadata: Metadata = {
-  title: 'Ebooks - Proselenos Bookstore',
+  title: 'Ebooks - Proselenos Ebooks',
   description: 'Browse and download ebooks from authors',
 };
 

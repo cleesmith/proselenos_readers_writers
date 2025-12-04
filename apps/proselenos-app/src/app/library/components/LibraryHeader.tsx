@@ -151,7 +151,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
               onChange={handleSearchChange}
               spellCheck='false'
               className={clsx(
-                'input rounded-badge bg-base-300/45 h-9 w-full pl-10 pr-10 sm:h-7',
+                'input rounded-badge bg-base-300/45 h-9 w-full pl-10 pr-20 sm:h-7',
                 'font-sans text-sm font-light',
                 'placeholder:text-base-content/50',
                 'border-none focus:outline-none focus:ring-0',
@@ -228,7 +228,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
               <ViewMenu />
             </Dropdown>
             <Dropdown
-              label={_('Settings Menu')}
+              label={_('Menu')}
               className='exclude-title-bar-mousedown dropdown-bottom dropdown-end'
               buttonClassName='btn btn-ghost h-8 min-h-8 w-8 p-0'
               toggleButton={<MdOutlineMenu role='none' size={iconSize18} />}

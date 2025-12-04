@@ -241,7 +241,7 @@ export default function EpubModal({
                     style={{ cursor: 'pointer' }}
                   />
                   <span style={{ fontSize: '12px', color: theme.text }}>
-                    List in Bookstore
+                    List in Proselenos Ebooks
                   </span>
                 </div>
 
@@ -409,7 +409,7 @@ export default function EpubModal({
                     )}
                     {state.publishSuccess && (
                       <div style={{ fontSize: '12px', color: '#22c55e', marginBottom: '8px' }}>
-                        Published to Bookstore successfully!
+                        Published to Proselenos Ebooks successfully!
                       </div>
                     )}
 
@@ -429,7 +429,7 @@ export default function EpubModal({
                         cursor: state.isPublishing ? 'not-allowed' : 'pointer'
                       }}
                     >
-                      {state.isPublishing ? 'Publishing...' : 'Publish to Bookstore'}
+                      {state.isPublishing ? 'Publishing...' : 'Publish to Proselenos Ebooks'}
                     </button>
                   </>
                 )}
@@ -448,7 +448,7 @@ export default function EpubModal({
               border: '1px solid rgba(245, 158, 11, 0.3)'
             }}
           >
-            Only ONE epub per project can be listed in the Bookstore. Publishing replaces any existing listing.
+            Only ONE epub per project can be listed in the Proselenos Ebooks. Publishing replaces any existing listing.
           </div>
         </div>
       </div>

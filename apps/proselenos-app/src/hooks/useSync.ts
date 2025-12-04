@@ -105,7 +105,7 @@ export function useSync(bookKey?: string) {
     // Check if we have auth token - if not, skip sync silently (no backend)
     const token = await getAccessToken();
     if (!token) {
-      return; // Book Repo sync disabled without backend
+      return; // Your Library sync disabled without backend
     }
 
     setSyncing(true);
@@ -165,7 +165,7 @@ export function useSync(bookKey?: string) {
     // Check if we have auth token - if not, skip sync silently (no backend)
     const token = await getAccessToken();
     if (!token) {
-      return; // Book Repo sync disabled without backend
+      return; // Your Library sync disabled without backend
     }
 
     setSyncing(true);

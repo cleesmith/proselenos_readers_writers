@@ -18,8 +18,8 @@ export const useQuotaStats = (briefName = false) => {
     const storagPlan = getStoragePlanData(token);
     const inGB = storagPlan.quota > 1e9;
     const storageQuota: QuotaType = {
-      name: briefName ? _('Storage') : _('Book Repo Storage'),
-      tooltip: _('{{percentage}}% of Book Repo Space Used.', {
+      name: briefName ? _('Storage') : _('Your Library Storage'),
+      tooltip: _('{{percentage}}% of Your Library Space Used.', {
         percentage: Math.round((storagPlan.usage / storagPlan.quota) * 100),
       }),
       used: parseFloat((storagPlan.usage / 1024 / 1024 / (inGB ? 1024 : 1)).toFixed(2)),

@@ -37,7 +37,7 @@ export const useBooksSync = () => {
       isPullingRef.current = true;
       await syncBooks([], 'pull');
     } catch (error) {
-      // Silently skip sync errors (Book Repo sync disabled without backend)
+      // Silently skip sync errors (Your Library sync disabled without backend)
       if (error instanceof Error && error.message === 'Not authenticated') {
         return;
       }
@@ -104,7 +104,7 @@ export const useBooksSync = () => {
       return oldBook;
     };
 
-    // Book Repo disabled - downloadBookCovers removed
+    // Your Library disabled - downloadBookCovers removed
     // const oldBooksBatchSize = 20;
     // for (let i = 0; i < oldBooksNeedsDownload.length; i += oldBooksBatchSize) {
     //   const batch = oldBooksNeedsDownload.slice(i, i + oldBooksBatchSize);
@@ -127,7 +127,7 @@ export const useBooksSync = () => {
       setIsSyncing(true);
     }
 
-    // Book Repo disabled - downloadBookCovers removed
+    // Your Library disabled - downloadBookCovers removed
     const batchSize = 10;
     for (let i = 0; i < newBooks.length; i += batchSize) {
       const batch = newBooks.slice(i, i + batchSize);

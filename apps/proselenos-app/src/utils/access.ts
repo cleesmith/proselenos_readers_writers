@@ -49,7 +49,7 @@ export const getStoragePlanData = (token: string | null) => {
     return {
       plan: 'free' as const,
       usage: 0,
-      quota: 0, // No Book Repo storage
+      quota: 0, // No Your Library storage
     };
   }
 
@@ -135,7 +135,7 @@ export const getDailyTranslationPlanData = (token: string | null) => {
 
 export const getAccessToken = async (): Promise<string | null> => {
   // No backend API with NextAuth Google OAuth - no access tokens for sync
-  // Book Repo sync disabled
+  // Your Library sync disabled
   return null;
 };
 

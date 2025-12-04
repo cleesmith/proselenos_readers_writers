@@ -13,7 +13,6 @@ import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import { navigateToLogin } from '@/utils/nav';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { saveSysSettings } from '@/helpers/settings';
 import { invoke } from '@/utils/desktop-stubs';
@@ -39,12 +38,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
   const user = session?.user;
   const { themeMode, setThemeMode } = useThemeStore();
   const { settings, setSettingsDialogOpen } = useSettingsStore();
-  const [isAutoUpload, setIsAutoUpload] = useState(settings.autoUpload);
-  const [isAutoCheckUpdates, setIsAutoCheckUpdates] = useState(settings.autoCheckUpdates);
+    const [isAutoCheckUpdates, setIsAutoCheckUpdates] = useState(settings.autoCheckUpdates);
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(settings.alwaysOnTop);
   const [isAlwaysShowStatusBar, setIsAlwaysShowStatusBar] = useState(settings.alwaysShowStatusBar);
-  const [isScreenWakeLock, setIsScreenWakeLock] = useState(settings.screenWakeLock);
-  const [isOpenLastBooks, setIsOpenLastBooks] = useState(settings.openLastBooks);
+    const [isOpenLastBooks, setIsOpenLastBooks] = useState(settings.openLastBooks);
   const [isAutoImportBooksOnOpen, setIsAutoImportBooksOnOpen] = useState(
     settings.autoImportBooksOnOpen,
   );
@@ -74,11 +71,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
     setThemeMode(nextMode);
   };
 
-  const handleReloadPage = () => {
-    window.location.reload();
-    setIsDropdownOpen?.(false);
-  };
-
   const handleFullScreen = () => {
     // No Desktop - fullscreen removed
     setIsDropdownOpen?.(false);
@@ -103,16 +95,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
     setIsAlwaysShowStatusBar(newValue);
   };
 
-  const toggleAutoUploadBooks = () => {
-    const newValue = !settings.autoUpload;
-    saveSysSettings(envConfig, 'autoUpload', newValue);
-    setIsAutoUpload(newValue);
-
-    if (newValue && !user) {
-      navigateToLogin(router);
-    }
-  };
-
   const toggleAutoImportBooksOnOpen = () => {
     const newValue = !settings.autoImportBooksOnOpen;
     saveSysSettings(envConfig, 'autoImportBooksOnOpen', newValue);
@@ -123,12 +105,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
     const newValue = !settings.autoCheckUpdates;
     saveSysSettings(envConfig, 'autoCheckUpdates', newValue);
     setIsAutoCheckUpdates(newValue);
-  };
-
-  const toggleScreenWakeLock = () => {
-    const newValue = !settings.screenWakeLock;
-    saveSysSettings(envConfig, 'screenWakeLock', newValue);
-    setIsScreenWakeLock(newValue);
   };
 
   const toggleOpenLastBooks = () => {
@@ -231,14 +207,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
       ) : (
         <MenuItem label={_('Sign In with Google')} Icon={PiSignIn} onClick={handleSignIn} />
       )}
-      {user && (
-        <MenuItem
-          label={_('Auto Upload Books to Book Repo')}
-          toggled={isAutoUpload}
-          onClick={toggleAutoUploadBooks}
-        />
-      )}
-      {user && <MenuItem label={_('Book Repo download')} Icon={VscRepo} onClick={openBookRepoModal} />}
+            {user && <MenuItem label={_('Private Ebooks')} Icon={VscRepo} onClick={openBookRepoModal} />}
       {isDesktopAppPlatform() && !appService?.isMobile && (
         <MenuItem
           label={_('Auto Import on File Open')}
@@ -280,26 +249,20 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
         />
       )}
       <MenuItem
-        label={_('Bookstore')}
+        label={_('Public Ebooks')}
         description={_('browse and import ebooks')}
         Icon={PiStorefront}
         buttonClass='bg-green-600/20 hover:!bg-green-600/30'
         onClick={openBookstore}
       />
-      <MenuItem
-        label={_('Keep Screen Awake')}
-        toggled={isScreenWakeLock}
-        onClick={toggleScreenWakeLock}
-      />
-      {appService?.isAndroidApp && (
+            {appService?.isAndroidApp && (
         <MenuItem
           label={_(_('Background Read Aloud'))}
           toggled={alwaysInForeground}
           onClick={toggleAlwaysInForeground}
         />
       )}
-      <MenuItem label={_('Reload Page')} onClick={handleReloadPage} />
-      <MenuItem
+            <MenuItem
         label={themeModeLabel}
         Icon={themeMode === 'dark' ? PiMoon : themeMode === 'light' ? PiSun : TbSunMoon}
         onClick={cycleThemeMode}
@@ -308,8 +271,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
       <hr aria-hidden='true' className='border-base-200 my-1' />
       {user && (
         <MenuItem
-          label={_('Authors and Writers')}
-          description={_('use AI to help edit, write, and publish your manuscripts')}
+          label={_('Authors')}
+          description={_('use AI and non-AI tools to help with editing, writing, and publishing your manuscripts')}
           Icon={PiPencil}
           buttonClass='bg-blue-600/20 hover:!bg-blue-600/30'
           onClick={switchToAuthorsMode}

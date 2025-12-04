@@ -98,7 +98,7 @@ async function ensureLibraryRepoExistsInternal(octokit: Octokit, owner: string):
     if (octokitError.status === 404) {
       await octokit.repos.createForAuthenticatedUser({
         name: LIBRARY_REPO,
-        description: 'Public book catalog for Proselenos Bookstore',
+        description: 'Public book catalog for Proselenos eBooks',
         private: false,  // PUBLIC for raw.githubusercontent.com access
         auto_init: true,
       });
@@ -414,7 +414,7 @@ export async function removeFromPublicCatalog(
 export async function importBookFromStore(
   bookHash: string
 ): Promise<ActionResult<{
-  epubData: ArrayBuffer;
+  epubDataBase64: string;
   filename: string;
   title: string;
   author: string;
@@ -445,27 +445,39 @@ export async function importBookFromStore(
       path: epubPath,
     });
 
-    if (!('content' in fileResponse.data) || typeof fileResponse.data.content !== 'string') {
-      return { success: false, error: 'EPUB file not found' };
+    // GitHub API returns content for files <= 1MB, empty content for larger files
+    const data = fileResponse.data as { content?: string; sha?: string };
+
+    let epubDataBase64: string;
+
+    if (data.content && data.content.length > 0) {
+      // Small file (<= 1MB): content is base64-encoded
+      epubDataBase64 = data.content;
+    } else if (data.sha) {
+      // Large file (>1MB): use blob API to get content (no size limit)
+      const blobResponse = await octokit.git.getBlob({
+        owner,
+        repo: entry.ownerRepo,
+        file_sha: data.sha,
+      });
+      epubDataBase64 = blobResponse.data.content;
+    } else {
+      return { success: false, error: 'EPUB file not found or empty' };
     }
 
-    const epubBuffer = Buffer.from(fileResponse.data.content, 'base64');
-    const epubData = epubBuffer.buffer.slice(
-      epubBuffer.byteOffset,
-      epubBuffer.byteOffset + epubBuffer.byteLength
-    );
-
+    // Return base64 string - ArrayBuffer doesn't serialize across server action boundary
     return {
       success: true,
       data: {
-        epubData,
+        epubDataBase64,
         filename: epubFilename,
         title: entry.title,
         author: entry.author,
       },
     };
   } catch (error: unknown) {
-    const err = error as { message?: string };
-    return { success: false, error: err.message || 'Failed to import book' };
+    console.error('Import book error:', error);
+    // Return user-friendly message, not raw GitHub API error with URLs
+    return { success: false, error: 'Failed to import book. It may have been removed by the author.' };
   }
 }

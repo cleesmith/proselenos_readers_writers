@@ -349,7 +349,7 @@ export function useEpubActions(currentProjectId: string | null) {
       });
 
       if (!publishResult.success) {
-        throw new Error(publishResult.error || 'Failed to publish to bookstore');
+        throw new Error(publishResult.error || 'Failed to publish to Proselenos Ebooks');
       }
 
       setState(prev => ({

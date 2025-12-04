@@ -41,9 +41,9 @@ export default function StoreContent({ entries, githubOwner }: StoreContentProps
           onClick={handleBack}
           className='btn btn-ghost btn-sm'
         >
-          ← Your Library
+          ← Your Local Library
         </button>
-        <h1 className='text-lg font-bold'>Proselenos Bookstore</h1>
+        <h1 className='text-lg font-bold'>Proselenos Ebooks</h1>
         <div className='w-16' /> {/* Spacer for centering */}
       </div>
 
@@ -51,7 +51,7 @@ export default function StoreContent({ entries, githubOwner }: StoreContentProps
       <div className='flex-1 overflow-y-auto p-4'>
         {entries.length === 0 ? (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-base-content/60'>No books available in the bookstore yet.</p>
+            <p className='text-base-content/60'>No ebooks available yet.</p>
           </div>
         ) : (
           <div

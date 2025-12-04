@@ -3,7 +3,6 @@ import React from 'react';
 import Image from 'next/image';
 
 import { MdCheck } from 'react-icons/md';
-import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { useReaderStore } from '@/store/readerStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSidebarStore } from '@/store/sidebarStore';
@@ -22,40 +21,19 @@ interface BookMenuProps {
 
 const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen }) => {
   const _ = useTranslation();
-  const { bookKeys, getViewSettings, setViewSettings } = useReaderStore();
+  const { bookKeys } = useReaderStore();
   const { getVisibleLibrary } = useLibraryStore();
   const { openParallelView } = useBooksManager();
   const { sideBarBookKey } = useSidebarStore();
   const { parallelViews, setParallel, unsetParallel } = useParallelViewStore();
-  const viewSettings = getViewSettings(sideBarBookKey!);
-
-  const [isSortedTOC, setIsSortedTOC] = React.useState(viewSettings?.sortedTOC || false);
 
   const handleParallelView = (id: string) => {
     openParallelView(id);
     setIsDropdownOpen?.(false);
   };
-  const handleReloadPage = () => {
-    window.location.reload();
-    setIsDropdownOpen?.(false);
-  };
-  const showAboutProselenosebooks = () => {
-    setAboutDialogVisible(true);
-    setIsDropdownOpen?.(false);
-  };
   const handleExportAnnotations = () => {
     eventDispatcher.dispatch('export-annotations', { bookKey: sideBarBookKey });
     setIsDropdownOpen?.(false);
-  };
-  const handleToggleSortTOC = () => {
-    setIsSortedTOC((prev) => !prev);
-    setIsDropdownOpen?.(false);
-    if (sideBarBookKey) {
-      const viewSettings = getViewSettings(sideBarBookKey)!;
-      viewSettings.sortedTOC = !isSortedTOC;
-      setViewSettings(sideBarBookKey, viewSettings);
-    }
-    setTimeout(() => window.location.reload(), 100);
   };
   const handleSetParallel = () => {
     setParallel(bookKeys);
@@ -118,14 +96,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
         ))}
       <hr className='border-base-200 my-1' />
       <MenuItem label={_('Export Annotations')} onClick={handleExportAnnotations} />
-      <MenuItem
-        label={_('Sort TOC by Page')}
-        Icon={isSortedTOC ? MdCheck : undefined}
-        onClick={handleToggleSortTOC}
-      />
-      <MenuItem label={_('Reload Page')} shortcut='Shift+R' onClick={handleReloadPage} />
-      <hr className='border-base-200 my-1' />
-      <MenuItem label={_('About')} onClick={showAboutProselenosebooks} />
     </Menu>
   );
 };

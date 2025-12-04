@@ -38,14 +38,17 @@ const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
   return (
     <Dialog isOpen={isOpen} onClose={onClose} className='w-[90vw] max-w-6xl h-[80vh]'>
       <div className='border-b border-base-200 p-4'>
-        <h2 className='text-xl font-semibold'>{_('Book Repo download')}</h2>
+        <h2 className='text-xl font-semibold'>
+          {_('Your Library')}
+          <span className='text-sm font-normal italic text-base-content/50 ml-2'>(private ebooks)</span>
+        </h2>
       </div>
 
       <div className='p-4 overflow-y-auto' style={{ maxHeight: 'calc(80vh - 70px)' }}>
         {loading && (
           <div className='flex items-center justify-center py-8'>
             <Spinner loading={true} />
-            <span className='ml-2'>{_('Loading books from repo...')}</span>
+            <span className='ml-2'>{_('Loading ebooks from Your Library...')}</span>
           </div>
         )}
 
@@ -57,15 +60,12 @@ const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
 
         {!loading && !error && availableBooks.length === 0 && (
           <div className='text-center py-8 text-base-content/60'>
-            {_('No books found in your repo')}
+            {_('No ebooks found in Your Library')}
           </div>
         )}
 
         {!loading && availableBooks.length > 0 && (
           <div className='space-y-4'>
-            <p className='text-sm text-base-content/60 mb-4'>
-              {_('Click a book to download it to this device')}
-            </p>
             <div className='grid gap-2'>
               {availableBooks.map((book) => (
                 <button

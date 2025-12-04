@@ -53,7 +53,7 @@ export const DEFAULT_KOSYNC_SETTINGS = {
 
 export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   keepLogin: false,
-  autoUpload: true,
+  autoUpload: false,
   alwaysOnTop: false,
   openBookInNewWindow: true,
   alwaysShowStatusBar: false,

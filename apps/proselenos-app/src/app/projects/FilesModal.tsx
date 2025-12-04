@@ -9,6 +9,7 @@ import { ThemeConfig } from '../shared/theme';
 import { showAlert, showConfirm } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { listProjectFilesAction, downloadFileForBrowserAction, deleteProjectFileAction } from '@/lib/github-project-actions';
+import { getPublicCatalog, removeFromPublicCatalog } from '@/app/actions/store-catalog';
 
 interface FilesModalProps {
   isOpen: boolean;
@@ -160,11 +161,28 @@ export default function FilesModal({
   const handleDelete = async (file: FileItem) => {
     if (!currentProject) return;
 
-    // Confirmation dialog using fancy Swal
+    // Check if this is a published epub
+    let isPublishedEpub = false;
+    if (file.name === 'manuscript.epub') {
+      try {
+        const catalogResult = await getPublicCatalog();
+        if (catalogResult.success && catalogResult.data) {
+          isPublishedEpub = catalogResult.data.some(e => e.projectId === currentProject);
+        }
+      } catch {
+        // Ignore errors checking catalog
+      }
+    }
+
+    // Show appropriate confirmation message
+    const message = isPublishedEpub
+      ? `Delete "${file.name}"?\n\nThis epub is published to the Public Ebooks store. Deleting will also remove it from the store.\n\nThis cannot be undone.`
+      : `Delete "${file.name}"?\n\nThis cannot be undone.`;
+
     const confirmed = await showConfirm(
-      `Delete "${file.name}"?\n\nThis cannot be undone.`,
+      message,
       isDarkMode,
-      'Delete File?',
+      isPublishedEpub ? 'Delete Published Epub?' : 'Delete File?',
       'Delete',
       'Cancel'
     );
@@ -179,7 +197,14 @@ export default function FilesModal({
       if (result.success) {
         // Remove file from list
         setFiles(prev => prev.filter(f => f.path !== file.path));
-        showAlert(`Deleted: ${file.name}`, 'info', undefined, isDarkMode);
+
+        // If published epub, also remove from bookstore
+        if (isPublishedEpub) {
+          await removeFromPublicCatalog(currentProject);
+          showAlert(`Deleted: ${file.name} (also removed from Public Ebooks)`, 'info', undefined, isDarkMode);
+        } else {
+          showAlert(`Deleted: ${file.name}`, 'info', undefined, isDarkMode);
+        }
       } else {
         setError(result.error || 'Failed to delete file');
       }

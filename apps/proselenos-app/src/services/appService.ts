@@ -62,6 +62,10 @@ import { CustomTextureInfo } from '@/styles/textures';
 import { CustomFont, CustomFontInfo } from '@/styles/fonts';
 import { parseFontInfo } from '@/utils/font';
 
+// File size limit for ebook imports (matches NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB)
+const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'] || '30', 10);
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 export abstract class BaseAppService implements AppService {
   osPlatform: OsPlatform = getOSPlatform();
   appPlatform: AppPlatform = 'desktop';
@@ -304,6 +308,11 @@ export abstract class BaseAppService implements AppService {
         }
         if (!fileobj || fileobj.size === 0) {
           throw new Error('Invalid or empty book file');
+        }
+        // Check file size limit
+        if (fileobj.size > MAX_FILE_SIZE_BYTES) {
+          const sizeMB = (fileobj.size / (1024 * 1024)).toFixed(1);
+          throw new Error(`File too large (${sizeMB}MB). Maximum is ${MAX_FILE_SIZE_MB}MB.`);
         }
         ({ book: loadedBook, format } = await new DocumentLoader(fileobj).open());
         if (!loadedBook) {

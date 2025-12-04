@@ -338,6 +338,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       ['Failed to open file', _('Failed to open the book file')],
       ['Invalid or empty book file', _('The book file is empty')],
       ['Unsupported or corrupted book file', _('The book file is corrupted')],
+      ['File too large', _('File is too large. Maximum size is 30MB.')],
     ];
 
     const processFile = async (selectedFile: SelectedFile) => {
@@ -350,6 +351,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           book.groupName = getGroupName(groupId);
           await updateBook(envConfig, book);
         }
+        // Force autoUpload to false - uploads only via cloud icon click
+        settings.autoUpload = false;
         if (user && book && !book.uploadedAt && settings.autoUpload) {
           console.log('Uploading book:', book.title);
           handleBookUpload(book, false);
@@ -434,10 +437,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
   const handleBookDownload = useCallback(
     async (_book: Book, _redownload = false) => {
-      // Book Repo disabled
+      // Your Library disabled
       eventDispatcher.dispatch('toast', {
         type: 'info',
-        message: _('Book Repo is disabled'),
+        message: _('Your Library is disabled'),
       });
       return false;
     },
@@ -449,12 +452,12 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     return async (book: Book, syncBooks = true) => {
       const deletionMessages = {
         both: _('Book deleted: {{title}}', { title: book.title }),
-        cloud: _('Deleted Book Repo backup of the book: {{title}}', { title: book.title }),
+        cloud: _('Deleted Your Library backup of the book: {{title}}', { title: book.title }),
         local: _('Deleted local copy of the book: {{title}}', { title: book.title }),
       };
       const deletionFailMessages = {
         both: _('Failed to delete book: {{title}}', { title: book.title }),
-        cloud: _('Failed to delete Book Repo backup of the book: {{title}}', { title: book.title }),
+        cloud: _('Failed to delete Your Library backup of the book: {{title}}', { title: book.title }),
         local: _('Failed to delete local copy of the book: {{title}}', { title: book.title }),
       };
       try {
@@ -804,10 +807,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           setImportUrlValue('');
           setDownloadPageUrl('');
         }}
-        title={_('Import Book')}
+        title={_('Import Ebook')}
+        boxClassName='sm:!h-auto sm:!max-h-[85%] sm:!w-auto sm:!max-w-md'
       >
 
-        <div className='flex flex-col gap-2 p-3'>
+        <div className='flex flex-col gap-4 p-4'>
           {/* Local File Import */}
           <div className='flex flex-col gap-1'>
             <h3 className='text-base font-semibold'>{_('from Local .epub file')}</h3>
@@ -825,7 +829,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
 
           {/* Divider */}
-          <div className='divider my-0'>{_('OR')}</div>
+          <div className='divider my-2 text-base-content/40 text-sm italic before:bg-base-content/20 after:bg-base-content/20'>or</div>
 
           {/* URL Import */}
           <div className='flex flex-col gap-1'>
@@ -847,7 +851,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
               }}
             />
             <button
-              className='btn btn-xs btn-primary'
+              className='btn btn-xs btn-primary mt-2'
               onClick={handleImportFromUrl}
               disabled={isImportingFromUrl || !importUrlValue.trim()}
             >
@@ -864,7 +868,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
 
           {/* Divider */}
-          <div className='divider my-0'>{_('OR')}</div>
+          <div className='divider my-2 text-base-content/40 text-sm italic before:bg-base-content/20 after:bg-base-content/20'>or</div>
 
           {/* Download Page Parser Import */}
           <div className='flex flex-col gap-1'>
@@ -886,7 +890,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
               }}
             />
             <button
-              className='btn btn-xs btn-primary'
+              className='btn btn-xs btn-primary mt-2'
               onClick={handleImportFromDownloadPage}
               disabled={isImportingFromDownloadPage || !downloadPageUrl.trim()}
             >

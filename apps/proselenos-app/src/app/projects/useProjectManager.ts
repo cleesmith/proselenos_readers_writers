@@ -10,7 +10,8 @@ import {
   selectProjectAction,
   listProjectFilesAction,
   listTxtFilesAction,
-  checkManuscriptFilesExistAction
+  checkManuscriptFilesExistAction,
+  uploadFileToProjectAction
 } from '@/lib/github-project-actions';
 import { convertTxtToDocxActionGitHub } from '@/lib/docx-conversion-actions';
 
@@ -35,6 +36,9 @@ function sanitizeFilename(name: string): string {
 // Get max upload size from env (default 30MB)
 const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'] || '30', 10);
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// GitHub API limit for direct upload (use 4MB to be safe, actual limit is ~4.5MB)
+const GITHUB_DIRECT_UPLOAD_LIMIT = 4 * 1024 * 1024;
 
 interface ProjectManagerState {
   // Project state
@@ -508,10 +512,13 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       const isLocalDev = typeof window !== 'undefined' &&
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-      if (isLocalDev) {
+      // For files under 4MB, we can use direct GitHub upload (works on localhost)
+      // For larger files, we need Vercel Blob webhook (doesn't work on localhost)
+      const canUseDirectUpload = selectedUploadFile.size <= GITHUB_DIRECT_UPLOAD_LIMIT;
+
+      if (isLocalDev && !canUseDirectUpload) {
         showAlert(
-          'File upload to GitHub requires the Vercel webhook, which cannot reach localhost. ' +
-          'Deploy to Vercel to test the full upload flow.',
+          'Large file upload (over 4MB) is not available on localhost.',
           'warning',
           'Local Dev Limitation',
           isDarkMode
@@ -525,7 +532,6 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       const isManuscriptType = MANUSCRIPT_EXTENSIONS.includes(ext);
 
       let githubFileName: string;
-      let blobPathname: string;
 
       if (isManuscriptType) {
         // Manuscript files: always named manuscript.{ext}
@@ -554,25 +560,40 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
         githubFileName = sanitizeFilename(originalName);
       }
 
-      // Blob pathname includes userId to avoid conflicts between users
-      blobPathname = `${userId}-${githubFileName}`;
-
       setIsUploading(true);
       setUploadStatus(`Uploading ${githubFileName}...`);
 
       try {
-        // Upload to Vercel Blob with userId-prefixed pathname
-        // The onUploadCompleted webhook handles the GitHub upload server-side
-        await upload(blobPathname, selectedUploadFile, {
-          access: 'public',
-          handleUploadUrl: '/api/upload',
-          clientPayload: JSON.stringify({
-            projectName: currentProject,
-            fileName: githubFileName  // This is the name used on GitHub
-          }),
-        });
+        if (canUseDirectUpload) {
+          // For small files (under 4MB), use direct GitHub upload
+          // This works on localhost and is more efficient for small files
+          const result = await uploadFileToProjectAction(
+            selectedUploadFile,
+            currentProject,
+            githubFileName
+          );
 
-        // If we get here, the blob upload succeeded and the webhook processed it
+          if (!result.success) {
+            throw new Error(result.error || 'Upload failed');
+          }
+        } else {
+          // For large files, use Vercel Blob with webhook
+          // Blob pathname includes userId to avoid conflicts between users
+          const blobPathname = `${userId}-${githubFileName}`;
+
+          // Upload to Vercel Blob with userId-prefixed pathname
+          // The onUploadCompleted webhook handles the GitHub upload server-side
+          await upload(blobPathname, selectedUploadFile, {
+            access: 'public',
+            handleUploadUrl: '/api/upload',
+            clientPayload: JSON.stringify({
+              projectName: currentProject,
+              fileName: githubFileName  // This is the name used on GitHub
+            }),
+          });
+        }
+
+        // If we get here, the upload succeeded
         setUploadStatus(`✅ File uploaded: ${githubFileName}`);
         showAlert(
           `File uploaded successfully: ${githubFileName}`,

@@ -15,6 +15,7 @@ export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps
   const { appService } = useEnv();
   const [isImporting, setIsImporting] = useState(false);
   const [coverImageError, setCoverImageError] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Format published date
   const publishedDate = new Date(entry.publishedAt).toLocaleDateString(undefined, {
@@ -34,12 +35,19 @@ export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps
     if (isImporting) return;
 
     setIsImporting(true);
+    setImportError(null);
     try {
       const result = await importBookFromStore(entry.bookHash);
 
       if (result.success && result.data) {
-        const { epubData, filename } = result.data;
-        const file = new File([epubData], filename, { type: 'application/epub+zip' });
+        const { epubDataBase64, filename } = result.data;
+        // Decode base64 to binary
+        const binaryString = atob(epubDataBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const file = new File([bytes], filename, { type: 'application/epub+zip' });
 
         if (appService) {
           const library = await appService.loadLibraryBooks();
@@ -50,9 +58,11 @@ export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps
         window.location.href = '/library';
       } else {
         console.error('Failed to import book:', result.error);
+        setImportError(result.error || 'Failed to import. The book may have been removed by the author.');
       }
     } catch (error) {
       console.error('Error importing book:', error);
+      setImportError('Failed to import. Please try again.');
     } finally {
       setIsImporting(false);
     }
@@ -132,6 +142,13 @@ export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps
           >
             {isImporting ? 'Importing...' : 'Import to Library'}
           </button>
+
+          {/* Error message */}
+          {importError && (
+            <div className='mt-2 text-red-400 text-xs text-center'>
+              {importError}
+            </div>
+          )}
         </div>
 
         {/* Loading spinner overlay */}

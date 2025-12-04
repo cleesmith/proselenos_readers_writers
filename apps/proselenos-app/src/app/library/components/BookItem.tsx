@@ -109,7 +109,7 @@ const BookItem: React.FC<BookItemProps> = ({
           <div className='flex items-center justify-center gap-x-2'>
             {!appService?.isMobile && (
               <button
-                aria-label={_('Show Book Details')}
+                aria-label={_('Show Ebook Details')}
                 className='show-detail-button -m-2 p-2 sm:opacity-0 sm:group-hover:opacity-100'
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => {
@@ -140,6 +140,8 @@ const BookItem: React.FC<BookItemProps> = ({
               !book.uploadedAt && (
                 <button
                   className='show-repo-button -m-2 p-2'
+                  title={_('Back up to Private Ebooks')}
+                  aria-label={_('Back up to Private Ebooks')}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => {
                     handleBookUpload(book);

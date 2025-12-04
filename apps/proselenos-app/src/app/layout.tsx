@@ -9,9 +9,9 @@ import '../styles/globals.css';
 const title = 'Proselenos — Read and Write';
 const url = 'https://proselenos.com';
 const description =
-  'Proselenos is an ebook reader for EPUB files with text-to-speech read-aloud, highlighting, notes, and access to a bookstore. ' +
+  'Proselenos is an ebook reader for EPUB files with text-to-speech read-aloud, highlighting, notes, and access to a ebooks store. ' +
   'Authors and Writers offers AI chat, a Writing Assistant for brainstorming, outlining, world-building, and chapter writing, AI editing tools, and an editor with read-aloud. ' +
-  'The Publishing Assistant converts a manuscript text file into HTML, EPUB, and PDF, with options to add the EPUB to your ereader library or list it in the bookstore.';
+  'The Publishing Assistant converts a manuscript text file into HTML, EPUB, and PDF, with options to add the EPUB to your ereader library or list it in the Proselenos Ebooks.';
 
 export const metadata = {
   title,
