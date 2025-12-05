@@ -66,7 +66,8 @@ export const AboutWindow = () => {
               <Image src='/icon.png' alt='App Logo' className='h-20 w-20' width={64} height={64} />
             </div>
             <div className='flex select-text flex-col items-center'>
-              <h2 className='mb-2 text-2xl font-bold'>Proselenos</h2>
+              <h2 className='mb-1 text-2xl font-bold'>Proselenos</h2>
+              <p className='mb-2 text-sm italic tracking-wide text-neutral-content'>Readers and Writers</p>
               <p className='text-neutral-content text-center text-sm'>
                 {_('Version {{version}}', { version: getAppVersion() })} {`(${browserInfo})`}
               </p>
@@ -103,7 +104,11 @@ export const AboutWindow = () => {
             dir='ltr'
           >
             <p className='text-neutral-content text-sm'>
-              © {new Date().getFullYear()} slipthetrap.com All rights reserved.
+              © {new Date().getFullYear()}{' '}
+              <Link href='https://www.slipthetrap.com/' className='text-blue-500 underline'>
+                slipthetrap.com
+              </Link>{' '}
+              All rights reserved.
             </p>
 
             <p className='text-neutral-content text-xs'>
@@ -117,12 +122,15 @@ export const AboutWindow = () => {
               . You are free to use, modify, and distribute this software under the terms of the
               AGPL v3 license. Please see the license for more details.
             </p>
-            <p className='text-neutral-content text-xs'>
-              Source code is available at{' '}
-              <Link href='https://github.com/cleesmith/proselenos_readers_writers' className='text-blue-500 underline'>
+            <p className='text-neutral-content text-xs italic'>
+              Proselenos ebooks are based on{' '}
+              <Link href='https://readest.com/' className='text-blue-500 underline'>
+                Readest
+              </Link>
+              , an open-source ebook reader for immersive reading.{' '}
+              <Link href='https://github.com/readest/readest' className='text-blue-500 underline'>
                 GitHub
               </Link>
-              .
             </p>
 
             <LegalLinks />

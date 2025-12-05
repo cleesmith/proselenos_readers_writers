@@ -1,0 +1,257 @@
+PROSELENOS: READER MIGRATION TO SUPABASE
+=========================================
+
+SCOPE
+-----
+
+In Scope (Reader features only):
+- User accounts (created on NextAuth sign-in, only for signed-in users)
+- Private Ebook Backup ("cloud upload" icon) to Supabase Storage
+- Config.json (reading state, highlights) to Supabase Storage (as file, bundled with epub)
+- Download from "Private Ebooks" from Supabase Storage
+
+Out of Scope (stays on GitHub, untouched):
+- Bookstore (catalog, covers, downloads)
+- Authors Mode (manuscripts, publishing)
+- All existing GitHub code (leave as-is)
+
+
+APPROACH
+--------
+
+Additive, not destructive:
+- Add new Supabase code alongside existing GitHub code
+- Wire Reader UI to new Supabase paths
+- GitHub code remains untouched and functional
+- No GitHub code removal until Supabase fully working
+
+
+SAFE DEPLOYMENT STRATEGY
+------------------------
+
+Branch: supabase-migration
+(Will be used for both Reader and later Author migration)
+
+Local Development:
+1. git checkout -b supabase-migration
+2. Add to .env.local only:
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=eyJxxxxx
+3. Develop and test with pnpm dev
+4. Production untouched
+
+Preview Testing (Optional):
+1. Push branch to GitHub
+2. Vercel creates preview at unique URL (not main domain)
+3. Add Supabase env vars to Preview environment in Vercel dashboard
+4. Test on real Vercel infrastructure
+5. Production still untouched
+
+Go Live:
+1. Merge supabase-migration to main
+2. Add Supabase env vars to Production environment in Vercel
+3. Production now uses Supabase
+
+Key: Don't add Supabase env vars to Vercel Production until ready to go live.
+
+
+PHASE 1: SUPABASE SETUP (Manual by Owner)
+-----------------------------------------
+
+1.1 Create Supabase Project
+- Create project on supabase.com (free tier)
+- Note project URL and keys
+
+1.2 Database Schema
+
+-- Users table (only for signed-in users)
+create table users (
+  id uuid primary key default gen_random_uuid(),
+  google_id text unique not null,
+  email text,
+  display_name text,
+  avatar_url text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index idx_users_google_id on users(google_id);
+
+-- Private ebook backups metadata (tracks what's in Storage)
+create table user_ebooks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  book_hash text not null,
+  title text,
+  author_name text,
+  uploaded_at timestamptz default now(),
+  unique(user_id, book_hash)
+);
+create index idx_user_ebooks_user on user_ebooks(user_id);
+
+Note: No reading_state or highlights tables needed.
+Config.json is stored as a file in Supabase Storage alongside the epub.
+Simple file-based backup, not a normalized database.
+
+1.3 Storage Bucket
+
+-- Private ebooks bucket (not public)
+insert into storage.buckets (id, name, public)
+values ('private-ebooks', 'private-ebooks', false);
+
+Storage file structure:
+
+private-ebooks/
+  {google_id}/
+    {book_hash}/
+      {title}.epub      (The ebook file)
+      config.json       (Reading state, highlights, bookmarks)
+      cover.png         (Cover image, if exists)
+
+Note: Using google_id as folder name (same pattern as current GitHub repos).
+Service role key is used (server-side only), so RLS policies not needed.
+
+1.4 Environment Variables
+Add to Vercel and .env.local:
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJxxxxx
+
+
+PHASE 2: AUTH INTEGRATION
+-------------------------
+
+2.1 Create Supabase Client Utility
+New file: src/lib/supabase.ts
+- Server-side client using service role key
+- Helper to get/create user by google_id
+
+2.2 Modify NextAuth Callback
+File: packages/auth-core/src/auth.ts (or wherever NextAuth is configured)
+- On sign-in, upsert user to Supabase users table
+- Map google_id, email, name, avatar
+
+2.3 Test
+- Sign in creates user record in Supabase
+
+
+PHASE 3: PRIVATE EBOOK BACKUP (Upload)
+--------------------------------------
+
+3.1 New Server Actions
+New file: src/app/actions/supabase-ebook-actions.ts
+
+uploadEbookToSupabase(bookHash, title, author, epubBase64)
+- Upload epub to Storage: private-ebooks/{userId}/{bookHash}/{title}.epub
+- Insert/update user_ebooks table
+- Return success/error
+
+3.2 New Upload Hook
+New file: src/hooks/useSupabaseBookUpload.ts
+- Similar pattern to existing useBookUpload.ts
+- Reads epub from IndexedDB
+- Calls new server action
+- Updates book.uploadedAt on success
+
+3.3 Wire to UI
+File: src/app/library/components/BookItem.tsx
+- Cloud upload icon calls new Supabase hook instead of GitHub hook
+- No changes to UI appearance
+
+3.4 Handle Large Files
+Supabase Storage handles large files directly (up to 5GB).
+No need for Vercel Blob workaround.
+
+
+PHASE 4: CONFIG UPLOAD (bundled with epub)
+------------------------------------------
+
+Config.json is uploaded alongside the epub as a file (not normalized into tables).
+This keeps it simple and matches current behavior.
+
+4.1 What Gets Backed Up Per Book
+When user clicks cloud upload icon on a book:
+1. [title].epub - the ebook file
+2. config.json - reading state (progress, highlights, bookmarks, etc.)
+3. cover.png - cover image (if exists)
+
+All three files uploaded to Supabase Storage in one operation.
+
+4.2 What Stays Local (NOT backed up)
+- library.json - library metadata stays in IndexedDB
+- settings.json - user preferences stay in IndexedDB
+
+4.3 No Sync
+- No automatic syncing
+- No bulk operations
+- User clicks cloud icon then that one book backs up
+- User in full control
+
+
+PHASE 5: DOWNLOAD FROM PRIVATE EBOOKS
+-------------------------------------
+
+5.1 Server Action to List User's Ebooks
+Add to: src/app/actions/supabase-ebook-actions.ts
+
+listUserEbooks()
+- Query user_ebooks table
+- Return list with metadata (title, author, uploadedAt, bookHash)
+
+5.2 Server Action to Download Book
+
+downloadUserEbook(bookHash)
+- Fetch all files from Storage: private-ebooks/{userId}/{bookHash}/
+  - {title}.epub
+  - config.json
+  - cover.png (if exists)
+- Return as base64 (or signed URLs for large files)
+
+5.3 UI for Download
+File: Settings Menu or new "Private Ebooks" section
+- Show list of backed-up ebooks (from user_ebooks table)
+- Download button fetches epub + config + cover from Supabase then imports to IndexedDB
+
+This replaces the current "Book Repo download" feature that pulls from GitHub.
+
+
+FILES TO CREATE/MODIFY
+----------------------
+
+New Files:
+- src/lib/supabase.ts                        Supabase server client
+- src/app/actions/supabase-ebook-actions.ts  All Supabase server actions
+- src/hooks/useSupabaseBookUpload.ts         Client hook for upload
+
+Modified Files:
+- packages/auth-core/...                     Add user upsert on sign-in
+- src/app/library/components/BookItem.tsx    Use new Supabase hook for upload
+- Settings Menu component                    Add "Private Ebooks" download from Supabase
+
+Untouched Files (GitHub code stays):
+- src/libs/book-storage.ts
+- src/hooks/useBookUpload.ts
+- src/app/actions/upload-book.ts
+- src/app/actions/store-catalog.ts
+- All /app/store/ files
+- All publishing/author files
+
+
+TESTING CHECKLIST
+-----------------
+
+[ ] Sign in creates user in Supabase users table
+[ ] Cloud upload icon uploads epub + config.json + cover to Supabase Storage
+[ ] user_ebooks table row created with metadata
+[ ] "Private Ebooks" shows list of backed-up books
+[ ] Download from "Private Ebooks" imports book (with config + cover) to IndexedDB
+[ ] Bookstore still works (unchanged, GitHub)
+[ ] Authors Mode still works (unchanged, GitHub)
+
+
+NOTES
+-----
+
+- All Supabase calls via Server Actions only (no public API routes)
+- Service role key used (bypasses RLS, security in server actions)
+- IndexedDB remains primary for local reading (unchanged)
+- Sign-in remains optional (no Supabase features without sign-in)
+- Large files handled directly by Supabase Storage (no Vercel Blob needed)
