@@ -31,10 +31,13 @@ import { useDemoBooks } from './hooks/useDemoBooks';
 import { useBooksSync } from './hooks/useBooksSync';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
-import { useBookUpload } from '@/hooks/useBookUpload';
+// GitHub upload hook removed - now using Supabase
+// import { useBookUpload } from '@/hooks/useBookUpload';
+import { useSupabaseBookUpload } from '@/hooks/useSupabaseBookUpload';
 
 import { BookMetadata } from '@/libs/document';
-import { ensureGitHubRepo } from '@/app/actions/github-books';
+// GitHub repo check removed - now using Supabase
+// import { ensureGitHubRepo } from '@/app/actions/github-books';
 import { parseMetaRefreshAction } from '@/app/actions/download-page-parser';
 import { AboutWindow } from '@/components/AboutWindow';
 import { BookDetailModal } from '@/components/metadata';
@@ -89,7 +92,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   }>({});
   const [pendingNavigationBookIds, setPendingNavigationBookIds] = useState<string[] | null>(null);
   const isInitiating = useRef(false);
-  const githubRepoChecked = useRef(false);
+  // const githubRepoChecked = useRef(false); // Removed - using Supabase now
 
   const viewSettings = settings.globalViewSettings;
   const demoBooks = useDemoBooks();
@@ -103,7 +106,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
   const { pullLibrary, pushLibrary } = useBooksSync();
   const { isDragging } = useDragDropImport();
-  const { uploadBookToGitHub } = useBookUpload();
+  const { uploadBookToSupabase } = useSupabaseBookUpload();
 
   usePullToRefresh(containerRef, pullLibrary);
   useScreenWakeLock(settings.screenWakeLock);
@@ -296,19 +299,19 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Ensure GitHub repo exists for authenticated user
-  useEffect(() => {
-    if (user && !githubRepoChecked.current) {
-      githubRepoChecked.current = true;
-      ensureGitHubRepo().then((result) => {
-        if (result.success) {
-          console.log('GitHub repo ready:', result.repoName, result.created ? '(created)' : '(exists)');
-        } else {
-          console.error('Failed to ensure GitHub repo:', result.error);
-        }
-      });
-    }
-  }, [user]);
+  // GitHub repo check removed - now using Supabase for ebook backup
+  // useEffect(() => {
+  //   if (user && !githubRepoChecked.current) {
+  //     githubRepoChecked.current = true;
+  //     ensureGitHubRepo().then((result) => {
+  //       if (result.success) {
+  //         console.log('GitHub repo ready:', result.repoName, result.created ? '(created)' : '(exists)');
+  //       } else {
+  //         console.error('Failed to ensure GitHub repo:', result.error);
+  //       }
+  //     });
+  //   }
+  // }, [user]);
 
   useEffect(() => {
     if (demoBooks.length > 0 && libraryLoaded) {
@@ -400,11 +403,12 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         // Show uploading message (persists until replaced)
         eventDispatcher.dispatch('toast', {
           type: 'warning',
-          message: _('Uploading ebook, please stand by...'),
+          message: _('Uploading ebook to Private Ebooks...'),
           timeout: 0, // Persist indefinitely
         });
 
-        const result = await uploadBookToGitHub(book);
+        // Use Supabase for upload (replaces GitHub)
+        const result = await uploadBookToSupabase(book);
 
         if (result.success) {
           // Update book with uploadedAt timestamp
@@ -413,7 +417,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
           eventDispatcher.dispatch('toast', {
             type: 'success',
-            message: _('Ebook uploaded successfully'),
+            message: _('Ebook uploaded to Private Ebooks'),
           });
           return true;
         } else {
@@ -432,7 +436,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         return false;
       }
     },
-    [uploadBookToGitHub, updateBook, envConfig, _],
+    [uploadBookToSupabase, updateBook, envConfig, _],
   );
 
   const handleBookDownload = useCallback(
@@ -762,7 +766,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
                 handleImportBooks={handleImportBooks}
                 handleBookUpload={handleBookUpload}
                 handleBookDownload={handleBookDownload}
-                handleBookDelete={handleBookDelete('both')}
+                handleBookDelete={handleBookDelete('local')}
                 handleSetSelectMode={handleSetSelectMode}
                 handleShowDetailsBook={handleShowDetailsBook}
                 booksTransferProgress={booksTransferProgress}
@@ -794,7 +798,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           book={showDetailsBook}
           onClose={() => setShowDetailsBook(null)}
           handleBookUpload={user ? handleBookUpload : undefined}
-          handleBookDelete={handleBookDelete('both')}
+          handleBookDelete={handleBookDelete('local')}
           handleBookMetadataUpdate={handleUpdateMetadata}
         />
       )}

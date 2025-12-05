@@ -58,14 +58,48 @@ ON CONFLICT (id) DO NOTHING;
 
 
 -- ============================================
+-- STORAGE POLICIES
+-- ============================================
+
+-- Supabase Storage uses RLS on storage.objects table by default.
+-- We need policies to allow our server actions to upload/download files.
+-- Even with service_role key, storage operations need explicit policies.
+
+-- Drop existing policies first (makes script re-runnable)
+DROP POLICY IF EXISTS "private_ebooks_insert" ON storage.objects;
+DROP POLICY IF EXISTS "private_ebooks_select" ON storage.objects;
+DROP POLICY IF EXISTS "private_ebooks_update" ON storage.objects;
+DROP POLICY IF EXISTS "private_ebooks_delete" ON storage.objects;
+
+-- Policy: Allow INSERT (upload) to private-ebooks bucket
+-- Authenticated users can upload (service_role bypasses this anyway)
+CREATE POLICY "private_ebooks_insert" ON storage.objects
+FOR INSERT WITH CHECK (bucket_id = 'private-ebooks');
+
+-- Policy: Allow SELECT (download/list) from private-ebooks bucket
+CREATE POLICY "private_ebooks_select" ON storage.objects
+FOR SELECT USING (bucket_id = 'private-ebooks');
+
+-- Policy: Allow UPDATE (overwrite) in private-ebooks bucket
+CREATE POLICY "private_ebooks_update" ON storage.objects
+FOR UPDATE USING (bucket_id = 'private-ebooks');
+
+-- Policy: Allow DELETE from private-ebooks bucket
+CREATE POLICY "private_ebooks_delete" ON storage.objects
+FOR DELETE USING (bucket_id = 'private-ebooks');
+
+
+-- ============================================
 -- NOTES
 -- ============================================
 
--- Row Level Security (RLS) is NOT enabled on these tables.
+-- Row Level Security (RLS) on TABLES is NOT enabled.
 -- Security is handled at the application level:
 --   1. All database access is via Server Actions (server-side only)
 --   2. Server Actions use service_role key
 --   3. Server Actions verify user session before any operation
 --
--- The service_role key bypasses RLS anyway, so enabling RLS
--- would not add security for our use case.
+-- Row Level Security (RLS) on STORAGE is enabled by default in Supabase.
+-- The policies above allow operations on the private-ebooks bucket.
+-- The service_role key bypasses these policies, but they're needed
+-- for the storage operations to work correctly.

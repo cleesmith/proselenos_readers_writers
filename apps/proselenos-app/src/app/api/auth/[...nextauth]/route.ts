@@ -4,6 +4,7 @@ import NextAuth from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { updateUserInfo } from '@/lib/github-config-storage';
 import { updateUserRepoInfo } from '@proselenosebooks/master-tracker';
+import { upsertSupabaseUser } from '@/lib/supabase';
 
 const handler = NextAuth({
   ...authOptions,
@@ -36,6 +37,19 @@ const handler = NextAuth({
           // Log but don't block sign-in if master tracker update fails
           console.log("\nNextAuth in: proselenosebooks/apps/proselenosebooks-app/api/auth/[...nextauth]/route.ts");
           console.error("Failed to update user info in master_proselenosebooks/user_repos.json:\n", error);
+        }
+
+        // Upsert user to Supabase (for new Supabase-based features)
+        try {
+          await upsertSupabaseUser({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          });
+        } catch (error) {
+          // Log but don't block sign-in if Supabase update fails
+          console.error("Failed to upsert user to Supabase:", error);
         }
       }
     },

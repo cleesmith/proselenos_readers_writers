@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { Book } from '@/types/book';
-import { useBookRepo } from '@/hooks/useBookRepo';
+// Switched from GitHub to Supabase for Private Ebooks
+// import { Book } from '@/types/book';
+// import { useBookRepo } from '@/hooks/useBookRepo';
+import { useSupabaseBookRepo } from '@/hooks/useSupabaseBookRepo';
 import { useTranslation } from '@/hooks/useTranslation';
 import Dialog from '@/components/Dialog';
 import Spinner from '@/components/Spinner';
-import { formatAuthors } from '@/utils/book';
 
 interface BookRepoModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface BookRepoModalProps {
 
 const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
   const _ = useTranslation();
+  // Using Supabase instead of GitHub
   const {
     availableBooks,
     loading,
@@ -20,7 +22,7 @@ const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
     error,
     fetchAvailableBooks,
     downloadBook,
-  } = useBookRepo();
+  } = useSupabaseBookRepo();
 
   useEffect(() => {
     if (isOpen) {
@@ -28,7 +30,7 @@ const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, fetchAvailableBooks]);
 
-  const handleDownloadBook = async (book: Book) => {
+  const handleDownloadBook = async (book: (typeof availableBooks)[number]) => {
     const result = await downloadBook(book);
     if (result.success) {
       // Book downloaded successfully, it will be removed from availableBooks
@@ -80,7 +82,7 @@ const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
                     </h3>
                     {book.author && (
                       <p className='text-sm text-base-content/60 line-clamp-1'>
-                        {formatAuthors(book.author, book.primaryLanguage)}
+                        {book.author}
                       </p>
                     )}
                   </div>
