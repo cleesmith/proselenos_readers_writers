@@ -28,7 +28,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { useUICSS } from '@/hooks/useUICSS';
 import { useDemoBooks } from './hooks/useDemoBooks';
-import { useBooksSync } from './hooks/useBooksSync';
+// useBooksSync removed - Supabase migration (no automatic syncing)
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
 // GitHub upload hook removed - now using Supabase
@@ -104,7 +104,9 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   useUICSS();
 
 
-  const { pullLibrary, pushLibrary } = useBooksSync();
+  // useBooksSync removed - no automatic syncing with Supabase migration
+  const pullLibrary = useCallback(async () => {}, []);
+  const pushLibrary = useCallback(async () => {}, []);
   const { isDragging } = useDragDropImport();
   const { uploadBookToSupabase } = useSupabaseBookUpload();
 
@@ -418,6 +420,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           eventDispatcher.dispatch('toast', {
             type: 'success',
             message: _('Ebook uploaded to Private Ebooks'),
+            timeout: 2000, // Quick confirmation
           });
           return true;
         } else {

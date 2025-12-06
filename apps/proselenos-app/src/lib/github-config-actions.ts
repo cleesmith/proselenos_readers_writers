@@ -1,18 +1,17 @@
 // lib/github-config-actions.ts
-// Server actions for GitHub config/settings operations
+// Server actions for config/settings operations
+// Now uses Supabase instead of GitHub
 
 'use server';
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import {
-  getProselenosConfig,
-  // saveProselenosConfig,
+  getAuthorConfig,
   updateProviderAndModel,
   updateSelectedModel,
   updateDarkMode,
-  // updateCurrentProject
-} from './github-config-storage';
+} from './supabase-config-actions';
 
 interface ExtendedSession {
   user: {
@@ -32,7 +31,7 @@ type ActionResult<T = any> = {
 };
 
 /**
- * Get Proselenos config from GitHub repo
+ * Get Proselenos config from Supabase
  */
 export async function getproselenosConfigAction(): Promise<ActionResult> {
   try {
@@ -41,7 +40,7 @@ export async function getproselenosConfigAction(): Promise<ActionResult> {
       return { success: false, error: 'Not authenticated' };
     }
 
-    const config = await getProselenosConfig(session.user.id);
+    const config = await getAuthorConfig(session.user.id);
     return { success: true, data: config };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to get config' };
@@ -49,7 +48,7 @@ export async function getproselenosConfigAction(): Promise<ActionResult> {
 }
 
 /**
- * Update provider and model in GitHub config
+ * Update provider and model in Supabase config
  */
 export async function updateProviderAndModelAction(provider: string, model: string): Promise<ActionResult> {
   try {
@@ -66,7 +65,7 @@ export async function updateProviderAndModelAction(provider: string, model: stri
 }
 
 /**
- * Update selected AI model in GitHub config
+ * Update selected AI model in Supabase config
  */
 export async function updateSelectedModelAction(model: string): Promise<ActionResult> {
   try {
@@ -83,7 +82,7 @@ export async function updateSelectedModelAction(model: string): Promise<ActionRe
 }
 
 /**
- * Update dark mode preference in GitHub config
+ * Update dark mode preference in Supabase config
  */
 export async function updateDarkModeAction(isDark: boolean): Promise<ActionResult> {
   try {
@@ -100,7 +99,7 @@ export async function updateDarkModeAction(isDark: boolean): Promise<ActionResul
 }
 
 /**
- * Validate current project (check if it exists in repo)
+ * Validate current project (check if it exists)
  *
  * NOTE: This function is no longer called. It was previously used by a useEffect
  * in ClientBoot.tsx that re-validated the project on dependency changes. This caused
@@ -113,7 +112,7 @@ export async function validateCurrentProjectAction(): Promise<ActionResult> {
       return { success: false, error: 'Not authenticated' };
     }
 
-    const config = await getProselenosConfig(session.user.id);
+    const config = await getAuthorConfig(session.user.id);
     const currentProject = config.settings.current_project;
 
     if (!currentProject) {

@@ -33,7 +33,8 @@ const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
   const handleDownloadBook = async (book: (typeof availableBooks)[number]) => {
     const result = await downloadBook(book);
     if (result.success) {
-      // Book downloaded successfully, it will be removed from availableBooks
+      // Reload page to ensure cover images load correctly
+      window.location.reload();
     }
   };
 

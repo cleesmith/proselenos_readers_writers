@@ -1,8 +1,9 @@
 // lib/docx-comments-actions.ts
+// DOCX comments extraction - uses Supabase storage
 
 'use server';
 
-import { listFiles, downloadBinaryFile, uploadFile } from '@/lib/github-storage';
+import { listProjectFiles, downloadFile, uploadFileToProject } from '@/lib/supabase-project-actions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import * as mammoth from 'mammoth';
@@ -56,8 +57,15 @@ export async function extractDocxCommentsAction(
     }
 
     try {
-      // Download the DOCX file from GitHub repo (returns Buffer directly, no conversion needed)
-      const { content: buffer, filename } = await downloadBinaryFile(userId, 'proselenos', docxFilePath);
+      // Extract project name and filename from path
+      const pathParts = docxFilePath.split('/');
+      const docxProjectName = pathParts[0] || projectName;
+      const docxFileName = pathParts.slice(1).join('/') || pathParts[0] || '';
+
+      // Download the DOCX file from Supabase storage
+      const arrayBuffer = await downloadFile(userId, docxProjectName, docxFileName);
+      const buffer = Buffer.from(arrayBuffer);
+      const filename = docxFileName.split('/').pop() || docxFileName;
 
       // Extract comments from the DOCX file
       const extractionResult = await extractComments(buffer);
@@ -73,9 +81,8 @@ export async function extractDocxCommentsAction(
 
 ${cleanupText(extractionResult.documentContent)}`;
 
-        // Save to GitHub repo
-        const outputPath = `${projectName}/${noCommentsFileName}`;
-        await uploadFile(userId, 'proselenos', outputPath, txtContent, 'Extract DOCX comments (no comments found)');
+        // Save to Supabase storage
+        await uploadFileToProject(userId, projectName, noCommentsFileName, txtContent);
 
         return {
           success: true,
@@ -91,9 +98,8 @@ ${cleanupText(extractionResult.documentContent)}`;
       // Generate formatted output with comments
       const formattedOutput = generateFormattedOutput(extractionResult, filename);
 
-      // Save to GitHub repo
-      const outputPath = `${projectName}/${finalOutputName}`;
-      await uploadFile(userId, 'proselenos', outputPath, formattedOutput.content, 'Extract DOCX comments');
+      // Save to Supabase storage
+      await uploadFileToProject(userId, projectName, finalOutputName, formattedOutput.content);
 
       return {
         success: true,
@@ -379,14 +385,17 @@ export async function listDocxFilesAction(projectName: string): Promise<ActionRe
       return { success: false, error: 'Project name is required' };
     }
 
-    // List all files in the project folder with .docx extension
-    const docxFiles = await listFiles(userId, 'proselenos', `${projectName}/`, '.docx');
+    // List all files in the project folder
+    const allFiles = await listProjectFiles(userId, projectName);
+
+    // Filter for .docx files
+    const docxFiles = allFiles.filter(f => f.name.toLowerCase().endsWith('.docx'));
 
     // Map to format expected by UI
     const formattedFiles = docxFiles.map(file => ({
-      id: file.path,
+      id: `${projectName}/${file.name}`,
       name: file.name,
-      path: file.path,
+      path: `${projectName}/${file.name}`,
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     }));
 

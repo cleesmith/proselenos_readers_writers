@@ -1,9 +1,10 @@
 // lib/secure-storage.ts
+// Secure API key storage using Supabase with AES-256 encryption
 
 // SERVER-SIDE ONLY - Never expose this to client routes
 
 import * as crypto from 'crypto';
-import { getProselenosSettings, saveProselenosSettings, ProselenosSettings } from '@/lib/github-config-storage';
+import { supabase, isSupabaseConfigured, getSupabaseUserByGoogleId } from './supabase';
 
 interface EncryptedData {
   iv: string;
@@ -15,11 +16,11 @@ interface StorageConfig {
 }
 
 export class InternalSecureStorage {
-  private userId: string;
+  private googleId: string;
   private appSecret: string;
 
-  constructor(userId: string) {
-    this.userId = userId;
+  constructor(googleId: string) {
+    this.googleId = googleId;
 
     // App-only secret - users can never decrypt this
     this.appSecret = process.env['APP_ENCRYPTION_SECRET'] || '';
@@ -31,7 +32,7 @@ export class InternalSecureStorage {
   // Generate encryption key that ONLY your app can create
   private getAppOnlyKey(): Buffer {
     // Combine user ID with app secret that only your server knows
-    const combined = this.userId + this.appSecret + 'proselenos-keys';
+    const combined = this.googleId + this.appSecret + 'proselenos-keys';
     return crypto.createHash('sha256').update(combined).digest();
   }
 
@@ -40,10 +41,10 @@ export class InternalSecureStorage {
     const key = this.getAppOnlyKey().slice(0, 32);
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-    
+
     let encrypted = cipher.update(plaintext, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     return {
       iv: iv.toString('hex'),
       data: encrypted
@@ -55,30 +56,70 @@ export class InternalSecureStorage {
     const key = this.getAppOnlyKey().slice(0, 32);
     const iv = Buffer.from(encryptedData.iv, 'hex');
     const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-    
+
     let decrypted = decipher.update(encryptedData.data, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return decrypted;
   }
 
-  // Load encrypted config from GitHub repo
+  // Get user's UUID from google_id
+  private async getUserId(): Promise<string | null> {
+    const user = await getSupabaseUserByGoogleId(this.googleId);
+    return user?.id || null;
+  }
+
+  // Load encrypted API keys from Supabase author_config.api_keys
   private async loadConfig(): Promise<StorageConfig> {
+    if (!isSupabaseConfigured()) {
+      return {};
+    }
+
     try {
-      const settings = await getProselenosSettings(this.userId);
-      return settings as StorageConfig;
+      const userId = await this.getUserId();
+      if (!userId) {
+        return {};
+      }
+
+      const { data, error } = await supabase!
+        .from('author_config')
+        .select('api_keys')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !data) {
+        return {};
+      }
+
+      return (data.api_keys as StorageConfig) || {};
     } catch (error) {
-      console.error('Error loading config from GitHub:', error);
+      console.error('Error loading API keys from Supabase:', error);
       return {};
     }
   }
 
-  // Save encrypted config to GitHub repo
+  // Save encrypted API keys to Supabase author_config.api_keys
   private async saveConfig(config: StorageConfig): Promise<void> {
-    try {
-      await saveProselenosSettings(this.userId, config as ProselenosSettings);
-    } catch (error) {
-      console.error('Error saving config to GitHub:', error);
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase not configured');
+    }
+
+    const userId = await this.getUserId();
+    if (!userId) {
+      throw new Error('User not found in Supabase');
+    }
+
+    const { error } = await supabase!.from('author_config').upsert(
+      {
+        user_id: userId,
+        api_keys: config,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    );
+
+    if (error) {
+      console.error('Error saving API keys to Supabase:', error);
       throw error;
     }
   }
@@ -88,10 +129,10 @@ export class InternalSecureStorage {
     try {
       const config = await this.loadConfig();
       const encrypted = this._encrypt(apiKey);
-      
+
       config[keyName] = encrypted;
       config['last_updated'] = new Date().toISOString();
-      
+
       await this.saveConfig(config);
       return true;
     } catch (error) {
@@ -105,9 +146,9 @@ export class InternalSecureStorage {
     try {
       const config = await this.loadConfig();
       const encryptedData = config[keyName];
-      
+
       if (!encryptedData || typeof encryptedData === 'string') return null;
-      
+
       return this._decrypt(encryptedData as EncryptedData);
     } catch (error) {
       console.error('Error getting API key:', error);
@@ -121,7 +162,7 @@ export class InternalSecureStorage {
       const config = await this.loadConfig();
       delete config[keyName];
       config['last_updated'] = new Date().toISOString();
-      
+
       await this.saveConfig(config);
       return true;
     } catch (error) {
@@ -146,8 +187,8 @@ export class InternalSecureStorage {
     const config = await this.loadConfig(); // Load ONCE
     const hasKey = provider in config && provider !== 'last_updated';
     const encryptedData = config[provider];
-    const apiKey = encryptedData && typeof encryptedData !== 'string' 
-      ? this._decrypt(encryptedData as EncryptedData) 
+    const apiKey = encryptedData && typeof encryptedData !== 'string'
+      ? this._decrypt(encryptedData as EncryptedData)
       : null;
     return { hasKey, apiKey };
   }

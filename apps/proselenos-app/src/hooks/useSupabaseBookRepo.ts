@@ -6,9 +6,10 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useLibraryStore } from '@/store/libraryStore';
 import { listUserEbooks, downloadUserEbook } from '@/app/actions/supabase-ebook-actions';
 import { useBookImporter } from '@/hooks/useBookImporter';
+import { useLibraryStore } from '@/store/libraryStore';
+import { useEnv } from '@/context/EnvContext';
 
 interface SupabaseBook {
   id: string;
@@ -19,8 +20,9 @@ interface SupabaseBook {
 }
 
 export function useSupabaseBookRepo() {
-  const { library } = useLibraryStore();
   const { importEpubBase64 } = useBookImporter();
+  const { library, setLibrary } = useLibraryStore();
+  const { appService } = useEnv();
 
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function useSupabaseBookRepo() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Fetch list of books from Supabase that user doesn't have locally
+   * Fetch all books backed up to Supabase
    */
   const fetchAvailableBooks = useCallback(async () => {
     setLoading(true);
@@ -41,7 +43,7 @@ export function useSupabaseBookRepo() {
         throw new Error(result.error || 'Failed to fetch books from Supabase');
       }
 
-      // Map to our format and filter out books already in local library
+      // Map to our format
       const supabaseBooks: SupabaseBook[] = result.ebooks.map((ebook) => ({
         id: ebook.id,
         hash: ebook.bookHash,
@@ -50,12 +52,8 @@ export function useSupabaseBookRepo() {
         uploadedAt: ebook.uploadedAt,
       }));
 
-      // Filter out books that already exist in local library (match by hash)
-      const filteredBooks = supabaseBooks.filter(
-        (supaBook) => !library.some((localBook) => localBook.hash === supaBook.hash)
-      );
-
-      setAvailableBooks(filteredBooks);
+      // Show ALL backed-up books (don't filter out local copies)
+      setAvailableBooks(supabaseBooks);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch available books';
       setError(errorMessage);
@@ -63,10 +61,11 @@ export function useSupabaseBookRepo() {
     } finally {
       setLoading(false);
     }
-  }, [library]);
+  }, []);
 
   /**
    * Download a book from Supabase Storage and import to IndexedDB
+   * Always replaces existing book with same hash
    */
   const downloadBook = useCallback(
     async (book: SupabaseBook) => {
@@ -83,19 +82,21 @@ export function useSupabaseBookRepo() {
 
         console.log(`Downloaded ${book.title} from Supabase (${result.epubFilename})`);
 
-        // 2. Import the epub to IndexedDB
-        await importEpubBase64(result.epubBase64, result.epubFilename, {
-          deduplicate: false, // Keep as separate edition
-        });
-
-        // 3. If config.json was included, we could apply it here
-        // For now, just import the epub - config will be default
-        if (result.configJson) {
-          console.log('Config.json downloaded - TODO: apply to imported book');
+        // 2. Delete existing book with same hash (if any) to ensure clean replacement
+        const existingBook = library.find((b) => b.hash === book.hash);
+        if (existingBook && appService) {
+          console.log(`Replacing existing local copy of "${book.title}"`);
+          await appService.deleteBook(existingBook, 'local');
         }
 
-        // 4. Remove from available list in UI
-        setAvailableBooks((prev) => prev.filter((b) => b.hash !== book.hash));
+        // 3. Import the epub to IndexedDB
+        await importEpubBase64(result.epubBase64, result.epubFilename);
+
+        // 4. Force refresh library from disk to get fresh cover data
+        if (appService && setLibrary) {
+          const freshLibrary = await appService.loadLibraryBooks();
+          setLibrary([...freshLibrary]);
+        }
 
         return { success: true };
       } catch (err: unknown) {
@@ -107,7 +108,7 @@ export function useSupabaseBookRepo() {
         setDownloading(null);
       }
     },
-    [importEpubBase64]
+    [importEpubBase64, library, appService, setLibrary]
   );
 
   return {

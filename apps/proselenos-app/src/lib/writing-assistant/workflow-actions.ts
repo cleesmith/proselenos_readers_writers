@@ -1,9 +1,10 @@
 // lib/writing-assistant/workflow-actions.ts
+// Writing assistant workflow actions - uses Supabase storage
 
 'use server';
 
 import { WorkflowStepId } from '@/app/writing-assistant/types';
-import { listFiles, uploadFile, downloadFile } from '@/lib/github-storage';
+import { listProjectFiles, uploadFileToProject, readTextFile } from '@/lib/supabase-project-actions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { executeWorkflowAI } from './execution-engine';
@@ -29,21 +30,21 @@ export async function detectExistingWorkflowFilesAction(projectName: string) {
     const userId = session.user.id;
 
     // Get all files in the project folder
-    const allFiles = await listFiles(userId, 'proselenos', `${projectName}/`);
+    const allFiles = await listProjectFiles(userId, projectName);
 
     // Find specific workflow files
     const workflowFiles = {
       brainstorm: allFiles.find(f => f.name === 'brainstorm.txt')
-        ? { id: allFiles.find(f => f.name === 'brainstorm.txt')!.sha, name: 'brainstorm.txt', path: allFiles.find(f => f.name === 'brainstorm.txt')!.path }
+        ? { id: allFiles.find(f => f.name === 'brainstorm.txt')!.id, name: 'brainstorm.txt', path: `${projectName}/brainstorm.txt` }
         : undefined,
       outline: allFiles.find(f => f.name === 'outline.txt')
-        ? { id: allFiles.find(f => f.name === 'outline.txt')!.sha, name: 'outline.txt', path: allFiles.find(f => f.name === 'outline.txt')!.path }
+        ? { id: allFiles.find(f => f.name === 'outline.txt')!.id, name: 'outline.txt', path: `${projectName}/outline.txt` }
         : undefined,
       world: allFiles.find(f => f.name === 'world.txt')
-        ? { id: allFiles.find(f => f.name === 'world.txt')!.sha, name: 'world.txt', path: allFiles.find(f => f.name === 'world.txt')!.path }
+        ? { id: allFiles.find(f => f.name === 'world.txt')!.id, name: 'world.txt', path: `${projectName}/world.txt` }
         : undefined,
       chapters: allFiles.filter(f => f.name === 'manuscript.txt' || (f.name?.startsWith('chapter_') && f.name.endsWith('.txt')))
-        .map(f => ({ id: f.sha, name: f.name, path: f.path }))
+        .map(f => ({ id: f.id, name: f.name, path: `${projectName}/${f.name}` }))
     };
 
     return {
@@ -77,13 +78,13 @@ export async function executeWorkflowStepAction(
     // Get step-specific prompt and context
     const prompt = getWorkflowPrompt(stepId);
     const context = await buildStepContext(userId, projectName, stepId, existingFiles);
-    
+
     // Debug logging for context validation
     console.log(`[${stepId}] Context length: ${context.length} characters`);
     if (context.length < 10) {
       console.warn(`[${stepId}] Warning: Very short context (${context.length} chars): "${context}"`);
     }
-    
+
     // Validate context has meaningful content before AI execution
     const trimmedContext = context.trim();
     if (!trimmedContext || trimmedContext === 'No previous content available.' || trimmedContext.startsWith('ERROR:')) {
@@ -92,7 +93,7 @@ export async function executeWorkflowStepAction(
         error: trimmedContext.startsWith('ERROR:') ? trimmedContext.substring(7) : `No valid context available for ${stepId} step. Please ensure prerequisite files exist.`
       };
     }
-    
+
     // Execute AI generation
     const result = await executeWorkflowAI(
       prompt,
@@ -139,22 +140,17 @@ export async function executeWorkflowStepAction(
         const existingContent = context; // Already contains the existing brainstorm content
         const enhancedContent = `${existingContent}\n\n--- AI Enhanced Content ---\n\n${result.content || ''}`;
 
-        await uploadFile(userId, 'proselenos', brainstormFile.path, enhancedContent, 'Enhance brainstorm content');
+        await uploadFileToProject(userId, projectName, 'brainstorm.txt', enhancedContent);
         saveResult = { success: true, data: { fileId: brainstormFile.id } };
       } else {
         // Fallback - create new file if somehow the brainstorm file doesn't exist
-        const filePath = `${projectName}/${fileName}`;
-        await uploadFile(userId, 'proselenos', filePath, result.content, `Create ${fileName}`);
-        saveResult = { success: true, data: { fileId: filePath } };
+        await uploadFileToProject(userId, projectName, fileName, result.content);
+        saveResult = { success: true, data: { fileId: `${projectName}/${fileName}` } };
       }
     } else {
-      // For other steps, check if file exists first
-      const existingFile = existingFiles[stepId]; // outline, world, etc.
-      const filePath = existingFile?.path || `${projectName}/${fileName}`;
-
-      const commitMessage = existingFile?.path ? `Update ${fileName}` : `Create ${fileName}`;
-      await uploadFile(userId, 'proselenos', filePath, result.content, commitMessage);
-      saveResult = { success: true, data: { fileId: filePath } };
+      // For other steps, just save the content
+      await uploadFileToProject(userId, projectName, fileName, result.content);
+      saveResult = { success: true, data: { fileId: `${projectName}/${fileName}` } };
     }
 
     if (!saveResult.success) {
@@ -194,9 +190,15 @@ export async function getWorkflowFileContentAction(filePath: string) {
 
     const userId = session.user.id;
 
-    const { content } = await downloadFile(userId, 'proselenos', filePath);
-    const decoder = new TextDecoder('utf-8');
-    const textContent = decoder.decode(content);
+    // Extract project name and filename from path (e.g., "ProjectName/file.txt")
+    const parts = filePath.split('/');
+    if (parts.length < 2) {
+      return { success: false, error: 'Invalid file path' };
+    }
+    const projectName = parts[0]!;
+    const fileName = parts.slice(1).join('/');
+
+    const textContent = await readTextFile(userId, projectName, fileName);
 
     return {
       success: true,
@@ -211,24 +213,21 @@ export async function getWorkflowFileContentAction(filePath: string) {
 }
 
 // Helper functions
-async function buildStepContext(userId: string, _projectName: string, stepId: WorkflowStepId, existingFiles: any): Promise<string> {
+async function buildStepContext(userId: string, projectName: string, stepId: WorkflowStepId, existingFiles: any): Promise<string> {
   let context = '';
 
   switch (stepId) {
     case 'brainstorm':
       // For brainstorm, read existing brainstorm.txt file content (user's ideas)
       if (existingFiles.brainstorm?.path) {
-        const { content } = await downloadFile(userId, 'proselenos', existingFiles.brainstorm.path);
-        const decoder = new TextDecoder('utf-8');
-        context = decoder.decode(content);
+        context = await readTextFile(userId, projectName, 'brainstorm.txt');
       }
       break;
 
     case 'outline':
       if (existingFiles.brainstorm?.path) {
-        const { content } = await downloadFile(userId, 'proselenos', existingFiles.brainstorm.path);
-        const decoder = new TextDecoder('utf-8');
-        context = `BRAINSTORM CONTENT:\n${decoder.decode(content)}`;
+        const brainstormContent = await readTextFile(userId, projectName, 'brainstorm.txt');
+        context = `BRAINSTORM CONTENT:\n${brainstormContent}`;
       }
       break;
 
@@ -237,18 +236,14 @@ async function buildStepContext(userId: string, _projectName: string, stepId: Wo
       let hasOutline = false;
 
       if (existingFiles.brainstorm?.path) {
-        const { content } = await downloadFile(userId, 'proselenos', existingFiles.brainstorm.path);
-        const decoder = new TextDecoder('utf-8');
-        const brainstormText = decoder.decode(content).trim();
+        const brainstormText = (await readTextFile(userId, projectName, 'brainstorm.txt')).trim();
         if (brainstormText) {
           context += `BRAINSTORM CONTENT:\n${brainstormText}\n\n`;
           hasBrainstorm = true;
         }
       }
       if (existingFiles.outline?.path) {
-        const { content } = await downloadFile(userId, 'proselenos', existingFiles.outline.path);
-        const decoder = new TextDecoder('utf-8');
-        const outlineText = decoder.decode(content).trim();
+        const outlineText = (await readTextFile(userId, projectName, 'outline.txt')).trim();
         if (outlineText) {
           context += `OUTLINE CONTENT:\n${outlineText}`;
           hasOutline = true;
@@ -267,7 +262,7 @@ async function buildStepContext(userId: string, _projectName: string, stepId: Wo
 
     case 'chapters':
       // Determine which specific chapter to write by comparing outline to existing manuscript
-      const chapterToWrite = await determineNextChapter(userId, existingFiles);
+      const chapterToWrite = await determineNextChapter(userId, projectName, existingFiles);
 
       if (!chapterToWrite) {
         context = 'ERROR: Could not determine which chapter to write. Please check outline.txt exists.';
@@ -280,22 +275,16 @@ async function buildStepContext(userId: string, _projectName: string, stepId: Wo
       let manuscriptContent = '';
 
       if (existingFiles.outline?.path) {
-        const { content } = await downloadFile(userId, 'proselenos', existingFiles.outline.path);
-        const decoder = new TextDecoder('utf-8');
-        outlineContent = decoder.decode(content);
+        outlineContent = await readTextFile(userId, projectName, 'outline.txt');
       }
 
       if (existingFiles.world?.path) {
-        const { content } = await downloadFile(userId, 'proselenos', existingFiles.world.path);
-        const decoder = new TextDecoder('utf-8');
-        worldContent = decoder.decode(content);
+        worldContent = await readTextFile(userId, projectName, 'world.txt');
       }
 
       // Get existing manuscript if it exists
       if (existingFiles.chapters && existingFiles.chapters.length > 0) {
-        const { content } = await downloadFile(userId, 'proselenos', existingFiles.chapters[0].path);
-        const decoder = new TextDecoder('utf-8');
-        manuscriptContent = decoder.decode(content);
+        manuscriptContent = await readTextFile(userId, projectName, 'manuscript.txt');
       }
 
       context  = `\n=== MANUSCRIPT ===\n${manuscriptContent}\n=== END MANUSCRIPT ===\n`;
@@ -312,7 +301,7 @@ async function buildStepContext(userId: string, _projectName: string, stepId: Wo
 }
 
 // Determine which chapter to write next by comparing outline to existing manuscript
-async function determineNextChapter(userId: string, existingFiles: any): Promise<{ title: string; number: number } | null> {
+async function determineNextChapter(userId: string, projectName: string, existingFiles: any): Promise<{ title: string; number: number } | null> {
   try {
     // Get outline content
     if (!existingFiles.outline?.path) {
@@ -320,35 +309,32 @@ async function determineNextChapter(userId: string, existingFiles: any): Promise
       return null;
     }
 
-    const { content: outlineBuffer } = await downloadFile(userId, 'proselenos', existingFiles.outline.path);
-    const decoder = new TextDecoder('utf-8');
-    const outlineContent = decoder.decode(outlineBuffer);
+    const outlineContent = await readTextFile(userId, projectName, 'outline.txt');
 
     // Get existing manuscript content (if it exists)
     let manuscriptContent = '';
     if (existingFiles.chapters && existingFiles.chapters.length > 0) {
-      const { content: manuscriptBuffer } = await downloadFile(userId, 'proselenos', existingFiles.chapters[0].path);
-      manuscriptContent = decoder.decode(manuscriptBuffer);
+      manuscriptContent = await readTextFile(userId, projectName, 'manuscript.txt');
     }
-    
+
     // Extract chapters from manuscript and put numbers in a Set for quick lookup
     const manuscriptChapterNumbers = new Set<number>();
     const chapterRegex = /Chapter\s+(\d+):/g;
     let match;
-    
+
     while ((match = chapterRegex.exec(manuscriptContent)) !== null) {
       if (match[1]) {
         manuscriptChapterNumbers.add(parseInt(match[1], 10));
       }
     }
-    
+
     console.log(`Found ${manuscriptChapterNumbers.size} chapters in manuscript`);
-    
+
     // Find all chapters in the outline
     const outlineChapters = [];
     const outlineChapterRegex = /^Chapter\s+(\d+):\s+(.+)$/gm;
     let outlineMatch;
-    
+
     while ((outlineMatch = outlineChapterRegex.exec(outlineContent)) !== null) {
       if (outlineMatch[1] && outlineMatch[2]) {
         console.log(`Found in outline: Chapter ${outlineMatch[1]}: ${outlineMatch[2]}`);
@@ -360,12 +346,12 @@ async function determineNextChapter(userId: string, existingFiles: any): Promise
         });
       }
     }
-    
+
     // Sort outline chapters by chapter number
     outlineChapters.sort((a, b) => a.number - b.number);
-    
+
     console.log(`Found ${outlineChapters.length} chapters in outline`);
-    
+
     // Find the first chapter in the outline that's not in the manuscript
     for (const chapter of outlineChapters) {
       if (!manuscriptChapterNumbers.has(chapter.number)) {
@@ -376,11 +362,11 @@ async function determineNextChapter(userId: string, existingFiles: any): Promise
         };
       }
     }
-    
+
     // No missing chapters found
     console.log('No missing chapters found');
     return null;
-    
+
   } catch (error) {
     console.error('Error determining next chapter:', error);
     return null;
@@ -394,20 +380,14 @@ async function appendToManuscript(
   chapterText: string,
   fileName: string,
   existingFiles: any
-) {
+): Promise<{ success: boolean; data?: { fileId: string }; error?: string }> {
   try {
     let manuscriptContent = '';
-    let filePath = `${projectName}/${fileName}`;
 
     // Check if manuscript.txt already exists
     if (existingFiles.chapters && existingFiles.chapters.length > 0) {
       // Read existing manuscript
-      const manuscriptFile = existingFiles.chapters[0];
-      filePath = manuscriptFile.path;
-
-      const { content } = await downloadFile(userId, 'proselenos', filePath);
-      const decoder = new TextDecoder('utf-8');
-      manuscriptContent = decoder.decode(content);
+      manuscriptContent = await readTextFile(userId, projectName, 'manuscript.txt');
     }
 
     // Prepare the content to append
@@ -421,12 +401,12 @@ async function appendToManuscript(
       updatedContent = manuscriptContent + '\n\n' + chapterText;
     }
 
-    // Upload to GitHub (handles both create and update)
-    await uploadFile(userId, 'proselenos', filePath, updatedContent, `Add chapter to ${fileName}`);
+    // Upload to Supabase storage
+    await uploadFileToProject(userId, projectName, fileName, updatedContent);
 
     return {
       success: true,
-      data: { fileId: filePath }
+      data: { fileId: `${projectName}/${fileName}` }
     };
 
   } catch (error) {
@@ -446,6 +426,6 @@ function getStepFileName(stepId: WorkflowStepId): string {
     world: 'world.txt',
     chapters: 'manuscript.txt' // For chapter writer, create main manuscript
   };
-  
+
   return fileNames[stepId];
 }

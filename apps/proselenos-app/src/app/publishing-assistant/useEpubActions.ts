@@ -5,7 +5,11 @@ import { generateEPUBForLocalImportAction } from '@/lib/publish-actions';
 import { listTxtFilesAction, loadBookMetadataAction, downloadFileForBrowserAction } from '@/lib/github-project-actions';
 import { listEpubFilesAction, extractCoverFromEpubAction } from '@/lib/epub-conversion-actions';
 import { useBookImporter } from '@/hooks/useBookImporter';
-import { publishToPublicCatalog, removeFromPublicCatalog } from '@/app/actions/store-catalog';
+import {
+  createSignedUploadUrlsForPublish,
+  confirmBookstorePublish,
+  removeFromSupabaseBookstore
+} from '@/app/actions/supabase-publish-actions';
 import { processCoverImage, generateCoverThumbnail } from '@/utils/image';
 
 interface CoverImageState {
@@ -243,6 +247,8 @@ export function useEpubActions(currentProjectId: string | null) {
 
       // 3. Handle Bookstore listing
       if (state.publishToStore && importedBook) {
+        console.log('[generateGepub] Starting DIRECT publish to bookstore (bypasses Vercel limit)...');
+
         let description = '';
         try {
           const metadataResult = await loadBookMetadataAction(currentProjectId);
@@ -251,6 +257,7 @@ export function useEpubActions(currentProjectId: string | null) {
           }
         } catch { /* continue without description */ }
 
+        // Generate cover thumbnail if we have a cover
         let coverThumbnailBase64: string | undefined;
         if (state.coverImage.base64) {
           try {
@@ -260,16 +267,65 @@ export function useEpubActions(currentProjectId: string | null) {
           }
         }
 
-        await publishToPublicCatalog(currentProjectId, {
+        // 1. Get signed URLs for direct upload
+        const urlResult = await createSignedUploadUrlsForPublish(
+          currentProjectId,
+          importedBook.hash,
+          !!coverThumbnailBase64
+        );
+
+        if (!urlResult.success || !urlResult.urls) {
+          throw new Error(urlResult.error || 'Failed to get publish URLs');
+        }
+
+        console.log('[generateGepub] Got signed URLs, uploading directly to Supabase...');
+
+        // 2. Convert base64 to ArrayBuffer for direct upload
+        const epubBinary = Uint8Array.from(atob(genResult.data.epubBase64), c => c.charCodeAt(0));
+
+        // 3. Upload EPUB directly
+        const epubResponse = await fetch(urlResult.urls.epub.signedUrl, {
+          method: 'PUT',
+          body: epubBinary,
+          headers: { 'Content-Type': 'application/epub+zip' },
+        });
+
+        if (!epubResponse.ok) {
+          throw new Error(`EPUB upload failed with status: ${epubResponse.status}`);
+        }
+
+        // 4. Upload cover if we have one
+        let hasCover = false;
+        if (coverThumbnailBase64 && urlResult.urls.cover) {
+          const base64Data = coverThumbnailBase64.replace(/^data:image\/\w+;base64,/, '');
+          const coverBinary = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+
+          const coverResponse = await fetch(urlResult.urls.cover.signedUrl, {
+            method: 'PUT',
+            body: coverBinary,
+            headers: { 'Content-Type': 'image/jpeg' },
+          });
+
+          hasCover = coverResponse.ok;
+        }
+
+        // 5. Confirm publish (update database)
+        const confirmResult = await confirmBookstorePublish(currentProjectId, {
           hash: importedBook.hash,
           title: importedBook.title,
           author: importedBook.author,
           description,
-          coverThumbnailBase64
+          hasCover,
         });
+
+        if (!confirmResult.success) {
+          throw new Error(confirmResult.error || 'Failed to confirm publish');
+        }
+
+        console.log(`[generateGepub] SUCCESS: "${importedBook.title}" published via direct signed URL`);
       } else {
         // Remove from catalog if checkbox unchecked
-        await removeFromPublicCatalog(currentProjectId);
+        await removeFromSupabaseBookstore(currentProjectId);
       }
 
       setState(prev => ({
@@ -338,19 +394,64 @@ export function useEpubActions(currentProjectId: string | null) {
         }
       }
 
-      // 5. Publish to catalog with epubFilename
-      const publishResult = await publishToPublicCatalog(currentProjectId, {
+      console.log('[publishXepub] Starting DIRECT publish to bookstore (bypasses Vercel limit)...');
+
+      // 5. Get signed URLs for direct upload
+      const urlResult = await createSignedUploadUrlsForPublish(
+        currentProjectId,
+        importedBook.hash,
+        !!coverThumbnailBase64
+      );
+
+      if (!urlResult.success || !urlResult.urls) {
+        throw new Error(urlResult.error || 'Failed to get publish URLs');
+      }
+
+      console.log('[publishXepub] Got signed URLs, uploading directly to Supabase...');
+
+      // 6. Convert base64 to ArrayBuffer for direct upload
+      const epubBinary = Uint8Array.from(atob(downloadResult.data.content), c => c.charCodeAt(0));
+
+      // 7. Upload EPUB directly
+      const epubResponse = await fetch(urlResult.urls.epub.signedUrl, {
+        method: 'PUT',
+        body: epubBinary,
+        headers: { 'Content-Type': 'application/epub+zip' },
+      });
+
+      if (!epubResponse.ok) {
+        throw new Error(`EPUB upload failed with status: ${epubResponse.status}`);
+      }
+
+      // 8. Upload cover if we have one
+      let hasCover = false;
+      if (coverThumbnailBase64 && urlResult.urls.cover) {
+        const base64Data = coverThumbnailBase64.replace(/^data:image\/\w+;base64,/, '');
+        const coverBinary = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+
+        const coverResponse = await fetch(urlResult.urls.cover.signedUrl, {
+          method: 'PUT',
+          body: coverBinary,
+          headers: { 'Content-Type': 'image/jpeg' },
+        });
+
+        hasCover = coverResponse.ok;
+      }
+
+      // 9. Confirm publish (update database)
+      const confirmResult = await confirmBookstorePublish(currentProjectId, {
         hash: importedBook.hash,
         title: importedBook.title,
         author: importedBook.author,
         description,
-        coverThumbnailBase64,
-        epubFilename: state.selectedEpub.name
+        hasCover,
       });
 
-      if (!publishResult.success) {
-        throw new Error(publishResult.error || 'Failed to publish to Proselenos Ebooks');
+      if (!confirmResult.success) {
+        throw new Error(confirmResult.error || 'Failed to publish to Proselenos Ebooks');
       }
+
+      console.log(`[publishXepub] SUCCESS: "${importedBook.title}" published via direct signed URL`);
 
       setState(prev => ({
         ...prev,

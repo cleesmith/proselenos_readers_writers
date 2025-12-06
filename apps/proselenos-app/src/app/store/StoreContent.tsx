@@ -4,15 +4,14 @@ import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/themeStore';
 import { useTheme } from '@/hooks/useTheme';
-import { StoreEntry } from '@/app/actions/store-catalog';
+import { BookstoreEntry } from '@/app/actions/supabase-publish-actions';
 import StoreBookItem from './StoreBookItem';
 
 interface StoreContentProps {
-  entries: StoreEntry[];
-  githubOwner: string;
+  entries: BookstoreEntry[];
 }
 
-export default function StoreContent({ entries, githubOwner }: StoreContentProps) {
+export default function StoreContent({ entries }: StoreContentProps) {
   const router = useRouter();
   const { isDarkMode } = useThemeStore();
 
@@ -61,7 +60,7 @@ export default function StoreContent({ entries, githubOwner }: StoreContentProps
             )}
           >
             {entries.map((entry) => (
-              <StoreBookItem key={entry.projectId} entry={entry} githubOwner={githubOwner} />
+              <StoreBookItem key={entry.projectId} entry={entry} />
             ))}
           </div>
         )}

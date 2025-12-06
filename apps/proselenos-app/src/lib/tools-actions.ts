@@ -3,10 +3,8 @@
 // lib/tools-actions.ts
 // Server Actions for tools operations
 import { getAvailableToolsInternal, executeToolInternal, initializeToolsInternal } from './toolsInternal';
-import { getToolPromptFromGitHub, updateToolPromptInGitHub } from './github-tool-actions';
+import { getToolPrompt, updateToolPrompt } from './supabase-tool-actions';
 import type { ToolExecutionResult } from './toolsInternal';
-// import { getServerSession } from 'next-auth';
-// import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 
 
 // Server action to initialize tool system
@@ -94,7 +92,7 @@ export async function getToolPromptAction(toolId: string): Promise<{
   error?: string;
 }> {
   try {
-    const result = await getToolPromptFromGitHub(toolId);
+    const result = await getToolPrompt(toolId);
     if (!result.success) {
       return { success: false, error: result.error };
     }
@@ -102,10 +100,10 @@ export async function getToolPromptAction(toolId: string): Promise<{
     return {
       success: true,
       content: result.content,
-      fileId: `tool-prompts/${toolId}`  // Full path for correct save location
+      fileId: toolId  // Tool ID for save reference
     };
   } catch (error: any) {
-    return { success: false, error: error.message ?? 'Failed to load prompt from GitHub' };
+    return { success: false, error: error.message ?? 'Failed to load prompt' };
   }
 }
 
@@ -115,9 +113,9 @@ export async function updateToolPromptAction(toolId: string, content: string): P
   error?: string;
 }> {
   try {
-    const result = await updateToolPromptInGitHub(toolId, content);
+    const result = await updateToolPrompt(toolId, content);
     return result;
   } catch (error: any) {
-    return { success: false, error: error.message ?? 'Failed to update prompt in GitHub' };
+    return { success: false, error: error.message ?? 'Failed to update prompt' };
   }
 }

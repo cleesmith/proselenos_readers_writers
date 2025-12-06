@@ -1,9 +1,11 @@
-// app/lib/github/fastInitServer.ts
+// lib/github/fastInitServer.ts
+// Fast initialization for Authors Mode using Supabase
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { getProselenosConfig } from '@/lib/github-config-storage';
-import { ensureUserRepoExists, listFiles } from '@/lib/github-storage';
+import { getAuthorConfig } from '@/lib/supabase-config-actions';
+import { listProjects } from '@/lib/supabase-project-actions';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ensureLibraryRepoExists } from '@/app/actions/store-catalog';
 
 export type Config = {
@@ -57,61 +59,47 @@ export async function fastInitForUser(): Promise<InitPayloadForClient> {
 
     const userId = session.user.id;
 
-    // Ensure user's GitHub repo exists
-    await ensureUserRepoExists(userId, 'proselenos', 'Proselenos user storage');
-
-    // Ensure the public library repo exists
+    // Ensure the public library repo exists (for Bookstore)
     await ensureLibraryRepoExists();
 
-    // Load config and all files in parallel
-    const [config, allFiles] = await Promise.all([
-      getProselenosConfig(userId),
-      listFiles(userId, 'proselenos', '')
+    // Load config and projects from Supabase in parallel
+    const [config, projectsList] = await Promise.all([
+      getAuthorConfig(userId),
+      listProjects(userId)
     ]);
 
-    // Check if settings file exists
-    const hasSettingsFile = allFiles.some(f => f.name === 'proselenos-settings.json');
+    // Transform projects to expected format
+    const projects: FileMetadata[] = projectsList.map(p => ({
+      name: p.name,
+      id: p.id
+    }));
 
-    // Extract projects (top-level folders, excluding tool-prompts)
-    const projectSet = new Set<string>();
-    allFiles.forEach(file => {
-      const parts = file.path.split('/');
-      if (parts.length > 1) {
-        const folderName = parts[0];
-        if (folderName && folderName !== 'tool-prompts' && !folderName.startsWith('.')) {
-          projectSet.add(folderName);
-        }
-      }
-    });
-    const projects: FileMetadata[] = Array.from(projectSet).sort().map(name => ({ name, id: name }));
-
-    // Extract tool categories (folders under tool-prompts/)
-    const categorySet = new Set<string>();
+    // Get tool categories from default_tool_prompts
+    let toolCategories: FileMetadata[] = [];
     const toolsByCategory: Record<string, FileMetadata[]> = {};
 
-    allFiles.forEach(file => {
-      if (file.path.startsWith('tool-prompts/')) {
-        const parts = file.path.split('/');
-        if (parts.length >= 3) {
-          const categoryName = parts[1];
-          const fileName = parts[2];
-          if (!categoryName) return;
-          if (!fileName) return;
+    if (isSupabaseConfigured()) {
+      const { data: defaultTools } = await supabase!
+        .from('default_tool_prompts')
+        .select('category, tool_name')
+        .order('category')
+        .order('tool_name');
 
-          categorySet.add(categoryName);
-
-          if (!toolsByCategory[categoryName]) {
-            toolsByCategory[categoryName] = [];
+      if (defaultTools) {
+        const categorySet = new Set<string>();
+        defaultTools.forEach(tool => {
+          categorySet.add(tool.category);
+          if (!toolsByCategory[tool.category]) {
+            toolsByCategory[tool.category] = [];
           }
-          toolsByCategory[categoryName].push({
-            name: fileName,
-            id: `${categoryName}/${fileName}`
+          toolsByCategory[tool.category]!.push({
+            name: `${tool.tool_name}.txt`,
+            id: `${tool.category}/${tool.tool_name}.txt`
           });
-        }
+        });
+        toolCategories = Array.from(categorySet).sort().map(name => ({ name, id: name }));
       }
-    });
-
-    const toolCategories: FileMetadata[] = Array.from(categorySet).sort().map(name => ({ name, id: name }));
+    }
 
     const memEnd = process.memoryUsage().heapUsed / 1024 / 1024;
     const durationMs = Date.now() - startTime;
@@ -121,15 +109,17 @@ export async function fastInitForUser(): Promise<InitPayloadForClient> {
 
     return {
       config: {
-        ...config,
         settings: {
           current_project: config.settings.current_project,
           current_project_folder_id: config.settings.current_project_folder_id,
           tool_prompts_folder_id: null
         },
+        selectedApiProvider: config.selectedApiProvider,
+        selectedAiModel: config.selectedAiModel,
+        author_name: config.author_name,
         isDarkMode: config.isDarkMode ?? false
       },
-      hasSettingsFile,
+      hasSettingsFile: true, // Always true with Supabase (API keys in author_config.api_keys)
       projects,
       toolCategories,
       toolsByCategory,

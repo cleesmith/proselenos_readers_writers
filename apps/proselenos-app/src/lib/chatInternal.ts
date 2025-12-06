@@ -4,8 +4,7 @@
 import { createApiService, type AIProvider, getCurrentProviderAndModel } from './aiService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { listFiles, uploadFile, downloadFile } from './github-storage';
-// import OpenAI from 'openai';
+import { listProjectFiles, uploadFileToProject, readTextFile } from './supabase-project-actions';
 
 interface ExtendedSession {
   user: {
@@ -169,23 +168,18 @@ export async function saveChatToBrainstormInternal(
 
     const newChatContent: string = chatHeader + chatBody + '\n\n';
 
-    const filePath = `${projectName}/${finalFilename}`;
-
     // Try to find and read existing file with the same name
     try {
-      const filesList = await listFiles(userId, 'proselenos', `${projectName}/`);
-
+      const filesList = await listProjectFiles(userId, projectName);
       const existingFile = filesList.find(file => file.name === finalFilename);
 
       if (existingFile) {
         // Read existing file content
-        const { content } = await downloadFile(userId, 'proselenos', existingFile.path);
-        const decoder = new TextDecoder('utf-8');
-        const existingContent = decoder.decode(content);
+        const existingContent = await readTextFile(userId, projectName, finalFilename);
 
         // Append to existing file
         const updatedContent: string = existingContent + newChatContent;
-        await uploadFile(userId, 'proselenos', filePath, updatedContent, `Append chat to ${finalFilename}`);
+        await uploadFileToProject(userId, projectName, finalFilename, updatedContent);
 
         return { success: true, message: `Chat appended to ${finalFilename}` };
       }
@@ -194,7 +188,7 @@ export async function saveChatToBrainstormInternal(
     }
 
     // Create new file
-    await uploadFile(userId, 'proselenos', filePath, newChatContent, `Create ${finalFilename}`);
+    await uploadFileToProject(userId, projectName, finalFilename, newChatContent);
 
     return { success: true, message: `Chat saved to ${finalFilename}` };
 

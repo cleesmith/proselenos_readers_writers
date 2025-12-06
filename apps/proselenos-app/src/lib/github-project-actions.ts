@@ -1,14 +1,23 @@
 // lib/github-project-actions.ts
-// GitHub repo project operations
+// Project operations - now uses Supabase for projects and storage
 
 'use server';
 
-import { listFiles, uploadFile, downloadFile, deleteFile } from '@/lib/github-storage';
-import { updateCurrentProject } from '@/lib/github-config-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { ProjectMetadata } from '@/app/projects/ProjectSettingsModal';
-import { del } from '@vercel/blob';
+import {
+  listProjects,
+  createProject,
+  selectProject,
+  getProjectByName,
+  listProjectFiles,
+  uploadFileToProject,
+  downloadFile as supabaseDownloadFile,
+  readTextFile,
+  deleteProjectFile,
+  checkFilesExist,
+} from './supabase-project-actions';
 
 interface ExtendedSession {
   user: {
@@ -28,8 +37,7 @@ type ActionResult<T = any> = {
 };
 
 /**
- * List all project folders in user's GitHub repo
- * Projects are top-level folders (excluding tool-prompts and root files)
+ * List all projects from Supabase
  */
 export async function listProjectsAction(): Promise<ActionResult> {
   try {
@@ -38,36 +46,19 @@ export async function listProjectsAction(): Promise<ActionResult> {
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
+    const projects = await listProjects(session.user.id);
 
-    // Get all files in repo root
-    const allFiles = await listFiles(userId, 'proselenos', '');
-
-    // Extract unique folder names (first part of path before /)
-    const projectSet = new Set<string>();
-
-    allFiles.forEach(file => {
-      const parts = file.path.split('/');
-      if (parts.length > 1) {
-        const folderName = parts[0];
-        // Exclude tool-prompts and any hidden folders
-        if (folderName && folderName !== 'tool-prompts' && !folderName.startsWith('.')) {
-          projectSet.add(folderName);
-        }
-      }
-    });
-
-    // Convert to array and sort
-    const projects = Array.from(projectSet).sort().map(name => ({
-      name,
-      id: name,
+    // Transform to match expected format
+    const formattedProjects = projects.map(p => ({
+      name: p.name,
+      id: p.id,
       mimeType: 'folder'
     }));
 
     return {
       success: true,
       data: {
-        files: projects,
+        files: formattedProjects,
         currentFolder: { name: 'Projects', id: 'root' },
         rootFolder: { name: 'Projects', id: 'root' }
       },
@@ -82,8 +73,7 @@ export async function listProjectsAction(): Promise<ActionResult> {
 }
 
 /**
- * Create a new project folder in user's GitHub repo
- * Git doesn't track empty folders, so we add .gitkeep to create the folder
+ * Create a new project in Supabase
  */
 export async function createProjectAction(projectName: string): Promise<ActionResult> {
   try {
@@ -92,33 +82,19 @@ export async function createProjectAction(projectName: string): Promise<ActionRe
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName || !projectName.trim()) {
       return { success: false, error: 'Project name is required' };
     }
 
-    const cleanName = projectName.trim();
-
-    // Create folder by adding a .gitkeep file (Git doesn't track empty folders)
-    await uploadFile(
-      userId,
-      'proselenos',
-      `${cleanName}/.gitkeep`,
-      '',
-      `Create project: ${cleanName}`
-    );
-
-    // Auto-select the new project
-    await updateCurrentProject(userId, cleanName, cleanName);
+    const project = await createProject(session.user.id, projectName);
 
     return {
       success: true,
       data: {
-        folderId: cleanName,
-        folderName: cleanName
+        folderId: project.id,
+        folderName: project.name
       },
-      message: `Project created: ${cleanName}`
+      message: `Project created: ${project.name}`
     };
   } catch (error: any) {
     return {
@@ -131,21 +107,25 @@ export async function createProjectAction(projectName: string): Promise<ActionRe
 /**
  * Select a project (save to config)
  */
-export async function selectProjectAction(projectName: string): Promise<ActionResult> {
+export async function selectProjectAction(projectName: string, projectId?: string): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions) as ExtendedSession;
     if (!session || !session.user?.id) {
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName) {
       return { success: false, error: 'Project name is required' };
     }
 
-    // Save to GitHub config
-    await updateCurrentProject(userId, projectName, projectName);
+    // If no projectId provided, look it up by name
+    let id = projectId;
+    if (!id) {
+      const project = await getProjectByName(session.user.id, projectName);
+      id = project?.id || projectName;
+    }
+
+    await selectProject(session.user.id, projectName, id);
 
     return {
       success: true,
@@ -169,23 +149,22 @@ export async function listProjectFilesAction(projectName: string): Promise<Actio
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName) {
       return { success: false, error: 'Project name is required' };
     }
 
-    // Get all files in the project folder
-    const files = await listFiles(userId, 'proselenos', `${projectName}/`);
+    const files = await listProjectFiles(session.user.id, projectName);
 
     // Transform to match expected format
     const formattedFiles = files.map(file => ({
-      id: file.sha,
+      id: file.id,
       name: file.name,
-      path: file.path,
+      path: `${projectName}/${file.name}`,
       mimeType: file.name.endsWith('.txt') ? 'text/plain' :
                 file.name.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
                 file.name.endsWith('.pdf') ? 'application/pdf' :
+                file.name.endsWith('.epub') ? 'application/epub+zip' :
+                file.name.endsWith('.html') ? 'text/html' :
                 'application/octet-stream'
     }));
 
@@ -208,7 +187,7 @@ export async function listProjectFilesAction(projectName: string): Promise<Actio
 
 /**
  * Create or update a file in a project folder
- * Single action for both create and update (GitHub uploadFile handles both)
+ * Uses Supabase storage (upsert)
  */
 export async function createOrUpdateFileAction(
   projectName: string,
@@ -222,20 +201,13 @@ export async function createOrUpdateFileAction(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName || !fileName) {
       return { success: false, error: 'Project name and file name are required' };
     }
 
-    // Use existing path if updating, otherwise create new path
+    await uploadFileToProject(session.user.id, projectName, fileName, content);
+
     const filePath = existingFilePath || `${projectName}/${fileName}`;
-    const commitMessage = existingFilePath
-      ? `Update ${fileName}`
-      : `Create ${fileName}`;
-
-    await uploadFile(userId, 'proselenos', filePath, content, commitMessage);
-
     return {
       success: true,
       data: { filePath, fileName },
@@ -262,17 +234,13 @@ export async function readFileAction(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName || !filePath) {
       return { success: false, error: 'Project name and file path are required' };
     }
 
-    const { content } = await downloadFile(userId, 'proselenos', filePath);
-
-    // Decode ArrayBuffer to UTF-8 string
-    const decoder = new TextDecoder('utf-8');
-    const textContent = decoder.decode(content);
+    // Extract filename from path (e.g., "ProjectName/file.txt" -> "file.txt")
+    const fileName = filePath.includes('/') ? filePath.split('/').pop()! : filePath;
+    const textContent = await readTextFile(session.user.id, projectName, fileName);
 
     return {
       success: true,
@@ -297,22 +265,19 @@ export async function listTxtFilesAction(projectName: string): Promise<ActionRes
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName) {
       return { success: false, error: 'Project name is required' };
     }
 
-    // Get all files in the project folder
-    const files = await listFiles(userId, 'proselenos', `${projectName}/`);
+    const files = await listProjectFiles(session.user.id, projectName);
 
     // Filter for .txt files only
     const txtFiles = files
       .filter(file => file.name.toLowerCase().endsWith('.txt'))
       .map(file => ({
-        id: file.sha,
+        id: file.id,
         name: file.name,
-        path: file.path,
+        path: `${projectName}/${file.name}`,
         mimeType: 'text/plain'
       }));
 
@@ -343,22 +308,19 @@ export async function listEpubFilesAction(projectName: string): Promise<ActionRe
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName) {
       return { success: false, error: 'Project name is required' };
     }
 
-    // Get all files in the project folder
-    const files = await listFiles(userId, 'proselenos', `${projectName}/`);
+    const files = await listProjectFiles(session.user.id, projectName);
 
     // Filter for .epub files only
     const epubFiles = files
       .filter(file => file.name.toLowerCase().endsWith('.epub'))
       .map(file => ({
-        id: file.sha,
+        id: file.id,
         name: file.name,
-        path: file.path,
+        path: `${projectName}/${file.name}`,
         mimeType: 'application/epub+zip'
       }));
 
@@ -393,8 +355,6 @@ export async function uploadFileToProjectAction(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!file || !projectName) {
       return { success: false, error: 'File and project name are required' };
     }
@@ -410,31 +370,15 @@ export async function uploadFileToProjectAction(
 
     // Use custom filename if provided, otherwise use original file name
     const finalFileName = customFileName?.trim() || file.name;
-    const filePath = `${projectName}/${finalFileName}`;
-
-    // Convert File to appropriate format for GitHub
     const arrayBuffer = await file.arrayBuffer();
 
-    let content: string | ArrayBuffer;
-    if (fileName.endsWith('.txt') || fileName.endsWith('.html')) {
-      // Text files: convert to UTF-8 string
-      const decoder = new TextDecoder('utf-8');
-      content = decoder.decode(arrayBuffer);
-    } else {
-      // Binary files (docx, epub, pdf): pass ArrayBuffer directly
-      // uploadFile will handle the base64 conversion
-      content = arrayBuffer;
-    }
-
-    // Upload file to GitHub (uploadFile handles create/update automatically)
-    const commitMessage = `Upload ${finalFileName}`;
-    await uploadFile(userId, 'proselenos', filePath, content, commitMessage);
+    await uploadFileToProject(session.user.id, projectName, finalFileName, arrayBuffer);
 
     return {
       success: true,
       data: {
         fileName: finalFileName,
-        filePath: filePath,
+        filePath: `${projectName}/${finalFileName}`,
         size: file.size
       },
       message: `File uploaded successfully: ${finalFileName}`
@@ -458,26 +402,22 @@ export async function checkManuscriptFilesExistAction(projectName: string): Prom
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName) {
       return { success: false, error: 'Project name is required' };
     }
 
-    // Get all files in the project folder
-    const files = await listFiles(userId, 'proselenos', `${projectName}/`);
-
-    // Check for manuscript output files
-    const hasHtml = files.some(f => f.name === 'manuscript.html');
-    const hasEpub = files.some(f => f.name === 'manuscript.epub');
-    const hasPdf = files.some(f => f.name === 'manuscript.pdf');
+    const exists = await checkFilesExist(session.user.id, projectName, [
+      'manuscript.html',
+      'manuscript.epub',
+      'manuscript.pdf'
+    ]);
 
     return {
       success: true,
       data: {
-        html: hasHtml,
-        epub: hasEpub,
-        pdf: hasPdf
+        html: exists['manuscript.html'],
+        epub: exists['manuscript.epub'],
+        pdf: exists['manuscript.pdf']
       },
       message: 'File existence check completed'
     };
@@ -509,12 +449,15 @@ export async function deleteManuscriptOutputAction(
 
     const fileName = `manuscript.${fileType}`;
 
-    // GitHub doesn't have a direct delete API in our abstraction
-    // We'll delete by uploading empty content or handling it differently
-    // For now, we'll just return success - uploadFile will overwrite anyway
+    try {
+      await deleteProjectFile(session.user.id, projectName, fileName);
+    } catch {
+      // File might not exist, that's OK
+    }
+
     return {
       success: true,
-      message: `File will be overwritten: ${fileName}`
+      message: `File deleted: ${fileName}`
     };
   } catch (error: any) {
     return {
@@ -525,8 +468,8 @@ export async function deleteManuscriptOutputAction(
 }
 
 /**
- * Load book metadata from GitHub project
- * Reads book-metadata.txt JSON file from project root
+ * Load book metadata from project
+ * Reads book-metadata.json file from project folder
  */
 export async function loadBookMetadataAction(
   projectName: string
@@ -537,19 +480,13 @@ export async function loadBookMetadataAction(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName) {
       return { success: false, error: 'Project name is required' };
     }
 
-    const filePath = `${projectName}/book-metadata.json`;
-
     // Try to read existing metadata file
     try {
-      const { content } = await downloadFile(userId, 'proselenos', filePath);
-      const decoder = new TextDecoder('utf-8');
-      const jsonText = decoder.decode(content);
+      const jsonText = await readTextFile(session.user.id, projectName, 'book-metadata.json');
       const metadata = JSON.parse(jsonText);
 
       return {
@@ -557,7 +494,7 @@ export async function loadBookMetadataAction(
         data: metadata,
         message: 'Book metadata loaded successfully'
       };
-    } catch (error) {
+    } catch {
       // File doesn't exist - return empty metadata
       const defaultMetadata: ProjectMetadata = {
         title: '',
@@ -582,8 +519,8 @@ export async function loadBookMetadataAction(
 }
 
 /**
- * Save book metadata to GitHub project
- * Writes book-metadata.txt JSON file to project root
+ * Save book metadata to project
+ * Writes book-metadata.json file to project folder
  */
 export async function saveBookMetadataAction(
   projectName: string,
@@ -595,25 +532,14 @@ export async function saveBookMetadataAction(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName) {
       return { success: false, error: 'Project name is required' };
     }
 
-    const filePath = `${projectName}/book-metadata.json`;
-
     // Convert metadata to pretty-printed JSON
     const jsonContent = JSON.stringify(metadata, null, 2);
 
-    // Upload to GitHub
-    await uploadFile(
-      userId,
-      'proselenos',
-      filePath,
-      jsonContent,
-      'Update book metadata'
-    );
+    await uploadFileToProject(session.user.id, projectName, 'book-metadata.json', jsonContent);
 
     return {
       success: true,
@@ -641,13 +567,13 @@ export async function downloadFileForBrowserAction(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const userId = session.user.id;
-
     if (!projectName || !filePath) {
       return { success: false, error: 'Project name and file path are required' };
     }
 
-    const { content, filename } = await downloadFile(userId, 'proselenos', filePath);
+    // Extract filename from path
+    const fileName = filePath.includes('/') ? filePath.split('/').pop()! : filePath;
+    const content = await supabaseDownloadFile(session.user.id, projectName, fileName);
 
     // Convert ArrayBuffer to base64 for transfer to client
     const base64Content = Buffer.from(content).toString('base64');
@@ -656,7 +582,7 @@ export async function downloadFileForBrowserAction(
       success: true,
       data: {
         content: base64Content,
-        filename: filename
+        filename: fileName
       },
       message: 'File downloaded successfully'
     };
@@ -685,10 +611,9 @@ export async function deleteProjectFileAction(
       return { success: false, error: 'Project name and file path are required' };
     }
 
-    const userId = session.user.id;
-
-    // filePath already includes project folder (e.g., "ProjectName/filename.epub")
-    await deleteFile(userId, 'proselenos', filePath, `Delete ${filePath}`);
+    // Extract filename from path
+    const fileName = filePath.includes('/') ? filePath.split('/').pop()! : filePath;
+    await deleteProjectFile(session.user.id, projectName, fileName);
 
     return {
       success: true,
@@ -698,85 +623,6 @@ export async function deleteProjectFileAction(
     return {
       success: false,
       error: error.message || 'Failed to delete file'
-    };
-  }
-}
-
-/**
- * Copy a file from Vercel Blob storage to GitHub project, then delete from Blob
- * Used for two-step upload flow: client uploads to Blob, then this action copies to GitHub
- */
-export async function copyBlobToProjectAction(
-  blobUrl: string,
-  projectName: string,
-  fileName: string
-): Promise<ActionResult> {
-  try {
-    const session = await getServerSession(authOptions) as ExtendedSession;
-    if (!session || !session.user?.id) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    const userId = session.user.id;
-
-    if (!blobUrl || !projectName || !fileName) {
-      return { success: false, error: 'Blob URL, project name, and file name are required' };
-    }
-
-    // Validate file extension
-    const allowedExtensions = ['.docx', '.txt', '.html', '.epub', '.pdf'];
-    const fileNameLower = fileName.toLowerCase();
-    const hasValidExtension = allowedExtensions.some(ext => fileNameLower.endsWith(ext));
-
-    if (!hasValidExtension) {
-      return { success: false, error: 'Only .txt, .html, .docx, .epub, and .pdf files are allowed' };
-    }
-
-    // Fetch file from Vercel Blob
-    const blobResponse = await fetch(blobUrl);
-    if (!blobResponse.ok) {
-      return { success: false, error: `Failed to fetch file from Blob storage: ${blobResponse.status}` };
-    }
-
-    const arrayBuffer = await blobResponse.arrayBuffer();
-    const filePath = `${projectName}/${fileName}`;
-
-    // Determine content type for GitHub upload
-    let content: string | ArrayBuffer;
-    if (fileNameLower.endsWith('.txt') || fileNameLower.endsWith('.html')) {
-      // Text files: convert to UTF-8 string
-      const decoder = new TextDecoder('utf-8');
-      content = decoder.decode(arrayBuffer);
-    } else {
-      // Binary files (docx, epub, pdf): pass ArrayBuffer directly
-      content = arrayBuffer;
-    }
-
-    // Upload to GitHub
-    const commitMessage = `Upload ${fileName}`;
-    await uploadFile(userId, 'proselenos', filePath, content, commitMessage);
-
-    // Delete blob from Vercel storage (cleanup)
-    try {
-      await del(blobUrl);
-    } catch (delError) {
-      // Log but don't fail - file is already in GitHub
-      console.error('Failed to delete blob:', delError);
-    }
-
-    return {
-      success: true,
-      data: {
-        fileName,
-        filePath,
-        size: arrayBuffer.byteLength
-      },
-      message: `File uploaded successfully: ${fileName}`
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || 'Failed to copy file from Blob to GitHub'
     };
   }
 }

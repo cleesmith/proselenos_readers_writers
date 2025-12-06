@@ -2,8 +2,10 @@ import clsx from 'clsx';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { PiUserCircleCheck, PiGear, PiSignIn, PiPencil, PiStorefront } from 'react-icons/pi';
+import { PiUserCircleCheck, PiGear, PiSignIn, PiPencil, PiStorefront, PiTrash } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
+import { clearAllUserEbooks } from '@/app/actions/supabase-ebook-actions';
+import { showConfirm, showAlert } from '@/app/shared/alerts';
 import { TbSunMoon } from 'react-icons/tb';
 import { VscRepo } from 'react-icons/vsc';
 
@@ -144,6 +146,62 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
     router.push('/store');
   };
 
+  const handleResetLibrary = async () => {
+    const isDark = themeMode === 'dark' || (themeMode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    const confirmed = await showConfirm(
+      'This will permanently delete ALL ebooks from your local library AND from Private Ebooks (cloud backup). This cannot be undone!',
+      isDark,
+      'Reset Library?',
+      'Yes, Delete Everything',
+      'Cancel'
+    );
+
+    if (!confirmed) return;
+
+    setIsDropdownOpen?.(false);
+
+    try {
+      // 1. Clear Private Ebooks (Supabase)
+      if (user) {
+        const result = await clearAllUserEbooks();
+        if (!result.success) {
+          console.error('Failed to clear Private Ebooks:', result.error);
+        }
+      }
+
+      // 2. Clear local storage
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 3. Delete IndexedDB databases and wait for completion
+      const deleteDB = (name: string) => new Promise<void>((resolve) => {
+        const request = indexedDB.deleteDatabase(name);
+        request.onsuccess = () => {
+          console.log(`IndexedDB '${name}' deleted`);
+          resolve();
+        };
+        request.onerror = () => {
+          console.error(`Failed to delete IndexedDB '${name}'`);
+          resolve(); // Continue anyway
+        };
+        request.onblocked = () => {
+          console.warn(`IndexedDB '${name}' delete blocked`);
+          resolve(); // Continue anyway
+        };
+      });
+
+      // Delete the ebook storage database
+      await deleteDB('AppFileSystem');
+
+      // 4. Reload the page
+      window.location.reload();
+    } catch (error) {
+      console.error('Reset library error:', error);
+      showAlert('Failed to reset library. Please try again.', 'error', 'Error', isDark);
+    }
+  };
+
   const handleSetSavedBookCoverForLockScreen = () => {
     const newValue = settings.savedBookCoverForLockScreen ? '' : 'default';
     saveSysSettings(envConfig, 'savedBookCoverForLockScreen', newValue);
@@ -208,6 +266,14 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
         <MenuItem label={_('Sign In with Google')} Icon={PiSignIn} onClick={handleSignIn} />
       )}
             {user && <MenuItem label={_('Private Ebooks')} Icon={VscRepo} onClick={openBookRepoModal} />}
+      {user && (
+        <MenuItem
+          label={_('Reset Library')}
+          description={_('clear local + cloud ebooks')}
+          Icon={PiTrash}
+          onClick={handleResetLibrary}
+        />
+      )}
       {isDesktopAppPlatform() && !appService?.isMobile && (
         <MenuItem
           label={_('Auto Import on File Open')}

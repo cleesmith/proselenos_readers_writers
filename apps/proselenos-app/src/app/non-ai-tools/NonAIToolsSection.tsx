@@ -53,7 +53,7 @@ export default function NonAIToolsSection({
   publishResult,
   toolJustFinished,
   currentProject,
-  currentProjectId,
+  currentProjectId: _currentProjectId,
   isStorageOperationPending,
   theme,
   isDarkMode,
@@ -279,7 +279,7 @@ export default function NonAIToolsSection({
         <EpubModal
           isOpen={showEpubModal}
           onClose={() => setShowEpubModal(false)}
-          currentProjectId={currentProjectId}
+          currentProjectId={currentProject}
           theme={theme}
           isDarkMode={isDarkMode}
         />
@@ -290,7 +290,7 @@ export default function NonAIToolsSection({
         <PdfModal
           isOpen={showPdfModal}
           onClose={() => setShowPdfModal(false)}
-          currentProjectId={currentProjectId}
+          currentProjectId={currentProject}
           theme={theme}
           isDarkMode={isDarkMode}
         />
@@ -301,7 +301,7 @@ export default function NonAIToolsSection({
         <HtmlModal
           isOpen={showHtmlModal}
           onClose={() => setShowHtmlModal(false)}
-          currentProjectId={currentProjectId}
+          currentProjectId={currentProject}
           theme={theme}
           isDarkMode={isDarkMode}
         />

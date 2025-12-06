@@ -1,4 +1,5 @@
 // apps/proselenos-app/src/lib/publish-actions.ts
+// Publishing actions - now uses Supabase storage
 
 'use server';
 
@@ -6,7 +7,7 @@ import 'server-only';
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { downloadFile, uploadFile } from '@/lib/github-storage';
+import { readTextFile, uploadFileToProject } from '@/lib/supabase-project-actions';
 import * as fs from 'fs';
 import * as path from 'path';
 import PDFDocument from 'pdfkit';
@@ -51,24 +52,21 @@ async function prepareManuscriptData(manuscriptFilePath: string, projectName: st
 
   const userId = session.user.id;
 
-  // Read manuscript content from GitHub
+  // Extract filename from path (e.g., "ProjectName/manuscript.txt" -> "manuscript.txt")
+  const fileName = manuscriptFilePath.includes('/') ? manuscriptFilePath.split('/').pop()! : manuscriptFilePath;
+
+  // Read manuscript content from Supabase storage
   let manuscriptContent: string;
   try {
-    const { content } = await downloadFile(userId, 'proselenos', manuscriptFilePath);
-    const decoder = new TextDecoder('utf-8');
-    manuscriptContent = decoder.decode(content);
+    manuscriptContent = await readTextFile(userId, projectName, fileName);
   } catch (error) {
-    return { success: false, error: 'Failed to read manuscript file from GitHub' };
+    return { success: false, error: 'Failed to read manuscript file' };
   }
 
-  // Load project metadata from GitHub
-  // Reads book-metadata.json file saved by Project Settings
+  // Load project metadata from Supabase storage
   let metadata: any;
   try {
-    const metadataPath = `${projectName}/book-metadata.json`;
-    const { content } = await downloadFile(userId, 'proselenos', metadataPath);
-    const decoder = new TextDecoder('utf-8');
-    const metadataJson = decoder.decode(content);
+    const metadataJson = await readTextFile(userId, projectName, 'book-metadata.json');
     const metadataData = JSON.parse(metadataJson);
 
     metadata = {
@@ -77,7 +75,7 @@ async function prepareManuscriptData(manuscriptFilePath: string, projectName: st
       language: 'en',
       description: 'Created with manuscript publishing system'
     };
-  } catch (error) {
+  } catch {
     // book-metadata.json doesn't exist yet - use defaults
     console.log('book-metadata.json not found, using defaults');
     metadata = {
@@ -127,16 +125,15 @@ export async function generateHTMLOnlyAction(
     // Generate HTML
     const htmlContent = generateHTML(chapters, metadata);
     const htmlFilename = 'manuscript.html';
-    const htmlPath = `${projectName}/${htmlFilename}`;
 
-    // Upload HTML file to GitHub
-    await uploadFile(userId, 'proselenos', htmlPath, htmlContent, `Generate ${htmlFilename}`);
+    // Upload HTML file to Supabase storage
+    await uploadFileToProject(userId, projectName, htmlFilename, htmlContent);
 
     return {
       success: true,
       data: {
         fileName: htmlFilename,
-        fileId: htmlPath
+        fileId: `${projectName}/${htmlFilename}`
       }
     };
   } catch (error: any) {
@@ -164,22 +161,21 @@ export async function generateEPUBOnlyAction(
     // Generate EPUB
     const epubBuffer = await generateEPUB(chapters, metadata, projectName);
     const epubFilename = 'manuscript.epub';
-    const epubPath = `${projectName}/${epubFilename}`;
 
-    // Convert Buffer to ArrayBuffer for uploadFile
+    // Convert Buffer to ArrayBuffer for upload
     const epubArrayBuffer = epubBuffer.buffer.slice(
       epubBuffer.byteOffset,
       epubBuffer.byteOffset + epubBuffer.byteLength
     ) as ArrayBuffer;
 
-    // Upload EPUB file to GitHub
-    await uploadFile(userId, 'proselenos', epubPath, epubArrayBuffer, `Generate ${epubFilename}`);
+    // Upload EPUB file to Supabase storage
+    await uploadFileToProject(userId, projectName, epubFilename, epubArrayBuffer);
 
     return {
       success: true,
       data: {
         fileName: epubFilename,
-        fileId: epubPath
+        fileId: `${projectName}/${epubFilename}`
       }
     };
   } catch (error: any) {
@@ -188,7 +184,7 @@ export async function generateEPUBOnlyAction(
 }
 
 /**
- * Generate EPUB for local import (uploads to GitHub AND returns base64 for local import)
+ * Generate EPUB for local import (uploads to Supabase AND returns base64 for local import)
  * This combines upload + local import in one operation
  * manuscriptFilePath: path like "projectName/manuscript.txt"
  * projectName: the project folder name
@@ -217,16 +213,15 @@ export async function generateEPUBForLocalImportAction(
     // Generate EPUB (only once!)
     const epubBuffer = await generateEPUB(chapters, metadata, projectName, coverImageBuffer);
     const epubFilename = 'manuscript.epub';
-    const epubPath = `${projectName}/${epubFilename}`;
 
-    // Convert Buffer to ArrayBuffer for uploadFile
+    // Convert Buffer to ArrayBuffer for upload
     const epubArrayBuffer = epubBuffer.buffer.slice(
       epubBuffer.byteOffset,
       epubBuffer.byteOffset + epubBuffer.byteLength
     ) as ArrayBuffer;
 
-    // Upload EPUB file to GitHub (author's repo backup)
-    await uploadFile(userId, 'proselenos', epubPath, epubArrayBuffer, `Generate ${epubFilename}`);
+    // Upload EPUB file to Supabase storage (author's backup)
+    await uploadFileToProject(userId, projectName, epubFilename, epubArrayBuffer);
 
     // Also convert to base64 for local import
     const epubBase64 = epubBuffer.toString('base64');
@@ -236,7 +231,7 @@ export async function generateEPUBForLocalImportAction(
       data: {
         epubBase64,
         epubFilename,
-        fileId: epubPath
+        fileId: `${projectName}/${epubFilename}`
       }
     };
   } catch (error: any) {
@@ -265,22 +260,21 @@ export async function generatePDFOnlyAction(
     const pdfResult = await createPDF(chapters, metadata);
     const pdfBuffer = pdfResult.pdfData;
     const pdfFilename = 'manuscript.pdf';
-    const pdfPath = `${projectName}/${pdfFilename}`;
 
-    // Convert Buffer to ArrayBuffer for uploadFile
+    // Convert Buffer to ArrayBuffer for upload
     const pdfArrayBuffer = pdfBuffer.buffer.slice(
       pdfBuffer.byteOffset,
       pdfBuffer.byteOffset + pdfBuffer.byteLength
     ) as ArrayBuffer;
 
-    // Upload PDF file to GitHub
-    await uploadFile(userId, 'proselenos', pdfPath, pdfArrayBuffer, `Generate ${pdfFilename}`);
+    // Upload PDF file to Supabase storage
+    await uploadFileToProject(userId, projectName, pdfFilename, pdfArrayBuffer);
 
     return {
       success: true,
       data: {
         fileName: pdfFilename,
-        fileId: pdfPath
+        fileId: `${projectName}/${pdfFilename}`
       }
     };
   } catch (error: any) {
@@ -290,7 +284,7 @@ export async function generatePDFOnlyAction(
 
 /**
  * Main server action for publishing manuscripts
- * Converts manuscript text to HTML, EPUB, and PDF and uploads to GitHub
+ * Converts manuscript text to HTML, EPUB, and PDF and uploads to Supabase storage
  * manuscriptFilePath: path like "projectName/manuscript.txt"
  * projectName: the project folder name
  */
@@ -333,26 +327,26 @@ export async function publishManuscriptAction(
     const epubFilename = 'manuscript.epub';
     const pdfFilename = 'manuscript.pdf';
 
-    // Upload HTML file to GitHub
-    await uploadFile(userId, 'proselenos', `${projectName}/${htmlFilename}`, htmlContent, `Generate ${htmlFilename}`);
+    // Upload HTML file to Supabase storage
+    await uploadFileToProject(userId, projectName, htmlFilename, htmlContent);
 
-    // Convert EPUB Buffer to ArrayBuffer for uploadFile
+    // Convert EPUB Buffer to ArrayBuffer for upload
     const epubArrayBuffer = epubBuffer.buffer.slice(
       epubBuffer.byteOffset,
       epubBuffer.byteOffset + epubBuffer.byteLength
     ) as ArrayBuffer;
 
-    // Upload EPUB file to GitHub
-    await uploadFile(userId, 'proselenos', `${projectName}/${epubFilename}`, epubArrayBuffer, `Generate ${epubFilename}`);
+    // Upload EPUB file to Supabase storage
+    await uploadFileToProject(userId, projectName, epubFilename, epubArrayBuffer);
 
-    // Convert PDF Buffer to ArrayBuffer for uploadFile
+    // Convert PDF Buffer to ArrayBuffer for upload
     const pdfArrayBuffer = pdfBuffer.buffer.slice(
       pdfBuffer.byteOffset,
       pdfBuffer.byteOffset + pdfBuffer.byteLength
     ) as ArrayBuffer;
 
-    // Upload PDF file to GitHub
-    await uploadFile(userId, 'proselenos', `${projectName}/${pdfFilename}`, pdfArrayBuffer, `Generate ${pdfFilename}`);
+    // Upload PDF file to Supabase storage
+    await uploadFileToProject(userId, projectName, pdfFilename, pdfArrayBuffer);
 
     return {
       success: true,

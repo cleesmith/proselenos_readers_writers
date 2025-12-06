@@ -2,8 +2,7 @@
 // Displays books from the public bookstore catalog
 
 import { Metadata } from 'next';
-import { getPublicCatalog } from '@/app/actions/store-catalog';
-import { getGitHubOwner } from '@/lib/github-storage';
+import { getSupabaseCatalog } from '@/app/actions/supabase-publish-actions';
 import StoreContent from './StoreContent';
 
 export const metadata: Metadata = {
@@ -14,9 +13,8 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function StorePage() {
-  const result = await getPublicCatalog();
-  const entries = result.success ? result.data || [] : [];
-  const githubOwner = getGitHubOwner();
+  const result = await getSupabaseCatalog();
+  const entries = result.success ? result.books || [] : [];
 
-  return <StoreContent entries={entries} githubOwner={githubOwner} />;
+  return <StoreContent entries={entries} />;
 }

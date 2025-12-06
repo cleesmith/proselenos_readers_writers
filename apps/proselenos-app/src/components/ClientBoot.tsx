@@ -43,7 +43,7 @@ import {
   saveBookMetadataAction,
 } from '@/lib/github-project-actions';
 import { hasApiKeyAction } from '@/lib/api-key-actions';
-import { ensureUserGitHubRepoAction } from '@/lib/github-repo-actions';
+// ensureUserGitHubRepoAction removed - Supabase handles user creation on sign-in
 import ProjectSettingsModal, { ProjectMetadata } from '../app/projects/ProjectSettingsModal';
 import type { InitPayloadForClient } from '../lib/github/fastInitServer';
 
@@ -246,43 +246,14 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     isInstallingToolPrompts,
   ]);
 
-  // Initialize GitHub repo for user
+  // Supabase user is created on sign-in via NextAuth handler
+  // Just mark storage as ready when session exists
   useEffect(() => {
-    const initGitHubRepo = async () => {
-      if (!session?.user?.id || hasCheckedGitHub) return;
-
-      try {
-        const result = await ensureUserGitHubRepoAction(session.user.id);
-
-        if (!result.success) {
-          // FAIL HARD - show error and block app
-          setInitFailed(true);
-          showStickyErrorWithLogout(
-            'Storage Initialization Failed',
-            `Failed to initialize your workspace storage: ${sanitizeErrorMessage(result.error)}\n\nPlease check your connection and try signing in again.`,
-            isDarkMode
-          );
-          return;
-        }
-
-        // Success - log the result
-        console.log('Storage initialized:', result.data);
-        setIsGitHubRepoReady(true);
-      } catch (error) {
-        // FAIL HARD
-        setInitFailed(true);
-        showStickyErrorWithLogout(
-          'Storage Initialization Failed',
-          `Error initializing your workspace storage: ${sanitizeErrorMessage(error instanceof Error ? error.message : String(error))}`,
-          isDarkMode
-        );
-      } finally {
-        setHasCheckedGitHub(true);
-      }
-    };
-
-    initGitHubRepo();
-  }, [session?.user?.id, hasCheckedGitHub, isDarkMode]);
+    if (session?.user?.id && !hasCheckedGitHub) {
+      setIsGitHubRepoReady(true);
+      setHasCheckedGitHub(true);
+    }
+  }, [session?.user?.id, hasCheckedGitHub]);
 
   // Helper function to get loading status
   const getLoadingStatus = () => {

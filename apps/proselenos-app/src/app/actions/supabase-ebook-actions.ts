@@ -49,6 +49,27 @@ interface DownloadResult {
   error?: string;
 }
 
+interface SignedUrlData {
+  signedUrl: string;
+  path: string;
+  token: string;
+}
+
+interface SignedUrlResult {
+  success: boolean;
+  urls?: {
+    epub: SignedUrlData;
+    config: SignedUrlData;
+    cover?: SignedUrlData;
+  };
+  error?: string;
+}
+
+interface ConfirmResult {
+  success: boolean;
+  error?: string;
+}
+
 // ============================================
 // Helper Functions
 // ============================================
@@ -76,95 +97,129 @@ async function getUserUuid(googleId: string): Promise<string | null> {
 }
 
 // ============================================
-// Upload Actions
+// Upload Actions (Direct Client Upload via Signed URLs)
 // ============================================
 
 /**
- * Upload an ebook and its config to Supabase Storage
+ * Create signed upload URLs for direct client-to-Supabase uploads.
+ * This bypasses Vercel's 4.5MB serverless function limit by allowing
+ * the client to upload directly to Supabase Storage.
  *
  * @param bookHash - Unique book identifier (md5 hash)
- * @param title - Book title (used in filename)
- * @param authorName - Book author
- * @param epubBase64 - EPUB file as base64 string
- * @param configJson - config.json content as string
- * @param coverBase64 - Cover image as base64 string (optional)
+ * @param epubFilename - Sanitized EPUB filename (e.g., "My_Book.epub")
+ * @param includeCover - Whether to generate a signed URL for cover upload
  */
-export async function uploadEbookToSupabase(
+export async function createSignedUploadUrls(
   bookHash: string,
-  title: string,
-  authorName: string,
-  epubBase64: string,
-  configJson: string,
-  coverBase64?: string | null
-): Promise<UploadResult> {
+  epubFilename: string,
+  includeCover: boolean
+): Promise<SignedUrlResult> {
+  console.log('[createSignedUploadUrls] Generating signed URLs for direct upload...');
   try {
-    // Check if Supabase is configured
     if (!isSupabaseConfigured() || !supabase) {
       return { success: false, error: 'Supabase not configured' };
     }
 
-    // Get authenticated user
     const googleId = await getSessionUserId();
     if (!googleId) {
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Get user's UUID from users table
-    const userUuid = await getUserUuid(googleId);
-    if (!userUuid) {
-      return { success: false, error: 'User not found in database' };
-    }
-
     // Storage path: private-ebooks/{google_id}/{book_hash}/
     const basePath = `${googleId}/${bookHash}`;
 
-    // Convert base64 to Uint8Array for upload
-    const epubBuffer = Buffer.from(epubBase64, 'base64');
-
-    // Create a safe filename from title
-    const safeTitle = title.replace(/[^a-zA-Z0-9-_. ]/g, '_').substring(0, 100);
-    const epubFilename = `${safeTitle}.epub`;
-
-    // Upload EPUB file
-    const { error: epubError } = await supabase.storage
+    // Generate signed URL for EPUB
+    const epubPath = `${basePath}/${epubFilename}`;
+    const { data: epubData, error: epubError } = await supabase.storage
       .from('private-ebooks')
-      .upload(`${basePath}/${epubFilename}`, epubBuffer, {
-        contentType: 'application/epub+zip',
-        upsert: true,
-      });
+      .createSignedUploadUrl(epubPath);
 
-    if (epubError) {
-      console.error('Failed to upload EPUB:', epubError);
-      return { success: false, error: `Failed to upload EPUB: ${epubError.message}` };
+    if (epubError || !epubData) {
+      console.error('Failed to create signed URL for EPUB:', epubError);
+      return { success: false, error: `Failed to create upload URL: ${epubError?.message}` };
     }
 
-    // Upload config.json
-    const { error: configError } = await supabase.storage
+    // Generate signed URL for config.json
+    const configPath = `${basePath}/config.json`;
+    const { data: configData, error: configError } = await supabase.storage
       .from('private-ebooks')
-      .upload(`${basePath}/config.json`, configJson, {
-        contentType: 'application/json',
-        upsert: true,
-      });
+      .createSignedUploadUrl(configPath);
 
-    if (configError) {
-      console.error('Failed to upload config:', configError);
-      return { success: false, error: `Failed to upload config: ${configError.message}` };
+    if (configError || !configData) {
+      console.error('Failed to create signed URL for config:', configError);
+      return { success: false, error: `Failed to create upload URL: ${configError?.message}` };
     }
 
-    // Upload cover if provided
-    if (coverBase64) {
-      const coverBuffer = Buffer.from(coverBase64, 'base64');
-      const { error: coverError } = await supabase.storage
+    // Generate signed URL for cover if requested
+    let coverData: SignedUrlData | undefined;
+    if (includeCover) {
+      const coverPath = `${basePath}/cover.png`;
+      const { data, error } = await supabase.storage
         .from('private-ebooks')
-        .upload(`${basePath}/cover.png`, coverBuffer, {
-          contentType: 'image/png',
-          upsert: true,
-        });
+        .createSignedUploadUrl(coverPath);
 
-      if (coverError) {
-        // Log but don't fail - cover is optional
-        console.error('Failed to upload cover:', coverError);
+      if (!error && data) {
+        coverData = {
+          signedUrl: data.signedUrl,
+          path: data.path,
+          token: data.token,
+        };
       }
+      // Cover URL failure is not fatal
+    }
+
+    return {
+      success: true,
+      urls: {
+        epub: {
+          signedUrl: epubData.signedUrl,
+          path: epubData.path,
+          token: epubData.token,
+        },
+        config: {
+          signedUrl: configData.signedUrl,
+          path: configData.path,
+          token: configData.token,
+        },
+        cover: coverData,
+      },
+    };
+  } catch (error) {
+    console.error('Error creating signed upload URLs:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Confirm ebook upload by updating metadata in user_ebooks table.
+ * Called after successful direct upload to Supabase Storage.
+ *
+ * @param bookHash - Unique book identifier (md5 hash)
+ * @param title - Book title
+ * @param authorName - Book author
+ */
+export async function confirmEbookUpload(
+  bookHash: string,
+  title: string,
+  authorName: string
+): Promise<ConfirmResult> {
+  console.log(`[confirmEbookUpload] Confirming upload for "${title}"...`);
+  try {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    const googleId = await getSessionUserId();
+    if (!googleId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const userUuid = await getUserUuid(googleId);
+    if (!userUuid) {
+      return { success: false, error: 'User not found in database' };
     }
 
     // Upsert metadata to user_ebooks table
@@ -181,13 +236,13 @@ export async function uploadEbookToSupabase(
 
     if (dbError) {
       console.error('Failed to update user_ebooks:', dbError);
-      // Don't fail - files are uploaded, metadata is secondary
+      return { success: false, error: `Failed to confirm upload: ${dbError.message}` };
     }
 
-    console.log(`Successfully uploaded ${title} to Supabase Storage`);
+    console.log(`Confirmed upload of ${title} to Private Ebooks`);
     return { success: true };
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Error confirming upload:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -366,6 +421,58 @@ export async function deleteUserEbook(bookHash: string): Promise<UploadResult> {
 
     return { success: true };
   } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Delete ALL ebooks from Supabase Storage for the current user
+ * Used for "Reset Library" feature
+ */
+export async function clearAllUserEbooks(): Promise<UploadResult> {
+  try {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    const googleId = await getSessionUserId();
+    if (!googleId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const userUuid = await getUserUuid(googleId);
+    if (!userUuid) {
+      return { success: false, error: 'User not found in database' };
+    }
+
+    // List all book folders for this user
+    const { data: folders } = await supabase.storage.from('private-ebooks').list(googleId);
+
+    if (folders && folders.length > 0) {
+      // For each folder (book), delete all files inside
+      for (const folder of folders) {
+        if (!folder.name || folder.name === '.emptyFolderPlaceholder') continue;
+
+        const folderPath = `${googleId}/${folder.name}`;
+        const { data: files } = await supabase.storage.from('private-ebooks').list(folderPath);
+
+        if (files && files.length > 0) {
+          const filePaths = files.map((f) => `${folderPath}/${f.name}`);
+          await supabase.storage.from('private-ebooks').remove(filePaths);
+        }
+      }
+    }
+
+    // Delete all records from user_ebooks table for this user
+    await supabase.from('user_ebooks').delete().eq('user_id', userUuid);
+
+    console.log(`Cleared all Private Ebooks for user ${googleId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error clearing user ebooks:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

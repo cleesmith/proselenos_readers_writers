@@ -2,16 +2,14 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { ensureUserRepoExists } from '@/libs/book-storage';
-import { ensureLibraryRepoExists } from '@/app/actions/store-catalog';
 
 /**
- * Ensure the authenticated user has a GitHub repo for their ebooks
+ * Ensure storage is ready for the authenticated user
+ * With Supabase, buckets are always ready (created via SQL setup)
  */
 export async function ensureGitHubRepo(): Promise<{
   success: boolean;
   error?: string;
-  repoName?: string;
   created?: boolean;
 }> {
   try {
@@ -35,22 +33,16 @@ export async function ensureGitHubRepo(): Promise<{
       };
     }
 
-    // Ensure repo exists (creates if needed)
-    const result = await ensureUserRepoExists(userId);
-
-    // Ensure the public bookstore repo exists
-    await ensureLibraryRepoExists();
-
+    // Supabase buckets are always ready (created via SQL setup)
     return {
       success: true,
-      repoName: result.repoName,
-      created: result.created,
+      created: false,
     };
   } catch (error: any) {
-    console.error('Error ensuring GitHub repo:', error);
+    console.error('Error checking storage:', error);
     return {
       success: false,
-      error: error.message || 'Failed to create GitHub repository',
+      error: error.message || 'Failed to verify storage',
     };
   }
 }

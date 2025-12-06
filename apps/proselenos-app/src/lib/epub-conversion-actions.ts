@@ -1,13 +1,13 @@
 // lib/epub-conversion-actions.ts
+// EPUB conversion - uses Supabase storage
 
 'use server';
 
-import { listFiles, downloadBinaryFile, uploadFile } from '@/lib/github-storage';
+import { listProjectFiles, downloadFile, uploadFileToProject } from '@/lib/supabase-project-actions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import JSZip from 'jszip';
 import { DOMParser } from '@xmldom/xmldom';
-// import xpath from 'xpath';
 
 type ActionResult<T = any> = {
   success: boolean;
@@ -52,8 +52,15 @@ export async function convertEpubToTextAction(
     }
 
     try {
-      // Download the EPUB file from GitHub repo (returns Buffer directly)
-      const { content: buffer, filename } = await downloadBinaryFile(userId, 'proselenos', epubFilePath);
+      // Extract project name and filename from path
+      const pathParts = epubFilePath.split('/');
+      const epubProjectName = pathParts[0] || projectName;
+      const epubFileName = pathParts.slice(1).join('/') || pathParts[0] || '';
+
+      // Download the EPUB file from Supabase storage
+      const arrayBuffer = await downloadFile(userId, epubProjectName, epubFileName);
+      const buffer = Buffer.from(arrayBuffer);
+      const filename = epubFileName.split('/').pop() || epubFileName;
 
       // Check file size to prevent memory issues
       const fileSizeInMB = buffer.length / (1024 * 1024);
@@ -89,9 +96,8 @@ export async function convertEpubToTextAction(
       const baseFileName = filename.replace('.epub', '');
       const timestampedOutputName = `${baseFileName}_${timestamp}.txt`;
 
-      // Save to GitHub repo
-      const outputPath = `${projectName}/${timestampedOutputName}`;
-      await uploadFile(userId, 'proselenos', outputPath, allText, 'Convert EPUB to TXT');
+      // Save to Supabase storage
+      await uploadFileToProject(userId, projectName, timestampedOutputName, allText);
 
       return {
         success: true,
@@ -277,14 +283,17 @@ export async function listEpubFilesAction(projectName: string): Promise<ActionRe
       return { success: false, error: 'Project name is required' };
     }
 
-    // List all files in the project folder with .epub extension
-    const epubFiles = await listFiles(userId, 'proselenos', `${projectName}/`, '.epub');
+    // List all files in the project folder
+    const allFiles = await listProjectFiles(userId, projectName);
+
+    // Filter for .epub files
+    const epubFiles = allFiles.filter(f => f.name.toLowerCase().endsWith('.epub'));
 
     // Map to format expected by UI
     const formattedFiles = epubFiles.map(file => ({
-      id: file.path,
+      id: `${projectName}/${file.name}`,
       name: file.name,
-      path: file.path,
+      path: `${projectName}/${file.name}`,
       mimeType: 'application/epub+zip'
     }));
 
@@ -317,8 +326,14 @@ export async function extractCoverFromEpubAction(
       return { success: false, error: 'EPUB file path is required' };
     }
 
-    // Download the EPUB file
-    const { content: buffer } = await downloadBinaryFile(userId, 'proselenos', epubFilePath);
+    // Extract project name and filename from path
+    const pathParts = epubFilePath.split('/');
+    const projectName = pathParts[0] || '';
+    const epubFileName = pathParts.slice(1).join('/') || pathParts[0] || '';
+
+    // Download the EPUB file from Supabase storage
+    const arrayBuffer = await downloadFile(userId, projectName, epubFileName);
+    const buffer = Buffer.from(arrayBuffer);
 
     // Load the EPUB as a zip
     const zip = await JSZip.loadAsync(buffer);

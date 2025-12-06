@@ -2,7 +2,6 @@
 // Extracted from app/page.tsx - handles all project-related state and operations
 
 import { useState, useMemo, useCallback } from 'react';
-import { upload } from '@vercel/blob/client';
 import { showAlert, showConfirm } from '../shared/alerts';
 import {
   listProjectsAction,
@@ -11,8 +10,8 @@ import {
   listProjectFilesAction,
   listTxtFilesAction,
   checkManuscriptFilesExistAction,
-  uploadFileToProjectAction
 } from '@/lib/github-project-actions';
+import { createSignedUploadUrlForProject } from '@/lib/supabase-project-actions';
 import { convertTxtToDocxActionGitHub } from '@/lib/docx-conversion-actions';
 
 // Manuscript file types - only 1 of each allowed, renamed to manuscript.{ext}
@@ -36,9 +35,6 @@ function sanitizeFilename(name: string): string {
 // Get max upload size from env (default 30MB)
 const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'] || '30', 10);
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
-// GitHub API limit for direct upload (use 4MB to be safe, actual limit is ~4.5MB)
-const GITHUB_DIRECT_UPLOAD_LIMIT = 4 * 1024 * 1024;
 
 interface ProjectManagerState {
   // Project state
@@ -493,8 +489,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
     setSelectedUploadFile(file);
   }, []);
 
-  // Perform the actual file upload using Vercel Blob with onUploadCompleted webhook
-  // The webhook handles server-to-server GitHub upload (bypasses 4.5MB limit)
+  // Perform the actual file upload to Supabase Storage (direct upload via signed URL)
   const performFileUpload = useCallback(
     async (session: any, isDarkMode: boolean) => {
       if (!selectedUploadFile || !currentProject) {
@@ -502,28 +497,8 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
         return;
       }
 
-      // Get userId from session (Google ID)
-      const userId = session?.user?.id;
-      if (!userId) {
-        showAlert('Could not determine user identity', 'error', undefined, isDarkMode);
-        return;
-      }
-
-      // Check if running locally - webhook won't work on localhost
-      const isLocalDev = typeof window !== 'undefined' &&
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-      // For files under 4MB, we can use direct GitHub upload (works on localhost)
-      // For larger files, we need Vercel Blob webhook (doesn't work on localhost)
-      const canUseDirectUpload = selectedUploadFile.size <= GITHUB_DIRECT_UPLOAD_LIMIT;
-
-      if (isLocalDev && !canUseDirectUpload) {
-        showAlert(
-          'Large file upload (over 4MB) is not available on localhost.',
-          'warning',
-          'Local Dev Limitation',
-          isDarkMode
-        );
+      if (!session?.user?.id) {
+        showAlert('Not authenticated', 'error', undefined, isDarkMode);
         return;
       }
 
@@ -532,11 +507,11 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       const ext = originalName.slice(originalName.lastIndexOf('.')).toLowerCase();
       const isManuscriptType = MANUSCRIPT_EXTENSIONS.includes(ext);
 
-      let githubFileName: string;
+      let targetFileName: string;
 
       if (isManuscriptType) {
         // Manuscript files: always named manuscript.{ext}
-        githubFileName = `manuscript${ext}`;
+        targetFileName = `manuscript${ext}`;
 
         // Check if manuscript file already exists
         const existsResult = await checkManuscriptFilesExistAction(currentProject);
@@ -545,7 +520,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
           if (existsResult.data[extKey]) {
             // File exists - warn user
             const confirmed = await showConfirm(
-              `A ${githubFileName} already exists in this project.\n\nDo you want to replace it?`,
+              `A ${targetFileName} already exists in this project.\n\nDo you want to replace it?`,
               isDarkMode,
               'Replace Existing File?',
               'Replace',
@@ -558,46 +533,48 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
         }
       } else {
         // Regular files (.txt, .docx): sanitize original name
-        githubFileName = sanitizeFilename(originalName);
+        targetFileName = sanitizeFilename(originalName);
       }
 
       setIsUploading(true);
-      setUploadStatus(`Uploading ${githubFileName}...`);
+      setUploadStatus(`Uploading ${targetFileName}...`);
 
       try {
-        if (canUseDirectUpload) {
-          // For small files (under 4MB), use direct GitHub upload
-          // This works on localhost and is more efficient for small files
-          const result = await uploadFileToProjectAction(
-            selectedUploadFile,
-            currentProject,
-            githubFileName
-          );
+        console.log(`[performFileUpload] Starting DIRECT upload for "${targetFileName}" (bypasses Vercel limit)...`);
 
-          if (!result.success) {
-            throw new Error(result.error || 'Upload failed');
-          }
-        } else {
-          // For large files, use Vercel Blob with webhook
-          // Blob pathname includes userId to avoid conflicts between users
-          const blobPathname = `${userId}-${githubFileName}`;
+        // 1. Get signed URL from server
+        const urlResult = await createSignedUploadUrlForProject(
+          session.user.id,
+          currentProject,
+          targetFileName
+        );
 
-          // Upload to Vercel Blob with userId-prefixed pathname
-          // The onUploadCompleted webhook handles the GitHub upload server-side
-          await upload(blobPathname, selectedUploadFile, {
-            access: 'public',
-            handleUploadUrl: '/api/upload',
-            clientPayload: JSON.stringify({
-              projectName: currentProject,
-              fileName: githubFileName  // This is the name used on GitHub
-            }),
-          });
+        if (!urlResult.success || !urlResult.signedUrl) {
+          throw new Error(urlResult.error || 'Failed to get upload URL');
         }
 
+        console.log('[performFileUpload] Got signed URL, uploading directly to Supabase...');
+
+        // 2. Read file as ArrayBuffer
+        const fileData = await selectedUploadFile.arrayBuffer();
+
+        // 3. Upload directly to Supabase via signed URL
+        const response = await fetch(urlResult.signedUrl, {
+          method: 'PUT',
+          body: fileData,
+          headers: { 'Content-Type': selectedUploadFile.type || 'application/octet-stream' },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed with status: ${response.status}`);
+        }
+
+        console.log(`[performFileUpload] SUCCESS: "${targetFileName}" uploaded via direct signed URL`);
+
         // If we get here, the upload succeeded
-        setUploadStatus(`✅ File uploaded: ${githubFileName}`);
+        setUploadStatus(`✅ File uploaded: ${targetFileName}`);
         showAlert(
-          `File uploaded successfully: ${githubFileName}`,
+          `File uploaded successfully: ${targetFileName}`,
           'success',
           undefined,
           isDarkMode

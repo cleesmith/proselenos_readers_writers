@@ -3,15 +3,14 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { FaBookOpen } from 'react-icons/fa';
-import { StoreEntry, importBookFromStore } from '@/app/actions/store-catalog';
+import { BookstoreEntry, importBookFromSupabase } from '@/app/actions/supabase-publish-actions';
 import { useEnv } from '@/context/EnvContext';
 
 interface StoreBookItemProps {
-  entry: StoreEntry;
-  githubOwner: string;
+  entry: BookstoreEntry;
 }
 
-export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps) {
+export default function StoreBookItem({ entry }: StoreBookItemProps) {
   const { appService } = useEnv();
   const [isImporting, setIsImporting] = useState(false);
   const [coverImageError, setCoverImageError] = useState(false);
@@ -29,7 +28,8 @@ export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps
 
   // Cover image URL (only if hasCover is true and no error loading)
   const showCoverImage = entry.hasCover && !coverImageError;
-  const coverImageUrl = `https://raw.githubusercontent.com/${githubOwner}/proselenos-bookstore/refs/heads/main/covers/${entry.bookHash}.jpg`;
+  const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'] || '';
+  const coverImageUrl = `${supabaseUrl}/storage/v1/object/public/bookstore-covers/${entry.bookHash}.jpg`;
 
   const handleImport = async () => {
     if (isImporting) return;
@@ -37,12 +37,12 @@ export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps
     setIsImporting(true);
     setImportError(null);
     try {
-      const result = await importBookFromStore(entry.bookHash);
+      const result = await importBookFromSupabase(entry.bookHash);
 
-      if (result.success && result.data) {
-        const { epubDataBase64, filename } = result.data;
+      if (result.success && result.epubBase64 && result.filename) {
+        const { epubBase64, filename } = result;
         // Decode base64 to binary
-        const binaryString = atob(epubDataBase64);
+        const binaryString = atob(epubBase64);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
@@ -78,7 +78,7 @@ export default function StoreBookItem({ entry, githubOwner }: StoreBookItemProps
       >
         {/* Cover display: actual image or colored fallback */}
         {showCoverImage ? (
-          /* Actual cover image from GitHub Pages */
+          /* Actual cover image from Supabase Storage */
           <img
             src={coverImageUrl}
             alt={`Cover of ${entry.title}`}

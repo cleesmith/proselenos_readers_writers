@@ -40,7 +40,7 @@ export interface ToolPromptSyncResult {
   message?: string;
 }
 
-import { getToolPromptFromGitHub } from './github-tool-actions';
+import { getToolPrompt } from './supabase-tool-actions';
 import { streamAIInternal } from './aiInternal';
 
 /**
@@ -96,15 +96,15 @@ export async function executeToolInternal(
   const startTime = Date.now();
 
   try {
-    console.log(`Executing tool from GitHub: ${toolId}`);
+    console.log(`Executing tool: ${toolId}`);
 
-    // Read the tool prompt from GitHub
-    const promptResult = await getToolPromptFromGitHub(toolId);
+    // Read the tool prompt from Supabase
+    const promptResult = await getToolPrompt(toolId);
     if (!promptResult.success || !promptResult.content) {
       return {
         success: false,
         toolId,
-        error: promptResult.error || 'Failed to load tool prompt from GitHub',
+        error: promptResult.error || 'Failed to load tool prompt',
         executionTime: Date.now() - startTime
       };
     }
@@ -218,7 +218,7 @@ export async function forceSyncToolsInternal(): Promise<ToolPromptSyncResult> {
  */
 export async function getToolPromptInternal(toolId: string): Promise<string | null> {
   try {
-    const result = await getToolPromptFromGitHub(toolId);
+    const result = await getToolPrompt(toolId);
     return result.success ? result.content || null : null;
   } catch (error) {
     console.error(`Internal get prompt error for ${toolId}:`, error);

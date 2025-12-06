@@ -16,13 +16,9 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
-    "@octokit/rest": "^22.0.1",
     "@proselenosebooks/auth-core": "workspace:*",
-    "@proselenosebooks/github-repo": "workspace:*",
-    "@proselenosebooks/master-tracker": "workspace:*",
     "@supabase/supabase-js": "^2.86.2",
     "@uiw/react-md-editor": "^4.0.8",
-    "@vercel/blob": "^2.0.0",
     "@xmldom/xmldom": "^0.9.8",
     "@zip.js/zip.js": "^2.7.53",
     "abortcontroller-polyfill": "^1.7.8",

@@ -1,7 +1,8 @@
 // lib/docx-conversion-actions.ts
+// DOCX conversion - uses Supabase storage
 //
 // This module contains server actions for converting Microsoft Word documents
-// (.docx) into plain text and saving to GitHub repositories. The conversion
+// (.docx) into plain text and saving to Supabase storage. The conversion
 // uses the `mammoth` library, which extracts raw text and ignores formatting
 // and embedded images.
 
@@ -11,7 +12,7 @@ import mammoth from 'mammoth';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { uploadFile, downloadFile } from './github-storage';
+import { uploadFileToProject, readTextFile } from './supabase-project-actions';
 
 /**
  * Converts a DOCX file supplied as a Buffer into a plain-text string.
@@ -63,9 +64,8 @@ export async function convertDocxToTxtActionGitHub(
     const chapterMatches = text.match(/^(Chapter|CHAPTER|\d+\.)\s+/gm);
     const chapterCount = chapterMatches ? chapterMatches.length : 0;
 
-    // Upload to GitHub repo
-    const outputPath = `${projectName}/${outputFileName}`;
-    await uploadFile(userId, 'proselenos', outputPath, text, 'Import DOCX as TXT');
+    // Upload to Supabase storage
+    await uploadFileToProject(userId, projectName, outputFileName, text);
 
     return {
       success: true,
@@ -114,12 +114,13 @@ export async function convertTxtToDocxActionGitHub(
 
     const userId = session.user.id;
 
-    // Download the TXT file from GitHub
-    const { content } = await downloadFile(userId, 'proselenos', txtFilePath);
+    // Extract project name and filename from path
+    const parts = txtFilePath.split('/');
+    const projectName = parts[0] || '';
+    const fileName = parts.slice(1).join('/');
 
-    // Decode ArrayBuffer to UTF-8 string
-    const decoder = new TextDecoder('utf-8');
-    const text = decoder.decode(content);
+    // Download the TXT file from Supabase storage
+    const text = await readTextFile(userId, projectName, fileName);
 
     // Count statistics
     const paragraphs = text.split(/\n\n+/);
