@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { fastInitForUser } from '@/lib/github/fastInitServer';
+import { fastInitForUser } from '@/lib/fastInitServer';
 import ClientBoot from '@/components/ClientBoot';
 import { redirect } from 'next/navigation';
 

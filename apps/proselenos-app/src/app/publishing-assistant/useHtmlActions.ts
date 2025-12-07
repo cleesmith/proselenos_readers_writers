@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { generateHTMLOnlyAction } from '@/lib/publish-actions';
-import { listTxtFilesAction } from '@/lib/github-project-actions';
+import { listTxtFilesAction } from '@/lib/project-actions';
 
 interface HtmlActionsState {
   isOpen: boolean;

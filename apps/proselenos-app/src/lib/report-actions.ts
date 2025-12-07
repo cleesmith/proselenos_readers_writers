@@ -5,7 +5,7 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { uploadFileToProject } from '@/lib/supabase-project-actions';
+import { uploadFileToProject } from '@/lib/project-storage';
 
 type ActionResult<T = any> = {
   success: boolean;

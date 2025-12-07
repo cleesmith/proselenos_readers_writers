@@ -3,7 +3,7 @@
 'use client';
 
 import { ThemeConfig } from '../shared/theme';
-import { readFileAction } from '@/lib/github-project-actions';
+import { readFileAction } from '@/lib/project-actions';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface ProjectSelectorModalProps {

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { PiUserCircleCheck, PiGear, PiSignIn, PiPencil, PiStorefront, PiTrash } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
-import { clearAllUserEbooks } from '@/app/actions/supabase-ebook-actions';
+import { clearAllUserEbooks } from '@/app/actions/ebook-actions';
 import { showConfirm, showAlert } from '@/app/shared/alerts';
 import { TbSunMoon } from 'react-icons/tb';
 import { VscRepo } from 'react-icons/vsc';
@@ -150,7 +150,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
     const isDark = themeMode === 'dark' || (themeMode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const confirmed = await showConfirm(
-      'This will permanently delete ALL ebooks from your local library AND from Private Ebooks (cloud backup). This cannot be undone!',
+      'This will permanently delete ALL ebooks from your local library AND from Private Ebooks. This cannot be undone!',
       isDark,
       'Reset Library?',
       'Yes, Delete Everything',
@@ -266,14 +266,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
         <MenuItem label={_('Sign In with Google')} Icon={PiSignIn} onClick={handleSignIn} />
       )}
             {user && <MenuItem label={_('Private Ebooks')} Icon={VscRepo} onClick={openBookRepoModal} />}
-      {user && (
-        <MenuItem
-          label={_('Reset Library')}
-          description={_('clear local + cloud ebooks')}
-          Icon={PiTrash}
-          onClick={handleResetLibrary}
-        />
-      )}
       {isDesktopAppPlatform() && !appService?.isMobile && (
         <MenuItem
           label={_('Auto Import on File Open')}
@@ -333,6 +325,15 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen, onOpenBo
         Icon={themeMode === 'dark' ? PiMoon : themeMode === 'light' ? PiSun : TbSunMoon}
         onClick={cycleThemeMode}
       />
+      {user && (
+        <MenuItem
+          label={_('Reset Library')}
+          description={_('clear local & Private Ebooks')}
+          Icon={PiTrash}
+          buttonClass='bg-red-900/20 hover:!bg-red-900/30'
+          onClick={handleResetLibrary}
+        />
+      )}
       <MenuItem label={_('Settings')} Icon={PiGear} onClick={openSettingsDialog} />
       <hr aria-hidden='true' className='border-base-200 my-1' />
       {user && (

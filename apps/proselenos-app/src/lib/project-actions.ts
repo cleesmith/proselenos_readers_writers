@@ -1,5 +1,5 @@
-// lib/github-project-actions.ts
-// Project operations - now uses Supabase for projects and storage
+// lib/project-actions.ts
+// Project operations with auth wrapper
 
 'use server';
 
@@ -17,7 +17,7 @@ import {
   readTextFile,
   deleteProjectFile,
   checkFilesExist,
-} from './supabase-project-actions';
+} from './project-storage';
 
 interface ExtendedSession {
   user: {

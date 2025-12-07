@@ -36,8 +36,6 @@ interface BookshelfProps {
   handleBookDelete: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleSetSelectMode: (selectMode: boolean) => void;
   handleShowDetailsBook: (book: Book) => void;
-  handlePushLibrary: () => Promise<void>;
-  booksTransferProgress: { [key: string]: number | null };
 }
 
 const Bookshelf: React.FC<BookshelfProps> = ({
@@ -51,8 +49,6 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   handleBookDelete,
   handleSetSelectMode,
   handleShowDetailsBook,
-  handlePushLibrary,
-  booksTransferProgress,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -226,7 +222,6 @@ const Bookshelf: React.FC<BookshelfProps> = ({
       const batch = books.slice(i, i + concurrency);
       await Promise.all(batch.map((book) => handleBookDelete(book, false)));
     }
-    handlePushLibrary();
     setSelectedBooks([]);
     setShowDeleteAlert(false);
     setShowSelectModeActions(true);
@@ -325,9 +320,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
             handleBookDelete={handleBookDelete}
             handleSetSelectMode={handleSetSelectMode}
             handleShowDetailsBook={handleShowDetailsBook}
-            transferProgress={
-              'hash' in item ? booksTransferProgress[(item as Book).hash] || null : null
-            }
+            transferProgress={null}
           />
         ))}
         {viewMode === 'grid' && !navBooksGroup && allBookshelfItems.length > 0 && (

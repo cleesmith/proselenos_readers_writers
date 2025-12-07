@@ -3,7 +3,7 @@
 // AI Provider Factory
 
 import { getApiKeyAction } from './api-key-actions';
-import { getproselenosConfigAction } from './github-config-actions';
+import { getproselenosConfigAction } from './config-actions';
 // import { getServerSession } from 'next-auth';
 // import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 

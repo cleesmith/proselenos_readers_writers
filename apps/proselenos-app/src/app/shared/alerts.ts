@@ -90,8 +90,6 @@ export const showConfirm = async (
   confirmText: string = 'Yes',
   cancelText: string = 'Cancel'
 ): Promise<boolean> => {
-  document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-
   const result = await Swal.fire({
     title,
     text: message,

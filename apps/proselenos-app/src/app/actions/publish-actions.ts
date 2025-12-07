@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * Supabase Bookstore Server Actions
+ * Bookstore Server Actions
  *
- * All Supabase operations for the public bookstore.
+ * Supabase operations for the public bookstore.
  * These actions handle publishing, catalog, and download.
  *
  * Storage structure:

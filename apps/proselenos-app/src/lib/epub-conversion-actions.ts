@@ -3,7 +3,7 @@
 
 'use server';
 
-import { listProjectFiles, downloadFile, uploadFileToProject } from '@/lib/supabase-project-actions';
+import { listProjectFiles, downloadFile, uploadFileToProject } from '@/lib/project-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import JSZip from 'jszip';
@@ -62,13 +62,14 @@ export async function convertEpubToTextAction(
       const buffer = Buffer.from(arrayBuffer);
       const filename = epubFileName.split('/').pop() || epubFileName;
 
-      // Check file size to prevent memory issues
+      // Check file size to prevent memory issues (uses NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB env var)
+      const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB']!, 10);
       const fileSizeInMB = buffer.length / (1024 * 1024);
 
-      if (fileSizeInMB > 10) {
+      if (fileSizeInMB > MAX_FILE_SIZE_MB) {
         return {
           success: false,
-          error: `File too large (${fileSizeInMB.toFixed(1)}MB). Please use files smaller than 10MB.`
+          error: `File too large (${fileSizeInMB.toFixed(1)}MB). Please use files smaller than ${MAX_FILE_SIZE_MB}MB.`
         };
       }
 

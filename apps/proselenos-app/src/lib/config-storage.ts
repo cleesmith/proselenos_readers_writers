@@ -1,5 +1,5 @@
-// lib/supabase-config-actions.ts
-// Supabase-based config/settings storage (replaces GitHub storage)
+// lib/config-storage.ts
+// Supabase-based config/settings storage
 
 'use server';
 

@@ -8,7 +8,7 @@ import { MdOutlineFileDownload, MdOutlineDelete } from 'react-icons/md';
 import { ThemeConfig } from '../shared/theme';
 import { showAlert, showConfirm } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { listProjectFilesAction, downloadFileForBrowserAction, deleteProjectFileAction } from '@/lib/github-project-actions';
+import { listProjectFilesAction, downloadFileForBrowserAction, deleteProjectFileAction } from '@/lib/project-actions';
 import { getPublicCatalog, removeFromPublicCatalog } from '@/app/actions/store-catalog';
 
 interface FilesModalProps {

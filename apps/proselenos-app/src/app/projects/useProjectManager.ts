@@ -10,9 +10,9 @@ import {
   listProjectFilesAction,
   listTxtFilesAction,
   checkManuscriptFilesExistAction,
-} from '@/lib/github-project-actions';
-import { createSignedUploadUrlForProject } from '@/lib/supabase-project-actions';
-import { convertTxtToDocxActionGitHub } from '@/lib/docx-conversion-actions';
+} from '@/lib/project-actions';
+import { createSignedUploadUrlForProject } from '@/lib/project-storage';
+import { convertTxtToDocxAction } from '@/lib/docx-conversion-actions';
 
 // Manuscript file types - only 1 of each allowed, renamed to manuscript.{ext}
 const MANUSCRIPT_EXTENSIONS = ['.epub', '.pdf', '.html'];
@@ -32,8 +32,8 @@ function sanitizeFilename(name: string): string {
   return (sanitized || 'file') + ext; // Fallback to 'file' if empty
 }
 
-// Get max upload size from env (default 30MB)
-const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'] || '30', 10);
+// Get max upload size from env (NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB)
+const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB']!, 10);
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 interface ProjectManagerState {
@@ -191,7 +191,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
   const [showLocalDocxImportModal, setShowLocalDocxImportModal] = useState(false);
   const [isLocalDocxConverting, _setIsLocalDocxConverting] = useState(false);
 
-  // Navigate to folder (GitHub version)
+  // Navigate to folder
   const navigateToFolder = useCallback(
     async (
       projectName?: string,
@@ -268,7 +268,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       // Clear selected manuscript when project changes
       clearSelectedManuscript();
 
-      // Save to GitHub config
+      // Save to config
       try {
         const result = await selectProjectAction(folder.name);
 
@@ -328,7 +328,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
           setShowModal(false);
           setUploadStatus(`✅ Project created: ${newProjectName.trim()}`);
 
-          // Tools are already in GitHub repo, no need to load them
+          // Tools are already in storage, no need to load them
           if (toolsActions && !toolsActions.toolsReady) {
             setUploadStatus('Loading tools...');
             try {
@@ -353,7 +353,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
 
   // DOCX import now handled by LocalDocxImportModal component
 
-  // GitHub-based TXT export (TXT to DOCX conversion)
+  // TXT export (TXT to DOCX conversion)
   const handleTxtExport = useCallback(
     async (
       session: any,
@@ -411,7 +411,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       setUploadStatus(`Converting ${selectedTxtFile.name} to DOCX...`);
 
       try {
-        const result = await convertTxtToDocxActionGitHub(
+        const result = await convertTxtToDocxAction(
           currentProject,
           selectedTxtFile.path,
           txtOutputFileName.trim()

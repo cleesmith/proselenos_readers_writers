@@ -1,4 +1,4 @@
-// lib/supabase-tool-actions.ts
+// lib/tool-storage.ts
 // Supabase-based tool prompt operations
 
 'use server';

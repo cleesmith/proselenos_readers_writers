@@ -1,12 +1,11 @@
 /**
  * Hook for listing and downloading books from Supabase Storage
  *
- * Replaces useBookRepo which used GitHub.
  * Same interface so BookRepoModal can swap with minimal changes.
  */
 
 import { useState, useCallback } from 'react';
-import { listUserEbooks, downloadUserEbook } from '@/app/actions/supabase-ebook-actions';
+import { listUserEbooks, downloadUserEbook } from '@/app/actions/ebook-actions';
 import { useBookImporter } from '@/hooks/useBookImporter';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useEnv } from '@/context/EnvContext';

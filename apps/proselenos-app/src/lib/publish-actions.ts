@@ -7,7 +7,7 @@ import 'server-only';
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { readTextFile, uploadFileToProject } from '@/lib/supabase-project-actions';
+import { readTextFile, uploadFileToProject } from '@/lib/project-storage';
 import * as fs from 'fs';
 import * as path from 'path';
 import PDFDocument from 'pdfkit';
@@ -688,13 +688,10 @@ function countWords(text: string): number {
   return text.split(/\s+/).filter(word => word.length > 0).length;
 }
 
-
 /**
  * Clean up existing manuscript files before publishing new ones
- * Note: GitHub uploadFile will automatically overwrite files with the same name
  */
 async function cleanupExistingManuscriptFiles(_projectName: string): Promise<void> {
-  // GitHub uploadFile will automatically handle overwriting files with the same name
   // No explicit deletion needed
 }
 

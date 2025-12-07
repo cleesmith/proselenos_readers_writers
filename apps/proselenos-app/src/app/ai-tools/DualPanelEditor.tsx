@@ -11,7 +11,7 @@ import { showAlert, showConfirm } from '../shared/alerts';
 // import '@uiw/react-markdown-preview/markdown.css';
 // import { commands } from '@uiw/react-md-editor';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { createOrUpdateFileAction } from '@/lib/github-project-actions';
+import { createOrUpdateFileAction } from '@/lib/project-actions';
 
 // MDEditor import removed: we will use a simple textarea.
 // const MDEditor = dynamic(

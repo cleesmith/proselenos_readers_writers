@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { ThemeConfig } from '../shared/theme';
-import { listProjectFilesAction, downloadFileForBrowserAction } from '@/lib/github-project-actions';
+import { listProjectFilesAction, downloadFileForBrowserAction } from '@/lib/project-actions';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface DownloadFileModalProps {

@@ -3,7 +3,7 @@
 
 'use server';
 
-import { listProjectFiles, downloadFile, uploadFileToProject } from '@/lib/supabase-project-actions';
+import { listProjectFiles, downloadFile, uploadFileToProject } from '@/lib/project-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import * as mammoth from 'mammoth';
@@ -185,29 +185,29 @@ async function extractComments(buffer: Buffer): Promise<ExtractionResult> {
 function extractCommentsFromXml(commentsXml: string): CommentData[] {
   const parser = new DOMParser();
   const commentsDoc = parser.parseFromString(commentsXml, 'text/xml');
-  
+
   // Set up namespaces for XPath
   const select = xpath.useNamespaces({
     'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
   });
-  
+
   // Find all comment nodes
   const commentNodes = select('//w:comment', commentsDoc as any) as any[];
   const comments: CommentData[] = [];
-  
+
   for (const node of commentNodes) {
     const id = node.getAttribute('w:id') || '';
     const author = node.getAttribute('w:author') || 'Unknown';
     const date = node.getAttribute('w:date') || '';
-    
+
     // Extract the comment text
     const textNodes = select('.//w:t', node) as any[];
     let commentText = '';
-    
+
     for (const textNode of textNodes) {
       commentText += textNode.textContent || '';
     }
-    
+
     comments.push({
       id,
       author,
@@ -216,7 +216,7 @@ function extractCommentsFromXml(commentsXml: string): CommentData[] {
       referencedText: ''
     });
   }
-  
+
   return comments;
 }
 
@@ -224,43 +224,43 @@ function extractCommentsFromXml(commentsXml: string): CommentData[] {
 function extractCommentReferences(documentXml: string): Record<string, string> {
   const parser = new DOMParser();
   const docXmlDoc = parser.parseFromString(documentXml, 'text/xml');
-  
+
   // Set up namespaces for XPath
   const select = xpath.useNamespaces({
     'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
   });
-  
+
   const commentRefs: Record<string, string> = {};
-  
+
   // Look for paragraphs with comment ranges
   const paragraphs = select('//w:p', docXmlDoc as any) as any[];
-  
+
   for (const paragraph of paragraphs) {
     // Get the text content of the paragraph
     const textContent = extractParagraphText(paragraph, select);
-    
+
     // Look for comment range starts
     const commentRangeStarts = select('.//w:commentRangeStart', paragraph) as any[];
-    
+
     for (const startNode of commentRangeStarts) {
       const commentId = startNode.getAttribute('w:id');
-      
+
       if (commentId && textContent) {
         commentRefs[commentId] = textContent;
       }
     }
-    
+
     // Look for simple comment references
     const commentRefNodes = select('.//w:commentReference', paragraph) as any[];
     for (const refNode of commentRefNodes) {
       const commentId = refNode.getAttribute('w:id');
-      
+
       if (commentId && !commentRefs[commentId] && textContent) {
         commentRefs[commentId] = textContent;
       }
     }
   }
-  
+
   return commentRefs;
 }
 
@@ -268,11 +268,11 @@ function extractCommentReferences(documentXml: string): Record<string, string> {
 function extractParagraphText(paragraph: any, select: any): string {
   const textNodes = select('.//w:t', paragraph) as any[];
   let text = '';
-  
+
   for (const node of textNodes) {
     text += node.textContent || '';
   }
-  
+
   return text.trim();
 }
 

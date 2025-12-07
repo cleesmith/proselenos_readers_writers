@@ -40,20 +40,17 @@ export interface ToolPromptSyncResult {
   message?: string;
 }
 
-import { getToolPrompt } from './supabase-tool-actions';
+import { getToolPrompt } from './tool-storage';
 import { streamAIInternal } from './aiInternal';
 
 /**
  * Internal function to get all available tools - NOT a public API endpoint
- * Note: With GitHub storage, tools are loaded from fastInitServer
- * This function returns the tools from the GitHub repo structure
  * @returns List of available tools with metadata
  */
 export async function getAvailableToolsInternal(): Promise<ToolListResponse> {
   try {
-    // With GitHub, tools are already available via fastInitServer
     // This is a compatibility stub - the client should use fastInitServer data
-    const { fastInitForUser } = require('@/lib/github/fastInitServer');
+    const { fastInitForUser } = require('@/lib/fastInitServer');
     const init = await fastInitForUser();
 
     // Convert toolsByCategory to flat tool list
@@ -161,17 +158,15 @@ export async function executeToolInternal(
 
 /**
  * Internal function to initialize tool system - NOT a public API endpoint
- * Note: With GitHub storage, tools are pre-initialized via template repo
- * This is a compatibility stub that always returns success
  * @returns Sync result indicating if prompts were copied
  */
 export async function initializeToolsInternal(): Promise<ToolPromptSyncResult> {
   try {
-    console.log('Tools already initialized via GitHub template repo');
+    console.log('Tools already initialized');
     return {
       success: true,
       syncedCount: 0,
-      message: 'Tools already initialized in GitHub repo'
+      message: 'Tools already initialized'
     };
   } catch (error) {
     console.error('Internal tool initialization error:', error);
@@ -181,35 +176,6 @@ export async function initializeToolsInternal(): Promise<ToolPromptSyncResult> {
     };
   }
 }
-
-// The following functions are no longer needed with GitHub storage
-
-/*
-export async function getToolsByCategoryInternal(category: string): Promise<ToolMetadata[]> {
-  // Not needed - tools by category available via fastInitServer
-  return [];
-}
-
-export async function getToolInfoInternal(toolId: string): Promise<ToolMetadata | null> {
-  // Not needed - tool metadata available via fastInitServer
-  return null;
-}
-
-export async function validateToolInternal(toolId: string): Promise<boolean> {
-  // Not needed - validation happens during execution
-  return false;
-}
-
-export async function getToolSyncStatusInternal(): Promise<{ hasToolPrompts: boolean; needsSync: boolean }> {
-  // Not needed - GitHub tools are always in sync via repo
-  return { hasToolPrompts: true, needsSync: false };
-}
-
-export async function forceSyncToolsInternal(): Promise<ToolPromptSyncResult> {
-  // Not needed - GitHub repo is source of truth
-  return { success: true, syncedCount: 0, message: 'No sync needed with GitHub' };
-}
-*/
 
 /**
  * Internal function to get tool prompt content - NOT a public API endpoint

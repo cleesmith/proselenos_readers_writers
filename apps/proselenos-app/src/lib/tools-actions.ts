@@ -3,7 +3,7 @@
 // lib/tools-actions.ts
 // Server Actions for tools operations
 import { getAvailableToolsInternal, executeToolInternal, initializeToolsInternal } from './toolsInternal';
-import { getToolPrompt, updateToolPrompt } from './supabase-tool-actions';
+import { getToolPrompt, updateToolPrompt } from './tool-storage';
 import type { ToolExecutionResult } from './toolsInternal';
 
 

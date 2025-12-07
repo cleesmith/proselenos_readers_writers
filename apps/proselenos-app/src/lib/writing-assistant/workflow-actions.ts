@@ -4,7 +4,7 @@
 'use server';
 
 import { WorkflowStepId } from '@/app/writing-assistant/types';
-import { listProjectFiles, uploadFileToProject, readTextFile } from '@/lib/supabase-project-actions';
+import { listProjectFiles, uploadFileToProject, readTextFile } from '@/lib/project-storage';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { executeWorkflowAI } from './execution-engine';

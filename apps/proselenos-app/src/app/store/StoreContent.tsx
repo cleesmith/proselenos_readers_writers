@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
 import { useThemeStore } from '@/store/themeStore';
 import { useTheme } from '@/hooks/useTheme';
-import { BookstoreEntry } from '@/app/actions/supabase-publish-actions';
+import { BookstoreEntry } from '@/app/actions/publish-actions';
 import StoreBookItem from './StoreBookItem';
 
 interface StoreContentProps {

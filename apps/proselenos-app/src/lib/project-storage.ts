@@ -1,10 +1,10 @@
-// lib/supabase-project-actions.ts
-// Supabase-based project operations (replaces GitHub storage)
+// lib/project-storage.ts
+// Supabase-based project storage operations
 
 'use server';
 
 import { supabase, isSupabaseConfigured, getSupabaseUserByGoogleId } from './supabase';
-import { updateCurrentProject as updateConfigCurrentProject } from './supabase-config-actions';
+import { updateCurrentProject as updateConfigCurrentProject } from './config-storage';
 
 export interface Project {
   id: string;

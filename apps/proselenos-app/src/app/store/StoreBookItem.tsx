@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { FaBookOpen } from 'react-icons/fa';
-import { BookstoreEntry, importBookFromSupabase } from '@/app/actions/supabase-publish-actions';
+import { BookstoreEntry, importBookFromSupabase } from '@/app/actions/publish-actions';
 import { useEnv } from '@/context/EnvContext';
 
 interface StoreBookItemProps {

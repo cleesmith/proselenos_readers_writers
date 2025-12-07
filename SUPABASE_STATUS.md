@@ -39,15 +39,6 @@ CREATE POLICY "private_ebooks_delete" ON storage.objects
 FOR DELETE USING (bucket_id = 'private-ebooks');
 ```
 
-### After Policies Are Added:
-1. Test upload: click cloud icon on a book
-2. Check Supabase Storage for uploaded files
-3. Check `user_ebooks` table for metadata
-
-### Still TODO:
-- [ ] Phase 5: Download from "Private Ebooks" UI
-- [ ] Remove GitHub repo check on page load (optional cleanup)
-
 ### Key Files:
 - `apps/proselenos-app/supabase/supabase-setup.sql` - full setup script
 - `supabase_journey.txt` - detailed plan

@@ -2,14 +2,14 @@
 
 import { useState, useCallback } from 'react';
 import { generateEPUBForLocalImportAction } from '@/lib/publish-actions';
-import { listTxtFilesAction, loadBookMetadataAction, downloadFileForBrowserAction } from '@/lib/github-project-actions';
+import { listTxtFilesAction, loadBookMetadataAction, downloadFileForBrowserAction } from '@/lib/project-actions';
 import { listEpubFilesAction, extractCoverFromEpubAction } from '@/lib/epub-conversion-actions';
 import { useBookImporter } from '@/hooks/useBookImporter';
 import {
   createSignedUploadUrlsForPublish,
   confirmBookstorePublish,
   removeFromSupabaseBookstore
-} from '@/app/actions/supabase-publish-actions';
+} from '@/app/actions/publish-actions';
 import { processCoverImage, generateCoverThumbnail } from '@/utils/image';
 
 interface CoverImageState {
@@ -354,7 +354,7 @@ export function useEpubActions(currentProjectId: string | null) {
     }));
 
     try {
-      // 1. Download EPUB from GitHub
+      // 1. Download EPUB from storage
       const downloadResult = await downloadFileForBrowserAction(
         currentProjectId,
         state.selectedEpub.path

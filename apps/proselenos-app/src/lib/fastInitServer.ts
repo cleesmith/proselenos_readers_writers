@@ -1,10 +1,10 @@
-// lib/github/fastInitServer.ts
+// apps/proselenos-app/src/lib/fastInitServer.ts
 // Fast initialization for Authors Mode using Supabase
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { getAuthorConfig } from '@/lib/supabase-config-actions';
-import { listProjects } from '@/lib/supabase-project-actions';
+import { getAuthorConfig } from '@/lib/config-storage';
+import { listProjects } from '@/lib/project-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ensureLibraryRepoExists } from '@/app/actions/store-catalog';
 

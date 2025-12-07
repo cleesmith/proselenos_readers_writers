@@ -51,7 +51,7 @@ function stripMarkdown(md: string, options: any = {}): string {
         output = output.replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, '$1');
       }
     }
-    // Handle GitHub‑flavored Markdown features
+    // Handle Markdown features
     if (options.gfm) {
       output = output
         .replace(/\n={2,}/g, '\n')

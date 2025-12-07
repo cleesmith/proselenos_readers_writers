@@ -1,7 +1,4 @@
 import React, { useEffect } from 'react';
-// Switched from GitHub to Supabase for Private Ebooks
-// import { Book } from '@/types/book';
-// import { useBookRepo } from '@/hooks/useBookRepo';
 import { useSupabaseBookRepo } from '@/hooks/useSupabaseBookRepo';
 import { useTranslation } from '@/hooks/useTranslation';
 import Dialog from '@/components/Dialog';
@@ -14,7 +11,6 @@ interface BookRepoModalProps {
 
 const BookRepoModal: React.FC<BookRepoModalProps> = ({ isOpen, onClose }) => {
   const _ = useTranslation();
-  // Using Supabase instead of GitHub
   const {
     availableBooks,
     loading,

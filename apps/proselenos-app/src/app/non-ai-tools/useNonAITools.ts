@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { showAlert } from '../shared/alerts';
-import { listProjectFilesAction } from '@/lib/github-project-actions';
+import { listProjectFilesAction } from '@/lib/project-actions';
 import { publishManuscriptAction } from '@/lib/publish-actions';
 import { listDocxFilesAction, extractDocxCommentsAction } from '@/lib/docx-comments-actions';
 import { listEpubFilesAction, convertEpubToTextAction } from '@/lib/epub-conversion-actions';
@@ -68,10 +68,10 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
       // Choose which files to load based on selected tool
       if (selectedNonAITool === 'DOCX: Extract Comments as Text') {
-        // Get DOCX files for comment extraction from GitHub repo
+        // Get DOCX files for comment extraction from project
         result = await listDocxFilesAction(currentProject);
       } else if (selectedNonAITool === 'EPUB to TXT Converter') {
-        // Get EPUB files for conversion from GitHub repo
+        // Get EPUB files for conversion from project
         result = await listEpubFilesAction(currentProject);
       } else {
         // Get text files from current project for other tools

@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * Supabase Ebook Server Actions
+ * Ebook Server Actions
  *
- * All Supabase operations for private ebook backup/restore.
+ * Supabase operations for private ebook backup/restore.
  * These actions are called from client hooks but run on the server.
  *
  * Storage structure:

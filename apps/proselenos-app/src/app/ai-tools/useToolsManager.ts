@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { showAlert } from '../shared/alerts';
-import { listTxtFilesAction, readFileAction } from '@/lib/github-project-actions';
+import { listTxtFilesAction, readFileAction } from '@/lib/project-actions';
 import { executeToolAction, getAvailableToolsAction } from '@/lib/tools-actions';
 import { saveToolReportAction } from '@/lib/report-actions';
 

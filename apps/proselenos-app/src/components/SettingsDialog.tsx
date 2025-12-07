@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { showAlert } from '@/app/shared/alerts';
 import { getKeyAndStatusAction, storeApiKeyAction, removeApiKeyAction, validateOpenRouterKeyAction } from '@/lib/api-key-actions';
-import { updateSelectedModelAction } from '@/lib/github-config-actions';
+import { updateSelectedModelAction } from '@/lib/config-actions';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface SettingsDialogProps {

@@ -62,8 +62,8 @@ import { CustomTextureInfo } from '@/styles/textures';
 import { CustomFont, CustomFontInfo } from '@/styles/fonts';
 import { parseFontInfo } from '@/utils/font';
 
-// File size limit for ebook imports (matches NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB)
-const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'] || '30', 10);
+// File size limit for ebook imports (from NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB)
+const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB']!, 10);
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export abstract class BaseAppService implements AppService {

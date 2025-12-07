@@ -1,6 +1,6 @@
 // Local DOCX Import Modal Component
-// Allows users to select a local .docx file, upload to server for conversion,
-// and save the result to their GitHub project
+// Allows users to select a local .docx file, convert to plain text,
+// and save the .txt result to their project storage (original .docx is not stored)
 
 'use client';
 
@@ -8,7 +8,7 @@ import { useRef, useState } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import { showAlert } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { convertDocxToTxtActionGitHub } from '@/lib/docx-conversion-actions';
+import { convertDocxToTxtAction } from '@/lib/docx-conversion-actions';
 
 interface LocalDocxImportModalProps {
   isOpen: boolean;
@@ -52,8 +52,8 @@ export default function LocalDocxImportModal({
         return;
       }
 
-      // Validate file size (25MB max)
-      const MAX_FILE_SIZE_MB = 25;
+      // Validate file size (uses NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB env var)
+      const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB']!, 10);
       const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
       if (file.size > MAX_FILE_SIZE_BYTES) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
@@ -79,16 +79,16 @@ export default function LocalDocxImportModal({
     }
 
     setIsConverting(true);
-    setUploadStatus('Converting DOCX to TXT on server...');
+    setUploadStatus('Converting DOCX to TXT...');
 
     try {
       // Use custom filename if provided, otherwise use default
       const txtFileName = outputFileName.trim() || selectedFile.name.replace(/\.docx$/i, '.txt');
 
-      setUploadStatus('Converting and uploading to storage...');
+      setUploadStatus('Saving .txt to storage...');
 
-      // Upload DOCX to server, convert, and save TXT to GitHub repo
-      const result = await convertDocxToTxtActionGitHub(selectedFile, txtFileName, currentProject);
+      // Convert DOCX to text and save .txt to project storage
+      const result = await convertDocxToTxtAction(selectedFile, txtFileName, currentProject);
 
       if (!result.success) {
         throw new Error(result.error || 'Conversion failed');
@@ -182,7 +182,7 @@ export default function LocalDocxImportModal({
           color: theme.text,
           border: `1px solid ${isDarkMode ? 'rgba(100, 150, 255, 0.3)' : 'rgba(66, 133, 244, 0.3)'}`
         }}>
-          💡 <strong>How it works:</strong> Select a .docx file from your computer. The file will be uploaded to the server, converted to plain text (images removed), then saved to your selected project.
+          💡 <strong>How it works:</strong> Select a .docx file from your computer. It will be converted to plain text (images removed) and saved as a .txt file in your project. The original .docx is not stored.
         </div>
 
         <div style={{

@@ -4,7 +4,7 @@
 import { createApiService, type AIProvider, getCurrentProviderAndModel } from './aiService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { listProjectFiles, uploadFileToProject, readTextFile } from './supabase-project-actions';
+import { listProjectFiles, uploadFileToProject, readTextFile } from './project-storage';
 
 interface ExtendedSession {
   user: {

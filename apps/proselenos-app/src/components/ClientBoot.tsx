@@ -32,27 +32,26 @@ import {
   installToolPromptsAction,
   updateSelectedModelAction,
   updateDarkModeAction,
-} from '@/lib/github-config-actions';
+} from '@/lib/config-actions';
 import {
   createOrUpdateFileAction,
   readFileAction,
   listTxtFilesAction,
-} from '@/lib/github-project-actions';
+} from '@/lib/project-actions';
 import {
   loadBookMetadataAction,
   saveBookMetadataAction,
-} from '@/lib/github-project-actions';
+} from '@/lib/project-actions';
 import { hasApiKeyAction } from '@/lib/api-key-actions';
-// ensureUserGitHubRepoAction removed - Supabase handles user creation on sign-in
 import ProjectSettingsModal, { ProjectMetadata } from '../app/projects/ProjectSettingsModal';
-import type { InitPayloadForClient } from '../lib/github/fastInitServer';
+import type { InitPayloadForClient } from '../lib/fastInitServer';
 
 // Helper function to sanitize error messages for user display
-// Removes GitHub-specific details while keeping logs intact
+// Removes provider-specific details while keeping logs intact
 const sanitizeErrorMessage = (error: string | undefined): string => {
   if (!error) return 'An unexpected error occurred.';
 
-  // Strip GitHub docs URLs
+  // Strip docs URLs from error messages
   const withoutUrls = error.replace(/\s*-\s*https:\/\/[^\s]+/g, '');
 
   // Map common errors to user-friendly messages
@@ -101,8 +100,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   const [isStorageOperationPending, setIsStorageOperationPending] = useState(false);
   const [hasCheckedToolPrompts, setHasCheckedToolPrompts] = useState(false);
   const [isInstallingToolPrompts, setIsInstallingToolPrompts] = useState(false);
-  const [isGitHubRepoReady, setIsGitHubRepoReady] = useState(false);
-  const [hasCheckedGitHub, setHasCheckedGitHub] = useState(false);
+  const [isStorageReady, setIsStorageReady] = useState(false);
+  const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
   const [hasShownReadyModal, setHasShownReadyModal] = useState(false);
   const [isSystemInitializing, setIsSystemInitializing] = useState(true);
   const [initFailed, setInitFailed] = useState(false);
@@ -175,7 +174,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
           setIsStorageOperationPending(true);
           
           try {
-            // Tool prompts already in GitHub template - no installation needed
+            // Initialize tool prompts from defaults
             const installResult = await installToolPromptsAction();
 
             if (installResult.success) {
@@ -212,7 +211,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             setIsInstallingToolPrompts(false);
           }
         } else {
-          // The tool‑prompts folder already exists in GitHub repo
+          // Tool prompts already exist in storage
           setIsStorageOperationPending(false);
           // Load tools immediately if they haven't been loaded yet
           if (!toolsState.toolsReady) {
@@ -249,16 +248,16 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   // Supabase user is created on sign-in via NextAuth handler
   // Just mark storage as ready when session exists
   useEffect(() => {
-    if (session?.user?.id && !hasCheckedGitHub) {
-      setIsGitHubRepoReady(true);
-      setHasCheckedGitHub(true);
+    if (session?.user?.id && !hasCheckedStorage) {
+      setIsStorageReady(true);
+      setHasCheckedStorage(true);
     }
-  }, [session?.user?.id, hasCheckedGitHub]);
+  }, [session?.user?.id, hasCheckedStorage]);
 
   // Helper function to get loading status
   const getLoadingStatus = () => {
     const checks = [
-      { name: 'Storage', ready: isGitHubRepoReady },
+      { name: 'Storage', ready: isStorageReady },
       { name: 'AI Tools', ready: toolsState.toolsReady },
       { name: 'Authentication', ready: !!session?.accessToken },
       { name: 'Project', ready: projectState.currentProject || !init?.config?.settings.current_project },
@@ -330,7 +329,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
       }
     }
   }, [
-    isGitHubRepoReady,
+    isStorageReady,
     toolsState.toolsReady,
     session?.accessToken,
     hasApiKey,

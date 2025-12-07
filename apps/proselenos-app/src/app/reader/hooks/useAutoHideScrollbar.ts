@@ -2,7 +2,6 @@ import { getOSPlatform } from '@/utils/misc';
 
 // NOTE: Be careful to use this hook. When the scrollbar is set always visible in macOS,
 // hide it will change the layout. Make sure to only use it in constrained widgets.
-// See https://github.com/proselenosebooks/proselenosebooks/issues/600
 export const useAutoHideScrollbar = () => {
   const shouldAutoHideScrollbar = ['macos', 'ios'].includes(getOSPlatform());
   const handleScrollbarAutoHide = (doc: Document) => {

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { generatePDFOnlyAction } from '@/lib/publish-actions';
-import { listTxtFilesAction } from '@/lib/github-project-actions';
+import { listTxtFilesAction } from '@/lib/project-actions';
 
 interface PdfActionsState {
   isOpen: boolean;

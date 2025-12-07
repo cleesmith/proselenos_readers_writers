@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { Book } from '@/types/book';
 import { useEnv } from '@/context/EnvContext';
 import { getLocalBookFilename, getConfigFilename, getCoverFilename } from '@/utils/book';
-import { createSignedUploadUrls, confirmEbookUpload } from '@/app/actions/supabase-ebook-actions';
+import { createSignedUploadUrls, confirmEbookUpload } from '@/app/actions/ebook-actions';
 
 export function useSupabaseBookUpload() {
   const { appService } = useEnv();

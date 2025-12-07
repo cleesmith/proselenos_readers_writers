@@ -24,20 +24,14 @@ import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { useUICSS } from '@/hooks/useUICSS';
 import { useDemoBooks } from './hooks/useDemoBooks';
-// useBooksSync removed - Supabase migration (no automatic syncing)
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
-// GitHub upload hook removed - now using Supabase
-// import { useBookUpload } from '@/hooks/useBookUpload';
 import { useSupabaseBookUpload } from '@/hooks/useSupabaseBookUpload';
 
 import { BookMetadata } from '@/libs/document';
-// GitHub repo check removed - now using Supabase
-// import { ensureGitHubRepo } from '@/app/actions/github-books';
 import { parseMetaRefreshAction } from '@/app/actions/download-page-parser';
 import { AboutWindow } from '@/components/AboutWindow';
 import { BookDetailModal } from '@/components/metadata';
@@ -87,12 +81,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const [isImportingFromUrl, setIsImportingFromUrl] = useState(false);
   const [downloadPageUrl, setDownloadPageUrl] = useState('');
   const [isImportingFromDownloadPage, setIsImportingFromDownloadPage] = useState(false);
-  const [booksTransferProgress, _setBooksTransferProgress] = useState<{
-    [key: string]: number | null;
-  }>({});
   const [pendingNavigationBookIds, setPendingNavigationBookIds] = useState<string[] | null>(null);
   const isInitiating = useRef(false);
-  // const githubRepoChecked = useRef(false); // Removed - using Supabase now
 
   const viewSettings = settings.globalViewSettings;
   const demoBooks = useDemoBooks();
@@ -104,13 +94,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   useUICSS();
 
 
-  // useBooksSync removed - no automatic syncing with Supabase migration
-  const pullLibrary = useCallback(async () => {}, []);
-  const pushLibrary = useCallback(async () => {}, []);
   const { isDragging } = useDragDropImport();
   const { uploadBookToSupabase } = useSupabaseBookUpload();
-
-  usePullToRefresh(containerRef, pullLibrary);
   useScreenWakeLock(settings.screenWakeLock);
 
   useShortcuts({
@@ -301,20 +286,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // GitHub repo check removed - now using Supabase for ebook backup
-  // useEffect(() => {
-  //   if (user && !githubRepoChecked.current) {
-  //     githubRepoChecked.current = true;
-  //     ensureGitHubRepo().then((result) => {
-  //       if (result.success) {
-  //         console.log('GitHub repo ready:', result.repoName, result.created ? '(created)' : '(exists)');
-  //       } else {
-  //         console.error('Failed to ensure GitHub repo:', result.error);
-  //       }
-  //     });
-  //   }
-  // }, [user]);
-
   useEffect(() => {
     if (demoBooks.length > 0 && libraryLoaded) {
       const newLibrary = [...libraryBooks];
@@ -336,6 +307,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setLoading(true);
     const { library } = useLibraryStore.getState();
     const failedImports: Array<{ filename: string; errorMessage: string }> = [];
+    const maxUploadSizeMB = process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'];
     const errorMap: [string, string][] = [
       ['No chapters detected', _('No chapters detected')],
       ['Failed to parse EPUB', _('Failed to parse the EPUB file')],
@@ -343,7 +315,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       ['Failed to open file', _('Failed to open the book file')],
       ['Invalid or empty book file', _('The book file is empty')],
       ['Unsupported or corrupted book file', _('The book file is corrupted')],
-      ['File too large', _('File is too large. Maximum size is 30MB.')],
+      ['File too large', _(`File is too large. Maximum size is ${maxUploadSizeMB}MB.`)],
     ];
 
     const processFile = async (selectedFile: SelectedFile) => {
@@ -379,7 +351,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       const batch = files.slice(i, i + concurrency);
       await Promise.all(batch.map(processFile));
     }
-    pushLibrary();
 
     if (failedImports.length > 0) {
       const filenames = failedImports.map((f) => f.filename);
@@ -409,7 +380,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           timeout: 0, // Persist indefinitely
         });
 
-        // Use Supabase for upload (replaces GitHub)
         const result = await uploadBookToSupabase(book);
 
         if (result.success) {
@@ -456,7 +426,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   );
 
   const handleBookDelete = (deleteAction: DeleteAction) => {
-    return async (book: Book, syncBooks = true) => {
+    return async (book: Book, _syncBooks = true) => {
       const deletionMessages = {
         both: _('Book deleted: {{title}}', { title: book.title }),
         cloud: _('Deleted Your Library backup of the book: {{title}}', { title: book.title }),
@@ -480,7 +450,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           await updateBook(envConfig, book);
         }
 
-        if (syncBooks) pushLibrary();
         eventDispatcher.dispatch('toast', {
           type: 'info',
           timeout: 2000,
@@ -772,8 +741,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
                 handleBookDelete={handleBookDelete('local')}
                 handleSetSelectMode={handleSetSelectMode}
                 handleShowDetailsBook={handleShowDetailsBook}
-                booksTransferProgress={booksTransferProgress}
-                handlePushLibrary={pushLibrary}
               />
             </div>
           </OverlayScrollbarsComponent>

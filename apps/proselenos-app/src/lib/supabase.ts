@@ -36,7 +36,7 @@ export function isSupabaseConfigured(): boolean {
  * Upsert user on sign-in
  *
  * Called from NextAuth signIn event to create/update user in Supabase.
- * Uses google_id as the unique identifier (same as GitHub pattern).
+ * Uses google_id as the unique identifier.
  *
  * @param user - User object from NextAuth (Google OAuth)
  * @returns Promise that resolves on success, throws on error

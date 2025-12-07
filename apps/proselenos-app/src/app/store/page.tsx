@@ -2,7 +2,7 @@
 // Displays books from the public bookstore catalog
 
 import { Metadata } from 'next';
-import { getSupabaseCatalog } from '@/app/actions/supabase-publish-actions';
+import { getSupabaseCatalog } from '@/app/actions/publish-actions';
 import StoreContent from './StoreContent';
 
 export const metadata: Metadata = {

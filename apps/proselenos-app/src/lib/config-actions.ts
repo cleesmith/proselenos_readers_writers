@@ -1,6 +1,5 @@
-// lib/github-config-actions.ts
-// Server actions for config/settings operations
-// Now uses Supabase instead of GitHub
+// lib/config-actions.ts
+// Config/settings operations with auth wrapper
 
 'use server';
 
@@ -11,7 +10,7 @@ import {
   updateProviderAndModel,
   updateSelectedModel,
   updateDarkMode,
-} from './supabase-config-actions';
+} from './config-storage';
 
 interface ExtendedSession {
   user: {
@@ -127,10 +126,7 @@ export async function validateCurrentProjectAction(): Promise<ActionResult> {
 }
 
 /**
- * Install tool prompts (not needed - template already has them)
- *
- * NOTE: This is a no-op stub. The GitHub template repo already includes the
- * tool-prompts folder, so no installation is needed. This function is still
+ * NOTE: This is a no-op stub. This function is still
  * called from ClientBoot.tsx during first-time user setup, but it just returns
  * success immediately. Kept for backwards compatibility with the initialization flow.
  * — Nov 2025

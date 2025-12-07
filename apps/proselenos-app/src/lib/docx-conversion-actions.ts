@@ -12,7 +12,7 @@ import mammoth from 'mammoth';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
-import { uploadFileToProject, readTextFile } from './supabase-project-actions';
+import { uploadFileToProject, readTextFile } from './project-storage';
 
 /**
  * Converts a DOCX file supplied as a Buffer into a plain-text string.
@@ -29,10 +29,11 @@ export async function convertDocxBufferToTxt(buffer: Buffer): Promise<string> {
 }
 
 /**
- * GitHub version: Convert uploaded DOCX file to TXT and save to GitHub repo
- * User uploads .docx from local computer → server converts → .txt saved to repo
+ * Convert DOCX file to TXT and save to project storage
+ * User selects .docx from local computer → converts to text → .txt saved to storage
+ * Note: The original .docx is not stored, only the resulting .txt
  */
-export async function convertDocxToTxtActionGitHub(
+export async function convertDocxToTxtAction(
   file: File,
   outputFileName: string,
   projectName: string
@@ -84,14 +85,14 @@ export async function convertDocxToTxtActionGitHub(
 }
 
 /**
- * GitHub version: Convert TXT file from GitHub repo to DOCX and return as buffer
- * Reads TXT from GitHub → converts to proper DOCX → returns for download
+ * Convert TXT file from project storage to DOCX and return as buffer
+ * Reads TXT from storage → converts to proper DOCX → returns for download
  *
  * @param projectName The project folder name
  * @param txtFilePath The full path to the TXT file (e.g., "projectName/file.txt")
  * @param outputFileName The desired name for the output .docx file
  */
-export async function convertTxtToDocxActionGitHub(
+export async function convertTxtToDocxAction(
   _projectName: string,
   txtFilePath: string,
   outputFileName: string

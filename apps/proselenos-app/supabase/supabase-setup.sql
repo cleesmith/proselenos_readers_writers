@@ -93,7 +93,7 @@ FOR DELETE USING (bucket_id = 'private-ebooks');
 -- BOOKSTORE: TABLE
 -- ============================================
 
--- Public bookstore catalog (replaces catalog.json in GitHub)
+-- Public bookstore catalog (replaces old catalog.json)
 CREATE TABLE IF NOT EXISTS books (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id text UNIQUE NOT NULL,   -- stable identifier (one EPUB per project)
@@ -187,7 +187,7 @@ CREATE TABLE IF NOT EXISTS author_config (
   updated_at timestamptz DEFAULT now()
 );
 
--- Projects (replaces project folders in GitHub)
+-- Projects
 CREATE TABLE IF NOT EXISTS projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id) ON DELETE CASCADE,
