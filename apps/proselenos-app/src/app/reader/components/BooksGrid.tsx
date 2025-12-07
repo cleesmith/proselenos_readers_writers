@@ -21,6 +21,7 @@ import Annotator from './annotator/Annotator';
 import FootnotePopup from './FootnotePopup';
 import HintInfo from './HintInfo';
 import DoubleBorder from './DoubleBorder';
+import FloatingBarToggle from './FloatingBarToggle';
 
 interface BooksGridProps {
   bookKeys: string[];
@@ -207,6 +208,7 @@ const BooksGrid: React.FC<BooksGridProps> = ({ bookKeys, onCloseBook }) => {
               isHoveredAnim={false}
               gridInsets={gridInsets}
             />
+            <FloatingBarToggle bookKey={bookKey} gridInsets={gridInsets} />
             {isSettingsDialogOpen && <SettingsDialog bookKey={bookKey} />}
           </div>
         );
