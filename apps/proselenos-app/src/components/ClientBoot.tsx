@@ -43,6 +43,7 @@ import {
   saveBookMetadataAction,
 } from '@/lib/project-actions';
 import { hasApiKeyAction } from '@/lib/api-key-actions';
+import { updateToolPromptAction } from '@/lib/tools-actions';
 import ProjectSettingsModal, { ProjectMetadata } from '../app/projects/ProjectSettingsModal';
 import type { InitPayloadForClient } from '../lib/fastInitServer';
 
@@ -446,7 +447,18 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
       throw new Error('Not authenticated');
     }
 
-    // Require project for saving
+    // Check if this is a tool prompt (fileName starts with "tool-prompts/")
+    if (currentFileName?.startsWith('tool-prompts/')) {
+      // Extract toolId: "tool-prompts/User Tools/anything_goes.txt" -> "User Tools/anything_goes.txt"
+      const toolId = currentFileName.replace('tool-prompts/', '');
+      const result = await updateToolPromptAction(toolId, content);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update tool prompt');
+      }
+      return;
+    }
+
+    // Require project for saving regular files
     if (!projectState.currentProject) {
       throw new Error('Project is required');
     }

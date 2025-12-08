@@ -126,6 +126,21 @@ export async function updateToolPrompt(toolId: string, content: string): Promise
 
     const { category, toolName } = parseToolId(toolId);
 
+    // If content is empty/blank, delete user's custom prompt to reset to default
+    if (!content || content.trim() === '') {
+      const { error } = await supabase!
+        .from('tool_prompts')
+        .delete()
+        .eq('user_id', userId)
+        .eq('category', category)
+        .eq('tool_name', toolName);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    }
+
     // Upsert the user's prompt
     const { error } = await supabase!
       .from('tool_prompts')

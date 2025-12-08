@@ -210,7 +210,8 @@ export default function EditorModal({
 
   // Save file handler
   const handleSave = async () => {
-    if (!editorContent.trim()) {
+    const isToolPrompt = currentFileName?.startsWith('tool-prompts/');
+    if (!editorContent.trim() && !isToolPrompt) {
       showAlert('Cannot save empty content!', 'error', undefined, isDarkMode);
       return;
     }
@@ -812,7 +813,9 @@ export default function EditorModal({
           className="editor-textarea"
           value={editorContent}
           onChange={(e) => onContentChange(e.target.value)}
-          placeholder={`Write your content for ${currentProject || 'your project'}...`}
+          placeholder={currentFileName?.startsWith('tool-prompts/')
+            ? 'Edit prompt (clear to reset to default)...'
+            : `Write your content for ${currentProject || 'your project'}...`}
           style={{
             width: '100%',
             height: typeof window !== 'undefined' ? window.innerHeight - 200 : 400,
