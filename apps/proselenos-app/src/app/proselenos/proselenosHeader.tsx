@@ -76,16 +76,16 @@ export default function ProselenosHeader({
           {isDarkMode ? '☀️' : '🌙'}
         </button>
 
-        {/* Center - Logo, Title, Model Info, Date */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        {/* Center - Logo, Title, About, Exit */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
           gap: '12px',
           flex: 1,
           marginLeft: '20px'
         }}>
-          <img 
-            src="icon.png" 
+          <img
+            src="icon.png"
             alt="Proselenos Logo"
             title="Polish your manuscript with Proselenos"
             style={{
@@ -100,15 +100,14 @@ export default function ProselenosHeader({
           }}>
             Proselenos
           </div>
+          {/* About & Exit buttons */}
+          {session && (
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <StyledSmallButton onClick={onAboutClick} theme={theme}>About</StyledSmallButton>
+              <StyledSmallButton onClick={handleExitClick} theme={theme}>Exit</StyledSmallButton>
+            </div>
+          )}
         </div>
-
-        {/* Right - Control Buttons */}
-        {session && (
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <StyledSmallButton onClick={onAboutClick} theme={theme}>About</StyledSmallButton>
-            <StyledSmallButton onClick={handleExitClick} theme={theme}>Exit</StyledSmallButton>
-          </div>
-        )}
       </div>
     </>
   );

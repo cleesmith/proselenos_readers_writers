@@ -138,38 +138,24 @@ export default function ProjectSection({
             Files
           </StyledSmallButton>
           
-          {/* Word import/export buttons group - orange box style */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '3px 6px',
-            border: `1px solid ${isDarkMode ? '#888' : '#666'}`,
-            borderRadius: '4px',
-            backgroundColor: isDarkMode ? 'rgba(136, 136, 136, 0.1)' : 'rgba(102, 102, 102, 0.08)'
-          }}>
-            <span style={{ fontSize: '9px', fontStyle: 'italic', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Word:</span>
-            <StyledSmallButton
-              onClick={onDocxImport}
-              disabled={importDisabled}
-              title={importDisabled ? 'Please wait…' : 'Import a DOCX file'}
-              theme={theme}
-              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
-              aria-busy={isDocxConverting}
-            >
-              {isDocxConverting ? 'Converting…' : 'Import'}
-            </StyledSmallButton>
-            <StyledSmallButton
-              onClick={onTxtExport}
-              disabled={exportDisabled}
-              title={exportDisabled ? 'Please wait…' : 'Export a TXT to DOCX'}
-              theme={theme}
-              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
-              aria-busy={isTxtConverting}
-            >
-              {isTxtConverting ? 'Exporting…' : 'Export'}
-            </StyledSmallButton>
-          </div>
+          <StyledSmallButton
+            onClick={onDocxImport}
+            disabled={importDisabled}
+            title={importDisabled ? 'Please wait…' : 'Import a DOCX file'}
+            theme={theme}
+            aria-busy={isDocxConverting}
+          >
+            {isDocxConverting ? 'Converting…' : 'Import'}
+          </StyledSmallButton>
+          <StyledSmallButton
+            onClick={onTxtExport}
+            disabled={exportDisabled}
+            title={exportDisabled ? 'Please wait…' : 'Export a TXT to DOCX'}
+            theme={theme}
+            aria-busy={isTxtConverting}
+          >
+            {isTxtConverting ? 'Exporting…' : 'Export'}
+          </StyledSmallButton>
         </div>
       </div>
       

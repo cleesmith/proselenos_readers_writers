@@ -166,7 +166,7 @@ export default function NonAIToolsSection({
         margin: '8px 0',
         color: theme.textMuted
       }}>
-        <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
+        <div style={{ width: '80px', height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
         <span style={{ padding: '0 12px', fontSize: '11px', fontStyle: 'italic' }}>or</span>
         <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
       </div>

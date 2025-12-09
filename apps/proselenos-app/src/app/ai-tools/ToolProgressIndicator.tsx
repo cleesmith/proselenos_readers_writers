@@ -27,7 +27,7 @@ export default function ToolProgressIndicator({
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <span style={{
         fontSize: '11px',
-        color: theme.textMuted,
+        color: '#e85d04',
         marginLeft: '8px',
         fontFamily: 'monospace'
       }}>

@@ -100,7 +100,12 @@ export const showConfirm = async (
     background: isDarkMode ? '#222' : '#fff',
     color: isDarkMode ? '#fff' : '#333',
     confirmButtonColor: '#d33',
-    cancelButtonColor: '#6c757d'
+    cancelButtonColor: '#6c757d',
+    // Ensure dialog appears above high z-index modals (like One-by-one at z-index 4000)
+    didOpen: () => {
+      const container = document.querySelector('.swal2-container') as HTMLElement;
+      if (container) container.style.zIndex = '5000';
+    }
   });
 
   return result.isConfirmed === true;

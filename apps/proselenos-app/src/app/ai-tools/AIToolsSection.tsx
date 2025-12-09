@@ -9,8 +9,10 @@ import { showAlert } from '../shared/alerts';
 import ToolProgressIndicator from './ToolProgressIndicator';
 import DualPanelEditor from './DualPanelEditor';
 import WritingAssistantModal from '../writing-assistant/WritingAssistantModal';
+import OneByOneModal from '../one-by-one/OneByOneModal';
 import { getToolPromptAction } from '@/lib/tools-actions';
 import ChatButton from '@/components/ChatButton';
+import { createOrUpdateFileAction } from '@/lib/project-actions';
 
 interface AIToolsSectionProps {
   // Session
@@ -104,9 +106,12 @@ export default function AIToolsSection({
   // Dual panel editor state
   const [showDualEditor, setShowDualEditor] = useState(false);
   const [editorManuscriptContent, setEditorManuscriptContent] = useState('');
-  
+
   // AI Writing Assistant state
   const [showWritingAssistant, setShowWritingAssistant] = useState(false);
+
+  // One-by-one editing state
+  const [showOneByOne, setShowOneByOne] = useState(false);
   
   // Tool prompt editing state
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
@@ -186,7 +191,28 @@ https://proselenos.com
     // Pass selectedManuscriptForTool.id into DualPanelEditor
     setShowDualEditor(true);
   };
-  
+
+  // One-by-one editing handlers
+  const handleOneByOneClick = () => {
+    if (!selectedManuscriptForTool) return;
+    setShowOneByOne(true);
+  };
+
+  const handleOneByOneSave = async (content: string) => {
+    if (!currentProject || !selectedManuscriptForTool) {
+      throw new Error('No project or manuscript selected');
+    }
+    const result = await createOrUpdateFileAction(
+      currentProject,
+      selectedManuscriptForTool.name,
+      content,
+      selectedManuscriptForTool.path || selectedManuscriptForTool.id
+    );
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save');
+    }
+  };
+
   const handleCategoryChange = (category: string) => {
     if (!currentProject) {
       showAlert('Please select a project first', 'warning', undefined, isDarkMode);
@@ -334,7 +360,7 @@ https://proselenos.com
         margin: '8px 0',
         color: theme.textMuted
       }}>
-        <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
+        <div style={{ width: '80px', height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
         <span style={{ padding: '0 12px', fontSize: '11px', fontStyle: 'italic' }}>or</span>
         <div style={{ flex: 1, height: '1px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)' }} />
       </div>
@@ -488,6 +514,17 @@ https://proselenos.com
           toolResult={toolResult}
           onEditClick={handleEditClick}
         />
+
+        {/* One-by-one button - appears when tool finishes with results */}
+        {!toolExecuting && elapsedTime > 0 && toolResult && (
+          <StyledSmallButton
+            onClick={handleOneByOneClick}
+            theme={theme}
+            styleOverrides={{ fontSize: '10px', padding: '2px 8px', fontWeight: 'bold' }}
+          >
+            One-by-one
+          </StyledSmallButton>
+        )}
       </div>
       
       {/* Show selected manuscript info */}
@@ -550,6 +587,22 @@ https://proselenos.com
           session={_session}
           onLoadFileIntoEditor={onLoadFileIntoEditor}
           onModalCloseReopen={handleWritingAssistantCloseReopen}
+        />
+      )}
+
+      {/* One-by-one Editing Modal */}
+      {showOneByOne && selectedManuscriptForTool && (
+        <OneByOneModal
+          isOpen={showOneByOne}
+          theme={theme}
+          isDarkMode={isDarkMode}
+          projectName={currentProject}
+          fileName={selectedManuscriptForTool.name}
+          filePath={selectedManuscriptForTool.path || selectedManuscriptForTool.id}
+          manuscriptContent={manuscriptContent}
+          reportContent={toolResult}
+          onClose={() => setShowOneByOne(false)}
+          onSave={handleOneByOneSave}
         />
       )}
     </div>
