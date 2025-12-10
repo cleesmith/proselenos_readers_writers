@@ -76,10 +76,10 @@ export function useSupabaseBookRepo() {
         const result = await downloadUserEbook(book.hash);
 
         if (!result.success || !result.epubBase64 || !result.epubFilename) {
-          throw new Error(result.error || 'Failed to download book from Supabase');
+          throw new Error(result.error || 'Failed to download book from database');
         }
 
-        console.log(`Downloaded ${book.title} from Supabase (${result.epubFilename})`);
+        console.log(`Downloaded ${book.title} from (${result.epubFilename})`);
 
         // 2. Delete existing book with same hash (if any) to ensure clean replacement
         const existingBook = library.find((b) => b.hash === book.hash);

@@ -515,8 +515,8 @@ https://proselenos.com
           onEditClick={handleEditClick}
         />
 
-        {/* One-by-one button - appears when tool finishes with results */}
-        {!toolExecuting && elapsedTime > 0 && toolResult && (
+        {/* One-by-one button - appears when tool finishes with OBO-formatted results */}
+        {!toolExecuting && elapsedTime > 0 && toolResult && savedReportFileName?.includes('_obo') && (
           <StyledSmallButton
             onClick={handleOneByOneClick}
             theme={theme}

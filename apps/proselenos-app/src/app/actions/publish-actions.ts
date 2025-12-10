@@ -326,7 +326,7 @@ export async function confirmBookstorePublish(
       return { success: false, error: `Failed to update catalog: ${dbError.message}` };
     }
 
-    console.log(`Successfully published "${bookData.title}" to Supabase bookstore`);
+    console.log(`Successfully published "${bookData.title}" to bookstore`);
     return { success: true };
   } catch (error) {
     console.error('Confirm publish error:', error);
@@ -464,7 +464,7 @@ export async function publishToSupabaseBookstore(
       return { success: false, error: `Failed to update catalog: ${dbError.message}` };
     }
 
-    console.log(`Successfully published "${bookData.title}" to Supabase bookstore`);
+    console.log(`Successfully published "${bookData.title}" to bookstore`);
     return { success: true };
   } catch (error) {
     console.error('Publish error:', error);

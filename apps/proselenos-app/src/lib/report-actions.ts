@@ -67,8 +67,12 @@ export async function saveToolReportAction(
       .replace(/_+/g, '_')
       .replace(/^_|_$/g, '');
     
+    // Check if result contains OBO format pattern (matches parseToolReport.ts)
+    const isOboFormat = toolResult.includes('ORIGINAL TEXT:');
     const baseFilename = `${cleanToolName}_${timestamp}`;
-    const reportFilename = `${baseFilename}.txt`;
+    const reportFilename = isOboFormat
+      ? `${baseFilename}_obo.txt`
+      : `${baseFilename}.txt`;
     
     // Get display name for the tool
     const displayToolName = toolName

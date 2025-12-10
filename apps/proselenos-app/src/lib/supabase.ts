@@ -64,7 +64,7 @@ export async function upsertSupabaseUser(user: {
   );
 
   if (error) {
-    throw new Error(`Failed to upsert Supabase user: ${error.message}`);
+    throw new Error(`Failed to upsert database user: ${error.message}`);
   }
 }
 
@@ -90,7 +90,7 @@ export async function getSupabaseUserByGoogleId(googleId: string) {
       // No rows returned - user doesn't exist
       return null;
     }
-    throw new Error(`Failed to get Supabase user: ${error.message}`);
+    throw new Error(`Failed to get database user: ${error.message}`);
   }
 
   return data;
