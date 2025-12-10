@@ -201,9 +201,6 @@ export default function FilesModal({
         // If published epub, also remove from bookstore
         if (isPublishedEpub) {
           await removeFromPublicCatalog(currentProject);
-          showAlert(`Deleted: ${file.name} (also removed from Public Ebooks)`, 'info', undefined, isDarkMode);
-        } else {
-          showAlert(`Deleted: ${file.name}`, 'info', undefined, isDarkMode);
         }
       } else {
         setError(result.error || 'Failed to delete file');
