@@ -40,9 +40,9 @@ export default function StoreContent({ entries }: StoreContentProps) {
           onClick={handleBack}
           className='btn btn-ghost btn-sm'
         >
-          ← Your Local Library
+          ← your Library
         </button>
-        <h1 className='text-lg font-bold'>Proselenos Ebooks</h1>
+        <h1 className='text-lg font-bold'>Ebooks</h1>
         <div className='w-16' /> {/* Spacer for centering */}
       </div>
 

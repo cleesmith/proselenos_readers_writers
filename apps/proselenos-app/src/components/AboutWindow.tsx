@@ -127,10 +127,9 @@ export const AboutWindow = () => {
               <Link href='https://readest.com/' className='text-blue-500 underline'>
                 Readest
               </Link>
-              , an open-source ebook reader for immersive reading.{' '}
-              <Link href='https://github.com/readest/readest' className='text-blue-500 underline'>
-                GitHub
-              </Link>
+              , an open-source ebook reader for immersive reading.
+              <br />
+              For a more robust ebook reader, definitely use Readest.
             </p>
 
             <LegalLinks />
