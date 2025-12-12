@@ -281,10 +281,10 @@ export default function FilesModal({
             disabled={isUploading}
           />
 
-          {/* Row 1: Upload button + file types */}
+          {/* Row 1: Select a file to upload button + file types */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <StyledSmallButton onClick={handleUploadClick} disabled={isUploading} theme={theme}>
-              Upload a file
+              Select a file
             </StyledSmallButton>
             <span style={{ fontSize: '10px', color: theme.textMuted }}>
               .txt .html .docx .epub .pdf
