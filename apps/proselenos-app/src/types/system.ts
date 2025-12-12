@@ -95,6 +95,7 @@ export interface AppService {
     saveCover?: boolean,
     overwrite?: boolean,
     transient?: boolean,
+    importSource?: string,
   ): Promise<Book | null>;
   deleteBook(book: Book, deleteAction: DeleteAction): Promise<void>;
   isBookAvailable(book: Book): Promise<boolean>;

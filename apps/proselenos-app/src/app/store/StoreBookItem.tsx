@@ -51,7 +51,8 @@ export default function StoreBookItem({ entry }: StoreBookItemProps) {
 
         if (appService) {
           const library = await appService.loadLibraryBooks();
-          await appService.importBook(file, library);
+          const importSource = `${window.location.origin}/store?book=${entry.bookHash}`;
+          await appService.importBook(file, library, true, true, false, false, importSource);
           await appService.saveLibraryBooks(library);
         }
 

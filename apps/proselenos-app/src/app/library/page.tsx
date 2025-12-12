@@ -322,7 +322,15 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       const file = selectedFile.file || selectedFile.path;
       if (!file) return;
       try {
-        const book = await appService?.importBook(file, library);
+        const book = await appService?.importBook(
+          file,
+          library,
+          true,
+          true,
+          false,
+          false,
+          selectedFile.importSource,
+        );
         if (book && groupId) {
           book.groupId = groupId;
           book.groupName = getGroupName(groupId);
@@ -508,7 +516,12 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     selectFiles({ type: 'books', multiple: true }).then((result) => {
       if (result.files.length === 0 || result.error) return;
       const groupId = searchParams?.get('group') || '';
-      importBooks(result.files, groupId);
+      // Set import source for each file (use path for desktop, filename for web)
+      const filesWithSource = result.files.map((f) => ({
+        ...f,
+        importSource: f.path || f.file?.name,
+      }));
+      importBooks(filesWithSource, groupId);
     });
   };
 
@@ -553,7 +566,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       setImportUrlValue('');
 
       const groupId = searchParams?.get('group') || '';
-      await importBooks([{ file }], groupId);
+      await importBooks([{ file, importSource: url }], groupId);
 
       eventDispatcher.dispatch('toast', {
         type: 'info',
@@ -619,7 +632,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       setDownloadPageUrl('');
 
       const groupId = searchParams?.get('group') || '';
-      await importBooks([{ file }], groupId);
+      await importBooks([{ file, importSource: url }], groupId);
 
       eventDispatcher.dispatch('toast', {
         type: 'info',

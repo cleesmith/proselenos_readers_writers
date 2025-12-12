@@ -123,6 +123,12 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
       value: metadata.identifier || '',
       placeholder: '978-0123456789',
     },
+    {
+      field: 'importSource',
+      label: _('Source'),
+      value: metadata.importSource || '',
+      placeholder: _('Import source URL or path'),
+    },
   ];
   const metadataFullwidthFields = [
     {
@@ -184,15 +190,15 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
               disabled={isCoverLocked}
               className={clsx(
                 'flex w-1/2 min-w-0 items-center justify-center gap-1 rounded p-1 sm:w-3/5',
-                'text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs',
-                isCoverLocked ? '!text-base-content bg-base-200' : 'bg-gray-100 !text-gray-500',
+                'text-sm hover:bg-base-300 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs',
+                isCoverLocked ? '!text-base-content bg-base-200' : 'bg-base-200 !text-base-content/70',
               )}
               title={_('Change cover image')}
             >
               <MdEdit
                 className={clsx(
                   'h-5 w-5 flex-shrink-0 sm:h-4 sm:w-4',
-                  isCoverLocked ? 'fill-base-content' : 'fill-gray-600',
+                  isCoverLocked ? 'fill-base-content' : 'fill-base-content/70',
                 )}
               />
               <span className='hidden truncate sm:inline'>{_('Replace')}</span>
@@ -210,7 +216,7 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
                 'flex w-1/4 items-center justify-center rounded p-1 sm:w-1/5',
                 'disabled:cursor-not-allowed disabled:opacity-50',
                 'text-red-500 hover:bg-red-50 hover:text-red-600',
-                isCoverLocked ? '!text-base-content bg-base-200' : 'bg-gray-100',
+                isCoverLocked ? '!text-base-content bg-base-200' : 'bg-base-200',
               )}
               title={_('Remove cover image')}
             >
@@ -220,10 +226,10 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
             <button
               onClick={() => onToggleFieldLock('coverImageUrl')}
               className={clsx(
-                'flex w-1/4 items-center justify-center rounded p-1 hover:bg-gray-50 sm:w-1/5',
+                'flex w-1/4 items-center justify-center rounded p-1 hover:bg-base-300 sm:w-1/5',
                 isCoverLocked
                   ? 'bg-green-100 text-green-500 hover:bg-green-200'
-                  : 'bg-gray-100 text-gray-500',
+                  : 'bg-base-200 text-base-content/70',
               )}
               title={isCoverLocked ? _('Unlock cover') : _('Lock cover')}
             >

@@ -53,6 +53,8 @@ export type BookMetadata = {
   coverImageFile?: string;
   coverImageUrl?: string;
   coverImageBlobUrl?: string;
+
+  importSource?: string;
 };
 
 export interface BookDoc {

@@ -87,6 +87,10 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
       const appService = await envConfig.getAppService();
       try {
         const details = book.metadata || (await appService.fetchBookDetails(book, settings));
+        // Merge book.importSource into metadata if metadata.importSource is not set
+        if (book.importSource && !details.importSource) {
+          details.importSource = book.importSource;
+        }
         setBookMeta(details);
         const size = await appService.getBookFileSize(book);
         setFileSize(size);

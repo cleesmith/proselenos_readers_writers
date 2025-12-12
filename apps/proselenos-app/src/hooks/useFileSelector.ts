@@ -16,6 +16,9 @@ export interface SelectedFile {
 
   // For Desktop file
   path?: string;
+
+  // Import source for tracking provenance (URL, file path, bookstore URL, etc.)
+  importSource?: string;
 }
 
 export interface FileSelectionResult {

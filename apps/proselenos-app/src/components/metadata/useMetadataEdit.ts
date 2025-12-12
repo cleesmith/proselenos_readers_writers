@@ -27,6 +27,7 @@ export const useMetadataEdit = (metadata: BookMetadata | null) => {
     'seriesIndex',
     'seriesTotal',
     'coverImageUrl',
+    'importSource',
   ];
 
   useEffect(() => {

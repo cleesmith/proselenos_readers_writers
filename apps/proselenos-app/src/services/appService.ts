@@ -283,6 +283,7 @@ export abstract class BaseAppService implements AppService {
     saveCover: boolean = true,
     overwrite: boolean = false,
     transient: boolean = false,
+    importSource?: string,
   ): Promise<Book | null> {
     try {
       let loadedBook: BookDoc;
@@ -350,6 +351,7 @@ export abstract class BaseAppService implements AppService {
         deletedAt: transient ? Date.now() : null,
         downloadedAt: Date.now(),
         updatedAt: Date.now(),
+        importSource,
       };
       // update book metadata when reimporting the same book
       if (existingBook) {
@@ -358,6 +360,7 @@ export abstract class BaseAppService implements AppService {
         existingBook.sourceTitle = existingBook.sourceTitle ?? book.sourceTitle;
         existingBook.author = existingBook.author ?? book.author;
         existingBook.primaryLanguage = existingBook.primaryLanguage ?? book.primaryLanguage;
+        existingBook.importSource = existingBook.importSource ?? importSource;
         existingBook.downloadedAt = Date.now();
       }
 
