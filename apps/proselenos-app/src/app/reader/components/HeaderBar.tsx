@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PiDotsThreeVerticalBold, PiXBold } from 'react-icons/pi';
+import { FaHeadphones } from 'react-icons/fa6';
 
 import { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
@@ -9,6 +10,7 @@ import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTrafficLightStore } from '@/store/trafficLightStore';
+import { eventDispatcher } from '@/utils/event';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import Dropdown from '@/components/Dropdown';
 import SidebarToggler from './SidebarToggler';
@@ -46,7 +48,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
     cleanupTrafficLightListeners,
   } = useTrafficLightStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { bookKeys: _bookKeys, hoveredBookKey, setHoveredBookKey } = useReaderStore();
+  const { bookKeys: _bookKeys, hoveredBookKey, setHoveredBookKey, getView, getProgress, getViewState } = useReaderStore();
   const { systemUIVisible, statusBarHeight } = useThemeStore();
   const { isSideBarVisible } = useSidebarStore();
   const iconSize16 = useResponsiveSize(16);
@@ -90,6 +92,15 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       clientX <= rect.left || clientX >= rect.right || clientY <= rect.top || clientY >= rect.bottom
     );
   }, []);
+
+  const handleSpeakText = useCallback(() => {
+    const view = getView(bookKey);
+    const progress = getProgress(bookKey);
+    const viewState = getViewState(bookKey);
+    if (!view || !progress || !viewState) return;
+    const eventType = viewState.ttsEnabled ? 'tts-stop' : 'tts-speak';
+    eventDispatcher.dispatch(eventType, { bookKey });
+  }, [bookKey, getView, getProgress, getViewState]);
 
   const isHeaderVisible = hoveredBookKey === bookKey || isDropdownOpen;
   const trafficLightInHeader =
@@ -171,6 +182,17 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         </div>
 
         <div className='bg-base-100 z-20 ml-auto flex h-full items-center space-x-4 ps-2'>
+          <button
+            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            onClick={handleSpeakText}
+            aria-label={_('Speak')}
+            title={_('Speak')}
+          >
+            <FaHeadphones
+              size={iconSize16}
+              className={getViewState(bookKey)?.ttsEnabled ? 'text-blue-500' : ''}
+            />
+          </button>
           <SettingsToggler />
           <NotebookToggler bookKey={bookKey} />
           <Dropdown
