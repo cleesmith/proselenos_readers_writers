@@ -20,7 +20,6 @@ import {
   isIndexedDBAvailable,
 } from '@/services/oneByOne/oneByOneCache';
 import { parseToolReport, isValidToolReport } from '@/utils/parseToolReport';
-import { safeReplace } from '@/utils/safeReplace';
 
 interface UseOneByOneSessionReturn {
   // State
@@ -54,6 +53,7 @@ interface UseOneByOneSessionReturn {
 
   // Session actions
   getWorkingContent: () => string;
+  generateFinalContent: () => { success: boolean; content: string; errors?: string[] };
   closeAndCleanup: () => Promise<void>;
 }
 
@@ -197,22 +197,11 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
     []
   );
 
-  // Accept current issue (no auto-advance - user clicks Next)
+  // Accept current issue (deferred - just marks status, applies on Save)
   const acceptCurrentIssue = useCallback(async (): Promise<boolean> => {
     if (!session || !currentIssue) return false;
 
-    const result = safeReplace(
-      session.workingContent,
-      currentIssue.passage,
-      currentIssue.replacement
-    );
-
-    if (!result.success || !result.newContent) {
-      setError(result.error || 'Failed to apply replacement');
-      return false;
-    }
-
-    // Update session
+    // Just mark as accepted - actual replacement happens at Save time
     const updatedIssues = [...session.issues];
     updatedIssues[session.currentIndex] = {
       ...currentIssue,
@@ -221,7 +210,6 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
 
     const updatedSession: OneByOneSession = {
       ...session,
-      workingContent: result.newContent,
       issues: updatedIssues,
       updatedAt: Date.now(),
     };
@@ -233,22 +221,12 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
     return true;
   }, [session, currentIssue, saveToIndexedDB]);
 
-  // Apply custom replacement (no auto-advance - user clicks Next)
+  // Apply custom replacement (deferred - just stores custom text, applies on Save)
   const applyCustomReplacement = useCallback(
     async (customText: string): Promise<boolean> => {
       if (!session || !currentIssue) return false;
 
-      const result = safeReplace(
-        session.workingContent,
-        currentIssue.passage,
-        customText
-      );
-
-      if (!result.success || !result.newContent) {
-        setError(result.error || 'Failed to apply custom replacement');
-        return false;
-      }
-
+      // Just mark as custom and store the text - actual replacement happens at Save time
       const updatedIssues = [...session.issues];
       updatedIssues[session.currentIndex] = {
         ...currentIssue,
@@ -258,7 +236,6 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
 
       const updatedSession: OneByOneSession = {
         ...session,
-        workingContent: result.newContent,
         issues: updatedIssues,
         updatedAt: Date.now(),
       };
@@ -321,6 +298,50 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
     setError(null);
   }, [hasIndexedDB]);
 
+  // Generate final content by applying all accepted/custom changes to original
+  // Called at Save time - this is where all deferred replacements actually happen
+  const generateFinalContent = useCallback((): { success: boolean; content: string; errors?: string[] } => {
+    if (!session) {
+      return { success: false, content: '', errors: ['No session'] };
+    }
+
+    // Get all accepted and custom issues
+    const changesToApply = session.issues.filter(
+      (issue) => issue.status === 'accepted' || issue.status === 'custom'
+    );
+
+    // If nothing to apply, return original unchanged
+    if (changesToApply.length === 0) {
+      return { success: true, content: session.originalContent };
+    }
+
+    // Apply each replacement sequentially to the original content
+    // Each passage was unique in the original, so string.replace finds exactly one match
+    let content = session.originalContent;
+    const errors: string[] = [];
+
+    for (const issue of changesToApply) {
+      const replacement = issue.status === 'custom' && issue.customReplacement
+        ? issue.customReplacement
+        : issue.replacement;
+
+      // Check if passage exists in current content
+      if (!content.includes(issue.passage)) {
+        errors.push(`Could not find: "${issue.passage.substring(0, 40)}..."`);
+        continue;
+      }
+
+      // Apply the replacement
+      content = content.replace(issue.passage, replacement);
+    }
+
+    return {
+      success: errors.length === 0,
+      content,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+  }, [session]);
+
   return {
     session,
     currentIssue,
@@ -337,6 +358,7 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
     goToNextIssue,
     goToPrevIssue,
     getWorkingContent,
+    generateFinalContent,
     closeAndCleanup,
   };
 }

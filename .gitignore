@@ -8,6 +8,7 @@ node_modules/
 
 *.mp4
 cls*
+cls.png
 zzz*
 
 # rsync temp files

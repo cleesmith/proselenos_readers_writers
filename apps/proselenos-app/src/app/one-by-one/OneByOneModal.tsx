@@ -49,6 +49,7 @@ export default function OneByOneModal({
     applyCustomReplacement,
     goToNextIssue,
     goToPrevIssue,
+    generateFinalContent,
     closeAndCleanup,
   } = useOneByOneSession();
 
@@ -56,6 +57,7 @@ export default function OneByOneModal({
   const [customText, setCustomText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const manuscriptRef = useRef<HTMLDivElement>(null);
   const customInputRef = useRef<HTMLTextAreaElement>(null);
@@ -74,25 +76,28 @@ export default function OneByOneModal({
     }
   }, [isOpen, projectName, fileName, filePath, manuscriptContent, reportContent, initSession]);
 
-  // Track changes
+  // Track changes - check if any issue has been accepted or customized
   useEffect(() => {
-    if (session && session.workingContent !== session.originalContent) {
-      setHasChanges(true);
+    if (session) {
+      const hasAcceptedOrCustom = session.issues.some(
+        (issue) => issue.status === 'accepted' || issue.status === 'custom'
+      );
+      setHasChanges(hasAcceptedOrCustom);
     }
   }, [session]);
 
-  // Check if current passage exists in working content
+  // Check if current passage exists in original content (always should be found now)
   const passageFound = session && currentIssue
-    ? findPassagePosition(session.workingContent, currentIssue.passage) !== null
+    ? findPassagePosition(session.originalContent, currentIssue.passage) !== null
     : true;
 
   // Scroll to highlighted passage in manuscript
   useEffect(() => {
     if (session && currentIssue && manuscriptRef.current) {
-      const position = findPassagePosition(session.workingContent, currentIssue.passage);
+      const position = findPassagePosition(session.originalContent, currentIssue.passage);
       if (position) {
         // Calculate approximate scroll position
-        const textBeforePassage = session.workingContent.slice(0, position.start);
+        const textBeforePassage = session.originalContent.slice(0, position.start);
         const lineCount = (textBeforePassage.match(/\n/g) || []).length;
         const scrollTop = lineCount * 20; // Approximate line height
         manuscriptRef.current.scrollTop = Math.max(0, scrollTop - 100);
@@ -147,13 +152,26 @@ export default function OneByOneModal({
     setCustomText('');
   };
 
-  // Handle Save
+  // Handle Save - apply all deferred changes and save
   const handleSave = async () => {
     if (!session) return;
 
     setIsSaving(true);
     try {
-      await onSave(session.workingContent);
+      // Generate final content by applying all accepted/custom changes
+      const result = generateFinalContent();
+
+      if (!result.success && result.errors && result.errors.length > 0) {
+        // Show warning but still save what we could apply
+        showAlert(
+          `Some changes could not be applied: ${result.errors.join(', ')}`,
+          'warning',
+          undefined,
+          isDarkMode
+        );
+      }
+
+      await onSave(result.content);
       setHasChanges(false);
       showAlert('Manuscript saved successfully', 'success', undefined, isDarkMode);
     } catch (err) {
@@ -181,11 +199,11 @@ export default function OneByOneModal({
     onClose();
   };
 
-  // Render highlighted manuscript
+  // Render highlighted manuscript (always uses frozen originalContent)
   const renderManuscript = useCallback(() => {
     if (!session) return null;
 
-    const content = session.workingContent;
+    const content = session.originalContent;
     if (!currentIssue) {
       return <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span>;
     }
@@ -255,7 +273,27 @@ export default function OneByOneModal({
             <strong>One-by-one:</strong> {fileName}
             {hasChanges && <span style={{ color: '#ffc107', marginLeft: '8px' }}>(unsaved)</span>}
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowHelp(true)}
+              title="How it works"
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                border: `1px solid ${theme.border}`,
+                backgroundColor: isDarkMode ? '#2d2d2d' : '#fff',
+                color: theme.textSecondary,
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              ?
+            </button>
             <StyledSmallButton
               onClick={handleSave}
               theme={theme}
@@ -315,7 +353,7 @@ export default function OneByOneModal({
                   <span>MANUSCRIPT <span style={{ fontWeight: 'normal', fontStyle: 'italic', color: theme.textMuted }}>(no editing)</span></span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span style={{ fontWeight: 'normal' }}>
-                      Accepted: {stats.accepted} | Custom: {stats.custom} | Pending: {stats.pending}
+                      Accepted: {stats.accepted} &nbsp; Custom: {stats.custom} &nbsp; Pending: {stats.pending}
                     </span>
                     {stats.total > 0 && (
                       <div style={{ display: 'flex', gap: '4px' }}>
@@ -629,6 +667,74 @@ export default function OneByOneModal({
           </>
         )}
       </div>
+
+      {/* Help Popup */}
+      {showHelp && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 5000,
+          }}
+          onClick={() => setShowHelp(false)}
+        >
+          <div
+            style={{
+              backgroundColor: isDarkMode ? '#2d2d2d' : '#fff',
+              borderRadius: '8px',
+              padding: '20px 24px',
+              maxWidth: '650px',
+              minHeight: '420px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: theme.text, marginBottom: '20px', textAlign: 'center' }}>
+              How One-by-One Works
+            </div>
+            <div style={{ fontSize: '14px', lineHeight: '1.8', color: theme.text }}>
+              <p style={{ margin: '0 0 16px 0' }}>
+                This view shows your original manuscript (frozen).
+                <br />
+                Review each AI suggestion and <strong>Accept</strong>, <strong>Custom</strong>, or <strong>Skip</strong>.
+              </p>
+
+              <hr style={{ border: 'none', borderTop: `1px solid ${theme.border}`, margin: '20px 0' }} />
+
+              <p style={{ margin: '0 0 12px 0', fontWeight: 'bold' }}>
+                When you click Save:
+              </p>
+              <ul style={{ margin: '0 0 16px 0', paddingLeft: '24px' }}>
+                <li style={{ marginBottom: '8px' }}><strong>Accept</strong> & <strong>Custom</strong> changes are applied to the manuscript</li>
+                <li>To verify click <strong>Close</strong> then open manuscript in <strong>Editor</strong></li>
+              </ul>
+
+              <hr style={{ border: 'none', borderTop: `1px solid ${theme.border}`, margin: '20px 0' }} />
+
+              <p style={{ margin: '0 0 12px 0', fontWeight: 'bold' }}>
+                Not <strong>Clear</strong><i>-ing</i> the <strong>Run</strong> then clicking <strong>One-by-one</strong> again:
+              </p>
+              <ul style={{ margin: '0 0 16px 0', paddingLeft: '24px' }}>
+                <li style={{ marginBottom: '8px' }}>You will see the original manuscript (frozen) again</li>
+                <li style={{ marginBottom: '8px' }}>All the same issues appear for another review</li>
+                <li>This lets you undo, redo, and word play</li>
+              </ul>
+            </div>
+            <div style={{ textAlign: 'right', marginTop: '16px' }}>
+              <StyledSmallButton onClick={() => setShowHelp(false)} theme={theme}>
+                Got it
+              </StyledSmallButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
