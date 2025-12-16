@@ -43,6 +43,7 @@ export interface SystemSettings {
   localBooksDir: string;
   customRootDir?: string;
 
+  hideWelcomeModal: boolean;
   keepLogin: boolean;
   autoUpload: boolean;
   alwaysOnTop: boolean;

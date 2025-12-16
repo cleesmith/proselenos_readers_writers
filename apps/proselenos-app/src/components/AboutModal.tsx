@@ -56,7 +56,7 @@ export default function AboutModal({
             fontSize: '24px',
             fontWeight: '600'
           }}>
-            About Proselenos
+            Proselenos for Writers
           </h2>
           <StyledSmallButton onClick={onClose} theme={theme}>
             Close

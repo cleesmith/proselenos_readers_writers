@@ -52,6 +52,7 @@ export const DEFAULT_KOSYNC_SETTINGS = {
 } as KOSyncSettings;
 
 export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
+  hideWelcomeModal: false,
   keepLogin: false,
   autoUpload: false,
   alwaysOnTop: false,

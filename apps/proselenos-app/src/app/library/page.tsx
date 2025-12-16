@@ -899,7 +899,17 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           </div>
         </div>
       </Dialog>
-      {!user && <WelcomeModal isDarkMode={isDarkMode} theme={theme} />}
+      {!settings.hideWelcomeModal && (
+        <WelcomeModal
+          isDarkMode={isDarkMode}
+          theme={theme}
+          onHideForever={() => {
+            const newSettings = { ...settings, hideWelcomeModal: true };
+            setSettings(newSettings);
+            saveSettings(envConfig, newSettings);
+          }}
+        />
+      )}
       <Toast />
     </div>
   );

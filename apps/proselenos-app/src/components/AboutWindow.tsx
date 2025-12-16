@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { useEnv } from '@/context/EnvContext';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { parseWebViewInfo } from '@/utils/ua';
 import { getAppVersion } from '@/utils/version';
@@ -23,7 +24,8 @@ export const setAboutDialogVisible = (visible: boolean) => {
 export const AboutWindow = () => {
   const { data: session } = useSession();
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const { envConfig, appService } = useEnv();
+  const { settings, setSettings, saveSettings } = useSettingsStore();
   const [browserInfo, setBrowserInfo] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -55,7 +57,7 @@ export const AboutWindow = () => {
     <Dialog
       id='about_window'
       isOpen={isOpen}
-      title={_('About Proselenos')}
+      title={_('Proselenos for Writers')}
       onClose={handleClose}
       boxClassName='sm:!w-[480px] sm:!max-w-screen-sm sm:h-auto'
     >
@@ -71,6 +73,18 @@ export const AboutWindow = () => {
               <p className='text-neutral-content text-center text-sm'>
                 {_('Version {{version}}', { version: getAppVersion() })} {`(${browserInfo})`}
               </p>
+              {settings.hideWelcomeModal && (
+                <button
+                  className='btn btn-xs btn-ghost text-blue-500 mt-2'
+                  onClick={() => {
+                    const newSettings = { ...settings, hideWelcomeModal: false };
+                    setSettings(newSettings);
+                    saveSettings(envConfig, newSettings);
+                  }}
+                >
+                  {_('Show Welcome again')}
+                </button>
+              )}
             </div>
 
             {session?.user?.name && session?.user?.email && (

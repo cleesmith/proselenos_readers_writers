@@ -7,13 +7,23 @@ import StyledSmallButton from '@/components/StyledSmallButton';
 interface WelcomeModalProps {
   isDarkMode: boolean;
   theme: ThemeConfig;
+  onHideForever?: () => void;
 }
 
 export default function WelcomeModal({
   isDarkMode,
-  theme
+  theme,
+  onHideForever
 }: WelcomeModalProps) {
   const [dismissed, setDismissed] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  const handleDismiss = () => {
+    if (dontShowAgain && onHideForever) {
+      onHideForever();
+    }
+    setDismissed(true);
+  };
 
   if (dismissed) return null;
 
@@ -64,7 +74,7 @@ export default function WelcomeModal({
               Welcome to Proselenos
             </h2>
           </div>
-          <StyledSmallButton onClick={() => setDismissed(true)} theme={theme}>
+          <StyledSmallButton onClick={handleDismiss} theme={theme}>
             Got it
           </StyledSmallButton>
         </div>
@@ -184,6 +194,29 @@ export default function WelcomeModal({
               <strong style={{ color: isDarkMode ? '#10b981' : '#059669' }}>Get started:</strong> Import an EPUB using the <strong>+</strong> button, or explore <strong>Public Ebooks</strong> from the menu.
             </div>
           </div>
+
+          {/* Don't show again checkbox */}
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '20px',
+            fontSize: '13px',
+            color: isDarkMode ? '#9ca3af' : '#6b7280',
+            cursor: 'pointer'
+          }}>
+            <input
+              type="checkbox"
+              checked={dontShowAgain}
+              onChange={(e) => setDontShowAgain(e.target.checked)}
+              style={{
+                width: '16px',
+                height: '16px',
+                cursor: 'pointer'
+              }}
+            />
+            Don&apos;t show me this again
+          </label>
         </div>
       </div>
     </div>
