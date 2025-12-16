@@ -283,7 +283,7 @@ export default function EpubModal({
           <div
             style={{
               textAlign: 'center',
-              margin: '20px 0',
+              margin: '5px 0',
               position: 'relative'
             }}
           >
@@ -299,14 +299,14 @@ export default function EpubModal({
             <span
               style={{
                 backgroundColor: isDarkMode ? '#2c3035' : '#ffffff',
-                padding: '0 16px',
-                fontSize: '14px',
+                padding: '0 8px',
+                fontSize: '8px',
                 fontWeight: 'bold',
                 color: '#FF8C00',
                 position: 'relative'
               }}
             >
-              — OR —
+              or
             </span>
           </div>
 
