@@ -4,6 +4,9 @@
 // import { getServerSession } from 'next-auth';
 // import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 
+// Read timeout from env var (server-side) - must be set in .env.local
+const TOOL_TIMEOUT_MS = parseInt(process.env['TOOL_TIMEOUT_MS']!, 10);
+
 // Type definitions
 export type ToolCategory = string;
 
@@ -20,6 +23,7 @@ export interface ToolExecutionResult {
   result?: string;
   error?: string;
   executionTime: number;
+  timeoutMs?: number;
   category?: ToolCategory;
   timestamp?: string;
   promptLength?: number;
@@ -95,6 +99,9 @@ export async function executeToolInternal(
   try {
     console.log(`Executing tool: ${toolId}`);
 
+    // Create abort signal with timeout from env var
+    const timeoutSignal = AbortSignal.timeout(TOOL_TIMEOUT_MS);
+
     // Read the tool prompt from Supabase
     const promptResult = await getToolPrompt(toolId);
     if (!promptResult.success || !promptResult.content) {
@@ -114,13 +121,14 @@ export async function executeToolInternal(
       fullPrompt += `\n\nAdditional Context:\n${options.additionalContext}`;
     }
 
-    // Execute via AI service
+    // Execute via AI service with abort signal
     const result = await streamAIInternal(
       fullPrompt,
       manuscript,
       {
         temperature: options.temperature || 0.3,
         includeMetadata: options.includeMetadata || false,
+        signal: timeoutSignal,
         ...options
       }
     );
@@ -146,6 +154,22 @@ export async function executeToolInternal(
 
   } catch (error) {
     const executionTime = Date.now() - startTime;
+
+    // Check for timeout abort
+    if (error instanceof Error &&
+        (error.message.includes('TOOL_TIMEOUT_ABORTED') ||
+         error.name === 'TimeoutError' ||
+         error.message?.toLowerCase().includes('abort'))) {
+      console.log(`Tool execution timed out: ${toolId}`);
+      return {
+        success: false,
+        toolId,
+        error: 'TOOL_TIMEOUT',
+        executionTime,
+        timeoutMs: TOOL_TIMEOUT_MS
+      };
+    }
+
     console.error(`Tool execution error for ${toolId}:`, error);
     return {
       success: false,

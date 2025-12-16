@@ -207,3 +207,54 @@ export const showStickyErrorWithLogout = (
     signOut({ callbackUrl: '/', redirect: true });
   });
 };
+
+// Timeout modal for AI tool execution (5-minute server limit)
+export function showTimeoutModal(isDarkMode: boolean, timeoutMs: number): void {
+  document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+
+  // Compute timeout display from server value
+  const timeoutSecs = Math.floor(timeoutMs / 1000);
+  const mins = Math.floor(timeoutSecs / 60);
+  const secs = timeoutSecs % 60;
+  const timeoutDisplay = `${mins} minute${mins !== 1 ? 's' : ''} ${secs} second${secs !== 1 ? 's' : ''}`;
+
+  // Add style for high z-index if not already present
+  if (!document.getElementById('swal-high-z-style')) {
+    const style = document.createElement('style');
+    style.id = 'swal-high-z-style';
+    style.textContent = '.swal-above-modal { z-index: 10000 !important; }';
+    document.head.appendChild(style);
+  }
+
+  Swal.fire({
+    icon: 'warning',
+    title: 'Tool Execution Stopped',
+    html: `
+      <div style="text-align: left; font-size: 14px; line-height: 1.6;">
+        <p><strong>What happened:</strong></p>
+        <p>The AI tool was stopped after <strong>${timeoutDisplay}</strong> due to
+        a server limit. Stopping early avoids confusing errors.</p>
+
+        <p style="margin-top: 12px;"><strong>Important — You may be charged:</strong></p>
+        <p>Depending on your AI model's provider, you may or may not be charged for this request.
+        Providers like Anthropic and OpenAI stop billing when aborted. Others (Google, Mistral, etc.)
+        may continue processing and charge for the full response.</p>
+
+        <p style="margin-top: 12px;"><strong>Suggestions for next time:</strong></p>
+        <ul style="margin: 8px 0; padding-left: 20px;">
+          <li>Use a shorter manuscript section</li>
+          <li>Try a faster AI model</li>
+          <li>Split your manuscript into smaller chapters</li>
+        </ul>
+      </div>
+    `,
+    confirmButtonText: 'Got it',
+    confirmButtonColor: '#e85d04',
+    background: isDarkMode ? '#222' : '#fff',
+    color: isDarkMode ? '#fff' : '#333',
+    customClass: {
+      container: 'swal-above-modal'
+    },
+    width: '520px'
+  });
+}

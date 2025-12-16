@@ -1,7 +1,7 @@
 // app/ai-tools/useToolsManager.ts
 
 import { useState, useMemo, useCallback } from 'react';
-import { showAlert } from '../shared/alerts';
+import { showAlert, showTimeoutModal } from '../shared/alerts';
 import { listTxtFilesAction, readFileAction } from '@/lib/project-actions';
 import { executeToolAction, getAvailableToolsAction } from '@/lib/tools-actions';
 import { saveToolReportAction } from '@/lib/report-actions';
@@ -235,10 +235,75 @@ export function useToolsManager(): [ToolsManagerState, ToolsManagerActions] {
         return;
       }
       
-      // Execute tool using server action
+      // Execute tool using server action (server handles timeout via AbortSignal)
       setToolResult('Executing tool...');
+
       const toolExecResult = await executeToolAction(selectedTool, loadedManuscriptContent);
-      
+
+      // Check for server-side timeout (planned abort)
+      if (!toolExecResult.success && toolExecResult.error === 'TOOL_TIMEOUT') {
+        // Compute timeout display from server response
+        const timeoutSecs = Math.floor(toolExecResult.timeoutMs! / 1000);
+        const mins = Math.floor(timeoutSecs / 60);
+        const secs = timeoutSecs % 60;
+        const timeoutDisplay = `${mins} minute${mins !== 1 ? 's' : ''} ${secs} second${secs !== 1 ? 's' : ''}`;
+
+        showTimeoutModal(isDarkMode, toolExecResult.timeoutMs!);
+
+        const timeoutExplanation = `⏱️ TOOL EXECUTION STOPPED
+
+What happened:
+The AI tool was stopped after ${timeoutDisplay} due to a server limit. Stopping early avoids unhelpful error messages.
+
+Important — You may be charged:
+Depending on your AI model's provider, you may or may not be charged for this request. Providers like Anthropic and OpenAI stop billing when aborted. Others (Google, Mistral, etc.) may continue processing and charge for the full response.
+
+Suggestions for next time:
+• Use a shorter manuscript section
+• Try a faster AI model
+• Split your manuscript into smaller chapters`;
+
+        setToolResult(timeoutExplanation);
+
+        // Stop timer, mark as finished
+        setToolExecuting(false);
+        setToolJustFinished(true);
+        clearInterval(interval);
+        setTimerInterval(null);
+
+        // Save timeout report for user's records
+        setIsUploadingReport(true);
+        setUploadStatus('Saving timeout report...');
+
+        saveToolReportAction(
+          selectedTool,
+          timeoutExplanation,
+          currentProjectId,
+          currentProvider,
+          currentModel,
+          selectedManuscriptForTool.name,
+          currentProject
+        )
+        .then((saveResult) => {
+          if (saveResult.success) {
+            setSavedReportFileName(saveResult.data?.fileName || null);
+            setSavedReportFileId(saveResult.data?.fileId || null);
+            setUploadStatus(`✅ Timeout report saved: ${saveResult.data?.fileName}`);
+          } else {
+            setUploadStatus(`⚠️ Report save failed: ${saveResult.error}`);
+          }
+        })
+        .catch((error) => {
+          console.error('Timeout report save error:', error);
+          setUploadStatus('⚠️ Report save failed');
+        })
+        .finally(() => {
+          setIsUploadingReport(false);
+        });
+
+        return;
+      }
+
       if (toolExecResult.success && toolExecResult.result) {
         setToolResult(toolExecResult.result);
         

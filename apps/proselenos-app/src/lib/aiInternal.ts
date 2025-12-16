@@ -8,6 +8,7 @@ import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 
 export interface AIInternalOptions {
   config?: AIConfig;
+  signal?: AbortSignal;
   [key: string]: any;
 }
 
@@ -56,6 +57,13 @@ export async function streamAIInternal(
     return fullResponse;
     
   } catch (error: any) {
+    // Always end the timer to avoid "label already exists" warning
+    console.timeEnd('streamAIInternal');
+
+    // Don't log planned abort as error - it's expected behavior
+    if (error.message?.includes('aborted') || error.message?.includes('TOOL_TIMEOUT')) {
+      throw error; // Re-throw without logging as error
+    }
     console.error('Internal AI error:', error);
     throw new Error(`AI processing failed: ${error.message}`);
   }

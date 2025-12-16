@@ -5,6 +5,17 @@
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
+// Read thresholds from env vars (client-side) - must be set in .env.local
+const TIMER_WARNING_SECS = parseInt(process.env['NEXT_PUBLIC_TIMER_WARNING_SECS']!, 10);
+const TIMER_DANGER_SECS = parseInt(process.env['NEXT_PUBLIC_TIMER_DANGER_SECS']!, 10);
+
+// Timer color changes as timeout approaches (stoplight: green → yellow → red)
+function getTimerColor(elapsed: number): string {
+  if (elapsed >= TIMER_DANGER_SECS) return '#dc3545';   // Red - danger zone
+  if (elapsed >= TIMER_WARNING_SECS) return '#ffc107';  // Yellow - warning zone
+  return '#28a745'; // Green - normal
+}
+
 interface ToolProgressIndicatorProps {
   toolExecuting: boolean;
   elapsedTime: number;
@@ -27,9 +38,10 @@ export default function ToolProgressIndicator({
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <span style={{
         fontSize: '11px',
-        color: '#e85d04',
+        color: getTimerColor(elapsedTime),
         marginLeft: '8px',
-        fontFamily: 'monospace'
+        fontFamily: 'monospace',
+        fontWeight: elapsedTime >= TIMER_DANGER_SECS ? 'bold' : 'normal'
       }}>
         {Math.floor(elapsedTime / 60).toString().padStart(2, '0')}:{(elapsedTime % 60).toString().padStart(2, '0')}
       </span>

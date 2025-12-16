@@ -37,6 +37,8 @@ import { AboutWindow } from '@/components/AboutWindow';
 import { BookDetailModal } from '@/components/metadata';
 import { useDragDropImport } from './hooks/useDragDropImport';
 import { Toast } from '@/components/Toast';
+import WelcomeModal from '@/components/WelcomeModal';
+import { getTheme } from '@/app/shared/theme';
 import Spinner from '@/components/Spinner';
 import LibraryHeader from './components/LibraryHeader';
 import Bookshelf from './components/Bookshelf';
@@ -67,7 +69,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   } = useLibraryStore();
   const _ = useTranslation();
   const { selectFiles } = useFileSelector(appService, _);
-  const { safeAreaInsets: insets, isRoundedWindow } = useThemeStore();
+  const { safeAreaInsets: insets, isRoundedWindow, themeMode } = useThemeStore();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const { isSettingsDialogOpen, setSettingsDialogOpen } = useSettingsStore();
   const [loading, setLoading] = useState(false);
@@ -86,6 +88,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
   const viewSettings = settings.globalViewSettings;
   const demoBooks = useDemoBooks();
+
+  // Theme for WelcomeModal
+  const isDarkMode = themeMode === 'dark' || (themeMode === 'auto' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const theme = getTheme(isDarkMode);
   const osRef = useRef<OverlayScrollbarsComponentRef>(null);
   const containerRef: React.MutableRefObject<HTMLDivElement | null> = useRef(null);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -893,6 +899,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           </div>
         </div>
       </Dialog>
+      {!user && <WelcomeModal isDarkMode={isDarkMode} theme={theme} />}
       <Toast />
     </div>
   );

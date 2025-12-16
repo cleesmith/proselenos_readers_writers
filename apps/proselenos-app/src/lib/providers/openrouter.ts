@@ -19,6 +19,7 @@ export interface StreamOptions {
   temperature?: number;
   onDone?: (finishReason?: string) => void;
   logChunks?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface ModelData {
@@ -173,38 +174,55 @@ export class AiApiService {
     const params = this.buildCreateParams(messages, options);
 
     // Create stream inside the function to avoid TDZ/circular init issues in Next.js
-    const stream: AsyncIterable<any> = await this.client.chat.completions.create({
-      ...params,
-      stream: true,
-    }) as any;
+    // Pass abort signal to OpenAI client for timeout support
+    const stream: AsyncIterable<any> = await this.client.chat.completions.create(
+      {
+        ...params,
+        stream: true,
+      },
+      { signal: options.signal }
+    ) as any;
 
     let lastFinish: string | undefined;
 
-    for await (const chunk of stream) {
-      // 1) Top-level streamed error (some providers)
-      const topErr = (chunk as any)?.error;
-      if (topErr) throw formatProviderError(topErr);
+    try {
+      for await (const chunk of stream) {
+        // 1) Top-level streamed error (some providers)
+        const topErr = (chunk as any)?.error;
+        if (topErr) throw formatProviderError(topErr);
 
-      const choice = (chunk as any)?.choices?.[0];
-      if (!choice) continue;
+        const choice = (chunk as any)?.choices?.[0];
+        if (!choice) continue;
 
-      // 2) Choice-level provider error
-      const chErr = (choice as any)?.error;
-      if (chErr) throw formatProviderError(chErr);
+        // 2) Choice-level provider error
+        const chErr = (choice as any)?.error;
+        if (chErr) throw formatProviderError(chErr);
 
-      // 3) finish_reason can be "error" in some streams
-      const finishReason = (choice as any)?.finish_reason;
-      if (finishReason === 'error') {
-        const e: any = new Error('Stream ended with finish_reason=error');
-        e.retryable = true; // informational only; you are NOT retrying
-        throw e;
+        // 3) finish_reason can be "error" in some streams
+        const finishReason = (choice as any)?.finish_reason;
+        if (finishReason === 'error') {
+          const e: any = new Error('Stream ended with finish_reason=error');
+          e.retryable = true; // informational only; you are NOT retrying
+          throw e;
+        }
+
+        // 4) Normal delta
+        const text = (choice as any)?.delta?.content;
+        if (typeof text === 'string' && text.length) onText(text);
+
+        if (finishReason) lastFinish = finishReason;
       }
+    } catch (error: any) {
+      // Handle abort signal timeout
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        throw new Error('TOOL_TIMEOUT_ABORTED');
+      }
+      throw error;
+    }
 
-      // 4) Normal delta
-      const text = (choice as any)?.delta?.content;
-      if (typeof text === 'string' && text.length) onText(text);
-
-      if (finishReason) lastFinish = finishReason;
+    // OpenAI SDK may swallow abort and end stream cleanly - check explicitly
+    if (options.signal?.aborted) {
+      throw new Error('TOOL_TIMEOUT_ABORTED');
     }
 
     options.onDone?.(lastFinish);
