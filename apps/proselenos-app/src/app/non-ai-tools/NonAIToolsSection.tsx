@@ -14,30 +14,31 @@ import StyledSmallButton from '@/components/StyledSmallButton';
 interface NonAIToolsSectionProps {
   // Tool selection
   selectedNonAITool: string;
-  
+
   // File selection
   selectedManuscriptForTool: any | null;
-  
+
   // Execution state
   isPublishing: boolean;
   publishResult: string | null;
   toolJustFinished: boolean;
-  
+  elapsedTime: number;
+
   // Project state
   currentProject: string | null;
   currentProjectId: string | null;
   isStorageOperationPending: boolean;
-  
+
   // Theme
   theme: ThemeConfig;
   isDarkMode: boolean;
-  
+
   // Other state
   toolExecuting: boolean;
-  
+
   // Session for publishing assistant
   session: any;
-  
+
   // Callbacks
   onToolChange: (tool: string) => void;
   onSetupTool: () => void;
@@ -52,6 +53,7 @@ export default function NonAIToolsSection({
   isPublishing,
   publishResult,
   toolJustFinished,
+  elapsedTime,
   currentProject,
   currentProjectId: _currentProjectId,
   isStorageOperationPending,
@@ -77,6 +79,8 @@ export default function NonAIToolsSection({
       return 'Selected DOCX file:';
     } else if (toolName === 'EPUB to TXT Converter') {
       return 'Selected EPUB:';
+    } else if (toolName === 'Extract Chapters from Manuscript') {
+      return 'Selected manuscript:';
     } else {
       return 'Selected file:';
     }
@@ -223,14 +227,14 @@ export default function NonAIToolsSection({
         </StyledSmallButton>
 
         {/* Elapsed time display - matching AI Tools pattern */}
-        {isPublishing && (
-          <div style={{
+        {(isPublishing || elapsedTime > 0) && (
+          <span style={{
             fontSize: '11px',
-            color: '#FFC107',
-            fontStyle: 'italic'
+            color: '#28a745',
+            fontFamily: 'monospace'
           }}>
-            Running...
-          </div>
+            {Math.floor(elapsedTime / 60).toString().padStart(2, '0')}:{(elapsedTime % 60).toString().padStart(2, '0')}
+          </span>
         )}
       </div>
 

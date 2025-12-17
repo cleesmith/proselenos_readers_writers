@@ -1,12 +1,13 @@
 // Non-AI Tools Manager Hook
 // Extracted from app/page.tsx - handles non-AI tools state and operations
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { showAlert } from '../shared/alerts';
 import { listProjectFilesAction } from '@/lib/project-actions';
 import { publishManuscriptAction } from '@/lib/publish-actions';
 import { listDocxFilesAction, extractDocxCommentsAction } from '@/lib/docx-comments-actions';
 import { listEpubFilesAction, convertEpubToTextAction } from '@/lib/epub-conversion-actions';
+import { listTxtFilesAction, extractChaptersAction } from '@/lib/chapter-extraction-actions';
 
 interface NonAIToolsManagerState {
   selectedNonAITool: string;
@@ -16,6 +17,8 @@ interface NonAIToolsManagerState {
   isPublishing: boolean;
   publishResult: string | null;
   toolJustFinished: boolean;
+  // Timer state
+  elapsedTime: number;
 }
 
 interface NonAIToolsManagerActions {
@@ -37,6 +40,7 @@ interface NonAIToolsManagerActions {
 
 // Available non-AI tools
 export const NON_AI_TOOLS = [
+  'Extract Chapters from Manuscript',
   'DOCX: Extract Comments as Text',
   'EPUB to TXT Converter'
 ];
@@ -49,6 +53,27 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<string | null>(null);
   const [toolJustFinished, setToolJustFinished] = useState(false);
+
+  // Timer state
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerIntervalRef = useRef<number | null>(null);
+
+  // Timer helpers
+  const startTimer = () => {
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    const now = Date.now();
+    setElapsedTime(0);
+    timerIntervalRef.current = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - now) / 1000));
+    }, 1000) as unknown as number;
+  };
+
+  const stopTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+  };
 
   // Select non-AI tool - show file selector (exactly like AI Tools)
   const setupNonAITool = async (
@@ -73,6 +98,9 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
       } else if (selectedNonAITool === 'EPUB to TXT Converter') {
         // Get EPUB files for conversion from project
         result = await listEpubFilesAction(currentProject);
+      } else if (selectedNonAITool === 'Extract Chapters from Manuscript') {
+        // Get TXT files for chapter extraction from project
+        result = await listTxtFilesAction(currentProject);
       } else {
         // Get text files from current project for other tools
         result = await listProjectFilesAction(currentProject);
@@ -82,7 +110,9 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
         let filteredFiles = result.data.files;
 
         // Apply additional filtering if needed
-        if (selectedNonAITool !== 'DOCX: Extract Comments as Text' && selectedNonAITool !== 'EPUB to TXT Converter') {
+        if (selectedNonAITool !== 'DOCX: Extract Comments as Text' &&
+            selectedNonAITool !== 'EPUB to TXT Converter' &&
+            selectedNonAITool !== 'Extract Chapters from Manuscript') {
           // Filter for .txt files (exactly like AI Tools)
           filteredFiles = result.data.files.filter((file: any) =>
             file.name.endsWith('.txt') ||
@@ -121,6 +151,8 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
       await handleDocxCommentsExtraction(_session, currentProject, onShowAlert, isDarkMode);
     } else if (selectedNonAITool === 'EPUB to TXT Converter') {
       await handleEpubConversion(_session, currentProject, onShowAlert, isDarkMode);
+    } else if (selectedNonAITool === 'Extract Chapters from Manuscript') {
+      await handleChapterExtraction(_session, currentProject, onShowAlert, isDarkMode);
     } else if (selectedNonAITool === 'Publish or Unpublish Manuscript') {
       await handlePublishManuscript(_session, currentProjectId, onShowAlert, isDarkMode);
     } else {
@@ -148,6 +180,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
     setIsPublishing(true);
     setPublishResult(null);
+    startTimer();
 
     try {
       // Generate output filename based on original filename
@@ -179,6 +212,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
       setPublishResult(`Error: ${errorMessage}`);
       onShowAlert('error', errorMessage, isDarkMode);
     } finally {
+      stopTimer();
       setIsPublishing(false);
       setToolJustFinished(true);
     }
@@ -202,6 +236,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
     setIsPublishing(true);
     setPublishResult(null);
+    startTimer();
 
     try {
       // Generate output filename based on original filename
@@ -231,6 +266,56 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
       setPublishResult(`Error: ${errorMessage}`);
       onShowAlert('error', errorMessage, isDarkMode);
     } finally {
+      stopTimer();
+      setIsPublishing(false);
+      setToolJustFinished(true);
+    }
+  };
+
+  const handleChapterExtraction = async (
+    _session: any,
+    currentProject: string | null,
+    onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
+    isDarkMode: boolean
+  ) => {
+    if (!currentProject) {
+      onShowAlert('error', 'Please select a project first', isDarkMode);
+      return;
+    }
+
+    if (!selectedManuscriptForTool) {
+      onShowAlert('error', 'Please select a manuscript file first', isDarkMode);
+      return;
+    }
+
+    setIsPublishing(true);
+    setPublishResult(null);
+    startTimer();
+
+    try {
+      // selectedManuscriptForTool.id is the file path (e.g., "ProjectName/manuscript.txt")
+      const result = await extractChaptersAction(
+        currentProject,
+        selectedManuscriptForTool.id
+      );
+
+      if (result.success && result.data) {
+        const { chapterCount, totalWords } = result.data;
+        const lastFileName = `c${String(chapterCount).padStart(4, '0')}.txt`;
+        const successMessage = `Extracted ${chapterCount} chapters (${totalWords.toLocaleString()} words). Files: c0001.txt through ${lastFileName}`;
+        setPublishResult(successMessage);
+        onShowAlert('success', `Extracted ${chapterCount} chapters`, isDarkMode);
+      } else {
+        const errorMessage = result.error || 'Unknown error occurred';
+        setPublishResult(`Error: ${errorMessage}`);
+        onShowAlert('error', errorMessage, isDarkMode);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setPublishResult(`Error: ${errorMessage}`);
+      onShowAlert('error', errorMessage, isDarkMode);
+    } finally {
+      stopTimer();
       setIsPublishing(false);
       setToolJustFinished(true);
     }
@@ -281,6 +366,8 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
   // Clear all state (like AI Tools Clear button)
   const clearTool = () => {
+    stopTimer();
+    setElapsedTime(0);
     setSelectedManuscriptForTool(null);
     setPublishResult(null);
     setFileSelectorFiles([]);
@@ -294,7 +381,8 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     fileSelectorFiles,
     isPublishing,
     publishResult,
-    toolJustFinished
+    toolJustFinished,
+    elapsedTime
   };
 
   const actions: NonAIToolsManagerActions = {

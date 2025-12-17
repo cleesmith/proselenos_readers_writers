@@ -1478,6 +1478,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
               isPublishing={nonAIToolsState.isPublishing}
               publishResult={nonAIToolsState.publishResult}
               toolJustFinished={nonAIToolsState.toolJustFinished}
+              elapsedTime={nonAIToolsState.elapsedTime}
               currentProject={projectState.currentProject}
               currentProjectId={projectState.currentProjectId}
               isStorageOperationPending={isStorageOperationPending}

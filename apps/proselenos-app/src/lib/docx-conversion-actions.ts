@@ -10,22 +10,84 @@
 
 import mammoth from 'mammoth';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { DOMParser } from '@xmldom/xmldom';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { uploadFileToProject, readTextFile } from './project-storage';
 
 /**
  * Converts a DOCX file supplied as a Buffer into a plain-text string.
- * This helper uses the `mammoth` library to extract raw text, discarding
- * formatting and images. It can be useful in server-side contexts where
- * client-side conversion is not available or desired.
+ * Uses mammoth to convert to HTML (preserving structure), then parses
+ * and applies manuscript formatting rules:
+ * - 2 blank lines before each chapter/section (heading)
+ * - 1 blank line between paragraphs
+ * - Last paragraph has no trailing blank line
  *
  * @param buffer A Node.js Buffer containing the contents of a `.docx` file.
- * @returns The extracted text as a string.
+ * @returns The extracted text with proper manuscript formatting.
  */
 export async function convertDocxBufferToTxt(buffer: Buffer): Promise<string> {
-  const { value } = await mammoth.extractRawText({ buffer: buffer });
-  return value;
+  // Use convertToHtml to preserve structure (headings, paragraphs)
+  const { value: htmlContent } = await mammoth.convertToHtml({ buffer: buffer });
+
+  // Parse HTML with xmldom
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<body>${htmlContent}</body>`, 'text/html');
+
+  // Get all block elements
+  const body = doc.getElementsByTagName('body')[0];
+  if (!body) return '';
+
+  const blocks: Array<{ tag: string; text: string }> = [];
+  const childNodes = body.childNodes;
+
+  for (let i = 0; i < childNodes.length; i++) {
+    const node = childNodes[i];
+    if (!node || node.nodeType !== 1) continue; // Skip non-element nodes
+
+    const element = node as unknown as Element;
+    const tagName = element.tagName?.toLowerCase() || '';
+    const text = (element.textContent || '')
+      .replace(/\u00a0/g, ' ')  // Convert NBSP to regular space
+      .replace(/\s+/g, ' ')     // Collapse whitespace
+      .trim();
+
+    if (text && (tagName === 'p' || tagName.match(/^h[1-6]$/))) {
+      // Skip ornamental separators like "***" from Vellum exports
+      if (text === '***' || text === '* * *') {
+        continue;
+      }
+      blocks.push({ tag: tagName, text });
+    }
+  }
+
+  // Build manuscript text with proper spacing
+  let manuscriptText = '';
+
+  for (const block of blocks) {
+    const isHeading = block.tag.match(/^h[1-6]$/);
+
+    if (isHeading) {
+      // 2 blank lines before each chapter/section
+      manuscriptText += '\n\n\n' + block.text;
+    } else {
+      // Paragraph
+      if (manuscriptText === '') {
+        // First content before any heading
+        manuscriptText = block.text;
+      } else {
+        // 1 blank line between paragraphs
+        manuscriptText += '\n\n' + block.text;
+      }
+    }
+  }
+
+  // Ensure file ends with single newline (last paragraph has no trailing blank)
+  if (manuscriptText) {
+    manuscriptText = manuscriptText.trimStart() + '\n';
+  }
+
+  return manuscriptText;
 }
 
 /**
