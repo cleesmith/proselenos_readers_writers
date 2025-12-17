@@ -81,6 +81,8 @@ export default function NonAIToolsSection({
       return 'Selected EPUB:';
     } else if (toolName === 'Extract Chapters from Manuscript') {
       return 'Selected manuscript:';
+    } else if (toolName === 'Merge Chapters into Edited Manuscript') {
+      return 'Selected manuscript:';
     } else {
       return 'Selected file:';
     }

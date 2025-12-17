@@ -8,6 +8,7 @@ import { publishManuscriptAction } from '@/lib/publish-actions';
 import { listDocxFilesAction, extractDocxCommentsAction } from '@/lib/docx-comments-actions';
 import { listEpubFilesAction, convertEpubToTextAction } from '@/lib/epub-conversion-actions';
 import { listTxtFilesAction, extractChaptersAction } from '@/lib/chapter-extraction-actions';
+import { listManuscriptsForMergeAction, mergeChaptersAction } from '@/lib/chapter-merge-actions';
 
 interface NonAIToolsManagerState {
   selectedNonAITool: string;
@@ -41,6 +42,7 @@ interface NonAIToolsManagerActions {
 // Available non-AI tools
 export const NON_AI_TOOLS = [
   'Extract Chapters from Manuscript',
+  'Merge Chapters into Edited Manuscript',
   'DOCX: Extract Comments as Text',
   'EPUB to TXT Converter'
 ];
@@ -101,6 +103,9 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
       } else if (selectedNonAITool === 'Extract Chapters from Manuscript') {
         // Get TXT files for chapter extraction from project
         result = await listTxtFilesAction(currentProject);
+      } else if (selectedNonAITool === 'Merge Chapters into Edited Manuscript') {
+        // Get manuscript files (non-chapter .txt files) for merging
+        result = await listManuscriptsForMergeAction(currentProject);
       } else {
         // Get text files from current project for other tools
         result = await listProjectFilesAction(currentProject);
@@ -112,7 +117,8 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
         // Apply additional filtering if needed
         if (selectedNonAITool !== 'DOCX: Extract Comments as Text' &&
             selectedNonAITool !== 'EPUB to TXT Converter' &&
-            selectedNonAITool !== 'Extract Chapters from Manuscript') {
+            selectedNonAITool !== 'Extract Chapters from Manuscript' &&
+            selectedNonAITool !== 'Merge Chapters into Edited Manuscript') {
           // Filter for .txt files (exactly like AI Tools)
           filteredFiles = result.data.files.filter((file: any) =>
             file.name.endsWith('.txt') ||
@@ -153,6 +159,8 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
       await handleEpubConversion(_session, currentProject, onShowAlert, isDarkMode);
     } else if (selectedNonAITool === 'Extract Chapters from Manuscript') {
       await handleChapterExtraction(_session, currentProject, onShowAlert, isDarkMode);
+    } else if (selectedNonAITool === 'Merge Chapters into Edited Manuscript') {
+      await handleChapterMerge(_session, currentProject, onShowAlert, isDarkMode);
     } else if (selectedNonAITool === 'Publish or Unpublish Manuscript') {
       await handlePublishManuscript(_session, currentProjectId, onShowAlert, isDarkMode);
     } else {
@@ -305,6 +313,54 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
         const successMessage = `Extracted ${chapterCount} chapters (${totalWords.toLocaleString()} words). Files: c0001.txt through ${lastFileName}`;
         setPublishResult(successMessage);
         onShowAlert('success', `Extracted ${chapterCount} chapters`, isDarkMode);
+      } else {
+        const errorMessage = result.error || 'Unknown error occurred';
+        setPublishResult(`Error: ${errorMessage}`);
+        onShowAlert('error', errorMessage, isDarkMode);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setPublishResult(`Error: ${errorMessage}`);
+      onShowAlert('error', errorMessage, isDarkMode);
+    } finally {
+      stopTimer();
+      setIsPublishing(false);
+      setToolJustFinished(true);
+    }
+  };
+
+  const handleChapterMerge = async (
+    _session: any,
+    currentProject: string | null,
+    onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
+    isDarkMode: boolean
+  ) => {
+    if (!currentProject) {
+      onShowAlert('error', 'Please select a project first', isDarkMode);
+      return;
+    }
+
+    if (!selectedManuscriptForTool) {
+      onShowAlert('error', 'Please select a chapter file first', isDarkMode);
+      return;
+    }
+
+    setIsPublishing(true);
+    setPublishResult(null);
+    startTimer();
+
+    try {
+      // selectedManuscriptForTool.id is the file path (e.g., "ProjectName/ovids_tenth_c0001.txt")
+      const result = await mergeChaptersAction(
+        currentProject,
+        selectedManuscriptForTool.id
+      );
+
+      if (result.success && result.data) {
+        const { outputFileName, chapterCount, totalWords, deletedCount } = result.data;
+        const successMessage = `Merged ${chapterCount} chapters into ${outputFileName} (${totalWords.toLocaleString()} words). Deleted ${deletedCount} chapter files.`;
+        setPublishResult(successMessage);
+        onShowAlert('success', `Merged ${chapterCount} chapters into ${outputFileName}`, isDarkMode);
       } else {
         const errorMessage = result.error || 'Unknown error occurred';
         setPublishResult(`Error: ${errorMessage}`);
