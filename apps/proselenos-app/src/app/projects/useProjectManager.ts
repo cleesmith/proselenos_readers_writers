@@ -8,11 +8,11 @@ import {
   createProjectAction,
   selectProjectAction,
   listProjectFilesAction,
-  listTxtFilesAction,
   checkManuscriptFilesExistAction,
 } from '@/lib/project-actions';
 import { createSignedUploadUrlForProject } from '@/lib/project-storage';
-import { convertTxtToDocxAction } from '@/lib/docx-conversion-actions';
+import { loadManuscript } from '@/services/manuscriptStorage';
+import { convertManuscriptToDocx } from '@/lib/txt-to-docx-utils';
 
 // Manuscript file types - only 1 of each allowed, renamed to manuscript.{ext}
 const MANUSCRIPT_EXTENSIONS = ['.epub', '.pdf', '.html'];
@@ -37,17 +37,15 @@ const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB']!
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 interface ProjectManagerState {
-  // Project state
-  currentProject: string | null;
-  currentProjectId: string | null;
+  // Project state (local-first: always has default values)
+  currentProject: string;
+  currentProjectId: string;
   uploadStatus: string;
 
   // Modal states
   showModal: boolean;
   showDocxSelector: boolean;
-  showTxtSelector: boolean;
   showFilenameDialog: boolean;
-  showTxtFilenameDialog: boolean;
 
   // Modal data
   modalFiles: any[];
@@ -62,11 +60,8 @@ interface ProjectManagerState {
   outputFileName: string;
   isConverting: boolean;
 
-  // TXT conversion state
-  txtFiles: any[];
-  selectedTxtFile: any | null;
-  txtOutputFileName: string;
-  isConvertingTxt: boolean;
+  // TXT export state (simple: just converting flag)
+  isTxtConverting: boolean;
 
   // Upload state
   showUploadModal: boolean;
@@ -82,8 +77,8 @@ interface ProjectManagerState {
 interface ProjectManagerActions {
   // Status updates
   setUploadStatus: (status: string) => void;
-  setCurrentProject: (project: string | null) => void;
-  setCurrentProjectId: (id: string | null) => void;
+  setCurrentProject: (project: string) => void;
+  setCurrentProjectId: (id: string) => void;
 
   // Project operations
   openProjectSelector: (session: any, isDarkMode: boolean) => Promise<void>;
@@ -113,24 +108,14 @@ interface ProjectManagerActions {
 
   // DOCX import (now via LocalDocxImportModal component)
 
-  // TXT export
-  handleTxtExport: (
-    session: any,
-    isDarkMode: boolean,
-    setIsStorageOperationPending: (loading: boolean) => void
-  ) => Promise<void>;
-  selectTxtFile: (file: any) => void;
-  performTxtConversion: (session: any, isDarkMode: boolean) => Promise<void>;
+  // TXT export (simple: manuscript.txt → .docx download)
+  handleExport: (isDarkMode: boolean) => Promise<void>;
 
   // Modal state setters
   setShowFilenameDialog: (show: boolean) => void;
-  setShowTxtFilenameDialog: (show: boolean) => void;
   setShowDocxSelector: (show: boolean) => void;
-  setShowTxtSelector: (show: boolean) => void;
   setOutputFileName: (name: string) => void;
-  setTxtOutputFileName: (name: string) => void;
   setSelectedDocxFile: (file: any | null) => void;
-  setSelectedTxtFile: (file: any | null) => void;
 
   // Upload operations
   handleFileUpload: (
@@ -151,16 +136,15 @@ interface ProjectManagerActions {
 
 export function useProjectManager(): [ProjectManagerState, ProjectManagerActions] {
   // Project state
-  const [currentProject, setCurrentProject] = useState<string | null>(null);
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  // Local-first: always have default values (no more null checks needed)
+  const [currentProject, setCurrentProject] = useState<string>('manuscript');
+  const [currentProjectId, setCurrentProjectId] = useState<string>('1');
   const [uploadStatus, setUploadStatus] = useState('');
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
   const [showDocxSelector, setShowDocxSelector] = useState(false);
-  const [showTxtSelector, setShowTxtSelector] = useState(false);
   const [showFilenameDialog, setShowFilenameDialog] = useState(false);
-  const [showTxtFilenameDialog, setShowTxtFilenameDialog] = useState(false);
 
   // Modal data
   const [modalFiles, setModalFiles] = useState<any[]>([]);
@@ -175,11 +159,8 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
   const [outputFileName, setOutputFileName] = useState('');
   const [isConverting, _setIsConverting] = useState(false);
 
-  // TXT conversion state
-  const [txtFiles, setTxtFiles] = useState<any[]>([]);
-  const [selectedTxtFile, setSelectedTxtFile] = useState<any | null>(null);
-  const [txtOutputFileName, setTxtOutputFileName] = useState('');
-  const [isConvertingTxt, setIsConvertingTxt] = useState(false);
+  // TXT export state (simple: just converting flag)
+  const [isTxtConverting, setIsTxtConverting] = useState(false);
 
   // Upload state
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -288,12 +269,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
 
   // Browse files within the current project folder
   const browseProjectFiles = useCallback(
-    async (session: any, isDarkMode: boolean) => {
-      if (!session || !currentProject) {
-        showAlert('Select a project first!', 'info', undefined, isDarkMode);
-        return;
-      }
-
+    async (_session: any, _isDarkMode: boolean) => {
       setIsProjectFilesBrowser(true);
       await navigateToFolder(currentProject); // List files in project
       setShowModal(true);
@@ -353,127 +329,52 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
 
   // DOCX import now handled by LocalDocxImportModal component
 
-  // TXT export (TXT to DOCX conversion)
-  const handleTxtExport = useCallback(
-    async (
-      session: any,
-      isDarkMode: boolean,
-      setIsStorageOperationPending: (loading: boolean) => void
-    ) => {
-      if (!session || !currentProject) {
-        showAlert('Please select a project first.', 'warning', undefined, isDarkMode);
-        return;
-      }
-
-      setIsStorageOperationPending(true);
-      setUploadStatus('Loading TXT files...');
+  // TXT export (simple: manuscript.txt → .docx download)
+  const handleExport = useCallback(
+    async (isDarkMode: boolean) => {
+      setIsTxtConverting(true);
+      setUploadStatus('Exporting manuscript.txt to DOCX...');
 
       try {
-        const result = await listTxtFilesAction(currentProject);
-
-        if (result.success && result.data) {
-          setTxtFiles(result.data.files);
-          setShowTxtSelector(true);
+        // Load manuscript.txt from IndexedDB
+        const text = await loadManuscript();
+        if (!text) {
+          showAlert('No manuscript.txt found. Please add your manuscript first.', 'warning', undefined, isDarkMode);
           setUploadStatus('');
-        } else {
-          showAlert(result.error || 'Failed to load TXT files', 'error', undefined, isDarkMode);
-          setUploadStatus(`❌ ${result.error}`);
-        }
-      } catch (error: any) {
-        showAlert(`Error loading TXT files: ${error.message}`, 'error', undefined, isDarkMode);
-        setUploadStatus(`❌ ${error.message}`);
-      } finally {
-        setIsStorageOperationPending(false);
-      }
-    },
-    [currentProject]
-  );
-
-  // Select TXT file for export
-  const selectTxtFile = useCallback((file: any) => {
-    setSelectedTxtFile(file);
-    // Set default output filename (replace .txt with .docx)
-    const defaultFileName = file.name.replace(/\.txt$/i, '.docx');
-    setTxtOutputFileName(defaultFileName);
-    setShowTxtSelector(false);
-    setShowTxtFilenameDialog(true);
-  }, []);
-
-  // Perform TXT to DOCX conversion
-  const performTxtConversion = useCallback(
-    async (_session: any, isDarkMode: boolean) => {
-      if (!selectedTxtFile || !txtOutputFileName.trim() || !currentProject) {
-        showAlert('Missing required information', 'error', undefined, isDarkMode);
-        return;
-      }
-
-      setIsConvertingTxt(true);
-      setUploadStatus(`Converting ${selectedTxtFile.name} to DOCX...`);
-
-      try {
-        const result = await convertTxtToDocxAction(
-          currentProject,
-          selectedTxtFile.path,
-          txtOutputFileName.trim()
-        );
-
-        if (!result.success) {
-          throw new Error(result.error || 'Conversion failed');
+          return;
         }
 
-        // Decode base64 buffer
-        const base64Buffer = result.data!.docxBuffer;
-        const binaryString = atob(base64Buffer);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
+        // Convert to DOCX (client-side)
+        const blob = await convertManuscriptToDocx(text);
 
-        // Create blob and trigger download
-        const blob = new Blob([bytes], {
-          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        });
+        // Trigger download
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = result.data!.fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'manuscript.docx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        setUploadStatus(`✅ Conversion complete: ${result.data!.fileName}`);
-        showAlert(
-          `Conversion complete!\n\nOutput: ${result.data!.fileName}\nParagraphs: ${result.data!.paragraphCount}\nChapters: ${result.data!.chapterCount}`,
-          'success',
-          'TXT to DOCX Conversion',
-          isDarkMode
-        );
-
-        // Reset state
-        setSelectedTxtFile(null);
-        setTxtOutputFileName('');
-        setShowTxtFilenameDialog(false);
-      } catch (error: any) {
+        setUploadStatus('✅ Downloaded manuscript.docx');
+        showAlert('Downloaded manuscript.docx', 'success', undefined, isDarkMode);
+      } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        setUploadStatus(`❌ Conversion failed: ${errorMsg}`);
-        showAlert(`Conversion error: ${errorMsg}`, 'error', undefined, isDarkMode);
+        setUploadStatus(`❌ Export failed: ${errorMsg}`);
+        showAlert(`Export failed: ${errorMsg}`, 'error', undefined, isDarkMode);
       } finally {
-        setIsConvertingTxt(false);
+        setIsTxtConverting(false);
       }
     },
-    [selectedTxtFile, txtOutputFileName, currentProject]
+    []
   );
 
   // Handle file upload button click
   const handleFileUpload = (
-    isDarkMode: boolean,
+    _isDarkMode: boolean,
     _setIsStorageOperationPending: (loading: boolean) => void
   ) => {
-    if (!currentProject || !currentProjectId) {
-      showAlert('Please select a project first.', 'warning', undefined, isDarkMode);
-      return;
-    }
     setShowUploadModal(true);
   };
 
@@ -595,11 +496,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
   const closeModal = useCallback(() => setShowModal(false), []);
 
   // Handle local DOCX import button click
-  const handleLocalDocxImport = (isDarkMode: boolean) => {
-    if (!currentProject || !currentProjectId) {
-      showAlert('Please select a project first.', 'warning', undefined, isDarkMode);
-      return;
-    }
+  const handleLocalDocxImport = (_isDarkMode: boolean) => {
     setShowLocalDocxImportModal(true);
   };
 
@@ -615,9 +512,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
     uploadStatus,
     showModal,
     showDocxSelector,
-    showTxtSelector,
     showFilenameDialog,
-    showTxtFilenameDialog,
     modalFiles,
     currentFolderId,
     breadcrumbs,
@@ -627,10 +522,7 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
     selectedDocxFile,
     outputFileName,
     isConverting,
-    txtFiles,
-    selectedTxtFile,
-    txtOutputFileName,
-    isConvertingTxt,
+    isTxtConverting,
     showUploadModal,
     selectedUploadFile,
     uploadFileName,
@@ -651,17 +543,11 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       closeModal,
       setNewProjectName,
       navigateToFolder,
-      handleTxtExport,
-      selectTxtFile,
-      performTxtConversion,
+      handleExport,
       setShowFilenameDialog,
-      setShowTxtFilenameDialog,
       setShowDocxSelector,
-      setShowTxtSelector,
       setOutputFileName,
-      setTxtOutputFileName,
       setSelectedDocxFile,
-      setSelectedTxtFile,
       handleFileUpload,
       selectUploadFile,
       setSelectedUploadFile,
@@ -679,11 +565,9 @@ export function useProjectManager(): [ProjectManagerState, ProjectManagerActions
       browseProjectFiles,
       closeModal,
       navigateToFolder,
-      selectTxtFile,
+      handleExport,
       selectUploadFile,
       performFileUpload,
-      handleTxtExport,
-      performTxtConversion,
       handleLocalDocxConversionComplete,
       currentProject,
       currentProjectId

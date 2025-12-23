@@ -1,13 +1,9 @@
 import clsx from 'clsx';
 import { MdCheckCircle, MdCheckCircleOutline } from 'react-icons/md';
-import {
-  LiaCloudUploadAltSolid,
-  LiaInfoCircleSolid,
-} from 'react-icons/lia';
+import { LiaInfoCircleSolid } from 'react-icons/lia';
 
 import { Book } from '@/types/book';
 import { useEnv } from '@/context/EnvContext';
-import { useSession } from 'next-auth/react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { LibraryCoverFitType, LibraryViewModeType } from '@/types/settings';
@@ -22,7 +18,6 @@ interface BookItemProps {
   isSelectMode: boolean;
   bookSelected: boolean;
   transferProgress: number | null;
-  handleBookUpload: (book: Book) => void;
   showBookDetailsModal: (book: Book) => void;
 }
 
@@ -33,12 +28,9 @@ const BookItem: React.FC<BookItemProps> = ({
   isSelectMode,
   bookSelected,
   transferProgress,
-  handleBookUpload,
   showBookDetailsModal,
 }) => {
   const _ = useTranslation();
-  const { data: session } = useSession();
-  const user = session?.user;
   const { appService } = useEnv();
   const iconSize15 = useResponsiveSize(15);
 
@@ -121,35 +113,18 @@ const BookItem: React.FC<BookItemProps> = ({
                 </div>
               </button>
             )}
-            {transferProgress !== null ? (
-              transferProgress === 100 ? null : (
-                <div
-                  className='radial-progress'
-                  style={
-                    {
-                      '--value': transferProgress,
-                      '--size': `${iconSize15}px`,
-                      '--thickness': '2px',
-                    } as React.CSSProperties
-                  }
-                  role='progressbar'
-                ></div>
-              )
-            ) : (
-              user &&
-              !book.uploadedAt && (
-                <button
-                  className='show-repo-button -m-2 p-2'
-                  title={_('Back up to Private Ebooks')}
-                  aria-label={_('Back up to Private Ebooks')}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => {
-                    handleBookUpload(book);
-                  }}
-                >
-                  <LiaCloudUploadAltSolid size={iconSize15} />
-                </button>
-              )
+            {transferProgress !== null && transferProgress !== 100 && (
+              <div
+                className='radial-progress'
+                style={
+                  {
+                    '--value': transferProgress,
+                    '--size': `${iconSize15}px`,
+                    '--thickness': '2px',
+                  } as React.CSSProperties
+                }
+                role='progressbar'
+              ></div>
             )}
           </div>
         </div>

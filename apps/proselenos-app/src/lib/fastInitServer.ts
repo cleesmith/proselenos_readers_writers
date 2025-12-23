@@ -6,7 +6,6 @@ import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { getAuthorConfig } from '@/lib/config-storage';
 import { listProjects } from '@/lib/project-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { ensureLibraryRepoExists } from '@/app/actions/store-catalog';
 
 export type Config = {
   settings: {
@@ -58,9 +57,6 @@ export async function fastInitForUser(): Promise<InitPayloadForClient> {
     }
 
     const userId = session.user.id;
-
-    // Ensure the public library repo exists (for Bookstore)
-    await ensureLibraryRepoExists();
 
     // Load config and projects from Supabase in parallel
     const [config, projectsList] = await Promise.all([

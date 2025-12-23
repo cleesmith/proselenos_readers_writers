@@ -5,13 +5,11 @@ import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { eventDispatcher } from '@/utils/event';
 import { FooterBarProps, NavigationHandlers, FooterBarChildProps } from './types';
 import { debounce } from '@/utils/debounce';
 import { viewPagination } from '../../hooks/usePagination';
 import MobileFooterBar from './MobileFooterBar';
 import DesktopFooterBar from './DesktopFooterBar';
-import TTSControl from '../tts/TTSControl';
 
 const FooterBar: React.FC<FooterBarProps> = ({
   bookKey,
@@ -25,13 +23,11 @@ const FooterBar: React.FC<FooterBarProps> = ({
   const { appService } = useEnv();
   const { getConfig, setConfig } = useBookDataStore();
   const { hoveredBookKey, setHoveredBookKey } = useReaderStore();
-  const { getView, getViewState, getProgress, getViewSettings } = useReaderStore();
+  const { getView, getViewSettings } = useReaderStore();
   const { isSideBarVisible, setSideBarVisible } = useSidebarStore();
 
   const view = getView(bookKey);
   const config = getConfig(bookKey);
-  const viewState = getViewState(bookKey);
-  const progress = getProgress(bookKey);
   const viewSettings = getViewSettings(bookKey);
 
   const [userSelectedTab, setUserSelectedTab] = useState('');
@@ -83,23 +79,11 @@ const FooterBar: React.FC<FooterBarProps> = ({
     view?.history.forward();
   }, [view]);
 
-  const handleSpeakText = useCallback(async () => {
-    if (!view || !progress || !viewState) return;
-
-    const eventType = viewState.ttsEnabled ? 'tts-stop' : 'tts-speak';
-    eventDispatcher.dispatch(eventType, { bookKey });
-  }, [view, progress, viewState, bookKey]);
-
   const handleSetActionTab = useCallback(
     (tab: string) => {
       setUserSelectedTab((prevTab) => (prevTab === tab ? '' : tab));
 
-      if (tab === 'tts') {
-        if (viewState?.ttsEnabled) {
-          setHoveredBookKey('');
-        }
-        handleSpeakText();
-      } else if (tab === 'toc') {
+      if (tab === 'toc') {
         setHoveredBookKey('');
         if (config?.viewSettings) {
           setConfig(bookKey, { viewSettings: { ...config.viewSettings, sideBarTab: 'toc' } });
@@ -118,11 +102,9 @@ const FooterBar: React.FC<FooterBarProps> = ({
     [
       config,
       bookKey,
-      viewState?.ttsEnabled,
       setConfig,
       setSideBarVisible,
       setHoveredBookKey,
-      handleSpeakText,
     ],
   );
 
@@ -155,7 +137,6 @@ const FooterBar: React.FC<FooterBarProps> = ({
     progressFraction,
     navigationHandlers,
     onSetActionTab: handleSetActionTab,
-    onSpeakText: handleSpeakText,
   };
 
   const containerClasses = clsx(
@@ -198,8 +179,6 @@ const FooterBar: React.FC<FooterBarProps> = ({
         <MobileFooterBar {...commonProps} />
         <DesktopFooterBar {...commonProps} />
       </div>
-
-      <TTSControl bookKey={bookKey} gridInsets={gridInsets} />
     </>
   );
 };

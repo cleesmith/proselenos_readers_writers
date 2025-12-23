@@ -14,7 +14,6 @@ import { useParallelViewStore } from '@/store/parallelViewStore';
 import { useMouseEvent, useTouchEvent } from '../hooks/useIframeEvents';
 import { usePagination } from '../hooks/usePagination';
 import { useFoliateEvents } from '../hooks/useFoliateEvents';
-import { useProgressSync } from '../hooks/useProgressSync';
 import { useProgressAutoSave } from '../hooks/useProgressAutoSave';
 import { useBackgroundTexture } from '@/hooks/useBackgroundTexture';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
@@ -25,7 +24,6 @@ import {
   applyFixedlayoutStyles,
   applyImageStyle,
   applyThemeModeClass,
-  applyTranslationStyle,
   getStyles,
   keepTextAlignment,
   transformStylesheet,
@@ -49,7 +47,6 @@ import { isCJKLang } from '@/utils/lang';
 import { isDesktopAppPlatform } from '@/services/environment';
 import { TransformContext } from '@/services/transformers/types';
 import { transformContent } from '@/services/transformService';
-import { useTextTranslation } from '../hooks/useTextTranslation';
 import { useBookCoverAutoSave } from '../hooks/useAutoSaveBookCover';
 import { manageSyntaxHighlighting } from '@/utils/highlightjs';
 import { getViewInsets } from '@/utils/insets';
@@ -69,19 +66,18 @@ const FoliateViewer: React.FC<{
   config: BookConfig;
   gridInsets: Insets;
   contentInsets: Insets;
-}> = ({ bookKey, bookDoc, config, gridInsets, contentInsets: insets }) => {
+}> = ({ bookKey, bookDoc, config, contentInsets: insets }) => {
   const _ = useTranslation();
   const { appService, envConfig } = useEnv();
   const { themeCode, isDarkMode } = useThemeStore();
   const { settings } = useSettingsStore();
   const { loadCustomFonts, getLoadedFonts } = useCustomFontStore();
   const { getView, setView: setFoliateView, setViewInited, setProgress } = useReaderStore();
-  const { getViewState, getViewSettings, setViewSettings } = useReaderStore();
+  const { getViewSettings, setViewSettings } = useReaderStore();
   const { getParallels } = useParallelViewStore();
   const { getBookData } = useBookDataStore();
   const { applyBackgroundTexture } = useBackgroundTexture();
   const { applyEinkMode } = useEinkMode();
-  const viewState = getViewState(bookKey);
   const viewSettings = getViewSettings(bookKey);
 
   const viewRef = useRef<FoliateView | null>(null);
@@ -100,11 +96,9 @@ const FoliateViewer: React.FC<{
   }, [toastMessage]);
 
   useUICSS(bookKey);
-  useProgressSync(bookKey);
   useProgressAutoSave(bookKey);
   useBookCoverAutoSave(bookKey);
   const { syncState, conflictDetails, resolveWithLocal, resolveWithRemote } = useKOSync(bookKey);
-  useTextTranslation(bookKey, viewRef.current);
 
   const progressRelocateHandler = (event: Event) => {
     const detail = (event as CustomEvent).detail;
@@ -312,7 +306,6 @@ const FoliateViewer: React.FC<{
       const height = viewHeight - insets.top - insets.bottom;
       book.transformTarget?.addEventListener('data', getDocTransformHandler({ width, height }));
       view.renderer.setStyles?.(getStyles(viewSettings));
-      applyTranslationStyle(viewSettings);
 
       doubleClickDisabled.current = viewSettings.disableDoubleClick!;
       const animated = viewSettings.animated!;
@@ -363,7 +356,6 @@ const FoliateViewer: React.FC<{
 
   const applyMarginAndGap = () => {
     const viewSettings = getViewSettings(bookKey)!;
-    const viewState = getViewState(bookKey);
     const viewInsets = getViewInsets(viewSettings);
     const showDoubleBorder = viewSettings.vertical && viewSettings.doubleBorder;
     const showDoubleBorderHeader = showDoubleBorder && viewSettings.showHeader;
@@ -371,11 +363,9 @@ const FoliateViewer: React.FC<{
     const showTopHeader = viewSettings.showHeader && !viewSettings.vertical;
     const showBottomFooter = viewSettings.showFooter && !viewSettings.vertical;
     const moreTopInset = showTopHeader ? Math.max(0, 44 - insets.top) : 0;
-    const ttsBarHeight =
-      viewState?.ttsEnabled && viewSettings.showTTSBar ? 52 + gridInsets.bottom * 0.33 : 0;
     const moreBottomInset = showBottomFooter
-      ? Math.max(0, Math.max(ttsBarHeight, 44) - insets.bottom)
-      : Math.max(0, ttsBarHeight);
+      ? Math.max(0, 44 - insets.bottom)
+      : 0;
     const moreRightInset = showDoubleBorderHeader ? 32 : 0;
     const moreLeftInset = showDoubleBorderFooter ? 32 : 0;
     const topMargin = (showTopHeader ? insets.top : viewInsets.top) + moreTopInset;
@@ -453,8 +443,6 @@ const FoliateViewer: React.FC<{
     viewSettings?.doubleBorder,
     viewSettings?.showHeader,
     viewSettings?.showFooter,
-    viewSettings?.showTTSBar,
-    viewState?.ttsEnabled,
   ]);
 
   return (

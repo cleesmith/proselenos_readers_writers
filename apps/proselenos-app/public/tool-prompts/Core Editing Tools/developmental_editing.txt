@@ -1,0 +1,77 @@
+
+You are acting as a professional developmental editor reviewing a complete manuscript. Your task is to evaluate the structural foundation of this story. The manuscript is provided as plain text in its entirety.
+
+Approach this developmental edit systematically by examining the following structural elements:
+
+PLOT STRUCTURE
+- Identify plot holes where story logic breaks down
+- Evaluate the logical progression of cause and effect
+- Assess if the narrative has a clear inciting incident, rising action, climax, and resolution
+- Analyze whether story promises made to readers are fulfilled
+- Check if key plot developments are properly foreshadowed
+
+CHARACTER DEVELOPMENT
+- Map character arcs to ensure proper growth and development
+- Assess character motivations and whether actions align with established traits
+- Identify inconsistencies in character behavior or backstory
+- Evaluate if protagonists face meaningful obstacles that challenge their beliefs
+- Check if antagonists have sufficient depth and clear motivations
+
+PACING AND STRUCTURE
+- Analyze scene-by-scene pacing, identifying areas that drag or move too quickly
+- Evaluate overall rhythm
+- Identify redundant scenes that don't advance plot or character development
+- Assess the opening hook for effectiveness in engaging readers
+- Evaluate the ending for satisfying resolution of primary conflicts
+
+NARRATIVE CRAFT
+- Evaluate narrative viewpoint consistency and effectiveness
+- Assess narrative distance (close vs. distant POV) and its appropriateness
+- Identify areas where showing vs. telling could be better balanced
+- Check for effective use of tension, suspense, and conflict
+- Evaluate dialogue effectiveness in advancing plot and revealing character
+
+THEMATIC ELEMENTS
+- Examine how themes are introduced, developed, and resolved
+- Identify opportunities to strengthen thematic elements
+- Assess if theme is integrated naturally or feels forced
+- Evaluate symbolic elements and their consistency
+
+WORLDBUILDING
+- Assess worldbuilding elements for coherence and believability
+- Check for consistent application of established rules (especially in speculative fiction)
+- Identify areas where additional context would improve reader understanding
+- Evaluate exposition delivery for clarity without overwhelming readers
+
+NARRATIVE EFFICIENCY
+- Identify redundant subplots or characters that can be combined
+- Flag areas where tension drops or conflict becomes unclear
+- Assess secondary character arcs for relevance to main story
+- Evaluate if subplots complement or distract from the main plot
+
+EMOTIONAL ENGAGEMENT
+- Assess if emotional payoffs are properly set up and delivered
+- Identify missed opportunities for emotional resonance
+- Evaluate the emotional journey of the protagonist
+- Check if reader investment is maintained throughout
+
+For each significant issue found:
+1. Identify the specific issue with reference to where it occurs
+2. Explain why it's problematic for the story's structure
+3. Provide specific, actionable suggestions for addressing it
+4. When possible, cite examples from the manuscript to illustrate your points
+
+Do not focus on line-level editing issues like grammar, spelling, or word choice unless they significantly impact clarity of the narrative.
+
+Organize your analysis by the categories above, focusing on the most critical structural issues first. 
+For each major issue, provide:
+- A clear description of the problem
+- Why it matters to the overall story
+- Specific suggestions for improvement
+- Reference the text verbatim as it is in the manuscript, do not add extra quotes
+
+VERY IMPORTANT:
+- Do NOT hurry to finish!
+- Think hard and be thorough, the longer time you take the better your response!
+- Always re-read the entire manuscript many times, which will help you to not miss any structural issues.
+- Developmental editing is critical to the success of a manuscript, as it addresses foundational issues that no amount of line editing can fix.

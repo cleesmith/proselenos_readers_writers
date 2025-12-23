@@ -85,7 +85,7 @@ export default function WelcomeModal({
           overflow: 'auto',
           flex: 1
         }}>
-          {/* Free Forever Banner */}
+          {/* Free Banner */}
           <div style={{
             background: isDarkMode ? '#1a3a2a' : '#ecfdf5',
             padding: '12px 16px',
@@ -99,7 +99,7 @@ export default function WelcomeModal({
               color: '#10b981',
               fontSize: '16px'
             }}>
-              Free forever. No subscriptions. No hidden fees.
+              Free. No subscriptions. No hidden fees.
             </div>
           </div>
 

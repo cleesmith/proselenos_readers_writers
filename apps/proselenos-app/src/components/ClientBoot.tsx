@@ -6,7 +6,6 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { useSession, signIn } from 'next-auth/react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 import ProselenosHeader from '../app/proselenos/proselenosHeader';
@@ -16,65 +15,27 @@ import EditorModal from '../app/proselenos/EditorModal';
 import ProjectSection from '../app/projects/ProjectSection';
 import ProjectSelectorModal from '../app/projects/ProjectSelectorModal';
 import LocalDocxImportModal from '../app/projects/LocalDocxImportModal';
-import ExportModal from '../app/projects/ExportModal';
 import FilesModal from '../app/projects/FilesModal';
 import { useProjectManager } from '../app/projects/useProjectManager';
 import AIToolsSection from '../app/ai-tools/AIToolsSection';
-import FileSelectorModal from '../app/ai-tools/FileSelectorModal';
+// FileSelectorModal removed - manuscript.txt is now used directly
 import { useToolsManager } from '../app/ai-tools/useToolsManager';
 import NonAIToolsSection from '../app/non-ai-tools/NonAIToolsSection';
 import { useNonAITools } from '../app/non-ai-tools/useNonAITools';
 import { getTheme } from '../app/shared/theme';
-import { showAlert, showStickyErrorWithLogout } from '../app/shared/alerts';
+import { showAlert } from '../app/shared/alerts';
 import AboutModal from '../components/AboutModal';
 import {
   getproselenosConfigAction,
-  installToolPromptsAction,
-  updateSelectedModelAction,
-  updateDarkModeAction,
 } from '@/lib/config-actions';
-import {
-  createOrUpdateFileAction,
-  readFileAction,
-  listTxtFilesAction,
-} from '@/lib/project-actions';
-import {
-  loadBookMetadataAction,
-  saveBookMetadataAction,
-} from '@/lib/project-actions';
-import { hasApiKeyAction } from '@/lib/api-key-actions';
-import { updateToolPromptAction } from '@/lib/tools-actions';
 import ProjectSettingsModal, { ProjectMetadata } from '../app/projects/ProjectSettingsModal';
 import type { InitPayloadForClient } from '../lib/fastInitServer';
-
-// Helper function to sanitize error messages for user display
-// Removes provider-specific details while keeping logs intact
-const sanitizeErrorMessage = (error: string | undefined): string => {
-  if (!error) return 'An unexpected error occurred.';
-
-  // Strip docs URLs from error messages
-  const withoutUrls = error.replace(/\s*-\s*https:\/\/[^\s]+/g, '');
-
-  // Map common errors to user-friendly messages
-  if (error.includes('Bad credentials') || error.includes('401')) {
-    return 'Authentication failed. Please sign out and sign in again.';
-  }
-  if (error.includes('403') || error.includes('Forbidden')) {
-    return 'Access denied. Please check your credentials.';
-  }
-  if (error.includes('404') || error.includes('Not Found')) {
-    return 'Resource not found.';
-  }
-  if (error.includes('network') || error.includes('ENOTFOUND')) {
-    return 'Connection failed. Please check your internet connection.';
-  }
-
-  // Default: strip URLs and return
-  return withoutUrls.trim() || 'An unexpected error occurred.';
-};
+import { loadSettings, saveSettings, loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, initWritingAssistantPrompts } from '@/services/manuscriptStorage';
+import { initializeToolPrompts } from '@/services/toolPromptsLoader';
 
 export default function ClientBoot({ init }: { init: InitPayloadForClient | null }) {
-  const { data: session, status } = useSession();
+  // Local-first: no session required
+  const session = null;
   
   // Projects Domain State
   const [projectState, projectActions] = useProjectManager();
@@ -87,11 +48,14 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   
   // Core app state
   const [isLoadingConfig, setIsLoadingConfig] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(init?.config?.isDarkMode ?? false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined' && localStorage) {
+      return localStorage.getItem('authorsDarkMode') === 'true';
+    }
+    return false;
+  });
   const [showEditorModal, setShowEditorModal] = useState(false);
-  const [editorContent, setEditorContent] = useState('');
-  const [currentFileName, setCurrentFileName] = useState<string | null>(null);
-  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
+  const [editorInitialFile, setEditorInitialFile] = useState<{ key: string; store: string } | null>(null);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
   const [currentProvider, setCurrentProvider] = useState('openrouter');
@@ -99,21 +63,17 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   const [hasConfiguredProvider, setHasConfiguredProvider] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
   const [isStorageOperationPending, setIsStorageOperationPending] = useState(false);
-  const [hasCheckedToolPrompts, setHasCheckedToolPrompts] = useState(false);
-  const [isInstallingToolPrompts, setIsInstallingToolPrompts] = useState(false);
+  const [isInstallingToolPrompts] = useState(false); // TODO: For local-first
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
   const [hasShownReadyModal, setHasShownReadyModal] = useState(false);
   const [isSystemInitializing, setIsSystemInitializing] = useState(true);
-  const [initFailed, setInitFailed] = useState(false);
+  const [initFailed] = useState(false); // TODO: For local-first error handling
   const [showProjectSettingsModal, setShowProjectSettingsModal] = useState(false);
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | undefined>(undefined);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
   const [isSavingMetadata, setIsSavingMetadata] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
-  // Editor TXT file selector state
-  const [showEditorFileSelector, setShowEditorFileSelector] = useState(false);
-  const [editorFileSelectorFiles, setEditorFileSelectorFiles] = useState<any[]>([]);
 
   const theme = getTheme(isDarkMode);
 
@@ -130,14 +90,14 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     ]) as T;
   }, []);
 
-  // Initialize from fast init payload
+  // Initialize from fast init payload (config only, tools loaded from IndexedDB)
   useEffect(() => {
     if (!init) return;
 
-    // Hydrate config settings
+    // Hydrate config settings (local-first: these have defaults so always set)
     if (init.config?.settings.current_project) {
       projectActions.setCurrentProject(init.config.settings.current_project);
-      projectActions.setCurrentProjectId(init.config.settings.current_project_folder_id);
+      projectActions.setCurrentProjectId(init.config.settings.current_project_folder_id || '1');
       projectActions.setUploadStatus(`✅ Project loaded: ${init.config.settings.current_project}`);
     }
     if (init.config?.selectedApiProvider) {
@@ -148,119 +108,56 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
       setCurrentModel(init.config.selectedAiModel);
     }
 
-    // Hydrate tools
-    const allTools = Object.entries(init.toolsByCategory).flatMap(([category, tools]) =>
-      tools.map((t) => ({
-        id: `${category}/${t.name}`, // Use category/filename format instead of file ID
-        name: t.name.replace(/\.(txt|md|json)$/i, ''),
-        category,
-      }))
-    );
-    toolsActions.setAvailableTools(allTools);
-    toolsActions.setToolsReady(true);
-    
     console.log(`Fast init completed in ${init.durationMs}ms`);
   }, [init]); // Removed projectActions and toolsActions from dependencies
 
-  // Check tool-prompts installation status after fast init
+  // Local-first: Initialize tool prompts from public/ and load from IndexedDB
   useEffect(() => {
-    const checkToolPromptsStatus = async () => {
-      // Only run once per session/init
-      if (!session?.accessToken || hasCheckedToolPrompts || !init) return;
-      
+    const loadTools = async () => {
       try {
-        // If there are no tool categories at all, we need to install the tool-prompts folder
-        if (Object.keys(init.toolsByCategory).length === 0) {
-          setIsInstallingToolPrompts(true);
-          setIsStorageOperationPending(true);
-          
-          try {
-            // Initialize tool prompts from defaults
-            const installResult = await installToolPromptsAction();
+        // Initialize tool prompts (fetches from public/ if not already in IndexedDB)
+        await initializeToolPrompts();
 
-            if (installResult.success) {
-              // Tools ready from template
-              setIsStorageOperationPending(false);
-              // Do NOT load tools here; first-time users will load them when they create the first project
-            } else {
-              // Installation failed: show an error modal and mark init as failed
-              setIsStorageOperationPending(false);
-              setIsInstallingToolPrompts(false);
-              setInitFailed(true);
+        // Initialize Writing Assistant prompts (separate storage with defaults)
+        await initWritingAssistantPrompts();
 
-              const errorMsg = installResult.message || installResult.error || 'Unknown error';
-              showStickyErrorWithLogout('Initialization failed', `Tool-prompts install failed: ${sanitizeErrorMessage(errorMsg)}`, isDarkMode);
-              return;
-            }
-          } catch (error) {
-            // Catch runtime errors during installation (network issues, timeouts, etc.)
-            setIsStorageOperationPending(false);
-            setIsInstallingToolPrompts(false);
-            setInitFailed(true);
+        // Load tools from IndexedDB
+        const toolsByCategory = await listToolsByCategory();
+        const allTools = toolsByCategory.flatMap(({ category, tools }) =>
+          tools.map((t) => ({
+            id: t.id,
+            name: t.name,
+            category,
+          }))
+        );
 
-            const msg = error instanceof Error ? error.message : String(error);
-            showStickyErrorWithLogout(
-              'Initialization error',
-              `Something went wrong setting up your workspace: ${sanitizeErrorMessage(msg)}
-
-  Please try signing in again. If the problem persists, check your internet connection.`,
-              isDarkMode
-            );
-            return;
-          } finally {
-            // Whether success or failure, stop showing the install spinner
-            setIsInstallingToolPrompts(false);
-          }
-        } else {
-          // Tool prompts already exist in storage
-          setIsStorageOperationPending(false);
-          // Load tools immediately if they haven't been loaded yet
-          if (!toolsState.toolsReady) {
-            try {
-              await toolsActions.loadAvailableTools(isDarkMode);
-            } catch (err) {
-              console.error('Error loading AI tools:', err);
-            }
-          }
-        }
+        toolsActions.setAvailableTools(allTools);
+        toolsActions.setToolsReady(true);
+        console.log(`Tool prompts loaded: ${allTools.length} tools`);
       } catch (error) {
-        console.error('Error checking tool-prompts installation:', error);
-      } finally {
-        // Mark that we have performed this check so it doesn’t run again
-        setHasCheckedToolPrompts(true);
+        console.error('Failed to load tool prompts:', error);
+        toolsActions.setToolsReady(true); // Still mark ready so UI isn't blocked
       }
     };
-    
-    // Start the check after the fast-init payload is available
-    if (init) {
-      checkToolPromptsStatus();
-    }
-    // Depend on toolsState.toolsReady to avoid stale closures
-  }, [
-    session,
-    hasCheckedToolPrompts,
-    isDarkMode,
-    init,
-    toolsState.toolsReady,
-    toolsActions,
-    isInstallingToolPrompts,
-  ]);
 
-  // Supabase user is created on sign-in via NextAuth handler
-  // Just mark storage as ready when session exists
+    loadTools();
+  }, [toolsActions]);
+
+  // Local-first: mark storage as ready immediately
   useEffect(() => {
-    if (session?.user?.id && !hasCheckedStorage) {
+    if (!hasCheckedStorage) {
       setIsStorageReady(true);
       setHasCheckedStorage(true);
     }
-  }, [session?.user?.id, hasCheckedStorage]);
+  }, [hasCheckedStorage]);
+
+  // Note: Tools are now loaded from IndexedDB in the effect above
 
   // Helper function to get loading status
   const getLoadingStatus = () => {
     const checks = [
       { name: 'Storage', ready: isStorageReady },
       { name: 'AI Tools', ready: toolsState.toolsReady },
-      { name: 'Authentication', ready: !!session?.accessToken },
       { name: 'Project', ready: projectState.currentProject || !init?.config?.settings.current_project },
     ];
     
@@ -277,7 +174,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
 
   // Show Ready modal when all systems are ready
   useEffect(() => {
-    if (!session) return; // Don't run initialization logic without session
     if (initFailed) return; // Don't show init modals after failure
 
     const statusInfo = getLoadingStatus();
@@ -301,8 +197,9 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         setIsSystemInitializing(false); // Enable UI buttons
         // Show welcome guide only for new users (treat unknown as missing)
         const isNewUser = !projectState.currentProject && (hasApiKey === false || hasApiKey === null);
-        if (isNewUser) {
-          showWelcomeGuide();
+        const hideWelcome = typeof window !== 'undefined' && localStorage.getItem('authorsHideWelcome') === 'true';
+        if (isNewUser && !hideWelcome) {
+          setTimeout(() => showWelcomeGuide(), 100); // Brief delay to clear loading state
         }
       // });
     } else if (!statusInfo.allReady && isSystemInitializing && !initFailed) {
@@ -332,7 +229,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   }, [
     isStorageReady,
     toolsState.toolsReady,
-    session?.accessToken,
     hasApiKey,
     projectState.currentProject,
     init?.config?.settings.current_project,
@@ -349,40 +245,36 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     }
   }, [projectState.currentProject, isSystemInitializing]);
 
-  // Check if API key exists for Models button visibility
+  // Check if API key exists for Models button visibility (local-first: from IndexedDB)
   const checkApiKey = useCallback(async () => {
-    if (!session?.accessToken || !currentProvider) return;
-    
     try {
-      const result = await withTimeout(hasApiKeyAction(currentProvider), 8000, 'Checking API key');
-      if (result.success) {
-        setHasApiKey(result.hasKey || false);
-      } else {
-        setHasApiKey(false);
-      }
+      const key = await loadApiKey();
+      setHasApiKey(!!key);
     } catch (error) {
       console.error('Error checking API key:', error);
       setHasApiKey(false);
     }
-  }, [session?.accessToken, currentProvider]);
+  }, []);
 
-  // Auto-load previous project when session is ready (if not loaded from fast init)
+  // Check API key status and load selected model on startup
   useEffect(() => {
-    if (session?.accessToken && !projectState.currentProject && !init?.config?.settings.current_project) {
-      loadFullConfig();
+    const loadInitialSettings = async () => {
+      await checkApiKey();
+      // Load selected model from IndexedDB
+      const settings = await loadAppSettings();
+      if (settings?.selectedModel) {
+        setCurrentModel(settings.selectedModel);
+      }
+    };
+    if (currentProvider) {
+      loadInitialSettings();
     }
-  }, [session?.accessToken, projectState.currentProject, init]);
-
-  // Check API key status when session or provider changes
-  useEffect(() => {
-    if (session?.accessToken && currentProvider) {
-      checkApiKey();
-    }
-  }, [session?.accessToken, currentProvider, checkApiKey]);
+  }, [currentProvider, checkApiKey]);
 
   // Load full config (including settings decryption) when needed
+  // TODO: For local-first, load from IndexedDB
   const loadFullConfig = useCallback(async () => {
-    if (!session || isLoadingConfig) return;
+    if (isLoadingConfig) return;
     
     setIsLoadingConfig(true);
     
@@ -418,167 +310,31 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     } finally {
       setIsLoadingConfig(false);
     }
-  }, [session, isLoadingConfig, projectActions.setCurrentProject, projectActions.setCurrentProjectId, projectActions.setUploadStatus, init]);
+  }, [isLoadingConfig, projectActions.setCurrentProject, projectActions.setCurrentProjectId, projectActions.setUploadStatus, init]);
 
   // Toggle theme
-  const toggleTheme = async () => {
+  const toggleTheme = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
-    if (session) {
-      await updateDarkModeAction(newDarkMode);
+    if (typeof window !== 'undefined' && localStorage) {
+      localStorage.setItem('authorsDarkMode', String(newDarkMode));
     }
   };
 
-  // Open full-screen editor for current project
+  // Open full-screen editor (blank by default)
   const openEditor = () => {
-    if (!projectState.currentProject) {
-      showAlert('Select a Project first!\nEditor is restricted to a Writing Project.', 'warning', undefined, isDarkMode);
-      return;
-    }
-    setEditorContent('');
-    setCurrentFileName(null);
-    setCurrentFilePath(null);
+    setEditorInitialFile(null);
     setShowEditorModal(true);
   };
 
-  // Editor file operations
-  const handleEditorSaveFile = async (content: string, fileName?: string) => {
-    if (!session?.user?.id) {
-      throw new Error('Not authenticated');
-    }
-
-    // Check if this is a tool prompt (fileName starts with "tool-prompts/")
-    if (currentFileName?.startsWith('tool-prompts/')) {
-      // Extract toolId: "tool-prompts/User Tools/anything_goes.txt" -> "User Tools/anything_goes.txt"
-      const toolId = currentFileName.replace('tool-prompts/', '');
-      const result = await updateToolPromptAction(toolId, content);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to update tool prompt');
-      }
-      return;
-    }
-
-    // Require project for saving regular files
-    if (!projectState.currentProject) {
-      throw new Error('Project is required');
-    }
-
-    // If updating existing file, use existing path; otherwise require filename
-    if (currentFilePath) {
-      const result = await createOrUpdateFileAction(
-        projectState.currentProject,
-        currentFileName || 'untitled.txt',
-        content,
-        currentFilePath
-      );
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-      return;
-    }
-
-    // Creating new file - require filename
-    if (!fileName) {
-      throw new Error('File name is required for new files');
-    }
-
-    const result = await createOrUpdateFileAction(
-      projectState.currentProject,
-      fileName,
-      content
-    );
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    // Update state with new file path
-    if (result.data?.filePath) {
-      setCurrentFilePath(result.data.filePath);
-      setCurrentFileName(fileName);
-    }
-  };
-
-  const handleEditorBrowseFiles = async () => {
-    if (!session?.user?.id) {
-      projectActions.setUploadStatus('❌ Not authenticated');
-      showAlert('You must sign in first!', 'error', undefined, isDarkMode);
-      return;
-    }
-    if (!projectState.currentProject) {
-      showAlert('Select a project first!', 'info', undefined, isDarkMode);
-      return;
-    }
-
-    setIsStorageOperationPending(true);
-    projectActions.setUploadStatus('Loading TXT files...');
-    try {
-      const result = await listTxtFilesAction(projectState.currentProject);
-
-      if (result.success && result.data?.files) {
-        if (result.data.files.length === 0) {
-          showAlert('No TXT files found in the current project. Please add a .txt file first.', 'info', undefined, isDarkMode);
-          return;
-        }
-        setEditorFileSelectorFiles(result.data.files);
-        setShowEditorFileSelector(true);
-        projectActions.setUploadStatus(`Found ${result.data.files.length} TXT files`);
-      } else {
-        showAlert(`Failed to load project files: ${result.error}`, 'error', undefined, isDarkMode);
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      showAlert(`Error loading project files: ${msg}`, 'error', undefined, isDarkMode);
-    } finally {
-      setIsStorageOperationPending(false);
-    }
-  };
-
-  const handleEditorFileSelectorClose = () => {
-    setShowEditorFileSelector(false);
-  };
-  
-  const handleEditorFileSelect = async (file: any) => {
-    if (!session?.user?.id) {
-      showAlert('Not authenticated!', 'error', undefined, isDarkMode);
-      return;
-    }
-    if (!projectState.currentProject) {
-      showAlert('No project selected!', 'error', undefined, isDarkMode);
-      return;
-    }
-    try {
-      const result = await readFileAction(projectState.currentProject, file.path);
-
-      if (result.success) {
-        const content = result.data?.content || '';
-        handleLoadFileIntoEditor(content, file.name, file.path);
-      } else {
-        showAlert(`Failed to load file: ${result.error}`, 'error', undefined, isDarkMode);
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      showAlert(`Error reading file: ${msg}`, 'error', undefined, isDarkMode);
-    } finally {
-      setShowEditorFileSelector(false);
-    }
-  };
-
   // Settings save handler (API key only - provider is always openrouter)
+  // TODO: For local-first, save to IndexedDB
   const handleSettingsSave = async (_provider: string) => {
-    if (!session?.accessToken) {
-      projectActions.setUploadStatus('❌ Not authenticated');
-      return;
-    }
-
     // Just refresh API key status after save
     await checkApiKey();
   };
 
   // Project action handlers
-  const handleSelectProject = () => {
-    projectActions.openProjectSelector(session, isDarkMode);
-  };
-  
   const handleOpenSettings = async () => {
     // Load full config including settings decryption when opening settings
     if (!hasConfiguredProvider && init?.hasSettingsFile) {
@@ -595,47 +351,34 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     setShowModelsDropdown(true);
   };
   
+  // Save selected model to IndexedDB (local-first)
   const handleModelSelect = async (model: string) => {
-    if (!session?.accessToken) {
-      projectActions.setUploadStatus('❌ Not authenticated');
-      return;
-    }
-    
     projectActions.setUploadStatus(`Updating AI model to ${model}...`);
 
-
     try {
-      const result = await updateSelectedModelAction(model);
-      if (result.success) {
-        setCurrentModel(model);
-        projectActions.setUploadStatus(`✅ AI model updated to ${model}`);
-      } else {
-        projectActions.setUploadStatus(`❌ Failed to update model: ${result.error}`);
-      }
+      // Load current settings, update model, save back
+      const settings = await loadAppSettings() || { darkMode: isDarkMode, selectedModel: '' };
+      settings.selectedModel = model;
+      await saveAppSettings(settings);
+
+      setCurrentModel(model);
+      projectActions.setUploadStatus(`✅ AI model updated to ${model}`);
     } catch (error) {
       projectActions.setUploadStatus(`❌ Failed to update model: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
   const handleProjectSettings = async () => {
-    if (!projectState.currentProject) {
-      showAlert('Please select a project first!', 'warning', undefined, isDarkMode);
-      return;
-    }
-
     setIsLoadingMetadata(true);
     setShowProjectSettingsModal(true);
 
     try {
-      const result = await loadBookMetadataAction(projectState.currentProject);
-
-      if (result.success && result.data) {
-        setProjectMetadata(result.data);
-      } else {
-        showAlert(`Failed to load project settings: ${result.error}`, 'error', undefined, isDarkMode);
+      const settings = await loadSettings();
+      if (settings) {
+        setProjectMetadata(settings);
       }
     } catch (error) {
-      showAlert(`Error loading project settings: ${error instanceof Error ? error.message : String(error)}`, 'error', undefined, isDarkMode);
+      console.error('Error loading settings:', error);
     } finally {
       setIsLoadingMetadata(false);
     }
@@ -644,9 +387,9 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   const handleDocxImport = () => {
     projectActions.handleLocalDocxImport(isDarkMode);
   };
-  
+
   const handleTxtExport = () => {
-    projectActions.handleTxtExport(session, isDarkMode, setIsStorageOperationPending);
+    projectActions.handleExport(isDarkMode);
   };
 
   const handleFilesClick = () => {
@@ -654,17 +397,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     projectActions.setShowUploadModal(true);
   };
 
-  const handleUploadFileSelect = (file: File) => {
-    projectActions.selectUploadFile(file, isDarkMode);
-  };
-
-  const handlePerformUpload = () => {
-    projectActions.performFileUpload(session, isDarkMode);
-  };
-
   const handleCloseFilesModal = () => {
     projectActions.setShowUploadModal(false);
-    projectActions.setSelectedUploadFile(null);
   };
   
   // Project modal handlers
@@ -696,11 +430,42 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     // Once the project exists and tools are loaded, turn off initialization
     setIsSystemInitializing(false);
   };
-  
-  const handleLoadFileIntoEditor = (content: string, fileName: string, filePath?: string) => {
-    setEditorContent(content);
-    setCurrentFileName(fileName);
-    setCurrentFilePath(filePath || null);
+
+  // Open file in editor (for AI Tools results or prompt editing)
+  const handleLoadFileIntoEditor = (_content: string, fileName: string, _filePath?: string) => {
+    // Check if this is a prompt file (prefix: "prompt:")
+    if (fileName.startsWith('prompt:')) {
+      const toolId = fileName.substring(7); // Remove "prompt:" prefix
+      setEditorInitialFile({ key: `prompt:${toolId}`, store: 'prompt' });
+      setShowEditorModal(true);
+      return;
+    }
+
+    // Check if this is a Writing Assistant prompt (prefix: "writing-assistant/")
+    if (fileName.startsWith('writing-assistant/')) {
+      const stepId = fileName.substring(18); // Remove "writing-assistant/" prefix
+      setEditorInitialFile({ key: `wa:${stepId}`, store: 'ai' });
+      setShowEditorModal(true);
+      return;
+    }
+
+    // Check for workflow files (brainstorm.txt, outline.txt, world.txt)
+    const workflowFiles = ['brainstorm.txt', 'outline.txt', 'world.txt'];
+    if (workflowFiles.includes(fileName)) {
+      setEditorInitialFile({ key: fileName, store: 'ai' });
+      setShowEditorModal(true);
+      return;
+    }
+
+    // Check for manuscript.txt
+    if (fileName === 'manuscript.txt') {
+      setEditorInitialFile({ key: 'manuscript.txt', store: 'manuscript' });
+      setShowEditorModal(true);
+      return;
+    }
+
+    // Default: open with the filename as-is in AI store
+    setEditorInitialFile({ key: fileName, store: 'ai' });
     setShowEditorModal(true);
   };
 
@@ -721,24 +486,10 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     toolsActions.setToolsInCategory(filtered);
   };
   
-  const handleSetupTool = () => {
-    toolsActions.setupAITool(
-      session,
-      projectState.currentProject,
-      projectState.currentProjectId,
-      setIsStorageOperationPending,
-      isDarkMode
-    );
-  };
-  
   const handleExecuteTool = () => {
     toolsActions.executeAITool(
-      session,
-      projectState.currentProject,
-      projectState.currentProjectId,
       currentProvider,
       currentModel,
-      projectActions.setUploadStatus,
       isDarkMode
     );
   };
@@ -752,26 +503,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
       setIsStorageOperationPending,
       isDarkMode
     );
-  };
-  
-  const handleFileSelectorClose = () => {
-    toolsActions.setShowFileSelector(false);
-    toolsActions.setToolResult('');
-  };
-  
-  const handleFileSelect = (file: any) => {
-    toolsActions.setSelectedManuscriptForTool(file);
-    toolsActions.setShowFileSelector(false);
-  };
-  
-  // Non-AI Tools File Selector handlers
-  const handleNonAIFileSelectorClose = () => {
-    nonAIToolsActions.setShowFileSelector(false);
-  };
-  
-  const handleNonAIFileSelect = (file: any) => {
-    nonAIToolsActions.setSelectedManuscriptForTool(file);
-    nonAIToolsActions.setShowFileSelector(false);
   };
   
   // Non-AI Tools action handlers
@@ -802,34 +533,19 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   };
   
   const handleProjectSettingsSave = async (metadata: ProjectMetadata) => {
-    if (!projectState.currentProject) {
-      showAlert('No project selected!', 'error', undefined, isDarkMode);
-      return;
-    }
-
     setIsSavingMetadata(true);
-    projectActions.setUploadStatus('Saving project settings...');
+    projectActions.setUploadStatus('Saving settings...');
 
     try {
-      const result = await saveBookMetadataAction(
-        projectState.currentProject,
-        metadata
-      );
-
-      if (result.success) {
-        setProjectMetadata(metadata);
-        projectActions.setUploadStatus('✅ Project settings saved successfully');
-        // Auto-close modal on successful save
-        setShowProjectSettingsModal(false);
-        setProjectMetadata(undefined);
-      } else {
-        projectActions.setUploadStatus(`❌ Failed to save project settings: ${result.error}`);
-        showAlert(`Failed to save project settings: ${result.error}`, 'error', undefined, isDarkMode);
-      }
+      await saveSettings(metadata);
+      setProjectMetadata(metadata);
+      projectActions.setUploadStatus('✅ Settings saved');
+      setShowProjectSettingsModal(false);
+      setProjectMetadata(undefined);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      projectActions.setUploadStatus(`❌ Error saving project settings: ${errorMessage}`);
-      showAlert(`Error saving project settings: ${errorMessage}`, 'error', undefined, isDarkMode);
+      const msg = error instanceof Error ? error.message : String(error);
+      projectActions.setUploadStatus(`❌ Error: ${msg}`);
+      showAlert(`Error saving settings: ${msg}`, 'error', undefined, isDarkMode);
     } finally {
       setIsSavingMetadata(false);
     }
@@ -952,9 +668,9 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             
             <!-- Pro Tip -->
             <div style="
-              background: ${isDarkMode ? '#333' : '#f3f4f6'}; 
-              padding: 12px; 
-              border-radius: 8px; 
+              background: ${isDarkMode ? '#333' : '#f3f4f6'};
+              padding: 12px;
+              border-radius: 8px;
               border-left: 4px solid #10b981;
             ">
               <div style="font-weight: 600; margin-bottom: 4px; color: ${isDarkMode ? '#10b981' : '#059669'}; font-size: 13px;">
@@ -967,6 +683,12 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
                 Just in case, these 4 steps are repeated on the About page!
               </div>
             </div>
+
+            <!-- Don't show again checkbox -->
+            <label style="display: flex; align-items: center; gap: 8px; margin-top: 20px; font-size: 13px; color: ${isDarkMode ? '#9ca3af' : '#6b7280'}; cursor: pointer;">
+              <input type="checkbox" id="authorsHideWelcome" style="width: 16px; height: 16px; cursor: pointer;" />
+              Don't show me this again
+            </label>
           </div>
         </div>
       `,
@@ -979,27 +701,15 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
       customClass: {
         popup: 'swal2-responsive',
       },
+      preConfirm: () => {
+        const checkbox = document.getElementById('authorsHideWelcome') as HTMLInputElement;
+        if (checkbox?.checked) {
+          localStorage.setItem('authorsHideWelcome', 'true');
+        }
+      },
     });
   };
   
-  if (status === 'loading') {
-    return (
-      <div
-        style={{
-          padding: '20px',
-          backgroundColor: theme.bg,
-          color: theme.text,
-          minHeight: '100vh',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        Loading Proselenos...
-      </div>
-    );
-  }
-
   return (
     <div
       style={{
@@ -1009,409 +719,21 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
-      {/* Header - Only show when logged in */}
-      {session && (
-        <ProselenosHeader
-          session={session}
-          theme={theme}
-          isDarkMode={isDarkMode}
-          hasApiKey={hasApiKey === true}
-          isStorageOperationPending={isStorageOperationPending}
-          toolExecuting={toolsState.toolExecuting}
-          currentProject={projectState.currentProject}
-          currentProjectId={projectState.currentProjectId}
-          isSystemInitializing={isSystemInitializing}
-          onThemeToggle={toggleTheme}
-          onAboutClick={handleOpenAbout}
-        />
-      )}
+      {/* Header */}
+      <ProselenosHeader
+        theme={theme}
+        isDarkMode={isDarkMode}
+        hasApiKey={hasApiKey === true}
+        isStorageOperationPending={isStorageOperationPending}
+        toolExecuting={toolsState.toolExecuting}
+        currentProject={projectState.currentProject}
+        currentProjectId={projectState.currentProjectId}
+        isSystemInitializing={isSystemInitializing}
+        onThemeToggle={toggleTheme}
+        onAboutClick={handleOpenAbout}
+      />
       
-      {!session ? (
-        <div
-          style={{
-            minHeight: '100vh',
-            backgroundColor: '#ffffff',
-            color: '#333',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          }}
-        >
-          {/* Header Bar */}
-          <header
-            style={{
-              borderBottom: '1px solid #e0e0e0',
-              padding: '0 24px',
-              height: '60px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: '#f5f5f5',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                }}
-              >
-                <img
-                  src="/icon.png"
-                  alt="Proselenos Logo"
-                  style={{
-                    width: '80px',
-                    height: '96px',
-                    objectFit: 'contain',
-                  }}
-                />
-              </div>
-              <span style={{ fontSize: '18px', fontWeight: '600' }}>Proselenos</span>
-            </div>
-            
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-              <a href="#features" style={{ color: '#666', textDecoration: 'none', fontSize: '14px' }}>Features</a>
-              <a href="#pricing" style={{ color: '#666', textDecoration: 'none', fontSize: '14px' }}>Pricing</a>
-              <button
-                onClick={() => signIn('google')}
-                style={{
-                  backgroundColor: '#4285f4',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '10px 20px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                }}
-                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#3367d6')}
-                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4285f4')}
-              >
-                Sign in with Google
-              </button>
-            </nav>
-          </header>
-          
-          {/* Main Content */}
-          <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '80px 24px' }}>
-            {/* Hero Section */}
-            <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-              <h1
-                style={{
-                  fontSize: '48px',
-                  fontWeight: '700',
-                  margin: '0 0 16px 0',
-                  background: 'linear-gradient(135deg, #111 0%, #666 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  lineHeight: '1.2',
-                }}
-              >
-                Welcome to Proselenos
-              </h1>
-              <p
-                style={{
-                  fontSize: '20px',
-                  color: '#666',
-                  margin: '0 0 40px 0',
-                  maxWidth: '600px',
-                  marginLeft: 'auto',
-                  marginRight: 'auto',
-                }}
-              >
-                Professional manuscript editing powered by AI
-              </p>
-            </div>
-            
-            {/* Description */}
-            <div
-              style={{
-                backgroundColor: '#f9f9f9',
-                borderRadius: '16px',
-                padding: '40px',
-                marginBottom: '60px',
-                border: '1px solid #e0e0e0',
-              }}
-            >
-              <p
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '1.7',
-                  color: '#333',
-                  margin: 0,
-                  textAlign: 'left',
-                  maxWidth: '800px',
-                  marginLeft: 'auto',
-                  marginRight: 'auto',
-                }}
-              >
-                Proselenos is a powerful manuscript-editing platform designed specifically for writers working on full-length writing projects. Whether you&apos;re editing a novel, memoir, or non-fiction work, Proselenos provides comprehensive tools to refine and polish your complete manuscript. Upload your entire manuscript and get detailed editing assistance, structural analysis, and formatting help to bring your work to professional publishing standards.
-                <br />
-                <blockquote>&nbsp;&nbsp;&nbsp; 🌖 <i>Like the moon, Proselenos reflects just enough light to make your prose shine.</i> ✨</blockquote>
-              </p>
-            </div>
-            
-            {/* Features Section */}
-            <section id="features" style={{ marginBottom: '60px' }}>
-              <h2
-                style={{
-                  fontSize: '32px',
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  marginBottom: '40px',
-                  color: '#111',
-                }}
-              >
-                Key Features
-              </h2>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                  gap: '24px',
-                }}
-              >
-                {[
-                  {
-                    title: 'Secure storage',
-                    description: 'Your manuscripts and settings are stored securely online.',
-                  },
-                  {
-                    title: 'Full manuscript editing',
-                    description: 'Including consistency checking and narrative flow optimisation.',
-                  },
-                  {
-                    title: 'Advanced editing tools',
-                    description: 'Grammar checking, style analysis, pacing optimisation, structural improvements, as well as your own customized AI prompts.',
-                  },
-                  {
-                    title: 'Document management',
-                    description: 'Import/Export Word .docx documents, to manage your flow with other writing applications.',
-                  },
-                  {
-                    title: 'Project organisation',
-                    description: 'Organise multiple manuscript projects with easy switching between writing projects.',
-                  },
-                  {
-                    title: 'Publishing preparation',
-                    description: 'Generate publication-ready EPUB and PDF files for digital and print publishing. Also, the included Editor is capable of reading aloud your manuscript.',
-                  },
-                ].map((feature, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      backgroundColor: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '24px',
-                      border: '1px solid #e0e0e0',
-                      transition: 'border-color 0.2s',
-                    }}
-                  >
-                    <h3
-                      style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        marginBottom: '12px',
-                        color: '#111',
-                      }}
-                    >
-                      {feature.title}:
-                    </h3>
-                    <p
-                      style={{
-                        fontSize: '14px',
-                        lineHeight: '1.6',
-                        color: '#666',
-                        margin: 0,
-                      }}
-                    >
-                      {feature.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-            
-            {/* Pricing Section */}
-            <section id="pricing" style={{ marginBottom: '60px' }}>
-              <h2
-                style={{
-                  fontSize: '32px',
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  marginBottom: '40px',
-                  color: '#111',
-                }}
-              >
-                Pricing
-              </h2>
-              <div
-                style={{
-                  backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '40px',
-                  border: '1px solid #e0e0e0',
-                  textAlign: 'center',
-                  maxWidth: '500px',
-                  margin: '0 auto',
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: '600',
-                    marginBottom: '16px',
-                    color: '#4285f4',
-                  }}
-                >
-                  Free
-                </h3>
-                <p
-                  style={{
-                    fontSize: '16px',
-                    color: '#333',
-                    lineHeight: '1.6',
-                    margin: 0,
-                  }}
-                >
-                  Proselenos is free to use!
-                  <br />
-                  <br />
-                  OpenRouter charges for API key usage based on your AI model selection and usage.
-                </p>
-              </div>
-            </section>
-            
-            {/* Privacy & Security Section */}
-            <section style={{ marginBottom: '60px' }}>
-              <h2
-                style={{
-                  fontSize: '32px',
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  marginBottom: '40px',
-                  color: '#111',
-                }}
-              >
-                Privacy & Security
-              </h2>
-              <div
-                style={{
-                  backgroundColor: '#f9f9f9',
-                  borderRadius: '16px',
-                  padding: '40px',
-                  border: '1px solid #e0e0e0',
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: '16px',
-                    lineHeight: '1.7',
-                    color: '#333',
-                    marginBottom: '24px',
-                    textAlign: 'left',
-                  }}
-                >
-                  Your manuscripts remain private and secure.
-                  <br />
-                  <br />
-                  Proselenos requests only the Google permissions necessary to function:
-                </p>
-                <div style={{ marginBottom: '24px' }}>
-                  <p
-                    style={{
-                      fontSize: '14px',
-                      color: '#666',
-                      margin: '0 0 8px 0',
-                      fontFamily: 'monospace',
-                      backgroundColor: '#fff',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid #ddd',
-                    }}
-                  >
-                    openid, email, profile
-                  </p>
-                  <p
-                    style={{
-                      fontSize: '14px',
-                      color: '#333',
-                      margin: '8px 0 0 0',
-                    }}
-                  >
-                    - used to authenticate you and retrieve your basic account information
-                  </p>
-                </div>
-                <p
-                  style={{
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    color: '#666',
-                    margin: 0,
-                    textAlign: 'center',
-                  }}
-                >
-                  You can <a href="https://myaccount.google.com/permissions" style={{ color: '#4299e1' }}>revoke these permissions</a> at any time through your Google Account settings.
-                  <br />
-                  <br />
-                  For more information, see our
-                  <a href="/privacy.html" style={{ color: '#4299e1' }}> Privacy Policy</a>
-                  &nbsp;and&nbsp;
-                  <a href="/terms.html" style={{ color: '#4299e1' }}> Terms of Service</a>.
-                </p>
-              </div>
-            </section>
-            
-            {/* Final CTA */}
-            <div style={{ textAlign: 'center' }}>
-              <a
-                href="https://a.co/d/5feXsK0"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium shadow hover:opacity-90 focus:outline-none focus:ring"
-                style={{ backgroundColor: '#794bc4', color: '#fff' }}
-                aria-label="Proselenos book"
-              >
-                Proselenos the book
-              </a>
-              
-              &nbsp;&nbsp;&nbsp;&nbsp;
-              
-              <button
-                onClick={() => signIn('google')}
-                style={{
-                  backgroundColor: '#4285f4',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '16px 32px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 4px 12px rgba(66, 133, 244, 0.3)',
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#3367d6';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#4285f4';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                Sign in with Google
-              </button>
-            </div>
-          </main>
-        </div>
-      ) : (
-        <div style={{ padding: '16px 20px' }}>
+      <div style={{ padding: '16px 20px' }}>
           {/* Projects Section */}
           <ProjectSection
             currentProject={projectState.currentProject}
@@ -1424,9 +746,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             isSystemInitializing={isSystemInitializing}
             isDocxConverting={projectState.isConverting}
             isDocxDialogOpen={projectState.showDocxSelector || projectState.showFilenameDialog}
-            isTxtConverting={projectState.isConvertingTxt}
-            isTxtDialogOpen={projectState.showTxtSelector || projectState.showTxtFilenameDialog}
-            onSelectProject={handleSelectProject}
+            isTxtConverting={projectState.isTxtConverting}
+            isTxtDialogOpen={false}
             onProjectSettings={handleProjectSettings}
             onFilesClick={handleFilesClick}
             onDocxImport={handleDocxImport}
@@ -1442,7 +763,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             toolsInCategory={toolsState.toolsInCategory}
             toolsReady={toolsState.toolsReady}
             isInstallingToolPrompts={isInstallingToolPrompts}
-            selectedManuscriptForTool={toolsState.selectedManuscriptForTool}
             toolExecuting={toolsState.toolExecuting}
             toolResult={toolsState.toolResult}
             toolJustFinished={toolsState.toolJustFinished}
@@ -1462,7 +782,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             hasApiKey={hasApiKey === true}
             onCategoryChange={handleCategoryChange}
             onToolChange={toolsActions.setSelectedTool}
-            onSetupTool={handleSetupTool}
             onClearTool={toolsActions.clearTool}
             onExecuteTool={handleExecuteTool}
             onLoadFileIntoEditor={handleLoadFileIntoEditor}
@@ -1486,16 +805,18 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
               isDarkMode={isDarkMode}
               toolExecuting={toolsState.toolExecuting}
               session={session}
+              needsDocxFilePicker={nonAIToolsState.needsDocxFilePicker}
               onToolChange={handleNonAIToolChange}
               onSetupTool={handleNonAISetupTool}
               onClearTool={handleNonAIClearTool}
               onExecuteTool={handleNonAIExecuteTool}
               onShowAlert={(type, message, isDarkMode) => showAlert(message, type, undefined, isDarkMode)}
+              onSetSelectedManuscriptForTool={nonAIToolsActions.setSelectedManuscriptForTool}
+              onSetNeedsDocxFilePicker={nonAIToolsActions.setNeedsDocxFilePicker}
             />
           </div>
         </div>
-      )}
-      
+
       {/* Settings Dialog */}
       <SettingsDialog
         isOpen={showSettingsDialog}
@@ -1521,26 +842,11 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         isOpen={showEditorModal}
         theme={theme}
         isDarkMode={isDarkMode}
-        currentProject={projectState.currentProject}
-        currentProjectId={projectState.currentProjectId}
-        currentFileName={currentFileName}
-        currentFilePath={currentFilePath}
-        editorContent={editorContent}
-        onClose={() => setShowEditorModal(false)}
-        onContentChange={setEditorContent}
-        onSaveFile={handleEditorSaveFile}
-        onBrowseFiles={handleEditorBrowseFiles}
-      />
-      
-      {/* Editor TXT File Selector Modal */}
-      <FileSelectorModal
-        isOpen={showEditorFileSelector}
-        theme={theme}
-        isDarkMode={isDarkMode}
-        fileSelectorFiles={editorFileSelectorFiles}
-        selectedManuscriptForTool={null}
-        onClose={handleEditorFileSelectorClose}
-        onSelectFile={handleEditorFileSelect}
+        onClose={() => {
+          setShowEditorModal(false);
+          setEditorInitialFile(null);
+        }}
+        initialFile={editorInitialFile}
       />
       
       {/* Project Selector Modal */}
@@ -1567,43 +873,14 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
 
       {/* Import DOCX - now handled by LocalDocxImportModal (local file upload) */}
 
-      {/* Export TXT Modal */}
-      <ExportModal
-        showTxtSelector={projectState.showTxtSelector}
-        showTxtFilenameDialog={projectState.showTxtFilenameDialog}
-        txtFiles={projectState.txtFiles}
-        selectedTxtFile={projectState.selectedTxtFile}
-        txtOutputFileName={projectState.txtOutputFileName}
-        isConvertingTxt={projectState.isConvertingTxt}
-        theme={theme}
-        isDarkMode={isDarkMode}
-        onSelectFile={projectActions.selectTxtFile}
-        onCancelFileSelector={() => {
-          projectActions.setShowTxtSelector(false);
-          projectActions.setSelectedTxtFile(null);
-        }}
-        onFilenameChange={projectActions.setTxtOutputFileName}
-        onCancelFilename={() => {
-          projectActions.setShowTxtFilenameDialog(false);
-          projectActions.setSelectedTxtFile(null);
-          projectActions.setTxtOutputFileName('');
-        }}
-        onConfirmConversion={() => projectActions.performTxtConversion(session, isDarkMode)}
-      />
-      
-      {/* Files Modal (Upload/Download/Delete) */}
+      {/* Export: manuscript.txt → .docx is now a direct download (no modal needed) */}
+
+      {/* Files Modal (Upload/Download/Delete) - Local IndexedDB */}
       <FilesModal
         isOpen={projectState.showUploadModal}
         theme={theme}
         isDarkMode={isDarkMode}
-        currentProject={projectState.currentProject}
-        selectedUploadFile={projectState.selectedUploadFile}
-        uploadFileName={projectState.uploadFileName}
-        isUploading={projectState.isUploading}
         onClose={handleCloseFilesModal}
-        onFileSelect={handleUploadFileSelect}
-        onFileNameChange={projectActions.setUploadFileName}
-        onUpload={handlePerformUpload}
       />
 
       {/* Local DOCX Import Modal */}
@@ -1611,38 +888,13 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         isOpen={projectState.showLocalDocxImportModal}
         theme={theme}
         isDarkMode={isDarkMode}
-        currentProject={projectState.currentProject}
-        currentProjectId={projectState.currentProjectId}
-        accessToken={session?.accessToken || null}
         isConverting={projectState.isLocalDocxConverting}
         onClose={() => projectActions.setShowLocalDocxImportModal(false)}
-        onConversionComplete={projectActions.handleLocalDocxConversionComplete}
+        onConversionComplete={() => projectActions.setShowLocalDocxImportModal(false)}
         setUploadStatus={projectActions.setUploadStatus}
       />
 
-      {/* AI Tools File Selector Modal */}
-      <FileSelectorModal
-        isOpen={toolsState.showFileSelector}
-        theme={theme}
-        isDarkMode={isDarkMode}
-        fileSelectorFiles={toolsState.fileSelectorFiles}
-        selectedManuscriptForTool={toolsState.selectedManuscriptForTool}
-        selectedTool={toolsState.selectedTool}
-        onClose={handleFileSelectorClose}
-        onSelectFile={handleFileSelect}
-      />
-      
-      {/* Non-AI Tools File Selector Modal */}
-      <FileSelectorModal
-        isOpen={nonAIToolsState.showFileSelector}
-        theme={theme}
-        isDarkMode={isDarkMode}
-        fileSelectorFiles={nonAIToolsState.fileSelectorFiles}
-        selectedManuscriptForTool={nonAIToolsState.selectedManuscriptForTool}
-        selectedTool={nonAIToolsState.selectedNonAITool}
-        onClose={handleNonAIFileSelectorClose}
-        onSelectFile={handleNonAIFileSelect}
-      />
+      {/* File selector modals removed - manuscript.txt is used directly */}
       
       {/* Project Settings Modal */}
       <ProjectSettingsModal
@@ -1664,6 +916,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         onClose={() => setShowAboutModal(false)}
         isDarkMode={isDarkMode}
         theme={theme}
+        onShowWelcome={showWelcomeGuide}
       />
     </div>
   );

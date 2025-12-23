@@ -43,17 +43,15 @@ import {
   DEFAULT_READSETTINGS,
   SYSTEM_SETTINGS_VERSION,
   DEFAULT_BOOK_SEARCH_CONFIG,
-  DEFAULT_TTS_CONFIG,
   DEFAULT_MOBILE_VIEW_SETTINGS,
   DEFAULT_SYSTEM_SETTINGS,
   DEFAULT_CJK_VIEW_SETTINGS,
   DEFAULT_MOBILE_READSETTINGS,
   DEFAULT_SCREEN_CONFIG,
-  DEFAULT_TRANSLATOR_CONFIG,
   DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS,
   SETTINGS_FILENAME,
 } from './constants';
-import { getOSPlatform, getTargetLang, isCJKEnv, isContentURI, isValidURL } from '@/utils/misc';
+import { getOSPlatform, isCJKEnv, isContentURI, isValidURL } from '@/utils/misc';
 import { deserializeConfig, serializeConfig } from '@/utils/serializer';
 import { TxtToEpubConverter } from '@/utils/txt';
 import { desktopFetch, ClosableFile } from '@/utils/desktop-stubs';
@@ -167,9 +165,7 @@ export abstract class BaseAppService implements AppService {
       ...(this.isMobile ? DEFAULT_MOBILE_VIEW_SETTINGS : {}),
       ...(isCJKEnv() ? DEFAULT_CJK_VIEW_SETTINGS : {}),
       ...DEFAULT_VIEW_CONFIG,
-      ...DEFAULT_TTS_CONFIG,
       ...DEFAULT_SCREEN_CONFIG,
-      ...{ ...DEFAULT_TRANSLATOR_CONFIG, translateTargetLang: getTargetLang() },
     };
   }
 

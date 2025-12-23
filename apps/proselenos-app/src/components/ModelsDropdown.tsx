@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAvailableModelsAction } from '@/lib/api-key-actions';
+import { loadApiKey } from '@/services/manuscriptStorage';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface ModelsDropdownProps {
@@ -48,23 +48,44 @@ export default function ModelsDropdown({
     setLoading(true);
     setError(null);
     try {
-      const result = await getAvailableModelsAction();
-      if (result.success && result.models) {
-        // Store all models
-        setAllModels(result.models);
-        
-        // Filter for big 3 providers
-        const big3 = result.models.filter(model => 
-          model.startsWith('anthropic/') ||
-          model.startsWith('google/') ||
-          model.startsWith('openai/')
-        );
-        setBigThreeModels(big3);
-      } else {
-        setError(result.error || 'Failed to load models');
+      // Get API key from IndexedDB
+      const apiKey = await loadApiKey();
+      if (!apiKey) {
+        setError('No API key configured');
         setAllModels([]);
         setBigThreeModels([]);
+        return;
       }
+
+      // Fetch models directly from OpenRouter (client-side)
+      const response = await fetch('https://openrouter.ai/api/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch models');
+      }
+
+      const data = await response.json();
+      const models = data.data || [];
+
+      // Filter for chat models and get IDs
+      const modelIds = models
+        .filter((m: any) => !/(embedding|whisper|tts|audio-)/i.test(m.id))
+        .map((m: any) => m.id)
+        .sort();
+
+      setAllModels(modelIds);
+
+      // Filter for big 3 providers
+      const big3 = modelIds.filter((id: string) =>
+        id.startsWith('anthropic/') ||
+        id.startsWith('google/') ||
+        id.startsWith('openai/')
+      );
+      setBigThreeModels(big3);
     } catch (error) {
       console.error('Error loading models:', error);
       setError(error instanceof Error ? error.message : 'Failed to load models');

@@ -1,4 +1,4 @@
-// EpubModal.tsx - EPUB generation (gepub) and publishing (xepub)
+// EpubModal.tsx - Local-first EPUB generation and import to library
 
 'use client';
 
@@ -9,7 +9,6 @@ import StyledSmallButton from '@/components/StyledSmallButton';
 interface EpubModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentProjectId: string | null;
   theme: any;
   isDarkMode: boolean;
 }
@@ -17,11 +16,10 @@ interface EpubModalProps {
 export default function EpubModal({
   isOpen,
   onClose,
-  currentProjectId,
   theme,
   isDarkMode
 }: EpubModalProps) {
-  const { state, actions } = useEpubActions(currentProjectId);
+  const { state, actions } = useEpubActions();
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Handle cover file selection
@@ -69,7 +67,7 @@ export default function EpubModal({
           border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
           borderRadius: '12px',
           padding: '0',
-          maxWidth: '550px',
+          maxWidth: '500px',
           width: '100%',
           maxHeight: '90vh',
           overflow: 'hidden',
@@ -97,7 +95,7 @@ export default function EpubModal({
           }}
         >
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: theme.text }}>
-            EPUB Options
+            EPUB to Library
           </h3>
           <StyledSmallButton onClick={handleClose} theme={theme}>
             Close
@@ -112,7 +110,7 @@ export default function EpubModal({
             overflowY: 'auto'
           }}
         >
-          {/* GEPUB Section */}
+          {/* Section 1: Generate EPUB from manuscript */}
           <div
             style={{
               padding: '16px',
@@ -123,48 +121,33 @@ export default function EpubModal({
             }}
           >
             <div style={{ fontSize: '14px', fontWeight: 'bold', color: theme.text, marginBottom: '8px' }}>
-              GENERATE EPUB
+              GENERATE FROM MANUSCRIPT
             </div>
             <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '12px' }}>
-              Create an EPUB from your manuscript text file. Good for drafts and testing with beta readers.
+              Create an EPUB from your manuscript.txt and add it to your e-reader library.
             </div>
 
-            {/* Manuscript selector */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '12px', color: theme.textSecondary, display: 'block', marginBottom: '4px' }}>
-                Manuscript:
-              </label>
-              <select
-                value={state.selectedTxt?.path || ''}
-                onChange={(e) => {
-                  const selected = state.txtFiles.find((f: any) => f.path === e.target.value);
-                  actions.selectTxt(selected || null);
-                }}
+            {!state.hasManuscript ? (
+              <div
                 style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  fontSize: '13px',
-                  borderRadius: '4px',
-                  border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'}`,
-                  backgroundColor: isDarkMode ? '#1e2227' : '#ffffff',
-                  color: theme.text
+                  padding: '12px',
+                  textAlign: 'center',
+                  color: theme.textSecondary,
+                  fontSize: '12px',
+                  border: `1px dashed ${isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'}`,
+                  borderRadius: '4px'
                 }}
               >
-                <option value="">Select a .txt file...</option>
-                {state.txtFiles.map((file: any) => (
-                  <option key={file.id} value={file.path}>{file.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {state.selectedTxt && (
+                No manuscript found. Import a manuscript.txt file first.
+              </div>
+            ) : (
               <>
-                {/* Cover image for gepub */}
+                {/* Cover image picker */}
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ fontSize: '12px', color: theme.textSecondary, display: 'block', marginBottom: '4px' }}>
                     Cover Image (optional):
                   </label>
-                  {state.coverImage.previewUrl && !state.coverImage.isAutoExtracted ? (
+                  {state.coverImage.previewUrl ? (
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                       <img
                         src={state.coverImage.previewUrl}
@@ -219,32 +202,6 @@ export default function EpubModal({
                   )}
                 </div>
 
-                {/* Bookstore checkbox */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 10px',
-                    border: '1px solid #FF8C00',
-                    borderRadius: '4px',
-                    marginBottom: '12px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={actions.togglePublishToStore}
-                >
-                  <input
-                    type="checkbox"
-                    checked={state.publishToStore}
-                    onChange={() => actions.togglePublishToStore()}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '12px', color: theme.text }}>
-                    List in Proselenos Ebooks
-                  </span>
-                </div>
-
                 {/* Error/Success messages */}
                 {state.generateError && (
                   <div style={{ fontSize: '12px', color: '#ef4444', marginBottom: '8px' }}>
@@ -253,13 +210,13 @@ export default function EpubModal({
                 )}
                 {state.generateSuccess && (
                   <div style={{ fontSize: '12px', color: '#22c55e', marginBottom: '8px' }}>
-                    EPUB generated successfully!
+                    EPUB generated and added to your library!
                   </div>
                 )}
 
                 {/* Generate button */}
                 <button
-                  onClick={actions.generateGepub}
+                  onClick={actions.generateEpub}
                   disabled={state.isGenerating}
                   style={{
                     width: '100%',
@@ -273,7 +230,7 @@ export default function EpubModal({
                     cursor: state.isGenerating ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  {state.isGenerating ? 'Generating...' : 'Generate'}
+                  {state.isGenerating ? 'Generating...' : 'Generate & Add to Library'}
                 </button>
               </>
             )}
@@ -310,24 +267,23 @@ export default function EpubModal({
             </span>
           </div>
 
-          {/* XEPUB Section */}
+          {/* Section 2: Use Uploaded EPUB */}
           <div
             style={{
               padding: '16px',
               border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)'}`,
               borderRadius: '8px',
-              marginBottom: '16px',
               backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'
             }}
           >
             <div style={{ fontSize: '14px', fontWeight: 'bold', color: theme.text, marginBottom: '8px' }}>
-              PUBLISH UPLOADED EPUB
+              USE UPLOADED EPUB
             </div>
             <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '12px' }}>
-              Publish an EPUB created elsewhere (Vellum, Smashwords, etc). Use this for your final, professionally formatted version.
+              Add an EPUB you uploaded via Files (e.g., created with Vellum) to your e-reader library.
             </div>
 
-            {state.epubFiles.length === 0 ? (
+            {!state.hasUploadedEpub ? (
               <div
                 style={{
                   padding: '12px',
@@ -338,117 +294,42 @@ export default function EpubModal({
                   borderRadius: '4px'
                 }}
               >
-                No EPUB files found. Upload an EPUB to your project first.
+                No EPUB found. Upload an .epub file via Files first.
               </div>
             ) : (
               <>
-                {/* EPUB selector */}
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ fontSize: '12px', color: theme.textSecondary, display: 'block', marginBottom: '4px' }}>
-                    EPUB:
-                  </label>
-                  <select
-                    value={state.selectedEpub?.path || ''}
-                    onChange={(e) => {
-                      const selected = state.epubFiles.find((f: any) => f.path === e.target.value);
-                      actions.selectEpub(selected || null);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      fontSize: '13px',
-                      borderRadius: '4px',
-                      border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'}`,
-                      backgroundColor: isDarkMode ? '#1e2227' : '#ffffff',
-                      color: theme.text
-                    }}
-                  >
-                    <option value="">Select an .epub file...</option>
-                    {state.epubFiles.map((file: any) => (
-                      <option key={file.id} value={file.path}>{file.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {state.selectedEpub && (
-                  <>
-                    {/* Auto-extracted cover preview */}
-                    {state.coverImage.isProcessing ? (
-                      <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '12px' }}>
-                        Extracting cover...
-                      </div>
-                    ) : state.coverImage.previewUrl && state.coverImage.isAutoExtracted ? (
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{ fontSize: '12px', color: theme.textSecondary, display: 'block', marginBottom: '4px' }}>
-                          Cover (auto-extracted):
-                        </label>
-                        <img
-                          src={state.coverImage.previewUrl}
-                          alt="Cover preview"
-                          style={{
-                            width: '60px',
-                            height: 'auto',
-                            maxHeight: '90px',
-                            objectFit: 'contain',
-                            borderRadius: '3px',
-                            border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '12px', color: theme.textSecondary, marginBottom: '12px' }}>
-                        No cover found in EPUB (will use algorithmic color)
-                      </div>
-                    )}
-
-                    {/* Error/Success messages */}
-                    {state.publishError && (
-                      <div style={{ fontSize: '12px', color: '#ef4444', marginBottom: '8px' }}>
-                        {state.publishError}
-                      </div>
-                    )}
-                    {state.publishSuccess && (
-                      <div style={{ fontSize: '12px', color: '#22c55e', marginBottom: '8px' }}>
-                        Published to Proselenos Ebooks successfully!
-                      </div>
-                    )}
-
-                    {/* Publish button */}
-                    <button
-                      onClick={actions.publishXepub}
-                      disabled={state.isPublishing}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        borderRadius: '4px',
-                        border: 'none',
-                        backgroundColor: state.isPublishing ? '#6b7280' : '#FF8C00',
-                        color: '#ffffff',
-                        cursor: state.isPublishing ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      {state.isPublishing ? 'Publishing...' : 'Publish to Proselenos Ebooks'}
-                    </button>
-                  </>
+                {/* Error/Success messages */}
+                {state.importError && (
+                  <div style={{ fontSize: '12px', color: '#ef4444', marginBottom: '8px' }}>
+                    {state.importError}
+                  </div>
                 )}
+                {state.importSuccess && (
+                  <div style={{ fontSize: '12px', color: '#22c55e', marginBottom: '8px' }}>
+                    EPUB added to your library!
+                  </div>
+                )}
+
+                {/* Import button */}
+                <button
+                  onClick={actions.importUploadedEpub}
+                  disabled={state.isImporting}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    borderRadius: '4px',
+                    border: 'none',
+                    backgroundColor: state.isImporting ? '#6b7280' : '#FF8C00',
+                    color: '#ffffff',
+                    cursor: state.isImporting ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {state.isImporting ? 'Adding...' : 'Add to Library'}
+                </button>
               </>
             )}
-          </div>
-
-          {/* Warning */}
-          <div
-            style={{
-              fontSize: '11px',
-              color: '#f59e0b',
-              padding: '10px',
-              backgroundColor: isDarkMode ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-              borderRadius: '4px',
-              border: '1px solid rgba(245, 158, 11, 0.3)'
-            }}
-          >
-            Only ONE epub per project can be listed in the Proselenos Ebooks. Publishing replaces any existing listing.
           </div>
         </div>
       </div>

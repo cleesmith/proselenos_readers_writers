@@ -50,3 +50,4 @@ packages/
 | `/store` | Public ebook bookstore |
 
 The app supports **24+ languages** via i18next internationalization.
+

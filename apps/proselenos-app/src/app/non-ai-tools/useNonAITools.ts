@@ -5,8 +5,9 @@ import { useState, useRef } from 'react';
 import { showAlert } from '../shared/alerts';
 import { listProjectFilesAction } from '@/lib/project-actions';
 import { publishManuscriptAction } from '@/lib/publish-actions';
-import { listDocxFilesAction, extractDocxCommentsAction } from '@/lib/docx-comments-actions';
-import { listEpubFilesAction, convertEpubToTextAction } from '@/lib/epub-conversion-actions';
+import { loadEpub, saveManuscript, saveChatFile } from '@/services/manuscriptStorage';
+import { extractDocxComments } from '@/lib/docx-processing-utils';
+import { convertEpubToText } from '@/lib/epub-processing-utils';
 import { listTxtFilesAction, extractChaptersAction } from '@/lib/chapter-extraction-actions';
 import { listManuscriptsForMergeAction, mergeChaptersAction } from '@/lib/chapter-merge-actions';
 
@@ -20,19 +21,22 @@ interface NonAIToolsManagerState {
   toolJustFinished: boolean;
   // Timer state
   elapsedTime: number;
+  // DOCX file picker trigger
+  needsDocxFilePicker: boolean;
 }
 
 interface NonAIToolsManagerActions {
   setSelectedNonAITool: (tool: string) => void;
-  setupNonAITool: (session: any, currentProject: string | null, currentProjectId: string | null, setIsStorageOperationPending: (loading: boolean) => void, isDarkMode: boolean) => Promise<void>;
+  setupNonAITool: (session: any, currentProject: string, currentProjectId: string, setIsStorageOperationPending: (loading: boolean) => void, isDarkMode: boolean) => Promise<void>;
   setSelectedManuscriptForTool: (file: any) => void;
   setShowFileSelector: (show: boolean) => void;
+  setNeedsDocxFilePicker: (needs: boolean) => void;
   handleRun: (
     session: any,
     isStorageOperationPending: boolean,
     toolExecuting: boolean,
-    currentProject: string | null,
-    currentProjectId: string | null,
+    currentProject: string,
+    currentProjectId: string,
     onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
     isDarkMode: boolean
   ) => Promise<void>;
@@ -55,6 +59,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<string | null>(null);
   const [toolJustFinished, setToolJustFinished] = useState(false);
+  const [needsDocxFilePicker, setNeedsDocxFilePicker] = useState(false);
 
   // Timer state
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -78,46 +83,49 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
   };
 
   // Select non-AI tool - show file selector (exactly like AI Tools)
+  // EPUB to TXT Converter skips file selection - it always uses manuscript.epub from IndexedDB
+  // DOCX: Extract Comments uses a local file picker
   const setupNonAITool = async (
     _session: any,
-    currentProject: string | null,
-    currentProjectId: string | null,
+    currentProject: string,
+    _currentProjectId: string,
     setIsStorageOperationPending: (loading: boolean) => void,
     isDarkMode: boolean
   ) => {
-    if (!currentProject || !currentProjectId) {
-      showAlert('Please select a project first', 'warning', undefined, isDarkMode);
+    // EPUB tool doesn't need file selection - set a dummy selection to enable Run
+    if (selectedNonAITool === 'EPUB to TXT Converter') {
+      setSelectedManuscriptForTool({ id: 'manuscript.epub', name: 'manuscript.epub' });
       return;
     }
+
+    // DOCX tool uses local file picker - signal UI to open it
+    if (selectedNonAITool === 'DOCX: Extract Comments as Text') {
+      setNeedsDocxFilePicker(true);
+      return;
+    }
+
     setIsStorageOperationPending(true);
+    const project = currentProject;
     try {
       let result;
 
       // Choose which files to load based on selected tool
-      if (selectedNonAITool === 'DOCX: Extract Comments as Text') {
-        // Get DOCX files for comment extraction from project
-        result = await listDocxFilesAction(currentProject);
-      } else if (selectedNonAITool === 'EPUB to TXT Converter') {
-        // Get EPUB files for conversion from project
-        result = await listEpubFilesAction(currentProject);
-      } else if (selectedNonAITool === 'Extract Chapters from Manuscript') {
+      if (selectedNonAITool === 'Extract Chapters from Manuscript') {
         // Get TXT files for chapter extraction from project
-        result = await listTxtFilesAction(currentProject);
+        result = await listTxtFilesAction(project);
       } else if (selectedNonAITool === 'Merge Chapters into Edited Manuscript') {
         // Get manuscript files (non-chapter .txt files) for merging
-        result = await listManuscriptsForMergeAction(currentProject);
+        result = await listManuscriptsForMergeAction(project);
       } else {
         // Get text files from current project for other tools
-        result = await listProjectFilesAction(currentProject);
+        result = await listProjectFilesAction(project);
       }
 
       if (result.success && result.data?.files) {
         let filteredFiles = result.data.files;
 
         // Apply additional filtering if needed
-        if (selectedNonAITool !== 'DOCX: Extract Comments as Text' &&
-            selectedNonAITool !== 'EPUB to TXT Converter' &&
-            selectedNonAITool !== 'Extract Chapters from Manuscript' &&
+        if (selectedNonAITool !== 'Extract Chapters from Manuscript' &&
             selectedNonAITool !== 'Merge Chapters into Edited Manuscript') {
           // Filter for .txt files (exactly like AI Tools)
           filteredFiles = result.data.files.filter((file: any) =>
@@ -144,8 +152,8 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     _session: any,
     isStorageOperationPending: boolean,
     toolExecuting: boolean,
-    currentProject: string | null,
-    currentProjectId: string | null,
+    currentProject: string,
+    currentProjectId: string,
     onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
     isDarkMode: boolean
   ) => {
@@ -172,16 +180,11 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
   const handleDocxCommentsExtraction = async (
     _session: any,
-    currentProject: string | null,
+    _currentProject: string,
     onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
     isDarkMode: boolean
   ) => {
-    if (!currentProject) {
-      onShowAlert('error', 'Please select a project first', isDarkMode);
-      return;
-    }
-
-    if (!selectedManuscriptForTool) {
+    if (!selectedManuscriptForTool?.file) {
       onShowAlert('error', 'Please select a DOCX file first', isDarkMode);
       return;
     }
@@ -191,30 +194,21 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     startTimer();
 
     try {
-      // Generate output filename based on original filename
-      const originalName = selectedManuscriptForTool.name.replace('.docx', '');
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
-      const outputFileName = `${originalName}_comments_${timestamp}.txt`;
+      // Read the File object as ArrayBuffer
+      const file = selectedManuscriptForTool.file as File;
+      const buffer = await file.arrayBuffer();
 
-      // selectedManuscriptForTool.id is now the file path (e.g., "ProjectName/file.docx")
-      const result = await extractDocxCommentsAction(
-        selectedManuscriptForTool.id,
-        outputFileName,
-        currentProject
-      );
+      // Extract comments (client-side)
+      const result = await extractDocxComments(buffer);
 
-      if (result.success && result.data) {
-        const { commentCount, hasComments } = result.data;
-        const successMessage = hasComments
-          ? `Successfully extracted ${commentCount} comments and paired them with referenced text.`
-          : 'No comments found in document. Document content saved for reference.';
-        setPublishResult(successMessage);
-        onShowAlert('success', successMessage, isDarkMode);
-      } else {
-        const errorMessage = result.error || 'Unknown error occurred';
-        setPublishResult(`Error: ${errorMessage}`);
-        onShowAlert('error', errorMessage, isDarkMode);
-      }
+      // Save as comments.txt to IndexedDB
+      await saveChatFile('comments.txt', result.content);
+
+      const successMessage = result.commentCount > 0
+        ? `Successfully extracted ${result.commentCount} comments. Saved to comments.txt`
+        : 'No comments found in document. Content saved to comments.txt';
+      setPublishResult(successMessage);
+      onShowAlert('success', successMessage, isDarkMode);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setPublishResult(`Error: ${errorMessage}`);
@@ -228,47 +222,33 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
   const handleEpubConversion = async (
     _session: any,
-    currentProject: string | null,
+    _currentProject: string,
     onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
     isDarkMode: boolean
   ) => {
-    if (!currentProject) {
-      onShowAlert('error', 'Please select a project first', isDarkMode);
-      return;
-    }
-
-    if (!selectedManuscriptForTool) {
-      onShowAlert('error', 'Please select an EPUB file first', isDarkMode);
-      return;
-    }
-
     setIsPublishing(true);
     setPublishResult(null);
     startTimer();
 
     try {
-      // Generate output filename based on original filename
-      const originalName = selectedManuscriptForTool.name.replace('.epub', '');
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 15);
-      const outputFileName = `${originalName}_converted_${timestamp}.txt`;
-
-      // selectedManuscriptForTool.id is now the file path (e.g., "ProjectName/file.epub")
-      const result = await convertEpubToTextAction(
-        selectedManuscriptForTool.id,
-        outputFileName,
-        currentProject
-      );
-
-      if (result.success && result.data) {
-        const { chapterCount, wordCount } = result.data;
-        const successMessage = `Successfully converted EPUB to text with ${chapterCount} chapters (${wordCount} words).`;
-        setPublishResult(successMessage);
-        onShowAlert('success', successMessage, isDarkMode);
-      } else {
-        const errorMessage = result.error || 'Unknown error occurred';
+      // Load manuscript.epub from IndexedDB
+      const epubBuffer = await loadEpub();
+      if (!epubBuffer) {
+        const errorMessage = 'No manuscript.epub found. Upload one via Files first.';
         setPublishResult(`Error: ${errorMessage}`);
         onShowAlert('error', errorMessage, isDarkMode);
+        return;
       }
+
+      // Convert EPUB to text (client-side)
+      const result = await convertEpubToText(epubBuffer);
+
+      // Save as manuscript.txt to IndexedDB
+      await saveManuscript(result.text);
+
+      const successMessage = `Successfully converted EPUB to manuscript.txt with ${result.chapterCount} chapters (${result.wordCount.toLocaleString()} words).`;
+      setPublishResult(successMessage);
+      onShowAlert('success', successMessage, isDarkMode);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setPublishResult(`Error: ${errorMessage}`);
@@ -282,15 +262,10 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
   const handleChapterExtraction = async (
     _session: any,
-    currentProject: string | null,
+    currentProject: string,
     onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
     isDarkMode: boolean
   ) => {
-    if (!currentProject) {
-      onShowAlert('error', 'Please select a project first', isDarkMode);
-      return;
-    }
-
     if (!selectedManuscriptForTool) {
       onShowAlert('error', 'Please select a manuscript file first', isDarkMode);
       return;
@@ -303,7 +278,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     try {
       // selectedManuscriptForTool.id is the file path (e.g., "ProjectName/manuscript.txt")
       const result = await extractChaptersAction(
-        currentProject,
+        currentProject || '',
         selectedManuscriptForTool.id
       );
 
@@ -331,15 +306,10 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
   const handleChapterMerge = async (
     _session: any,
-    currentProject: string | null,
+    currentProject: string,
     onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
     isDarkMode: boolean
   ) => {
-    if (!currentProject) {
-      onShowAlert('error', 'Please select a project first', isDarkMode);
-      return;
-    }
-
     if (!selectedManuscriptForTool) {
       onShowAlert('error', 'Please select a chapter file first', isDarkMode);
       return;
@@ -352,7 +322,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     try {
       // selectedManuscriptForTool.id is the file path (e.g., "ProjectName/ovids_tenth_c0001.txt")
       const result = await mergeChaptersAction(
-        currentProject,
+        currentProject || '',
         selectedManuscriptForTool.id
       );
 
@@ -379,15 +349,10 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
 
   const handlePublishManuscript = async (
     _session: any,
-    currentProjectId: string | null,
+    currentProjectId: string,
     onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void,
     isDarkMode: boolean
   ) => {
-    if (!currentProjectId) {
-      onShowAlert('error', 'Please select a project first', isDarkMode);
-      return;
-    }
-
     if (!selectedManuscriptForTool) {
       onShowAlert('error', 'Please select a manuscript file first', isDarkMode);
       return;
@@ -428,6 +393,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     setPublishResult(null);
     setFileSelectorFiles([]);
     setToolJustFinished(false);
+    setNeedsDocxFilePicker(false);
   };
 
   const state: NonAIToolsManagerState = {
@@ -438,7 +404,8 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     isPublishing,
     publishResult,
     toolJustFinished,
-    elapsedTime
+    elapsedTime,
+    needsDocxFilePicker
   };
 
   const actions: NonAIToolsManagerActions = {
@@ -446,6 +413,7 @@ export function useNonAITools(): [NonAIToolsManagerState, NonAIToolsManagerActio
     setupNonAITool,
     setSelectedManuscriptForTool,
     setShowFileSelector,
+    setNeedsDocxFilePicker,
     handleRun,
     clearTool
   };

@@ -8,18 +8,16 @@ import { useRef, useState } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import { showAlert } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { convertDocxToTxtAction } from '@/lib/docx-conversion-actions';
+import { convertDocxToManuscript } from '@/lib/docx-formatting-utils';
+import { saveManuscript } from '@/services/manuscriptStorage';
 
 interface LocalDocxImportModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   isDarkMode: boolean;
-  currentProject: string | null;
-  currentProjectId: string | null;
-  accessToken: string | null;
   isConverting: boolean;
   onClose: () => void;
-  onConversionComplete: (fileName: string) => void;
+  onConversionComplete: () => void;
   setUploadStatus: (status: string) => void;
 }
 
@@ -27,9 +25,6 @@ export default function LocalDocxImportModal({
   isOpen,
   theme,
   isDarkMode,
-  currentProject,
-  currentProjectId: _currentProjectId,
-  accessToken: _accessToken,
   isConverting: externalConverting,
   onClose,
   onConversionComplete,
@@ -37,7 +32,6 @@ export default function LocalDocxImportModal({
 }: LocalDocxImportModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [outputFileName, setOutputFileName] = useState('');
   const [isConverting, setIsConverting] = useState(false);
 
   if (!isOpen) return null;
@@ -62,8 +56,6 @@ export default function LocalDocxImportModal({
       }
 
       setSelectedFile(file);
-      // Set default output filename
-      setOutputFileName(file.name.replace(/\.docx$/i, '.txt'));
     }
   };
 
@@ -73,41 +65,36 @@ export default function LocalDocxImportModal({
   };
 
   const handleConvert = async () => {
-    if (!selectedFile || !currentProject) {
-      showAlert('Missing required information', 'error', undefined, isDarkMode);
+    if (!selectedFile) {
+      showAlert('Please select a file first', 'error', undefined, isDarkMode);
       return;
     }
 
     setIsConverting(true);
-    setUploadStatus('Converting DOCX to TXT...');
+    setUploadStatus('Converting DOCX to manuscript.txt...');
 
     try {
-      // Use custom filename if provided, otherwise use default
-      const txtFileName = outputFileName.trim() || selectedFile.name.replace(/\.docx$/i, '.txt');
+      // Convert DOCX to manuscript-formatted text (client-side)
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const content = await convertDocxToManuscript(arrayBuffer);
 
-      setUploadStatus('Saving .txt to storage...');
+      // Save to IndexedDB as manuscript.txt
+      setUploadStatus('Saving manuscript.txt...');
+      await saveManuscript(content);
 
-      // Convert DOCX to text and save .txt to project storage
-      const result = await convertDocxToTxtAction(selectedFile, txtFileName, currentProject);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Conversion failed');
-      }
-
-      setUploadStatus(`✅ Conversion complete: ${txtFileName}`);
+      setUploadStatus('✅ Converted and saved as manuscript.txt');
 
       showAlert(
-        `Conversion complete!\n\nOutput: ${txtFileName}`,
+        'Conversion complete!\n\nSaved as: manuscript.txt',
         'success',
         'DOCX Conversion Complete',
         isDarkMode
       );
 
-      onConversionComplete(txtFileName);
+      onConversionComplete();
 
       // Clean up and close
       setSelectedFile(null);
-      setOutputFileName('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -166,23 +153,13 @@ export default function LocalDocxImportModal({
         <div style={{
           marginBottom: '20px',
           padding: '12px',
-          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-          borderRadius: '4px',
-          fontSize: '14px'
-        }}>
-          <strong>Project:</strong> {currentProject || 'No project selected'}
-        </div>
-
-        <div style={{
-          marginBottom: '20px',
-          padding: '12px',
           backgroundColor: isDarkMode ? 'rgba(100, 150, 255, 0.1)' : 'rgba(66, 133, 244, 0.1)',
           borderRadius: '4px',
           fontSize: '13px',
           color: theme.text,
           border: `1px solid ${isDarkMode ? 'rgba(100, 150, 255, 0.3)' : 'rgba(66, 133, 244, 0.3)'}`
         }}>
-          💡 <strong>How it works:</strong> Select a .docx file from your computer. It will be converted to plain text (images removed) and saved as a .txt file in your project. The original .docx is not stored.
+          💡 <strong>How it works:</strong> Select a .docx file from your computer. It will be converted to manuscript-formatted plain text and saved as <strong>manuscript.txt</strong>. The original .docx is not stored.
         </div>
 
         <div style={{
@@ -216,37 +193,9 @@ export default function LocalDocxImportModal({
                 backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
                 borderRadius: '4px',
                 fontSize: '14px',
-                color: theme.text,
-                marginBottom: '12px'
+                color: theme.text
               }}>
                 <strong>Selected:</strong> {selectedFile.name} ({Math.round(selectedFile.size / 1024)}KB)
-              </div>
-
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  color: theme.text,
-                  marginBottom: '6px'
-                }}>
-                  Save as (optional):
-                </label>
-                <input
-                  type="text"
-                  value={outputFileName}
-                  onChange={(e) => setOutputFileName(e.target.value)}
-                  placeholder="Enter filename..."
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    backgroundColor: theme.inputBg,
-                    color: theme.text,
-                    border: `1px solid ${theme.border}`,
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
-                  }}
-                />
               </div>
             </div>
           )}
@@ -262,7 +211,7 @@ export default function LocalDocxImportModal({
           </StyledSmallButton>
 
           <StyledSmallButton onClick={handleConvert} disabled={!selectedFile || converting} theme={theme}>
-            {converting ? 'Converting...' : 'Convert & Upload'}
+            {converting ? 'Converting...' : 'Convert'}
           </StyledSmallButton>
         </div>
       </div>

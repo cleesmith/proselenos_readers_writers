@@ -445,25 +445,6 @@ export const getFootnoteStyles = () => `
   }
 `;
 
-const getTranslationStyles = (showSource: boolean) => `
-  .translation-source {
-  }
-  .translation-target {
-  }
-  .translation-target.hidden {
-    display: none !important;
-  }
-  .translation-target-block {
-    display: block !important;
-    ${showSource ? 'margin: 0.5em 0 !important;' : ''}
-  }
-  .translation-target-toc {
-    display: block !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`;
-
 export interface ThemeCode {
   bg: string;
   fg: string;
@@ -553,24 +534,8 @@ export const getStyles = (viewSettings: ViewSettings, themeCode?: ThemeCode) => 
     viewSettings.backgroundTextureId,
     viewSettings.isEink,
   );
-  const translationStyles = getTranslationStyles(viewSettings.showTranslateSource!);
   const userStylesheet = viewSettings.userStylesheet!;
-  return `${layoutStyles}\n${fontStyles}\n${colorStyles}\n${translationStyles}\n${userStylesheet}`;
-};
-
-export const applyTranslationStyle = (viewSettings: ViewSettings) => {
-  const styleId = 'translation-style';
-
-  const existingStyle = document.getElementById(styleId);
-  if (existingStyle) {
-    existingStyle.remove();
-  }
-
-  const styleElement = document.createElement('style');
-  styleElement.id = styleId;
-  styleElement.textContent = getTranslationStyles(viewSettings.showTranslateSource);
-
-  document.head.appendChild(styleElement);
+  return `${layoutStyles}\n${fontStyles}\n${colorStyles}\n${userStylesheet}`;
 };
 
 export const transformStylesheet = (vw: number, vh: number, css: string) => {

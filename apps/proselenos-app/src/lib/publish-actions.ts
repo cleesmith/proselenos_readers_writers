@@ -8,9 +8,6 @@ import 'server-only';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
 import { readTextFile, uploadFileToProject } from '@/lib/project-storage';
-import * as fs from 'fs';
-import * as path from 'path';
-import PDFDocument from 'pdfkit';
 
 type ActionResult<T = any> = {
   success: boolean;
@@ -25,7 +22,6 @@ interface Chapter {
   number: number;
   title: string;
   content: string[];
-  paragraphs: string[]; // For PDF compatibility
 }
 
 interface PublishResult {
@@ -240,51 +236,8 @@ export async function generateEPUBForLocalImportAction(
 }
 
 /**
- * Generate PDF file only
- * manuscriptFilePath: path like "projectName/manuscript.txt"
- * projectName: the project folder name
- */
-export async function generatePDFOnlyAction(
-  manuscriptFilePath: string,
-  projectName: string
-): Promise<ActionResult<{fileName: string; fileId: string}>> {
-  try {
-    const prepResult = await prepareManuscriptData(manuscriptFilePath, projectName);
-    if (!prepResult.success || !prepResult.data) {
-      return { success: false, error: prepResult.error };
-    }
-
-    const { userId, chapters, metadata } = prepResult.data;
-
-    // Generate PDF
-    const pdfResult = await createPDF(chapters, metadata);
-    const pdfBuffer = pdfResult.pdfData;
-    const pdfFilename = 'manuscript.pdf';
-
-    // Convert Buffer to ArrayBuffer for upload
-    const pdfArrayBuffer = pdfBuffer.buffer.slice(
-      pdfBuffer.byteOffset,
-      pdfBuffer.byteOffset + pdfBuffer.byteLength
-    ) as ArrayBuffer;
-
-    // Upload PDF file to Supabase storage
-    await uploadFileToProject(userId, projectName, pdfFilename, pdfArrayBuffer);
-
-    return {
-      success: true,
-      data: {
-        fileName: pdfFilename,
-        fileId: `${projectName}/${pdfFilename}`
-      }
-    };
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to generate PDF file' };
-  }
-}
-
-/**
  * Main server action for publishing manuscripts
- * Converts manuscript text to HTML, EPUB, and PDF and uploads to Supabase storage
+ * Converts manuscript text to HTML and EPUB and uploads to Supabase storage
  * manuscriptFilePath: path like "projectName/manuscript.txt"
  * projectName: the project folder name
  */
@@ -317,15 +270,9 @@ export async function publishManuscriptAction(
     // Generate EPUB
     const epubBuffer = await generateEPUB(chapters, metadata, projectName);
 
-    // Generate PDF
-    const pdfResult = await createPDF(chapters, metadata);
-    const pdfBuffer = pdfResult.pdfData;
-    const pageCount = pdfResult.pageCount;
-
     // Create clean filenames for publishing (no timestamps)
     const htmlFilename = 'manuscript.html';
     const epubFilename = 'manuscript.epub';
-    const pdfFilename = 'manuscript.pdf';
 
     // Upload HTML file to Supabase storage
     await uploadFileToProject(userId, projectName, htmlFilename, htmlContent);
@@ -339,26 +286,16 @@ export async function publishManuscriptAction(
     // Upload EPUB file to Supabase storage
     await uploadFileToProject(userId, projectName, epubFilename, epubArrayBuffer);
 
-    // Convert PDF Buffer to ArrayBuffer for upload
-    const pdfArrayBuffer = pdfBuffer.buffer.slice(
-      pdfBuffer.byteOffset,
-      pdfBuffer.byteOffset + pdfBuffer.byteLength
-    ) as ArrayBuffer;
-
-    // Upload PDF file to Supabase storage
-    await uploadFileToProject(userId, projectName, pdfFilename, pdfArrayBuffer);
-
     return {
       success: true,
       data: {
-        generatedFiles: [htmlFilename, epubFilename, pdfFilename],
+        generatedFiles: [htmlFilename, epubFilename],
         stats: {
           chapterCount: chapters.length,
-          wordCount: wordCount,
-          pageCount: pageCount
+          wordCount: wordCount
         }
       },
-      message: `Successfully generated HTML, EPUB, and PDF with ${chapters.length} chapters and ${pageCount} pages`
+      message: `Successfully generated HTML and EPUB with ${chapters.length} chapters`
     };
 
   } catch (error) {
@@ -419,8 +356,7 @@ function parseManuscriptText(text: string): Chapter[] {
           id: `chapter${chapterCount}`,
           number: chapterCount,
           title: formattedTitle,
-          content: paragraphs,
-          paragraphs: paragraphs
+          content: paragraphs
         });
       }
     } else {
@@ -437,27 +373,25 @@ function parseManuscriptText(text: string): Chapter[] {
           id: `chapter${chapterCount}`,
           number: chapterCount,
           title: `Chapter ${chapterCount}`,
-          content: paragraphs,
-          paragraphs: paragraphs
+          content: paragraphs
         });
       }
     }
   }
-  
+
   // If no chapters found, treat whole text as one chapter
   if (chapters.length === 0) {
     const paragraphs = text
       .split(/\n\s*\n/)
       .map(p => p.replace(/\n/g, ' ').trim())
       .filter(p => p.length > 0);
-    
+
     if (paragraphs.length > 0) {
       chapters.push({
         id: 'chapter1',
         number: 1,
         title: 'Chapter 1',
-        content: paragraphs,
-        paragraphs: paragraphs
+        content: paragraphs
       });
     }
   }
@@ -1308,333 +1242,3 @@ function generateUUID(): string {
     return v.toString(16);
   });
 }
-/**
- * Convert title to title case (capitalize first letter of each word)
- */
-function toTitleCase(str: string): string {
-  return str.replace(/\w\S*/g, function(txt) {
-    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-  });
-}
-
-/**
- * Create PDF title page
- */
-function createPDFTitlePage(doc: any, metadata: any): void {
-  const pageWidth = 432;
-
-  // Title - centered at ~35% of page height
-  doc.font('bold')
-    .fontSize(28)
-    .text(metadata.title.toUpperCase(), 0, 190, {
-      align: 'center',
-      width: pageWidth,
-      continued: false
-    });
-
-  // Author - centered at ~50% of page height
-  doc.font('regular')
-    .fontSize(20)
-    .text(metadata.author.toUpperCase(), 0, 330, {
-      align: 'center',
-      width: pageWidth,
-      continued: false
-    });
-
-  // Publisher - at ~80% of page height
-  doc.fontSize(12)
-    .text((metadata.publisher || 'Proselenos').toUpperCase(), 0, 555, {
-      align: 'center',
-      width: pageWidth,
-      continued: false
-    });
-}
-
-/**
- * Create PDF copyright page
- */
-function createPDFCopyrightPage(doc: any, metadata: any): void {
-  // Add new page for copyright
-  doc.addPage();
-
-  const pageWidth = 432;
-  const pageHeight = 648;
-  const leftMargin = 63;
-  const bottomMargin = 72;
-  const year = new Date().getFullYear();
-
-  // Standard copyright template (like Vellum)
-  const copyrightText = [
-    `Copyright © ${year} ${metadata.author}`,
-    '',
-    'All rights reserved.',
-    '',
-    `Published by ${metadata.publisher || 'Proselenos'}`,
-    '',
-    'This is a work of fiction. Names, characters, places, and incidents',
-    'either are the product of the author\'s imagination or are used',
-    'fictitiously. Any resemblance to actual persons, living or dead,',
-    'events, or locales is entirely coincidental.'
-  ];
-
-  // Calculate starting Y position to place text at BOTTOM of page
-  const lineHeight = 14;
-  const totalHeight = copyrightText.length * lineHeight;
-  const startY = pageHeight - bottomMargin - totalHeight - 50;
-
-  // Set font and size
-  doc.font('regular').fontSize(10);
-
-  // Draw each line
-  let currentY = startY;
-  copyrightText.forEach((line: string) => {
-    doc.text(line, leftMargin, currentY, {
-      width: pageWidth - (leftMargin * 2),
-      align: 'left'
-    });
-    currentY += lineHeight;
-  });
-}
-
-/**
- * Create PDF with title page and all chapters - EXACTLY FOLLOWING ORIGINAL WORKING CODE
- */
-async function createPDF(chapters: Chapter[], metadata: any): Promise<{ pdfData: Buffer; pageCount: number }> {
-  
-  const regularFontPath = path.join(process.cwd(), 'public/fonts/EBGaramond-Regular.ttf');
-  const boldFontPath = path.join(process.cwd(), 'public/fonts/EBGaramond-Bold.ttf');
-
-  if (!fs.existsSync(regularFontPath)) {
-    throw new Error(`EB Garamond Regular font file not found at: ${regularFontPath}`);
-  }
-  if (!fs.existsSync(boldFontPath)) {
-    throw new Error(`EB Garamond Bold font file not found at: ${boldFontPath}`);
-  }
-
-  // CRITICAL: Use custom font from constructor to prevent pdfkit from loading Helvetica.afm
-  // In Next.js server actions, pdfkit's bundled fonts aren't accessible
-  const doc = new PDFDocument({
-    size: [432, 648], // 6" x 9"
-    margins: {
-      top: 72,    // 1 inch
-      bottom: 72, // 1 inch
-      left: 63,   // 0.875 inches
-      right: 63   // 0.875 inches
-    },
-    autoFirstPage: false,
-    displayTitle: false,
-    bufferPages: true,
-    font: regularFontPath
-  });
-
-  // Register fonts
-  doc.registerFont('regular', regularFontPath);
-  doc.registerFont('bold', boldFontPath);
-
-  // Set metadata
-  doc.info.Title = metadata.title;
-  doc.info.Author = metadata.author;
-  doc.info.Creator = 'Proselenos';
-  
-  // Track pages that should not have headers/numbers
-  const skipHeaderPages = new Set<number>();
-  const skipPageNumberPages = new Set<number>();
-  
-  // Add first page and create title page
-  doc.addPage();
-  createPDFTitlePage(doc, metadata);
-
-  // Add copyright page
-  createPDFCopyrightPage(doc, metadata);
-
-  // Ensure first chapter starts on odd page (right-hand page)
-  let currentPageCount = 2; // Title + Copyright
-  if (currentPageCount % 2 === 0) {
-    doc.addPage(); // Add blank page
-    skipHeaderPages.add(currentPageCount);
-    skipPageNumberPages.add(currentPageCount);
-  }
-
-  // Now create the actual chapters
-  chapters.forEach((chapter, _chapterIndex) => {
-    // Get current page count
-    let currentRange = doc.bufferedPageRange();
-    currentPageCount = currentRange.count;
-    
-    // Ensure chapters start on odd pages (right-hand pages)
-    if ((currentPageCount + 1) % 2 === 0) {
-      doc.addPage(); // Add blank page
-      // Mark blank page (0-indexed)
-      skipHeaderPages.add(currentPageCount);
-      skipPageNumberPages.add(currentPageCount);
-    }
-    
-    doc.addPage(); // Add the chapter page
-    
-    // Record this as a chapter start page - skip headers but keep page numbers (0-indexed)
-    skipHeaderPages.add(doc.bufferedPageRange().count - 1);
-    
-    // Reset cursor to top margin position - with extra space from top
-    doc.y = doc.page.margins.top + 72; // Add 1 inch of extra space at top
-
-    // Extract chapter number and title
-    const chapterMatch = chapter.title.match(/Chapter\s+(\d+|[IVXLCDM]+)[\.:]?\s*(.*)/i);
-    if (chapterMatch && chapterMatch[1] && chapterMatch[2]) {
-      const chapterNum = chapterMatch[1];
-      const titleOnly = chapterMatch[2].trim();
-
-      // Display chapter number centered
-      doc.font('bold')
-        .fontSize(18)
-        .text(chapterNum, { align: 'center' });
-      
-      // Add a small gap between number and title
-      doc.moveDown(0.5);
-      
-      // Display title if present
-      if (titleOnly) {
-        doc.font('bold')
-          .fontSize(16)
-          .text(titleOnly, { align: 'center' });
-      }
-    } else {
-      // Fallback for chapters without "Chapter N" format
-      doc.font('bold')
-        .fontSize(16)
-        .text(chapter.title, { align: 'center' });
-    }
-
-    // Add significant blank space before content starts
-    doc.moveDown(4); // More space between title and content
-    
-    // Start the chapter content
-    doc.font('regular').fontSize(11);
-    chapter.paragraphs.forEach((paragraph, paraIndex) => {
-      if (paraIndex === 0) {
-        // First paragraph has no indent
-        doc.text(paragraph, { paragraphGap: 2, lineGap: 1 });
-      } else {
-        // Subsequent paragraphs are indented
-        doc.text(paragraph, { indent: 15, paragraphGap: 2, lineGap: 1 });
-      }
-    });
-  });
-
-  // Add "About the Author" if present
-  if (metadata.aboutAuthor && metadata.aboutAuthor.trim()) {
-    // Get current page count
-    let currentRange = doc.bufferedPageRange();
-    currentPageCount = currentRange.count;
-    
-    // Ensure it starts on odd page
-    if ((currentPageCount + 1) % 2 === 0) {
-      doc.addPage(); // Add blank page
-      skipHeaderPages.add(currentPageCount);
-      skipPageNumberPages.add(currentPageCount);
-    }
-
-    doc.addPage();
-    skipHeaderPages.add(doc.bufferedPageRange().count - 1);
-    
-    doc.y = doc.page.margins.top + 72;
-    doc.font('bold').fontSize(16).text('About the Author', { align: 'center' });
-    doc.moveDown(4);
-    doc.font('regular').fontSize(11);
-    doc.text(metadata.aboutAuthor, { paragraphGap: 2, lineGap: 1 });
-  }
-
-  // NOW ADD HEADERS AND PAGE NUMBERS TO ALL PAGES - EXACTLY LIKE ORIGINAL
-  const range = doc.bufferedPageRange();
-  
-  // CRITICAL: Reset cursor position before page numbering loop
-  doc.text('', 0, 0);
-  
-  // Prepare header text
-  const authorHeader = metadata.author;
-  const titleHeader = toTitleCase(metadata.title);
-  
-  // range.count = total number of pages
-  for (let i = 0; i < range.count; i++) {
-    // Skip first two pages (title and copyright)
-    if (i < 2) continue;
-    
-    // Switch to page
-    doc.switchToPage(i);
-    
-    // Calculate actual page number (1-based for display)
-    const pageNum = i + 1;
-    
-    // Add headers only if not a chapter start or blank page
-    if (!skipHeaderPages.has(i)) {
-      // Add headers
-      let oldTopMargin = doc.page.margins.top;
-      doc.page.margins.top = 0; // Remove top margin to write into it
-      
-      doc.font('regular').fontSize(10);
-      
-      // Even pages (left pages) - Author name on left
-      if (pageNum % 2 === 0) {
-        doc.text(
-          authorHeader,
-          doc.page.margins.left,
-          oldTopMargin / 2, // Centered vertically in top margin
-          { 
-            align: 'left',
-            width: doc.page.width - doc.page.margins.left - doc.page.margins.right
-          }
-        );
-      }
-      // Odd pages (right pages) - Title on right
-      else {
-        doc.text(
-          titleHeader,
-          doc.page.margins.left,
-          oldTopMargin / 2, // Centered vertically in top margin
-          { 
-            align: 'right',
-            width: doc.page.width - doc.page.margins.left - doc.page.margins.right
-          }
-        );
-      }
-      
-      doc.page.margins.top = oldTopMargin; // Restore top margin
-    }
-    
-    // Footer: Add page number to all pages except blank pages
-    if (!skipPageNumberPages.has(i)) {
-      let oldBottomMargin = doc.page.margins.bottom;
-      doc.page.margins.bottom = 0; // Remove bottom margin to write into it
-      
-      doc.font('regular')
-        .fontSize(10)
-        .text(
-          pageNum.toString(),
-          0,
-          doc.page.height - (oldBottomMargin / 2), // Centered vertically in bottom margin
-          { 
-            align: 'center',
-            width: doc.page.width
-          }
-        );
-      
-      doc.page.margins.bottom = oldBottomMargin; // Restore bottom margin
-    }
-  }
-
-  // End the document and return buffer
-  doc.end();
-
-  return new Promise((resolve, reject) => {
-    const buffers: Buffer[] = [];
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => {
-      const pdfData = Buffer.concat(buffers);
-      resolve({
-        pdfData: pdfData,
-        pageCount: range.count
-      });
-    });
-    doc.on('error', reject);
-  });
-}
-

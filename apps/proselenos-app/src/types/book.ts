@@ -1,5 +1,4 @@
 import { BookMetadata } from '@/libs/document';
-import { TTSHighlightOptions } from '@/services/tts/types';
 
 export type BookFormat = 'EPUB' | 'MOBI' | 'AZW' | 'AZW3' | 'CBZ' | 'FB2' | 'FBZ' | 'PDF';
 export type BookNoteType = 'bookmark' | 'annotation' | 'excerpt';
@@ -173,22 +172,6 @@ export interface ViewConfig {
   progressStyle: 'percentage' | 'fraction';
 }
 
-export interface TTSConfig {
-  ttsRate: number;
-  ttsVoice: string;
-  ttsLocation: string;
-  showTTSBar: boolean;
-  ttsHighlightOptions: TTSHighlightOptions;
-}
-
-export interface TranslatorConfig {
-  translationEnabled: boolean;
-  translationProvider: string;
-  translateTargetLang: string;
-  showTranslateSource: boolean;
-  ttsReadAloudText: string;
-}
-
 export interface ScreenConfig {
   screenOrientation: 'auto' | 'portrait' | 'landscape';
 }
@@ -198,8 +181,6 @@ export interface ViewSettings
     BookStyle,
     BookFont,
     ViewConfig,
-    TTSConfig,
-    TranslatorConfig,
     ScreenConfig {}
 
 export interface BookProgress {

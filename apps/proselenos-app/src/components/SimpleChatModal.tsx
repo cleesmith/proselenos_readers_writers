@@ -4,21 +4,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import renderWriterMarkdown from '@/lib/writerMarkdown';
-import { 
-  getChatProviderModelAction,
-  getChatResponseAction,
-  saveChatToBrainstormAction
-} from '@/lib/chat-actions';
-import type { ChatMessage } from '@/lib/chatInternal';
 import { showAlert } from '@/app/shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { getTheme } from '@/app/shared/theme';
+import { loadApiKey, loadAppSettings, saveChatFile } from '@/services/manuscriptStorage';
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 interface SimpleChatModalProps {
   isOpen: boolean;
   onClose: () => void;
   isDarkMode?: boolean;
-  currentProject?: string | null;
 }
 
 // Extend ChatMessage to include elapsed time
@@ -29,8 +28,7 @@ interface ChatMessageWithTimer extends ChatMessage {
 export default function SimpleChatModal({
   isOpen,
   onClose,
-  isDarkMode = false,
-  currentProject
+  isDarkMode = false
 }: SimpleChatModalProps): React.JSX.Element | null {
   const theme = getTheme(isDarkMode);
   const [input, setInput] = useState<string>('');
@@ -68,6 +66,14 @@ export default function SimpleChatModal({
       setElapsedTime(0);
     } else {
       loadProviderModel();
+      // Check for initial context from Writing Assistant
+      const initialContext = sessionStorage.getItem('chatInitialContext');
+      if (initialContext) {
+        // Pre-populate the input with context reference
+        setInput(`Here are my story ideas so far:\n\n${initialContext}\n\nPlease help me develop these ideas further.`);
+        // Clear the context so it's not reused
+        sessionStorage.removeItem('chatInitialContext');
+      }
       // Focus textarea when modal opens
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
@@ -91,11 +97,17 @@ export default function SimpleChatModal({
 
   const loadProviderModel = async (): Promise<void> => {
     try {
-      const result = await getChatProviderModelAction();
-      setProviderModel(result.providerModel);
+      const settings = await loadAppSettings();
+      if (settings?.selectedModel) {
+        // Format: "OpenRouter: model-name" (remove provider prefix)
+        const modelDisplay = settings.selectedModel.replace(/^[^/]+\//, '');
+        setProviderModel(`OpenRouter: ${modelDisplay}`);
+      } else {
+        setProviderModel('No model selected');
+      }
     } catch (error: unknown) {
-      console.error('Failed to load provider/model:', error);
-      setProviderModel('Provider not available');
+      console.error('Failed to load model:', error);
+      setProviderModel('Model not available');
     }
   };
 
@@ -148,21 +160,49 @@ export default function SimpleChatModal({
     setTimerInterval(interval);
     
     try {
-      const response = await getChatResponseAction(updatedMessages);
-      
-      if (response.response) {
-        const finalElapsedTime = Math.floor((Date.now() - now) / 1000);
-        const assistantMessage: ChatMessageWithTimer = { 
-          role: 'assistant', 
-          content: response.response,
-          elapsedTime: finalElapsedTime
-        };
-        setMessages([...updatedMessages, assistantMessage]);
-        
-        if (response.providerModel) {
-          setProviderModel(response.providerModel);
-        }
+      // Get API key and model from IndexedDB
+      const apiKey = await loadApiKey();
+      const settings = await loadAppSettings();
+
+      if (!apiKey || !settings?.selectedModel) {
+        throw new Error('API key or model not configured');
       }
+
+      // Build messages for OpenRouter
+      const openaiMessages = [
+        { role: 'system', content: 'You are a helpful AI assistant. Respond naturally and conversationally.' },
+        ...updatedMessages.map(m => ({ role: m.role, content: m.content }))
+      ];
+
+      // Client-side OpenRouter API call
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.href,
+          'X-Title': 'Proselenos Chat'
+        },
+        body: JSON.stringify({
+          model: settings.selectedModel,
+          messages: openaiMessages,
+          max_tokens: 8000
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || `HTTP ${response.status}`);
+      }
+
+      const aiResponse = data.choices?.[0]?.message?.content || 'No response';
+      const finalElapsedTime = Math.floor((Date.now() - now) / 1000);
+      const assistantMessage: ChatMessageWithTimer = {
+        role: 'assistant',
+        content: aiResponse,
+        elapsedTime: finalElapsedTime
+      };
+      setMessages([...updatedMessages, assistantMessage]);
     } catch (error: unknown) {
       console.error('Chat error:', error);
       const finalElapsedTime = Math.floor((Date.now() - now) / 1000);
@@ -181,17 +221,12 @@ export default function SimpleChatModal({
   };
 
   const handleSaveChat = (): void => {
-    if (!currentProject) {
-      showAlert('No project selected', 'error', undefined, isDarkMode);
-      return;
-    }
-
     if (messages.length === 0) {
       showAlert('No messages to save', 'warning', undefined, isDarkMode);
       return;
     }
 
-    setFilename('brainstorm');
+    setFilename('chat');
     setShowFilenameInput(true);
   };
 
@@ -201,29 +236,25 @@ export default function SimpleChatModal({
       return;
     }
 
-    if (!currentProject) {
-      showAlert('No project selected', 'error', undefined, isDarkMode);
-      return;
-    }
-
     setIsSaving(true);
     setShowFilenameInput(false);
 
     try {
-      // Convert messages back to regular ChatMessage format for saving
-      const messagesForSaving = messages.map(({ elapsedTime, ...msg }) => msg);
-
-      const result = await saveChatToBrainstormAction(
-        messagesForSaving,
-        providerModel,
-        currentProject,
-        filename.trim()
-      );
-
-      if (!result.success) {
-        showAlert(`Failed to save: ${result.message}`, 'error', undefined, isDarkMode);
+      let finalFilename = filename.trim();
+      if (!finalFilename.endsWith('.txt')) {
+        finalFilename += '.txt';
       }
-      // Success: button state change is sufficient feedback
+
+      // Format chat content
+      const chatContent = messages
+        .map(m => `${m.role === 'user' ? 'ME' : 'AI'}:\n${m.content}\n`)
+        .join('\n');
+
+      const header = `Chat: ${new Date().toLocaleString()}\nModel: ${providerModel}\n\n`;
+
+      // Save to IndexedDB
+      await saveChatFile(finalFilename, header + chatContent);
+      showAlert(`Saved as ${finalFilename}`, 'success', undefined, isDarkMode);
     } catch (error: unknown) {
       showAlert(`Error saving chat: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error', undefined, isDarkMode);
     } finally {
@@ -346,24 +377,13 @@ export default function SimpleChatModal({
         justifyContent: 'space-between',
         borderBottom: `1px solid ${isDarkMode ? '#4a5568' : '#e2e8f0'}`
       }}>
-        <div>
-          <h2 style={{
-            fontSize: '14px',
-            fontWeight: 'bold',
-            color: isDarkMode ? '#ffffff' : '#1a202c',
-            margin: 0
-          }}>
-            Project: {currentProject || 'None selected'}
-          </h2>
-          <div style={{ 
-            fontSize: '11px', 
-            color: isDarkMode ? '#a0aec0' : '#718096',
-            marginTop: '2px'
-          }}>
-            {providerModel || 'Loading AI Provider & Model...'}
-          </div>
+        <div style={{
+          fontSize: '12px',
+          color: isDarkMode ? '#a0aec0' : '#718096'
+        }}>
+          {providerModel || 'Loading AI Model...'}
         </div>
-        
+
         <div style={{ display: 'flex', gap: '6px' }}>
           <StyledSmallButton
             onClick={handleSaveChat}

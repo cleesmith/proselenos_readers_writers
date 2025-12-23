@@ -6,7 +6,6 @@ import { FaWikipediaW } from 'react-icons/fa';
 import { BsPencilSquare } from 'react-icons/bs';
 import { RiDeleteBinLine } from 'react-icons/ri';
 import { TbHexagonLetterD } from 'react-icons/tb';
-import { FaHeadphones } from 'react-icons/fa6';
 
 import * as CFI from 'foliate-js/epubcfi.js';
 import { Overlayer } from 'foliate-js/overlayer.js';
@@ -20,7 +19,6 @@ import { useNotebookStore } from '@/store/notebookStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useFoliateEvents } from '../../hooks/useFoliateEvents';
-import { useNotesSync } from '../../hooks/useNotesSync';
 import { useTextSelector } from '../../hooks/useTextSelector';
 import { getPopupPosition, getPosition, Position, TextSelection } from '@/utils/sel';
 import { eventDispatcher } from '@/utils/event';
@@ -38,8 +36,6 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const { getConfig, saveConfig, getBookData, updateBooknotes } = useBookDataStore();
   const { getProgress, getView, getViewsById, getViewSettings } = useReaderStore();
   const { setNotebookVisible, setNotebookNewAnnotation } = useNotebookStore();
-
-  useNotesSync(bookKey);
 
   const osPlatform = getOSPlatform();
   const config = getConfig(bookKey)!;
@@ -373,12 +369,6 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     setShowWikipediaPopup(true);
   };
 
-  const handleSpeakText = async () => {
-    if (!selection || !selection.text) return;
-    setShowAnnotPopup(false);
-    eventDispatcher.dispatch('tts-speak', { bookKey, range: selection.range });
-  };
-
   const handleExportMarkdown = (event: CustomEvent) => {
     const { bookKey: exportBookKey } = event.detail;
     if (bookKey !== exportBookKey) return;
@@ -476,7 +466,6 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     { tooltipText: _('Search'), Icon: FiSearch, onClick: handleSearch },
     { tooltipText: _('Dictionary'), Icon: TbHexagonLetterD, onClick: handleDictionary },
     { tooltipText: _('Wikipedia'), Icon: FaWikipediaW, onClick: handleWikipedia },
-    { tooltipText: _('Speak'), Icon: FaHeadphones, onClick: handleSpeakText },
   ];
 
   return (

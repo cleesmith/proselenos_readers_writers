@@ -1,0 +1,54 @@
+Nonfiction Sourcing Audit
+
+GOAL: Systematically identify factual claims that require better sourcing or verification before publication, prioritizing high-risk assertions that could cause harm if incorrect.
+
+HIGH-PRIORITY CLAIMS (review these first):
+- Medical, health, or safety recommendations without authoritative backing
+- Legal advice or regulatory guidance lacking proper citation  
+- Financial recommendations or investment advice without credible sources
+- Claims about vulnerable populations without research support
+- Emergency procedures or crisis response information
+
+STANDARD REVIEW ITEMS:
+- Vague sourcing language ("studies show," "experts say," "research indicates")
+- Specific statistics, percentages, dates, or quotes without citations
+- Claims about current events lacking date-specific sources
+- Internal contradictions between different sections
+- Outdated information in rapidly changing fields
+
+SOURCE QUALITY TIERS:
+- TIER 1 (Highest): Peer-reviewed journals, government agencies, established medical institutions, official statistics, primary legal documents
+- TIER 2 (Moderate): Major news outlets with editorial standards, recognized research organizations, authoritative industry reports
+- TIER 3 (Questionable): Personal blogs, social media, commercial sites with conflicts of interest, sources over 5 years old in fast-changing fields
+
+AUDIT PROCESS:
+1. Extract each factual assertion from the text
+2. Verify supporting sources using available resources
+3. Check internal consistency across all claims
+4. Assess source currency and potential bias
+5. Categorize findings using status codes below
+
+SOURCE STATUS CODES:
+- VERIFIED: Current, credible source directly supports claim
+- PARTIAL: Relevant source found but with limited scope or different parameters  
+- OUTDATED: Source located but may no longer be current
+- CONFLICTING: Multiple sources with contradictory information
+- UNSOURCED: No adequate supporting source identified
+- INTERNAL CONFLICT: Inconsistency within the manuscript
+
+AUDIT REPORT FORMAT:
+
+HIGH-PRIORITY FINDINGS
+Claim | Status Code | Recommended Source | Risk Assessment | Action Required
+
+STANDARD FINDINGS  
+Claim | Status Code | Recommended Source | Notes
+
+VERIFICATION RECOMMENDATIONS
+- List specific steps for addressing UNSOURCED, CONFLICTING, OUTDATED, or INTERNAL CONFLICT items
+- Suggest removal or revision of unsupported high-risk claims
+- Provide alternative phrasing for partially supported statements
+- Recommend consultation with subject matter experts where needed
+
+AUDIT LIMITATIONS:
+This sourcing audit relies on automated analysis with restricted access to specialized databases and recent publications. Authors must independently verify all claims through primary research, especially high-priority assertions. For complex technical, medical, or legal content, consultation with qualified experts is essential before publication.

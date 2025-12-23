@@ -21,7 +21,6 @@ import Dropdown from '@/components/Dropdown';
 import SettingsMenu from './SettingsMenu';
 import ImportMenu from './ImportMenu';
 import ViewMenu from './ViewMenu';
-import BookRepoModal from './BookRepoModal';
 
 interface LibraryHeaderProps {
   isSelectMode: boolean;
@@ -54,7 +53,6 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
     cleanupTrafficLightListeners,
   } = useTrafficLightStore();
   const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') ?? '');
-  const [isBookRepoModalOpen, setIsBookRepoModalOpen] = useState(false);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const iconSize18 = useResponsiveSize(18);
@@ -233,17 +231,11 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
               buttonClassName='btn btn-ghost h-8 min-h-8 w-8 p-0'
               toggleButton={<MdOutlineMenu role='none' size={iconSize18} />}
             >
-              <SettingsMenu onOpenBookRepo={() => setIsBookRepoModalOpen(true)} />
+              <SettingsMenu />
             </Dropdown>
           </div>
         )}
       </div>
-      {isBookRepoModalOpen && (
-        <BookRepoModal
-          isOpen={isBookRepoModalOpen}
-          onClose={() => setIsBookRepoModalOpen(false)}
-        />
-      )}
     </div>
   );
 };

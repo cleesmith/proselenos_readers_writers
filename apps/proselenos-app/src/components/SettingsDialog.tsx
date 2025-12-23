@@ -4,8 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { showAlert } from '@/app/shared/alerts';
-import { getKeyAndStatusAction, storeApiKeyAction, removeApiKeyAction, validateOpenRouterKeyAction } from '@/lib/api-key-actions';
-import { updateSelectedModelAction } from '@/lib/config-actions';
+import { loadApiKey, saveApiKey } from '@/services/manuscriptStorage';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface SettingsDialogProps {
@@ -36,22 +35,15 @@ export default function SettingsDialog({
   const [loading, setLoading] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
 
-  // Load API key settings (key status and actual decrypted key, but no models)
+  // Load API key from local IndexedDB
   const loadSettings = async () => {
-    if (!selectedProvider) return;
-    
     setLoading(true);
     try {
-      // too slow, as it gets all ai models from openrouter:
-      // const result = await getBatchSettingsDataAction(selectedProvider);
-      // Only fetch key and status; do not fetch models here
-      const result = await getKeyAndStatusAction(selectedProvider);
-      if (result.success) {
-        setHasKey(result.hasKey || false);
-        setApiKey(result.apiKey || '');
-      }
+      const storedKey = await loadApiKey();
+      setHasKey(!!storedKey);
+      setApiKey(storedKey || '');
     } catch (error) {
-      console.error('Error loading settings:', error);
+      console.error('Error loading API key:', error);
     } finally {
       setLoading(false);
     }
@@ -64,13 +56,22 @@ export default function SettingsDialog({
     }
   }, [isOpen]);
 
+  // Validate API key client-side (same logic as old server action)
+  const validateApiKey = async (key: string): Promise<boolean> => {
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/auth/key", {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${key}`
+        }
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
 
   const handleSave = async () => {
-    if (!selectedProvider) {
-      showAlert('No provider selected', 'error', undefined, isDarkMode);
-      return;
-    }
-
     if (!apiKey.trim() && !hasKey) {
       showAlert('Please enter an API key', 'warning', undefined, isDarkMode);
       return;
@@ -81,45 +82,31 @@ export default function SettingsDialog({
     try {
       // Store new key OR delete existing key if field was cleared
       if (apiKey.trim()) {
-        // Validate the API key first
-        const validateResult = await validateOpenRouterKeyAction(apiKey.trim());
-        if (!validateResult.valid) {
+        // Validate API key before saving
+        const isValid = await validateApiKey(apiKey.trim());
+        if (!isValid) {
           showAlert('Invalid API key. Please check and try again.', 'error', undefined, isDarkMode);
           setSaving(false);
           return;
         }
-
-        // User entered a valid key - save it
-        const result = await storeApiKeyAction(selectedProvider, apiKey.trim());
-        if (!result.success) {
-          showAlert(`Failed to save API key: ${result.error}`, 'error', undefined, isDarkMode);
-          setSaving(false);
-          return;
-        }
+        await saveApiKey(apiKey.trim());
       } else if (hasKey) {
         // User cleared the field and had an existing key - delete it
-        const result = await removeApiKeyAction(selectedProvider);
-        if (!result.success) {
-          showAlert(`Failed to remove API key: ${result.error}`, 'error', undefined, isDarkMode);
-          setSaving(false);
-          return;
-        }
-        // Also clear the selected model
-        await updateSelectedModelAction('');
+        await saveApiKey('');
       }
 
       // Call parent save handler with selected provider only
-      onSave(selectedProvider);
-      
+      onSave(selectedProvider || 'openrouter');
+
       // Reset form
       setApiKey('');
       onClose();
     } catch (error) {
-      showAlert(`Error saving settings: ${error instanceof Error ? error.message : String(error)}`, 'error', undefined, isDarkMode);
-      } finally {
-        setSaving(false);
-      }
-    };
+      showAlert(`Error saving API key: ${error instanceof Error ? error.message : String(error)}`, 'error', undefined, isDarkMode);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -200,7 +187,7 @@ export default function SettingsDialog({
             color: theme.textSecondary,
             marginBottom: '6px'
           }}>
-            Enter your {PROVIDER_DISPLAY_NAMES[selectedProvider as keyof typeof PROVIDER_DISPLAY_NAMES]} API key (will be encrypted and stored securely)
+            Enter your {PROVIDER_DISPLAY_NAMES[selectedProvider as keyof typeof PROVIDER_DISPLAY_NAMES]} API key (stored locally)
           </div>
           <div style={{ position: 'relative' }}>
             <input

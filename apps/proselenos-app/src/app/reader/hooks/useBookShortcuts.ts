@@ -18,7 +18,7 @@ interface UseBookShortcutsProps {
 }
 
 const useBookShortcuts = ({ sideBarBookKey, bookKeys }: UseBookShortcutsProps) => {
-  const { getView, getViewState, getViewSettings, setViewSettings } = useReaderStore();
+  const { getView, getViewSettings, setViewSettings } = useReaderStore();
   const { toggleSideBar, setSideBarBookKey } = useSidebarStore();
   const { setSettingsDialogOpen } = useSettingsStore();
   const { getBookData } = useBookDataStore();
@@ -190,13 +190,6 @@ const useBookShortcuts = ({ sideBarBookKey, bookKeys }: UseBookShortcutsProps) =
     applyZoomLevel(100);
   };
 
-  const toggleTTS = () => {
-    if (!sideBarBookKey) return;
-    const bookKey = sideBarBookKey;
-    const viewState = getViewState(bookKey);
-    eventDispatcher.dispatch(viewState?.ttsEnabled ? 'tts-stop' : 'tts-speak', { bookKey });
-  };
-
   const toggleBookmark = () => {
     if (!sideBarBookKey) return;
     eventDispatcher.dispatch('toggle-bookmark', { bookKey: sideBarBookKey });
@@ -212,7 +205,6 @@ const useBookShortcuts = ({ sideBarBookKey, bookKeys }: UseBookShortcutsProps) =
       onOpenFontLayoutSettings: () => setSettingsDialogOpen(true),
       onToggleSearchBar: showSearchBar,
       onToggleFullscreen: toggleFullscreen,
-      onToggleTTS: toggleTTS,
       onReloadPage: reloadPage,
       onCloseWindow: closeWindow,
       onQuitApp: quitApp,

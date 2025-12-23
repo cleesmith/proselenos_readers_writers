@@ -4,7 +4,6 @@ import '@/utils/polyfill';
 import i18n from '@/i18n/i18n';
 import { useEffect } from 'react';
 import { IconContext } from 'react-icons';
-import { SessionProvider } from 'next-auth/react';
 import { useEnv } from '@/context/EnvContext';
 import { SyncProvider } from '@/context/SyncContext';
 import { initSystemThemeListener, loadDataTheme } from '@/store/themeStore';
@@ -77,11 +76,9 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   if (!appService) return;
 
   return (
-    <SessionProvider>
-      <IconContext.Provider value={{ size: `${iconSize}px` }}>
-        <SyncProvider>{children}</SyncProvider>
-      </IconContext.Provider>
-    </SessionProvider>
+    <IconContext.Provider value={{ size: `${iconSize}px` }}>
+      <SyncProvider>{children}</SyncProvider>
+    </IconContext.Provider>
   );
 };
 

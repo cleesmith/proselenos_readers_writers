@@ -19,7 +19,6 @@ import { getFilename } from '@/utils/path';
 import { isWebAppPlatform } from '@/services/environment';
 
 import { useEnv } from '@/context/EnvContext';
-import { useSession } from 'next-auth/react';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -29,7 +28,6 @@ import { useUICSS } from '@/hooks/useUICSS';
 import { useDemoBooks } from './hooks/useDemoBooks';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
-import { useSupabaseBookUpload } from '@/hooks/useSupabaseBookUpload';
 
 import { BookMetadata } from '@/libs/document';
 import { parseMetaRefreshAction } from '@/app/actions/download-page-parser';
@@ -55,9 +53,6 @@ const LibraryPageWithSearchParams = () => {
 const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchParams | null }) => {
   const router = useRouter();
   const { envConfig, appService } = useEnv();
-  const { data: session } = useSession();
-  const user = session?.user;
-  const token = session ? 'authenticated' : null; // NextAuth uses session, not separate token
   const {
     library: libraryBooks,
     isSyncing,
@@ -101,7 +96,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
 
 
   const { isDragging } = useDragDropImport();
-  const { uploadBookToSupabase } = useSupabaseBookUpload();
   useScreenWakeLock(settings.screenWakeLock);
 
   useShortcuts({
@@ -243,18 +237,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     if (isInitiating.current) return;
     isInitiating.current = true;
 
-    const initLogin = async () => {
-      const appService = await envConfig.getAppService();
-      const settings = await appService.loadSettings();
-      if (token && user) {
-        if (!settings.keepLogin) {
-          settings.keepLogin = true;
-          setSettings(settings);
-          saveSettings(envConfig, settings);
-        }
-      }
-    };
-
     const loadingTimeout = setTimeout(() => setLoading(true), 300);
     const initLibrary = async () => {
       const appService = await envConfig.getAppService();
@@ -284,7 +266,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       return false;
     };
 
-    initLogin();
     initLibrary();
     return () => {
       isInitiating.current = false;
@@ -342,12 +323,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           book.groupName = getGroupName(groupId);
           await updateBook(envConfig, book);
         }
-        // Force autoUpload to false - uploads only via cloud icon click
-        settings.autoUpload = false;
-        if (user && book && !book.uploadedAt && settings.autoUpload) {
-          console.log('Uploading book:', book.title);
-          handleBookUpload(book, false);
-        }
       } catch (error) {
         const filename = typeof file === 'string' ? file : file.name;
         const baseFilename = getFilename(filename);
@@ -383,48 +358,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     appService?.saveLibraryBooks(library);
     setLoading(false);
   };
-
-  const handleBookUpload = useCallback(
-    async (book: Book, _syncBooks = true) => {
-      try {
-        // Show uploading message (persists until replaced)
-        eventDispatcher.dispatch('toast', {
-          type: 'warning',
-          message: _('Uploading ebook to Private Ebooks...'),
-          timeout: 0, // Persist indefinitely
-        });
-
-        const result = await uploadBookToSupabase(book);
-
-        if (result.success) {
-          // Update book with uploadedAt timestamp
-          book.uploadedAt = Date.now();
-          await updateBook(envConfig, book);
-
-          eventDispatcher.dispatch('toast', {
-            type: 'success',
-            message: _('Ebook uploaded to Private Ebooks'),
-            timeout: 2000, // Quick confirmation
-          });
-          return true;
-        } else {
-          eventDispatcher.dispatch('toast', {
-            type: 'error',
-            message: result.error || _('Failed to upload ebook'),
-          });
-          return false;
-        }
-      } catch (error) {
-        console.error('Upload error:', error);
-        eventDispatcher.dispatch('toast', {
-          type: 'error',
-          message: error instanceof Error ? error.message : _('Failed to upload ebook'),
-        });
-        return false;
-      }
-    },
-    [uploadBookToSupabase, updateBook, envConfig, _],
-  );
 
   const handleBookDownload = useCallback(
     async (_book: Book, _redownload = false) => {
@@ -755,7 +688,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
                 isSelectAll={isSelectAll}
                 isSelectNone={isSelectNone}
                 handleImportBooks={handleImportBooks}
-                handleBookUpload={handleBookUpload}
                 handleBookDownload={handleBookDownload}
                 handleBookDelete={handleBookDelete('local')}
                 handleSetSelectMode={handleSetSelectMode}
@@ -786,7 +718,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           isOpen={!!showDetailsBook}
           book={showDetailsBook}
           onClose={() => setShowDetailsBook(null)}
-          handleBookUpload={user ? handleBookUpload : undefined}
           handleBookDelete={handleBookDelete('local')}
           handleBookMetadataUpdate={handleUpdateMetadata}
         />

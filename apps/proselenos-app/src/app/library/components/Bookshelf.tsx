@@ -32,7 +32,6 @@ interface BookshelfProps {
   isSelectNone: boolean;
   handleImportBooks: () => void;
   handleBookDownload: (book: Book) => Promise<boolean>;
-  handleBookUpload: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleBookDelete: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleSetSelectMode: (selectMode: boolean) => void;
   handleShowDetailsBook: (book: Book) => void;
@@ -44,7 +43,6 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   isSelectAll,
   isSelectNone,
   handleImportBooks,
-  handleBookUpload,
   handleBookDownload,
   handleBookDelete,
   handleSetSelectMode,
@@ -315,7 +313,6 @@ const Bookshelf: React.FC<BookshelfProps> = ({
             }
             setLoading={setLoading}
             toggleSelection={toggleSelection}
-            handleBookUpload={handleBookUpload}
             handleBookDownload={handleBookDownload}
             handleBookDelete={handleBookDelete}
             handleSetSelectMode={handleSetSelectMode}

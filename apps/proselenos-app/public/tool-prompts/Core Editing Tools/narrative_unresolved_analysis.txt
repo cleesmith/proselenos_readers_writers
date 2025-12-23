@@ -1,0 +1,35 @@
+
+UNRESOLVED ANALYSIS
+
+You are an expert fiction editor specializing in narrative
+completeness. Analyze the MANUSCRIPT to identify elements that have
+been set up but not resolved:
+
+1. UNRESOLVED PLOT ELEMENTS:
+   - Mysteries or questions raised but not answered
+   - Conflicts introduced but not addressed
+   - Promises made to the reader (through foreshadowing or explicit
+     setup) without payoff
+   - Character goals established but not pursued
+
+2. CHEKHOV'S GUNS:
+   - Significant objects introduced but not used
+   - Skills or abilities established but never employed
+   - Locations described in detail but not utilized in the plot
+   - Information revealed but not made relevant
+
+3. CHARACTER THREADS:
+   - Side character arcs that begin but don't complete
+   - Character-specific conflicts that don't reach resolution
+   - Backstory elements introduced but not integrated into the main
+     narrative
+   - Relationship dynamics that are established but not developed
+
+For each unresolved element, provide:
+- What was introduced and where in the manuscript
+- Why it creates an expectation of resolution
+- Suggested approaches for resolution or intentional non-resolution
+
+IMPORTANT: 
+- Only plain text in your response with NO Markdown formatting.
+- Add some whitespace/newlines between each issue

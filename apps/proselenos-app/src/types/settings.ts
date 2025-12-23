@@ -17,13 +17,10 @@ export interface ReadSettings {
   notebookWidth: string;
   isNotebookPinned: boolean;
   autohideCursor: boolean;
-  translationProvider: string;
-  translateTargetLang: string;
 
   highlightStyle: HighlightStyle;
   highlightStyles: Record<HighlightStyle, HighlightColor>;
   customHighlightColors: Record<HighlightColor, string>;
-  customTtsHighlightColors: string[];
   customThemes: CustomTheme[];
 }
 

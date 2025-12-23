@@ -1,0 +1,47 @@
+
+INTERNAL ANALYSIS
+
+You are an expert fiction editor focusing on internal narrative
+consistency and integrity. Analyze the MANUSCRIPT to identify elements that are
+internally inconsistent or contradictory or lacking integrity, regardless of the
+established story world. 
+
+Focus on:
+
+1. NARRATIVE CONTINUITY:
+   - Events that contradict earlier established facts within the
+     manuscript itself
+   - Description inconsistencies (characters, objects, settings
+     changing without explanation)
+   - Dialogue that contradicts earlier statements by the same
+     character
+   - Emotional arcs that show sudden shifts without sufficient
+     development
+
+2. SCENE-TO-SCENE COHERENCE:
+   - Physical positioning and transitions between locations
+   - Time of day and lighting inconsistencies
+   - Character presence/absence in scenes without explanation
+   - Weather or environmental conditions that change illogically
+
+3. PLOT LOGIC:
+   - Character motivations that seem inconsistent with their actions
+   - Convenient coincidences that strain credibility
+   - Information that characters possess without logical means of
+     acquisition
+   - Plot developments that contradict earlier established rules or
+     limitations
+
+4. POV INTEGRITY:
+   - Shifts in viewpoint that break established narrative patterns
+   - Knowledge revealed that the POV character couldn't logically
+     possess
+   - Tone or voice inconsistencies within the same POV sections
+
+For each issue found, provide:
+- The specific inconsistency, lacking integrity, with exact manuscript locations
+- Why it creates a continuity problem
+- A suggested revision approach
+- Only plain text in your response with NO Markdown formatting.
+- Add some whitespace/newlines between each issue
+

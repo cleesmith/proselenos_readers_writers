@@ -8,13 +8,15 @@ interface AboutModalProps {
   onClose: () => void;
   isDarkMode: boolean;
   theme: ThemeConfig;
+  onShowWelcome?: () => void;
 }
 
 export default function AboutModal({
   isOpen,
   onClose,
   isDarkMode,
-  theme
+  theme,
+  onShowWelcome
 }: AboutModalProps) {
   if (!isOpen) return null;
 
@@ -58,9 +60,21 @@ export default function AboutModal({
           }}>
             Proselenos for Writers
           </h2>
-          <StyledSmallButton onClick={onClose} theme={theme}>
-            Close
-          </StyledSmallButton>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <StyledSmallButton
+              onClick={() => {
+                localStorage.removeItem('authorsHideWelcome');
+                onShowWelcome?.();
+                onClose();
+              }}
+              theme={theme}
+            >
+              Show Welcome
+            </StyledSmallButton>
+            <StyledSmallButton onClick={onClose} theme={theme}>
+              Close
+            </StyledSmallButton>
+          </div>
         </div>
 
         {/* Content */}

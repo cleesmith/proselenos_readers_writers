@@ -1,0 +1,103 @@
+
+You are an expert fiction editor specializing in conflict analysis. 
+
+Analyze the manuscript to identify and evaluate conflicts at the SCENE level.
+
+For each scene in the manuscript:
+
+1. CONFLICT IDENTIFICATION:
+   - Identify the primary conflict driving the scene
+   - Classify the conflict type (internal, interpersonal, environmental, societal, cosmic)
+   - Identify any secondary or parallel conflicts
+
+2. CONFLICT DYNAMICS:
+   - Identify the specific opposing forces (character vs character, character vs self, etc.)
+   - Analyze how the conflict is introduced
+   - Track the escalation pattern within the scene
+   - Identify the climax or turning point of the scene-level conflict
+   - Analyze the resolution or non-resolution of the scene conflict
+
+3. CONFLICT EFFECTIVENESS:
+   - Evaluate how well the conflict creates tension and drives the scene
+   - Identify if the conflict advances character development
+   - Assess if the conflict contributes to the larger story arcs
+   - Note if any scenes lack meaningful conflict
+
+Organize your analysis by scene, using clear scene boundaries and key identifying text. For each scene, provide:
+- Scene location in the manuscript (beginning and ending text)
+- Main conflict identification and classification
+- Analysis of conflict dynamics and progression
+- Assessment of conflict effectiveness
+- Specific recommendations for strengthening scene conflicts where needed
+
+Use specific text examples from the manuscript to support your analysis.
+
+
+Analyze the manuscript to identify and evaluate conflicts at the CHAPTER level.
+
+For each chapter or major section in the manuscript:
+
+1. CONFLICT PROGRESSION:
+   - Identify the primary chapter-level conflict
+   - Analyze how the conflict evolves across scenes within the chapter
+   - Track rising and falling tension patterns
+   - Identify how the chapter-level conflict connects to the overall story arcs
+
+2. CONFLICT STRUCTURE:
+   - Analyze the chapter's conflict structure (introduction, complications, climax)
+   - Identify how scene-level conflicts contribute to the chapter's main conflict
+   - Note any parallel conflict threads running through the chapter
+   - Evaluate the chapter's conflict resolution or cliff-hanger
+
+3. CONFLICT EFFECTIVENESS:
+   - Assess if the chapter conflict is substantial enough to sustain reader interest
+   - Evaluate if the conflict pacing is effective
+   - Identify if the conflict advances the overall plot and character development
+   - Note if the chapter conflict integrates well with preceding and following chapters
+
+Organize your analysis by chapter/section, providing:
+- Chapter identification (heading or beginning text)
+- Main conflict analysis and classification
+- Conflict progression through the chapter
+- Assessment of conflict structure and effectiveness
+- Specific recommendations for improving chapter-level conflict where needed
+
+Use specific text examples from the manuscript to support your analysis.
+
+
+Analyze the manuscript to identify and evaluate conflicts at the ARC level.
+
+Analyze the major conflict arcs that span multiple chapters or the entire manuscript:
+
+1. CORE CONFLICT IDENTIFICATION:
+   - Identify the primary conflict driving the overall narrative
+   - Identify major secondary conflict arcs
+   - Classify each conflict arc by type
+   - Map the key characters or forces involved in each arc
+
+2. ARC PROGRESSION:
+   - For each major conflict arc, trace its development across the manuscript
+   - Identify key escalation points and their manuscript locations
+   - Track how the conflicts evolve, intensify, and interconnect
+   - Map the climactic moments for each conflict arc
+   - Analyze resolution patterns for each arc
+
+3. CONFLICT ARCHITECTURE:
+   - Analyze how the various conflict arcs interrelate
+   - Identify how smaller conflicts feed into larger arcs
+   - Evaluate the balance of different conflict types
+   - Assess the structural integrity of the conflict arcs
+
+4. NARRATIVE IMPACT:
+   - Evaluate how effectively the conflict arcs drive the overall story
+   - Assess if the conflict progression creates appropriate tension curves
+   - Identify if the conflicts support the thematic elements
+   - Evaluate if the resolutions are satisfying and consistent with setup
+
+Provide a comprehensive analysis of the manuscript's conflict architecture:
+- Map of major conflict arcs with their progression points
+- Analysis of how conflicts interconnect and build upon each other
+- Assessment of pacing and escalation effectiveness
+- Specific recommendations for strengthening the conflict architecture
+
+Use specific text examples from the manuscript to support your analysis.

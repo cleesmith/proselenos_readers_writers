@@ -10,7 +10,6 @@ import { useSidebarStore } from '@/store/sidebarStore';
 import { findParentPath } from '@/utils/toc';
 import { eventDispatcher } from '@/utils/event';
 import { getContentMd5 } from '@/utils/misc';
-import { useTextTranslation } from '../../hooks/useTextTranslation';
 import { FlatTOCItem, StaticListRow, VirtualListRow } from './TOCItem';
 
 const getItemIdentifier = (item: TOCItem) => {
@@ -42,11 +41,9 @@ const TOCView: React.FC<{
   sections?: SectionItem[];
 }> = ({ bookKey, toc, sections }) => {
   const { appService } = useEnv();
-  const { getView, getProgress, getViewState, getViewSettings } = useReaderStore();
+  const { getView, getProgress } = useReaderStore();
   const { sideBarBookKey, isSideBarVisible } = useSidebarStore();
-  const viewSettings = getViewSettings(bookKey)!;
   const progress = getProgress(bookKey);
-  const viewState = getViewState(bookKey);
 
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [containerHeight, setContainerHeight] = useState(400);
@@ -87,13 +84,6 @@ const TOCView: React.FC<{
       });
     }
   }, [initialize]);
-
-  useTextTranslation(
-    bookKey,
-    containerRef.current || staticListRef.current,
-    false,
-    'translation-target-toc',
-  );
 
   useEffect(() => {
     const updateHeight = () => {
@@ -191,8 +181,8 @@ const TOCView: React.FC<{
   }, [flatItems, activeHref]);
 
   const virtualItemSize = useMemo(() => {
-    return window.innerWidth >= 640 && !viewSettings?.translationEnabled ? 37 : 57;
-  }, [viewSettings?.translationEnabled]);
+    return window.innerWidth >= 640 ? 37 : 57;
+  }, []);
 
   const virtualListData = useMemo(
     () => ({
@@ -207,7 +197,7 @@ const TOCView: React.FC<{
   );
 
   useEffect(() => {
-    if (!progress || viewState?.ttsEnabled) return;
+    if (!progress) return;
     if (sideBarBookKey !== bookKey) return;
     if (!isSideBarVisible) return;
 
@@ -215,7 +205,7 @@ const TOCView: React.FC<{
     if (currentHref) {
       expandParents(toc, currentHref);
     }
-  }, [toc, progress, viewState, sideBarBookKey, isSideBarVisible, bookKey, expandParents]);
+  }, [toc, progress, sideBarBookKey, isSideBarVisible, bookKey, expandParents]);
 
   useEffect(() => {
     if (hasToggleExpandRef.current) {

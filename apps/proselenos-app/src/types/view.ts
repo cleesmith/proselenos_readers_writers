@@ -1,7 +1,7 @@
 import { BookDoc } from '@/libs/document';
 import { BookNote, BookSearchConfig, BookSearchResult } from '@/types/book';
-import { TTSGranularity } from '@/services/tts';
 import { TTS } from 'foliate-js/tts.js';
+import { Overlayer } from 'foliate-js/overlayer.js';
 
 export interface FoliateView extends HTMLElement {
   open: (book: BookDoc) => Promise<void>;
@@ -21,12 +21,12 @@ export interface FoliateView extends HTMLElement {
   select: (target: string | number | { fraction: number }) => void;
   deselect: () => void;
   initTTS: (
-    granularity?: TTSGranularity,
+    granularity?: 'word' | 'sentence',
     nodeFilter?: (node: Node) => number,
     highlight?: (range: Range) => void,
   ) => Promise<void>;
-  book: BookDoc;
   tts: TTS | null;
+  book: BookDoc;
   language: {
     locale?: string;
     isCJK?: boolean;
@@ -56,7 +56,7 @@ export interface FoliateView extends HTMLElement {
     prevSection?: () => Promise<void>;
     goTo?: (params: { index: number; anchor: number }) => void;
     setStyles?: (css: string) => void;
-    getContents: () => { doc: Document; index?: number; overlayer?: unknown }[];
+    getContents: () => { doc: Document; index?: number; overlayer?: Overlayer }[];
     scrollToAnchor: (anchor: number | Range) => void;
     addEventListener: (
       type: string,

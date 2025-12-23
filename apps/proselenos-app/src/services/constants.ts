@@ -5,13 +5,11 @@ import {
   BookStyle,
   HighlightColor,
   ScreenConfig,
-  TranslatorConfig,
-  TTSConfig,
   ViewConfig,
   ViewSettings,
 } from '@/types/book';
 import { KOSyncSettings, ReadSettings, SystemSettings } from '@/types/settings';
-import { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
+import { UserStorageQuota } from '@/types/quota';
 import { getDefaultMaxBlockSize, getDefaultMaxInlineSize } from '@/utils/config';
 import { stubTranslation as _ } from '@/utils/misc';
 
@@ -92,8 +90,6 @@ export const DEFAULT_READSETTINGS: ReadSettings = {
   notebookWidth: '25%',
   isNotebookPinned: false,
   autohideCursor: true,
-  translationProvider: 'deepl',
-  translateTargetLang: 'EN',
 
   customThemes: [],
   highlightStyle: 'highlight',
@@ -103,7 +99,6 @@ export const DEFAULT_READSETTINGS: ReadSettings = {
     squiggly: 'blue',
   },
   customHighlightColors: HIGHLIGHT_COLOR_HEX,
-  customTtsHighlightColors: [],
 };
 
 export const DEFAULT_MOBILE_READSETTINGS: Partial<ReadSettings> = {
@@ -212,22 +207,6 @@ export const DEFAULT_VIEW_CONFIG: ViewConfig = {
   showRemainingPages: false,
   showProgressInfo: true,
   progressStyle: 'fraction',
-};
-
-export const DEFAULT_TTS_CONFIG: TTSConfig = {
-  ttsRate: 1.3,
-  ttsVoice: '',
-  ttsLocation: '',
-  showTTSBar: false,
-  ttsHighlightOptions: { style: 'highlight', color: '#808080' },
-};
-
-export const DEFAULT_TRANSLATOR_CONFIG: TranslatorConfig = {
-  translationEnabled: false,
-  translationProvider: 'deepl',
-  translateTargetLang: '',
-  showTranslateSource: true,
-  ttsReadAloudText: 'both',
 };
 
 export const DEFAULT_SCREEN_CONFIG: ScreenConfig = {
@@ -608,13 +587,6 @@ export const DEFAULT_STORAGE_QUOTA: UserStorageQuota = {
   purchase: 0,
 };
 
-export const DEFAULT_DAILY_TRANSLATION_QUOTA: UserDailyTranslationQuota = {
-  free: 10 * 1024,
-  plus: 100 * 1024,
-  pro: 500 * 1024,
-  purchase: 0,
-};
-
 export const DOUBLE_CLICK_INTERVAL_THRESHOLD_MS = 250;
 export const DISABLE_DOUBLE_CLICK_ON_MOBILE = true;
 export const LONG_HOLD_THRESHOLD = 500;
@@ -700,23 +672,6 @@ export const TRANSLATED_LANGS = {
   si: 'සිංහල',
   'zh-CN': '简体中文',
   'zh-TW': '正體中文',
-};
-
-export const TRANSLATOR_LANGS: Record<string, string> = {
-  ...TRANSLATED_LANGS,
-  nb: 'Bokmål',
-  sv: 'Svenska',
-  fi: 'Suomi',
-  da: 'Dansk',
-  cs: 'Čeština',
-  hu: 'Magyar',
-  ro: 'Română',
-  bg: 'Български',
-  hr: 'Hrvatski',
-  lt: 'Lietuvių',
-  sl: 'Slovenščina',
-  sk: 'Slovenčina',
-  fa: 'فارسی',
 };
 
 export const SUPPORTED_LANGS: Record<string, string> = { ...TRANSLATED_LANGS, zh: '中文' };

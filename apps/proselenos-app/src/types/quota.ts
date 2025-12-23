@@ -6,7 +6,6 @@ export interface UserQuota {
 }
 
 export type UserStorageQuota = UserQuota;
-export type UserDailyTranslationQuota = UserQuota;
 export type QuotaType = {
   name: string;
   tooltip: string;
@@ -15,7 +14,7 @@ export type QuotaType = {
   unit: string;
 };
 
-export type QuotaFeature = 'storage' | 'translation' | 'tokens' | 'customization' | 'generic';
+export type QuotaFeature = 'storage' | 'tokens' | 'customization' | 'generic';
 
 export type UserPlan = keyof UserQuota;
 export type PlanType = 'subscription' | 'purchase';

@@ -1,25 +1,17 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
-// import { useSession } from 'next-auth/react'; // Translation only
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { saveViewSettings } from '@/helpers/settings';
-// import { getTranslators } from '@/services/translators'; // Translation only
 import { useResetViewSettings } from '@/hooks/useResetSettings';
-import {
-  // RELOAD_BEFORE_SAVED_TIMEOUT_MS, // Translation only
-  TRANSLATED_LANGS,
-  // TRANSLATOR_LANGS, // Translation only
-} from '@/services/constants';
+import { TRANSLATED_LANGS } from '@/services/constants';
 import { SettingsPanelPanelProp } from './SettingsDialog';
 import Select from '@/components/Select';
 
 const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  // const { data: session } = useSession(); // Translation only
-  // const token = session ? 'authenticated' : null; // Translation only
   const { envConfig } = useEnv();
   const { settings, applyUILanguage } = useSettingsStore();
   const { getViewSettings } = useReaderStore();

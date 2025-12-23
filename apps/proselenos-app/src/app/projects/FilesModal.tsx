@@ -1,5 +1,5 @@
 // Files Modal Component
-// Unified modal for uploading files and managing (download/delete) project files
+// Local-first: Upload/download/delete files from IndexedDB (ProselenosLocal)
 
 'use client';
 
@@ -8,205 +8,200 @@ import { MdOutlineFileDownload, MdOutlineDelete } from 'react-icons/md';
 import { ThemeConfig } from '../shared/theme';
 import { showAlert, showConfirm } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { listProjectFilesAction, downloadFileForBrowserAction, deleteProjectFileAction } from '@/lib/project-actions';
-import { getPublicCatalog, removeFromPublicCatalog } from '@/app/actions/store-catalog';
+import {
+  listFiles,
+  loadManuscript,
+  saveManuscript,
+  loadReport,
+  loadEpub,
+  saveEpub,
+  deleteManuscript,
+  deleteReport,
+  deleteEpub,
+  loadChatFile,
+  deleteChatFile,
+  FileInfo
+} from '@/services/manuscriptStorage';
 
 interface FilesModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   isDarkMode: boolean;
-  currentProject: string | null;
-  selectedUploadFile: File | null;
-  uploadFileName: string;
-  isUploading: boolean;
   onClose: () => void;
-  onFileSelect: (file: File) => void;
-  onFileNameChange: (name: string) => void;
-  onUpload: () => void;
 }
-
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-}
-
-// Only allow these file extensions (keep in sync with upload validation)
-const ALLOWED_EXTENSIONS = ['.txt', '.html', '.docx', '.epub', '.pdf'];
 
 export default function FilesModal({
   isOpen,
   theme,
   isDarkMode,
-  currentProject,
-  selectedUploadFile,
-  uploadFileName: _uploadFileName,
-  isUploading,
-  onClose,
-  onFileSelect,
-  onFileNameChange: _onFileNameChange,
-  onUpload
+  onClose
 }: FilesModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const wasUploadingRef = useRef(false);
 
   // File list state
-  const [files, setFiles] = useState<FileItem[]>([]);
+  const [files, setFiles] = useState<FileInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch files when modal opens
   useEffect(() => {
-    if (isOpen && currentProject) {
+    if (isOpen) {
       fetchFiles();
     }
-  }, [isOpen, currentProject]);
-
-  // Refresh file list when upload completes (isUploading: true -> false)
-  useEffect(() => {
-    if (wasUploadingRef.current && !isUploading && isOpen && currentProject) {
-      // Upload just finished - refresh the file list
-      fetchFiles();
-    }
-    wasUploadingRef.current = isUploading;
-  }, [isUploading, isOpen, currentProject]);
+  }, [isOpen]);
 
   const fetchFiles = async () => {
-    if (!currentProject) return;
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await listProjectFilesAction(currentProject);
-      if (result.success && result.data?.files) {
-        // Filter to only allowed extensions
-        const filteredFiles = result.data.files.filter((file: FileItem) => {
-          const lowerName = file.name.toLowerCase();
-          return ALLOWED_EXTENSIONS.some(ext => lowerName.endsWith(ext));
-        });
-        setFiles(filteredFiles);
-      } else {
-        setError(result.error || 'Failed to load files');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load files');
+      const fileList = await listFiles();
+      // Only show files that exist
+      setFiles(fileList.filter(f => f.exists));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load files');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const allowedExtensions = ['.txt', '.html', '.docx', '.epub', '.pdf'];
-      const fileName = file.name.toLowerCase();
-      const isValidFile = allowedExtensions.some(ext => fileName.endsWith(ext));
+    if (!file) return;
 
-      if (!isValidFile) {
-        showAlert('Please select a .txt, .html, .docx, .epub, or .pdf file only.', 'warning', undefined, isDarkMode);
-        return;
+    // Validate file type
+    const fileName = file.name.toLowerCase();
+    const isTxt = fileName.endsWith('.txt');
+    const isEpub = fileName.endsWith('.epub');
+
+    if (!isTxt && !isEpub) {
+      showAlert('Please select a .txt or .epub file only.', 'warning', undefined, isDarkMode);
+      return;
+    }
+
+    setIsImporting(true);
+    setError(null);
+
+    try {
+      if (isTxt) {
+        // Read as text and save as manuscript.txt
+        const content = await file.text();
+        await saveManuscript(content);
+        showAlert('Imported as manuscript.txt', 'success', undefined, isDarkMode);
+      } else if (isEpub) {
+        // Read as ArrayBuffer and save as manuscript.epub
+        const buffer = await file.arrayBuffer();
+        await saveEpub(buffer);
+        showAlert('Imported as manuscript.epub', 'success', undefined, isDarkMode);
       }
 
-      onFileSelect(file);
-      _onFileNameChange(file.name);
+      // Refresh file list
+      await fetchFiles();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to import file');
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const handleUploadClick = () => {
+  const handleSelectClick = () => {
     if (!fileInputRef.current) return;
     fileInputRef.current.click();
   };
 
-  const handleDownload = async (file: FileItem) => {
-    if (!currentProject) return;
-
-    setDownloadingFile(file.path);
+  const handleDownload = async (file: FileInfo) => {
+    setDownloadingFile(file.key);
     setError(null);
 
     try {
-      const result = await downloadFileForBrowserAction(currentProject, file.path);
+      let content: string | ArrayBuffer | null = null;
+      let mimeType = 'application/octet-stream';
 
-      if (result.success && result.data) {
-        // Decode base64 to binary
-        const binaryString = atob(result.data.content);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        // Create blob and trigger download
-        const blob = new Blob([bytes]);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = result.data.filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      // Handle chat files (any .txt in AI store except report.txt)
+      if (file.store === 'ai' && file.key !== 'report.txt') {
+        content = await loadChatFile(file.key);
+        mimeType = 'text/plain';
       } else {
-        setError(result.error || 'Failed to download file');
+        switch (file.key) {
+          case 'manuscript.txt':
+            content = await loadManuscript();
+            mimeType = 'text/plain';
+            break;
+          case 'report.txt':
+            content = await loadReport();
+            mimeType = 'text/plain';
+            break;
+          case 'manuscript.epub':
+            content = await loadEpub();
+            mimeType = 'application/epub+zip';
+            break;
+        }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to download file');
+
+      if (content === null) {
+        setError('File not found');
+        return;
+      }
+
+      // Create blob and trigger download
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to download file');
     } finally {
       setDownloadingFile(null);
     }
   };
 
-  const handleDelete = async (file: FileItem) => {
-    if (!currentProject) return;
-
-    // Check if this is a published epub
-    let isPublishedEpub = false;
-    if (file.name === 'manuscript.epub') {
-      try {
-        const catalogResult = await getPublicCatalog();
-        if (catalogResult.success && catalogResult.data) {
-          isPublishedEpub = catalogResult.data.some(e => e.projectId === currentProject);
-        }
-      } catch {
-        // Ignore errors checking catalog
-      }
-    }
-
-    // Show appropriate confirmation message
-    const message = isPublishedEpub
-      ? `Delete "${file.name}"?\n\nThis epub is published to the Public Ebooks store. Deleting will also remove it from the store.\n\nThis cannot be undone.`
-      : `Delete "${file.name}"?\n\nThis cannot be undone.`;
-
+  const handleDelete = async (file: FileInfo) => {
     const confirmed = await showConfirm(
-      message,
+      `Delete "${file.name}"?\n\nThis cannot be undone.`,
       isDarkMode,
-      isPublishedEpub ? 'Delete Published Epub?' : 'Delete File?',
+      'Delete File?',
       'Delete',
       'Cancel'
     );
     if (!confirmed) return;
 
-    setDeletingFile(file.path);
+    setDeletingFile(file.key);
     setError(null);
 
     try {
-      const result = await deleteProjectFileAction(currentProject, file.path);
-
-      if (result.success) {
-        // Remove file from list
-        setFiles(prev => prev.filter(f => f.path !== file.path));
-
-        // If published epub, also remove from bookstore
-        if (isPublishedEpub) {
-          await removeFromPublicCatalog(currentProject);
-        }
+      // Handle chat files (any file in AI store except report.txt)
+      if (file.store === 'ai' && file.key !== 'report.txt') {
+        await deleteChatFile(file.key);
       } else {
-        setError(result.error || 'Failed to delete file');
+        switch (file.key) {
+          case 'manuscript.txt':
+            await deleteManuscript();
+            break;
+          case 'report.txt':
+            await deleteReport();
+            break;
+          case 'manuscript.epub':
+            await deleteEpub();
+            break;
+        }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete file');
+
+      // Refresh file list
+      await fetchFiles();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete file');
     } finally {
       setDeletingFile(null);
     }
@@ -236,38 +231,41 @@ export default function FilesModal({
           border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
           borderRadius: '12px',
           padding: '0',
-          maxWidth: '550px',
+          maxWidth: '450px',
           width: '100%',
-          minHeight: '500px',
+          minHeight: '350px',
           maxHeight: '80vh',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
         }}
       >
-        {/* Modal Header - Close button always at top right */}
+        {/* Modal Header */}
         <div
           style={{
             padding: '12px 20px',
             borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
             display: 'flex',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             alignItems: 'center',
             flexShrink: 0
           }}
         >
-          <StyledSmallButton onClick={onClose} disabled={isUploading || deletingFile !== null} theme={theme}>
+          <span style={{ fontSize: '14px', fontWeight: '600', color: theme.text }}>
+            Manuscript Files
+          </span>
+          <StyledSmallButton onClick={onClose} disabled={isImporting || deletingFile !== null} theme={theme}>
             Close
           </StyledSmallButton>
         </div>
 
-        {/* Upload Controls Section */}
+        {/* Import Section */}
         <div
           style={{
             padding: '12px 20px',
             borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
             display: 'flex',
-            flexDirection: 'column',
+            alignItems: 'center',
             gap: '10px',
             flexShrink: 0
           }}
@@ -275,37 +273,18 @@ export default function FilesModal({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".txt,.html,.docx,.epub,.pdf,text/plain,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/epub+zip,application/pdf"
+            accept=".txt,.epub,.pdf,text/plain,application/epub+zip,application/pdf"
             onChange={handleFileChange}
             style={{ display: 'none' }}
-            disabled={isUploading}
+            disabled={isImporting}
           />
 
-          {/* Row 1: Select a file to upload button + file types */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <StyledSmallButton onClick={handleUploadClick} disabled={isUploading} theme={theme}>
-              Select a file
-            </StyledSmallButton>
-            <span style={{ fontSize: '10px', color: theme.textMuted }}>
-              .txt .html .docx .epub .pdf
-            </span>
-          </div>
-
-          {selectedUploadFile && (
-            <>
-              {/* Row 2: Selected filename */}
-              <div style={{ fontSize: '12px', color: theme.text }}>
-                {selectedUploadFile.name} ({Math.round(selectedUploadFile.size / 1024)}KB)
-              </div>
-
-              {/* Row 3: Upload button */}
-              <div>
-                <StyledSmallButton onClick={onUpload} disabled={isUploading} theme={theme}>
-                  {isUploading ? 'Uploading...' : 'Upload'}
-                </StyledSmallButton>
-              </div>
-            </>
-          )}
+          <StyledSmallButton onClick={handleSelectClick} disabled={isImporting} theme={theme}>
+            {isImporting ? 'Importing...' : 'Import a file'}
+          </StyledSmallButton>
+          <span style={{ fontSize: '10px', color: theme.textMuted }}>
+            .txt .epub .pdf
+          </span>
         </div>
 
         {/* File List Section */}
@@ -353,13 +332,13 @@ export default function FilesModal({
                 fontSize: '13px'
               }}
             >
-              No files found in this project.
+              No files yet. Import a .txt file to get started.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {files.map((file) => (
                 <div
-                  key={file.path}
+                  key={file.key}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -401,7 +380,7 @@ export default function FilesModal({
                     >
                       <MdOutlineFileDownload
                         size={20}
-                        style={{ color: downloadingFile === file.path ? '#22c55e' : (isDarkMode ? '#fff' : '#333') }}
+                        style={{ color: downloadingFile === file.key ? '#22c55e' : (isDarkMode ? '#fff' : '#333') }}
                       />
                     </button>
                     {/* Delete button */}
@@ -421,7 +400,7 @@ export default function FilesModal({
                     >
                       <MdOutlineDelete
                         size={20}
-                        style={{ color: deletingFile === file.path ? '#dc2626' : '#ef4444' }}
+                        style={{ color: deletingFile === file.key ? '#dc2626' : '#ef4444' }}
                       />
                     </button>
                   </div>

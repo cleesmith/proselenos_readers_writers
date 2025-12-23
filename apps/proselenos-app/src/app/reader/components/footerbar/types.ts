@@ -28,5 +28,4 @@ export interface FooterBarChildProps {
   gridInsets: Insets;
   actionTab: string;
   onSetActionTab: (tab: string) => void;
-  onSpeakText: () => void;
 }

@@ -1,115 +1,84 @@
 // lib/docx-formatting-utils.ts
 //
-// Client-side utility for converting DOCX files to well-formatted plain text.
-// This mirrors the server-side conversion logic that parses HTML structure
-// and applies proper spacing for sections and paragraphs.
+// Client-side DOCX to manuscript.txt conversion.
+// Uses the EXACT SAME logic as server-side convertDocxBufferToTxt.
+// Only differences: ArrayBuffer instead of Buffer, browser DOMParser instead of xmldom.
 
 import mammoth from 'mammoth';
 
-interface Section {
-  title: string;
-  textBlocks: string[];
-}
-
 /**
- * Converts a DOCX file (provided as an ArrayBuffer) to plain text with proper spacing.
+ * Converts a DOCX file (ArrayBuffer) to manuscript-formatted plain text.
+ * Uses mammoth to convert to HTML (preserving structure), then parses
+ * and applies manuscript formatting rules:
+ * - 2 blank lines before each chapter/section (heading)
+ * - 1 blank line between paragraphs
+ * - Last paragraph has no trailing blank line
  *
- * Spacing rules:
- * - 2 blank lines (3 newlines) before each section
- * - 1 blank line (2 newlines) after section titles
- * - 1 blank line (2 newlines) between paragraphs
- * - 2 blank lines (3 newlines) at the end of the file
- *
- * Sections are defined by <h1> headings in the DOCX structure.
+ * THIS LOGIC MUST MATCH docx-conversion-actions.ts:convertDocxBufferToTxt EXACTLY
  *
  * @param arrayBuffer The DOCX file contents as an ArrayBuffer
- * @returns Formatted plain text with proper spacing
+ * @returns The extracted text with proper manuscript formatting.
  */
-export async function convertDocxToFormattedText(arrayBuffer: ArrayBuffer): Promise<string> {
-  // Convert DOCX to HTML (preserves structure unlike extractRawText)
-  const result = await mammoth.convertToHtml({ arrayBuffer });
-  const htmlContent = result.value;
+export async function convertDocxToManuscript(arrayBuffer: ArrayBuffer): Promise<string> {
+  // Use convertToHtml to preserve structure (headings, paragraphs)
+  const { value: htmlContent } = await mammoth.convertToHtml({ arrayBuffer });
 
-  // Parse HTML using browser's native DOM
-  const div = document.createElement('div');
-  div.innerHTML = htmlContent;
+  // Parse HTML with browser's native DOMParser
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<body>${htmlContent}</body>`, 'text/html');
 
-  // Get all block elements (headings and paragraphs)
-  const blocks = div.querySelectorAll('p, h1, h2, h3, h4, h5, h6');
+  // Get all block elements
+  const body = doc.getElementsByTagName('body')[0];
+  if (!body) return '';
 
-  // Build sections. Each <h1> starts a new section.
-  const sections: Section[] = [];
-  let currentSection: Section | null = null;
+  const blocks: Array<{ tag: string; text: string }> = [];
+  const childNodes = body.childNodes;
 
-  Array.from(blocks).forEach((block) => {
-    const tagName = block.tagName.toLowerCase();
+  for (let i = 0; i < childNodes.length; i++) {
+    const node = childNodes[i];
+    if (!node || node.nodeType !== 1) continue; // Skip non-element nodes
 
-    // Normalize text: replace non-breaking spaces and collapse whitespace
-    const rawText = block.textContent || '';
-    const normalizedText = rawText
-      .replace(/\u00a0/g, ' ')    // Convert NBSP to regular space
-      .replace(/\s+/g, ' ')       // Collapse multiple whitespace into single space
+    const element = node as Element;
+    const tagName = element.tagName?.toLowerCase() || '';
+    const text = (element.textContent || '')
+      .replace(/\u00a0/g, ' ')  // Convert NBSP to regular space
+      .replace(/\s+/g, ' ')     // Collapse whitespace
       .trim();
 
-    // Only <h1> elements start a new section
-    const startNewSection = tagName === 'h1';
-
-    if (startNewSection) {
-      // Start a new section with this heading as the title
-      currentSection = { title: normalizedText, textBlocks: [] };
-      sections.push(currentSection);
-    } else {
-      // Add paragraph to current section (or create first section if none exists)
-      if (!currentSection) {
-        currentSection = { title: '', textBlocks: [] };
-        sections.push(currentSection);
+    if (text && (tagName === 'p' || tagName.match(/^h[1-6]$/))) {
+      // Skip ornamental separators like "***" from Vellum exports
+      if (text === '***' || text === '* * *') {
+        continue;
       }
-
-      // Only add non-empty text blocks
-      if (normalizedText) {
-        currentSection.textBlocks.push(normalizedText);
-      }
+      blocks.push({ tag: tagName, text });
     }
-  });
+  }
 
-  // Build the final manuscript text with proper spacing
+  // Build manuscript text with proper spacing
   let manuscriptText = '';
 
-  sections.forEach((section) => {
-    // Two blank lines before each section (3 newlines)
-    manuscriptText += '\n\n\n';
+  for (const block of blocks) {
+    const isHeading = block.tag.match(/^h[1-6]$/);
 
-    // Add section title if present
-    if (section.title) {
-      manuscriptText += section.title;
-      // One blank line after the heading (2 newlines)
-      manuscriptText += '\n\n';
+    if (isHeading) {
+      // 2 blank lines before each chapter/section
+      manuscriptText += '\n\n\n' + block.text;
+    } else {
+      // Paragraph
+      if (manuscriptText === '') {
+        // First content before any heading
+        manuscriptText = block.text;
+      } else {
+        // 1 blank line between paragraphs
+        manuscriptText += '\n\n' + block.text;
+      }
     }
+  }
 
-    // Join text blocks with one blank line between them (2 newlines)
-    manuscriptText += section.textBlocks.join('\n\n');
-  });
-
-  // Ensure the file ends with exactly 2 blank lines (3 newlines total)
-  manuscriptText += '\n\n\n';
+  // Ensure file ends with single newline (last paragraph has no trailing blank)
+  if (manuscriptText) {
+    manuscriptText = manuscriptText.trimStart() + '\n';
+  }
 
   return manuscriptText;
-}
-
-/**
- * Counts the number of sections in the formatted text.
- * Useful for providing feedback to users about the conversion.
- *
- * @param arrayBuffer The DOCX file contents as an ArrayBuffer
- * @returns The number of sections (based on <h1> headings)
- */
-export async function countDocxSections(arrayBuffer: ArrayBuffer): Promise<number> {
-  const result = await mammoth.convertToHtml({ arrayBuffer });
-  const htmlContent = result.value;
-
-  const div = document.createElement('div');
-  div.innerHTML = htmlContent;
-
-  const h1Elements = div.querySelectorAll('h1');
-  return h1Elements.length;
 }

@@ -18,7 +18,6 @@ interface ProjectSectionProps {
   isDocxDialogOpen?: boolean; // DOCX selector or filename dialog open
   isTxtConverting: boolean; // TXT -> DOCX conversion pending
   isTxtDialogOpen?: boolean; // TXT selector or filename dialog open
-  onSelectProject: () => void;
   onProjectSettings: () => void;
   onFilesClick: () => void;
   onDocxImport: () => void | Promise<void>;
@@ -27,7 +26,7 @@ interface ProjectSectionProps {
 }
 
 export default function ProjectSection({
-  currentProject,
+  currentProject: _currentProject,
   uploadStatus,
   isLoadingConfig: _isLoadingConfig,
   isStorageOperationPending,
@@ -39,7 +38,6 @@ export default function ProjectSection({
   isDocxDialogOpen = false,
   isTxtConverting,
   isTxtDialogOpen = false,
-  onSelectProject,
   onProjectSettings,
   onFilesClick,
   onDocxImport,
@@ -50,7 +48,6 @@ export default function ProjectSection({
     isSystemInitializing ||
     isStorageOperationPending ||
     toolExecuting ||
-    !currentProject ||
     isDocxConverting ||
     isDocxDialogOpen;
 
@@ -58,21 +55,18 @@ export default function ProjectSection({
     isSystemInitializing ||
     isStorageOperationPending ||
     toolExecuting ||
-    !currentProject ||
     isTxtConverting ||
     isTxtDialogOpen;
 
   const uploadDisabled =
     isSystemInitializing ||
     isStorageOperationPending ||
-    toolExecuting ||
-    !currentProject;
+    toolExecuting;
 
   const settingsDisabled =
     isSystemInitializing ||
     isStorageOperationPending ||
-    toolExecuting ||
-    !currentProject;
+    toolExecuting;
 
   return (
     <div style={{
@@ -97,7 +91,7 @@ export default function ProjectSection({
         paddingRight: '6px',
         margin: 0
       }}>
-        Project:
+        Manuscript:
       </h2>
       <div style={{
         display: 'flex',
@@ -115,16 +109,16 @@ export default function ProjectSection({
           justifyContent: 'flex-start'
         }}>
           <StyledSmallButton
-            onClick={onSelectProject}
-            disabled={false}
+            onClick={onProjectSettings}
+            disabled={settingsDisabled}
             theme={theme}
           >
-            Select
+            Settings
           </StyledSmallButton>
 
           <StyledSmallButton
             onClick={onEditorClick}
-            disabled={isSystemInitializing || isStorageOperationPending || toolExecuting || !currentProject}
+            disabled={isSystemInitializing || isStorageOperationPending || toolExecuting}
             theme={theme}
           >
             Editor
@@ -159,45 +153,6 @@ export default function ProjectSection({
         </div>
       </div>
       
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontSize: '20px',
-        fontWeight: 'bold',
-        color: theme.text,
-        marginBottom: '10px'
-      }}>
-        {currentProject && (
-          <button
-            onClick={onProjectSettings}
-            disabled={settingsDisabled}
-            title="Settings"
-            style={{
-              background: 'none',
-              border: `1.5px solid ${isDarkMode ? '#888' : '#666'}`,
-              borderRadius: '50%',
-              width: '18px',
-              height: '18px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: settingsDisabled ? 'not-allowed' : 'pointer',
-              opacity: settingsDisabled ? 0.5 : 1,
-              color: isDarkMode ? '#aaa' : '#555',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              fontStyle: 'italic',
-              fontFamily: 'Georgia, serif',
-              padding: 0,
-              lineHeight: 1
-            }}
-          >
-            i
-          </button>
-        )}
-        {currentProject || 'No Project Selected'}
-      </div>
 
       {uploadStatus && (
         <div style={{

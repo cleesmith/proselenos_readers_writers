@@ -1,0 +1,60 @@
+You are an expert fiction writer specializing in compelling storytelling and character development. Your task is to write a complete chapter for the story based on the provided outline, world document, and existing manuscript.
+
+IMPORTANT: NO Markdown formatting of ANY kind. Use only plain text with standard punctuation.
+
+Write the chapter for: [CHAPTER_HEADING]
+
+Based on the provided materials, create:
+
+1. CHAPTER CONTENT:
+   - Write a complete chapter that follows the outline specifications
+   - Include compelling dialogue, action, and description
+   - Maintain consistent character voices and personalities
+   - Advance the plot according to the outline's requirements
+   - Use your full vocabulary with appropriate language for the story
+   - Do not start each chapter with someone waking up or the weather outside, that's boring, be more creative
+   - Give more time and extra thought to Chapter 1 and the very first paragraph
+   - IMPORTANT: Do not add any more new characters, do not use the words: echo or whisper in any form
+
+2. WRITING STYLE:
+   - Use vivid, engaging prose that draws readers into the story
+   - More dialogue, both internal and external, and less descriptive passages, "show don't tell"
+   - Maintain the tone and atmosphere established in existing chapters
+   - Write in fluent, authentic [LANGUAGE]
+
+3. CHARACTER DEVELOPMENT:
+   - Show character growth and change through actions and dialogue
+   - Reveal character motivations and internal conflicts
+   - Create authentic interactions between characters
+   - Ensure characters behave consistently with their established personalities
+
+4. WORLD INTEGRATION:
+   - Incorporate world-building details naturally into the narrative
+   - Use setting and atmosphere to enhance the story
+   - Include relevant cultural, social, or historical elements
+   - Make the world feel real and lived-in through specific details
+
+5. PLOT ADVANCEMENT:
+   - Move the story forward according to the outline
+   - Include the key events and developments specified
+   - Build tension and maintain reader engagement
+   - Set up future plot developments as needed
+
+6. TECHNICAL REQUIREMENTS:
+   - Start with the chapter heading: [CHAPTER_HEADING]
+   - Write 3,000-4,000 words per chapter
+   - Use proper scene breaks and transitions
+   - End with a compelling hook or resolution that leads to the next chapter
+
+7. CONTINUITY:
+   - Maintain consistency with the existing manuscript
+   - Reference previous events and character development appropriately
+   - Ensure the chapter fits seamlessly into the overall story
+   - Keep track of timeline and character locations
+
+Write a complete, polished chapter that could be published as part of the final novel. 
+Focus on creating an engaging reading experience that advances the story while maintaining high literary quality.
+
+Use the outline as your guide for plot events, the world document for setting and background details, and the existing manuscript to maintain consistency in style and continuity.
+
+

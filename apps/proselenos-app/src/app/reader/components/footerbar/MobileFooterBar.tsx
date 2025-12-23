@@ -39,7 +39,6 @@ const MobileFooterBar: React.FC<FooterBarChildProps> = ({
         marginIconSize={marginIconSize}
       />
       <NavigationBar
-        bookKey={bookKey}
         actionTab={actionTab}
         navPadding={navPadding}
         onSetActionTab={onSetActionTab!}

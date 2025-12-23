@@ -3,7 +3,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import { showAlert } from '@/app/shared/alerts';
 import SimpleChatModal from './SimpleChatModal';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { getTheme } from '@/app/shared/theme';
@@ -12,20 +11,18 @@ import { getTheme } from '@/app/shared/theme';
 interface ChatButtonProps {
   className?: string;
   isDarkMode?: boolean;
-  currentProject?: string | null;
-  currentProjectId?: string | null;
   isSystemInitializing?: boolean;
   hasApiKey?: boolean;
+  toolExecuting?: boolean;
   styleOverrides?: React.CSSProperties;
 }
 
 export default function ChatButton({
   className = '',
   isDarkMode = false,
-  currentProject,
-  currentProjectId,
   isSystemInitializing = false,
   hasApiKey = false,
+  toolExecuting = false,
   styleOverrides
 }: ChatButtonProps): React.JSX.Element {
   
@@ -35,10 +32,6 @@ export default function ChatButton({
 
   // Event handler with explicit typing
   const handleClick = (): void => {
-    if (!currentProject || !currentProjectId) {
-      showAlert('Please select a project first', 'warning', undefined, isDarkMode);
-      return;
-    }
     setIsModalOpen(true);
   };
 
@@ -51,7 +44,7 @@ export default function ChatButton({
       <StyledSmallButton
         className={className}
         onClick={handleClick}
-        disabled={!currentProject || !currentProjectId || isSystemInitializing || !hasApiKey}
+        disabled={isSystemInitializing || !hasApiKey || toolExecuting}
         theme={theme}
         styleOverrides={styleOverrides}
       >
@@ -62,7 +55,6 @@ export default function ChatButton({
         isOpen={isModalOpen}
         onClose={handleModalClose}
         isDarkMode={isDarkMode}
-        currentProject={currentProject}
       />
     </>
   );

@@ -9,7 +9,6 @@ import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface ProselenosHeaderProps {
-  session: any;
   theme: ThemeConfig;
   isDarkMode: boolean;
   hasApiKey: boolean;
@@ -23,7 +22,6 @@ interface ProselenosHeaderProps {
 }
 
 export default function ProselenosHeader({
-  session,
   theme,
   isDarkMode,
   hasApiKey: _hasApiKey,
@@ -101,12 +99,10 @@ export default function ProselenosHeader({
             Proselenos
           </div>
           {/* About & Exit buttons */}
-          {session && (
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <StyledSmallButton onClick={onAboutClick} theme={theme}>About</StyledSmallButton>
-              <StyledSmallButton onClick={handleExitClick} theme={theme}>Exit</StyledSmallButton>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <StyledSmallButton onClick={onAboutClick} theme={theme}>About</StyledSmallButton>
+            <StyledSmallButton onClick={handleExitClick} theme={theme}>Exit</StyledSmallButton>
+          </div>
         </div>
       </div>
     </>

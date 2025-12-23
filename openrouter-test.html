@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenRouter Streaming Test</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .subtitle {
+      color: #888;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .section {
+      margin-bottom: 24px;
+      padding: 16px;
+      background: #252525;
+      border-radius: 8px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .api-key-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      font-family: monospace;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #666;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary {
+      background: #333;
+      color: #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+      background: #444;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-primary:disabled {
+      background: #1e3a5f;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .btn-danger {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    .btn-danger:hover {
+      background: #991b1b;
+    }
+
+    .status {
+      font-size: 12px;
+      margin-top: 8px;
+      color: #888;
+    }
+
+    .status.saved {
+      color: #22c55e;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #666;
+    }
+
+    .chat-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .chat-history {
+      min-height: 300px;
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 6px;
+    }
+
+    .chat-history.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-style: italic;
+    }
+
+    .message {
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message:last-child {
+      margin-bottom: 0;
+    }
+
+    .message.user {
+      align-items: flex-end;
+    }
+
+    .message.assistant {
+      align-items: flex-start;
+    }
+
+    .message-label {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .message-content {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .message.user .message-content {
+      background: #2563eb;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant .message-content {
+      background: #333;
+      color: #e0e0e0;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.assistant.streaming .message-content {
+      border: 1px solid #2563eb;
+    }
+
+    .error {
+      margin-top: 12px;
+      padding: 12px;
+      background: #3b1219;
+      border: 1px solid #7f1d1d;
+      border-radius: 6px;
+      color: #fca5a5;
+      font-size: 14px;
+    }
+
+    .model-info {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="section">
+    <div class="section-title">API Key</div>
+    <div class="api-key-row">
+      <input type="password" id="apiKey" placeholder="sk-or-v1-...">
+      <button class="btn-secondary" id="toggleKey">Show</button>
+      <button class="btn-secondary" id="saveKey">Save</button>
+    </div>
+    <div class="status" id="keyStatus">Not saved</div>
+  </div>
+
+  <div class="section">
+    <div class="header-row">
+      <div class="section-title" style="margin-bottom: 0;">Chat</div>
+      <button class="btn-danger" id="newChat">New Chat</button>
+    </div>
+    <div class="chat-history empty" id="chatHistory">
+      Start a conversation...
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Message</div>
+    <textarea id="message" placeholder="Type your message here... (Cmd+Enter to send)"></textarea>
+    <div class="model-info">Model: google/gemini-3-pro-preview</div>
+    <div class="chat-controls">
+      <button class="btn-primary" id="send">Send</button>
+    </div>
+    <div id="error" class="error" style="display: none;"></div>
+  </div>
+
+  <script>
+    const MODEL = 'google/gemini-3-pro-preview';
+    const STORAGE_KEY = 'openrouter_api_key';
+
+    // Conversation history
+    let messages = [];
+
+    // DOM elements
+    const apiKeyInput = document.getElementById('apiKey');
+    const toggleKeyBtn = document.getElementById('toggleKey');
+    const saveKeyBtn = document.getElementById('saveKey');
+    const keyStatus = document.getElementById('keyStatus');
+    const messageInput = document.getElementById('message');
+    const sendBtn = document.getElementById('send');
+    const newChatBtn = document.getElementById('newChat');
+    const chatHistory = document.getElementById('chatHistory');
+    const errorDiv = document.getElementById('error');
+
+    // Load saved API key on page load
+    function loadApiKey() {
+      const savedKey = localStorage.getItem(STORAGE_KEY);
+      if (savedKey) {
+        apiKeyInput.value = savedKey;
+        keyStatus.textContent = 'Saved';
+        keyStatus.classList.add('saved');
+      }
+    }
+
+    // Toggle API key visibility
+    toggleKeyBtn.addEventListener('click', () => {
+      if (apiKeyInput.type === 'password') {
+        apiKeyInput.type = 'text';
+        toggleKeyBtn.textContent = 'Hide';
+      } else {
+        apiKeyInput.type = 'password';
+        toggleKeyBtn.textContent = 'Show';
+      }
+    });
+
+    // Save API key to localStorage
+    saveKeyBtn.addEventListener('click', () => {
+      const key = apiKeyInput.value.trim();
+      if (key) {
+        localStorage.setItem(STORAGE_KEY, key);
+        keyStatus.textContent = 'Saved';
+        keyStatus.classList.add('saved');
+      }
+    });
+
+    // New chat - clear history
+    newChatBtn.addEventListener('click', () => {
+      messages = [];
+      chatHistory.innerHTML = 'Start a conversation...';
+      chatHistory.classList.add('empty');
+      errorDiv.style.display = 'none';
+    });
+
+    // Show error
+    function showError(message) {
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+
+    // Hide error
+    function hideError() {
+      errorDiv.style.display = 'none';
+    }
+
+    // Add message to chat display
+    function addMessageToDisplay(role, content, isStreaming = false) {
+      // Remove empty state if present
+      if (chatHistory.classList.contains('empty')) {
+        chatHistory.classList.remove('empty');
+        chatHistory.innerHTML = '';
+      }
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}${isStreaming ? ' streaming' : ''}`;
+      messageDiv.innerHTML = `
+        <div class="message-label">${role === 'user' ? 'You' : 'Assistant'}</div>
+        <div class="message-content">${escapeHtml(content)}</div>
+      `;
+      chatHistory.appendChild(messageDiv);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+      return messageDiv;
+    }
+
+    // Update the last assistant message (for streaming)
+    function updateLastAssistantMessage(content) {
+      const lastMessage = chatHistory.querySelector('.message.assistant:last-child .message-content');
+      if (lastMessage) {
+        lastMessage.textContent = content;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+    }
+
+    // Remove streaming class from last message
+    function finishStreaming() {
+      const lastMessage = chatHistory.querySelector('.message.assistant.streaming');
+      if (lastMessage) {
+        lastMessage.classList.remove('streaming');
+      }
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Send message and stream response
+    async function sendMessage() {
+      const apiKey = apiKeyInput.value.trim();
+      const userMessage = messageInput.value.trim();
+
+      if (!apiKey) {
+        showError('Please enter your OpenRouter API key');
+        return;
+      }
+
+      if (!userMessage) {
+        showError('Please enter a message');
+        return;
+      }
+
+      hideError();
+
+      // Add user message to history and display
+      messages.push({ role: 'user', content: userMessage });
+      addMessageToDisplay('user', userMessage);
+
+      // Clear input
+      messageInput.value = '';
+
+      // Update UI state
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Streaming...';
+
+      // Add empty assistant message for streaming
+      addMessageToDisplay('assistant', '', true);
+      let assistantContent = '';
+
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': window.location.href,
+            'X-Title': 'OpenRouter Streaming Test'
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            messages: messages,
+            stream: true
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorMessage = `HTTP ${response.status}`;
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error?.message || errorMessage;
+          } catch {
+            errorMessage = errorText || errorMessage;
+          }
+          throw new Error(errorMessage);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete lines from buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+            const data = trimmed.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || '';
+              if (content) {
+                assistantContent += content;
+                updateLastAssistantMessage(assistantContent);
+              }
+            } catch (e) {
+              // Skip malformed JSON chunks
+            }
+          }
+        }
+
+        // Process any remaining buffer
+        if (buffer.trim() && buffer.trim().startsWith('data: ')) {
+          const data = buffer.trim().slice(6);
+          if (data !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || '';
+              if (content) {
+                assistantContent += content;
+                updateLastAssistantMessage(assistantContent);
+              }
+            } catch (e) {
+              // Skip malformed JSON
+            }
+          }
+        }
+
+        // Add assistant message to history
+        messages.push({ role: 'assistant', content: assistantContent });
+
+      } catch (error) {
+        showError(error.message);
+        // Remove the empty assistant message on error
+        const lastAssistant = chatHistory.querySelector('.message.assistant:last-child');
+        if (lastAssistant && !assistantContent) {
+          lastAssistant.remove();
+        }
+        // Remove the user message from history on error
+        messages.pop();
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+        finishStreaming();
+      }
+    }
+
+    // Send on button click
+    sendBtn.addEventListener('click', sendMessage);
+
+    // Send on Ctrl+Enter / Cmd+Enter
+    messageInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Initialize
+    loadApiKey();
+  </script>
+</body>
+</html>

@@ -25,7 +25,6 @@ import ThemeModeSelector from './color/ThemeModeSelector';
 import ThemeColorSelector from './color/ThemeColorSelector';
 import BackgroundTextureSelector from './color/BackgroundTextureSelector';
 import HighlightColorsEditor from './color/HighlightColorsEditor';
-import TTSHighlightStyleEditor, { TTSHighlightStyle } from './color/TTSHighlightStyleEditor';
 import CodeHighlightingSettings from './color/CodeHighlightingSettings';
 
 const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
@@ -49,17 +48,8 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   const [selectedTextureId, setSelectedTextureId] = useState(viewSettings.backgroundTextureId);
   const [backgroundOpacity, setBackgroundOpacity] = useState(viewSettings.backgroundOpacity);
   const [backgroundSize, setBackgroundSize] = useState(viewSettings.backgroundSize);
-  const [ttsHighlightStyle, setTtsHighlightStyle] = useState(
-    viewSettings.ttsHighlightOptions.style,
-  );
-  const [ttsHighlightColor, setTtsHighlightColor] = useState(
-    viewSettings.ttsHighlightOptions.color,
-  );
   const [customHighlightColors, setCustomHighlightColors] = useState(
     settings.globalReadSettings.customHighlightColors,
-  );
-  const [customTtsHighlightColors, setCustomTtsHighlightColors] = useState(
-    settings.globalReadSettings.customTtsHighlightColors || [],
   );
 
   const {
@@ -230,29 +220,6 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     saveSettings(envConfig, settings);
   };
 
-  const handleTTSStyleChange = (style: TTSHighlightStyle) => {
-    setTtsHighlightStyle(style);
-    saveViewSettings(envConfig, bookKey, 'ttsHighlightOptions', {
-      style,
-      color: ttsHighlightColor,
-    });
-  };
-
-  const handleTTSColorChange = (color: string) => {
-    setTtsHighlightColor(color);
-    saveViewSettings(envConfig, bookKey, 'ttsHighlightOptions', {
-      style: ttsHighlightStyle,
-      color,
-    });
-  };
-
-  const handleCustomTtsColorsChange = (colors: string[]) => {
-    setCustomTtsHighlightColors(colors);
-    settings.globalReadSettings.customTtsHighlightColors = colors;
-    setSettings(settings);
-    saveSettings(envConfig, settings);
-  };
-
   return (
     <div className='my-4 w-full space-y-6'>
       {showCustomThemeEditor ? (
@@ -312,15 +279,6 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
           <HighlightColorsEditor
             customHighlightColors={customHighlightColors}
             onChange={handleHighlightColorsChange}
-          />
-
-          <TTSHighlightStyleEditor
-            style={ttsHighlightStyle}
-            color={ttsHighlightColor}
-            customColors={customTtsHighlightColors}
-            onStyleChange={handleTTSStyleChange}
-            onColorChange={handleTTSColorChange}
-            onCustomColorsChange={handleCustomTtsColorsChange}
           />
 
           <CodeHighlightingSettings

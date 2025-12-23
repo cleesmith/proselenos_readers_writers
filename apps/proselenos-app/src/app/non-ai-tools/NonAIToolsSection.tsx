@@ -3,13 +3,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import { NON_AI_TOOLS } from './useNonAITools';
 import EpubModal from '../publishing-assistant/EpubModal';
-import PdfModal from '../publishing-assistant/PdfModal';
-import HtmlModal from '../publishing-assistant/HtmlModal';
 import StyledSmallButton from '@/components/StyledSmallButton';
+import { showAlert } from '../shared/alerts';
 
 interface NonAIToolsSectionProps {
   // Tool selection
@@ -39,12 +38,17 @@ interface NonAIToolsSectionProps {
   // Session for publishing assistant
   session: any;
 
+  // DOCX file picker
+  needsDocxFilePicker: boolean;
+
   // Callbacks
   onToolChange: (tool: string) => void;
   onSetupTool: () => void;
   onClearTool: () => void;
   onExecuteTool: () => void;
   onShowAlert: (type: 'success' | 'error', message: string, isDarkMode: boolean) => void;
+  onSetSelectedManuscriptForTool: (file: any) => void;
+  onSetNeedsDocxFilePicker: (needs: boolean) => void;
 }
 
 export default function NonAIToolsSection({
@@ -54,24 +58,56 @@ export default function NonAIToolsSection({
   publishResult,
   toolJustFinished,
   elapsedTime,
-  currentProject,
+  currentProject: _currentProject,
   currentProjectId: _currentProjectId,
   isStorageOperationPending,
   theme,
   isDarkMode,
   toolExecuting,
   session: _session,
+  needsDocxFilePicker,
   onToolChange,
   onSetupTool,
   onClearTool,
   onExecuteTool,
-  onShowAlert: _onShowAlert
+  onShowAlert: _onShowAlert,
+  onSetSelectedManuscriptForTool,
+  onSetNeedsDocxFilePicker
 }: NonAIToolsSectionProps) {
 
   // Modal states
   const [showEpubModal, setShowEpubModal] = useState(false);
-  const [showPdfModal, setShowPdfModal] = useState(false);
-  const [showHtmlModal, setShowHtmlModal] = useState(false);
+
+  // DOCX file input ref
+  const docxFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Trigger DOCX file picker when needed
+  useEffect(() => {
+    if (needsDocxFilePicker && docxFileInputRef.current) {
+      docxFileInputRef.current.click();
+      onSetNeedsDocxFilePicker(false);
+    }
+  }, [needsDocxFilePicker, onSetNeedsDocxFilePicker]);
+
+  // Handle DOCX file selection
+  const handleDocxFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const fileName = file.name.toLowerCase();
+      if (!fileName.endsWith('.docx')) {
+        showAlert('Please select a .docx file only.', 'warning', undefined, isDarkMode);
+        return;
+      }
+
+      // Store the File object for processing
+      onSetSelectedManuscriptForTool({ file, name: file.name });
+    }
+    // Reset file input
+    if (docxFileInputRef.current) {
+      docxFileInputRef.current.value = '';
+    }
+  };
 
   // Helper function to get appropriate file type label
   const getFileTypeLabel = (toolName: string): string => {
@@ -88,10 +124,13 @@ export default function NonAIToolsSection({
     }
   };
 
-  const isSetupDisabled = isStorageOperationPending || toolExecuting || isPublishing || !currentProject || !selectedNonAITool;
+  // EPUB to TXT Converter uses manuscript.epub from IndexedDB - no file selection needed
+  const isEpubTool = selectedNonAITool === 'EPUB to TXT Converter';
+  const isSetupDisabled = isStorageOperationPending || toolExecuting || isPublishing || !selectedNonAITool || isEpubTool;
   const isClearDisabled = (!selectedManuscriptForTool && !publishResult) || isPublishing;
-  const isRunDisabled = !selectedManuscriptForTool || isPublishing || isStorageOperationPending || toolExecuting || toolJustFinished;
-  const selectDisabled = !currentProject || isStorageOperationPending || toolExecuting || isPublishing;
+  // EPUB tool can run directly without file selection
+  const isRunDisabled = (!selectedManuscriptForTool && !isEpubTool) || isPublishing || isStorageOperationPending || toolExecuting || toolJustFinished;
+  const selectDisabled = isStorageOperationPending || toolExecuting || isPublishing;
 
   return (
     <div style={{
@@ -139,27 +178,11 @@ export default function NonAIToolsSection({
             <span style={{ fontSize: '9px', fontStyle: 'italic', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Publish:</span>
             <StyledSmallButton
               onClick={() => setShowEpubModal(true)}
-              disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
+              disabled={isStorageOperationPending || toolExecuting || isPublishing}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
               EPUB
-            </StyledSmallButton>
-            <StyledSmallButton
-              onClick={() => setShowPdfModal(true)}
-              disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
-              theme={theme}
-              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
-            >
-              PDF
-            </StyledSmallButton>
-            <StyledSmallButton
-              onClick={() => setShowHtmlModal(true)}
-              disabled={!currentProject || isStorageOperationPending || toolExecuting || isPublishing}
-              theme={theme}
-              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
-            >
-              HTML
             </StyledSmallButton>
           </div>
         </div>
@@ -202,12 +225,25 @@ export default function NonAIToolsSection({
         </select>
       </div>
 
+      {/* Note for EPUB tool */}
+      {isEpubTool && (
+        <div style={{
+          fontSize: '11px',
+          color: theme.textMuted,
+          marginBottom: '8px',
+          fontStyle: 'italic'
+        }}>
+          Uses manuscript.epub from Files (no selection needed)
+        </div>
+      )}
+
       {/* Tool action buttons - separate row beneath dropdown for mobile */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
         <StyledSmallButton
           disabled={isSetupDisabled}
           onClick={onSetupTool}
           theme={theme}
+          title={isEpubTool ? 'EPUB tool uses manuscript.epub automatically' : undefined}
         >
           Select
         </StyledSmallButton>
@@ -280,34 +316,20 @@ export default function NonAIToolsSection({
       }}>
       </div>
       
+      {/* Hidden DOCX file input */}
+      <input
+        ref={docxFileInputRef}
+        type="file"
+        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        onChange={handleDocxFileChange}
+        style={{ display: 'none' }}
+      />
+
       {/* EPUB Modal */}
       {showEpubModal && (
         <EpubModal
           isOpen={showEpubModal}
           onClose={() => setShowEpubModal(false)}
-          currentProjectId={currentProject}
-          theme={theme}
-          isDarkMode={isDarkMode}
-        />
-      )}
-
-      {/* PDF Modal */}
-      {showPdfModal && (
-        <PdfModal
-          isOpen={showPdfModal}
-          onClose={() => setShowPdfModal(false)}
-          currentProjectId={currentProject}
-          theme={theme}
-          isDarkMode={isDarkMode}
-        />
-      )}
-
-      {/* HTML Modal */}
-      {showHtmlModal && (
-        <HtmlModal
-          isOpen={showHtmlModal}
-          onClose={() => setShowHtmlModal(false)}
-          currentProjectId={currentProject}
           theme={theme}
           isDarkMode={isDarkMode}
         />

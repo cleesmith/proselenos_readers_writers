@@ -59,7 +59,6 @@ interface BookshelfItemProps {
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
   toggleSelection: (hash: string) => void;
   handleBookDownload: (book: Book) => Promise<boolean>;
-  handleBookUpload: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleBookDelete: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleSetSelectMode: (selectMode: boolean) => void;
   handleShowDetailsBook: (book: Book) => void;
@@ -74,7 +73,6 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   transferProgress,
   setLoading,
   toggleSelection,
-  handleBookUpload,
   handleBookDownload,
   handleSetSelectMode,
   handleShowDetailsBook,
@@ -184,12 +182,6 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         handleBookDownload(book);
       },
     });
-    const uploadBookMenuItem = await MenuItem.new({
-      text: _('Upload Book'),
-      action: async () => {
-        handleBookUpload(book);
-      },
-    });
     const deleteBookMenuItem = await MenuItem.new({
       text: _('Delete'),
       action: async () => {
@@ -202,9 +194,6 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     menu.append(showBookInFinderMenuItem);
     if (book.uploadedAt && !book.downloadedAt) {
       menu.append(downloadBookMenuItem);
-    }
-    if (!book.uploadedAt && book.downloadedAt) {
-      menu.append(uploadBookMenuItem);
     }
     menu.append(deleteBookMenuItem);
     menu.popup();
@@ -332,7 +321,6 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
               isSelectMode={isSelectMode}
               bookSelected={itemSelected}
               transferProgress={transferProgress}
-              handleBookUpload={handleBookUpload}
               showBookDetailsModal={showBookDetailsModal}
             />
           ) : (

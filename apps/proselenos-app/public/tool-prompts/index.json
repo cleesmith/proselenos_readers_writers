@@ -1,0 +1,43 @@
+{
+  "categories": [
+    "AI Writing Tools",
+    "Core Editing Tools",
+    "Other Editing Tools",
+    "User Tools"
+  ],
+  "tools": [
+    { "id": "AI Writing Tools/brainstorm.txt", "category": "AI Writing Tools", "name": "brainstorm.txt" },
+    { "id": "AI Writing Tools/chapter_writer.txt", "category": "AI Writing Tools", "name": "chapter_writer.txt" },
+    { "id": "AI Writing Tools/outline_writer.txt", "category": "AI Writing Tools", "name": "outline_writer.txt" },
+    { "id": "AI Writing Tools/world_writer.txt", "category": "AI Writing Tools", "name": "world_writer.txt" },
+    { "id": "Core Editing Tools/copy_editing.txt", "category": "Core Editing Tools", "name": "copy_editing.txt" },
+    { "id": "Core Editing Tools/developmental_editing.txt", "category": "Core Editing Tools", "name": "developmental_editing.txt" },
+    { "id": "Core Editing Tools/line_editing.txt", "category": "Core Editing Tools", "name": "line_editing.txt" },
+    { "id": "Core Editing Tools/narrative_internal_analysis.txt", "category": "Core Editing Tools", "name": "narrative_internal_analysis.txt" },
+    { "id": "Core Editing Tools/narrative_unresolved_analysis.txt", "category": "Core Editing Tools", "name": "narrative_unresolved_analysis.txt" },
+    { "id": "Core Editing Tools/proofreader_plot_consistency.txt", "category": "Core Editing Tools", "name": "proofreader_plot_consistency.txt" },
+    { "id": "Core Editing Tools/proofreader_punctuation.txt", "category": "Core Editing Tools", "name": "proofreader_punctuation.txt" },
+    { "id": "Other Editing Tools/adjective_adverb_optimizer.txt", "category": "Other Editing Tools", "name": "adjective_adverb_optimizer.txt" },
+    { "id": "Other Editing Tools/character_analyzer.txt", "category": "Other Editing Tools", "name": "character_analyzer.txt" },
+    { "id": "Other Editing Tools/conflict_analyzer.txt", "category": "Other Editing Tools", "name": "conflict_analyzer.txt" },
+    { "id": "Other Editing Tools/crowding_leaping_evaluator.txt", "category": "Other Editing Tools", "name": "crowding_leaping_evaluator.txt" },
+    { "id": "Other Editing Tools/dangling_modifier_checker.txt", "category": "Other Editing Tools", "name": "dangling_modifier_checker.txt" },
+    { "id": "Other Editing Tools/drunken.txt", "category": "Other Editing Tools", "name": "drunken.txt" },
+    { "id": "Other Editing Tools/foreshadowing_tracker.txt", "category": "Other Editing Tools", "name": "foreshadowing_tracker.txt" },
+    { "id": "Other Editing Tools/kdp_publishing_prep.txt", "category": "Other Editing Tools", "name": "kdp_publishing_prep.txt" },
+    { "id": "Other Editing Tools/manuscript_to_characters.txt", "category": "Other Editing Tools", "name": "manuscript_to_characters.txt" },
+    { "id": "Other Editing Tools/manuscript_to_outline.txt", "category": "Other Editing Tools", "name": "manuscript_to_outline.txt" },
+    { "id": "Other Editing Tools/manuscript_to_world.txt", "category": "Other Editing Tools", "name": "manuscript_to_world.txt" },
+    { "id": "Other Editing Tools/plot_thread_tracker.txt", "category": "Other Editing Tools", "name": "plot_thread_tracker.txt" },
+    { "id": "Other Editing Tools/proofreader_spelling.txt", "category": "Other Editing Tools", "name": "proofreader_spelling.txt" },
+    { "id": "Other Editing Tools/rhythm_analyzer.txt", "category": "Other Editing Tools", "name": "rhythm_analyzer.txt" },
+    { "id": "Other Editing Tools/surmelian_analysis.txt", "category": "Other Editing Tools", "name": "surmelian_analysis.txt" },
+    { "id": "Other Editing Tools/tense_consistency_checker.txt", "category": "Other Editing Tools", "name": "tense_consistency_checker.txt" },
+    { "id": "User Tools/anything_goes.txt", "category": "User Tools", "name": "anything_goes.txt" },
+    { "id": "User Tools/nlp.txt", "category": "User Tools", "name": "nlp.txt" },
+    { "id": "User Tools/nonfiction_creative_editing.txt", "category": "User Tools", "name": "nonfiction_creative_editing.txt" },
+    { "id": "User Tools/nonfiction_integrity_editing.txt", "category": "User Tools", "name": "nonfiction_integrity_editing.txt" },
+    { "id": "User Tools/nonfiction_SelfHelp_editing.txt", "category": "User Tools", "name": "nonfiction_SelfHelp_editing.txt" },
+    { "id": "User Tools/nonfiction_sourcing_audit.txt", "category": "User Tools", "name": "nonfiction_sourcing_audit.txt" }
+  ]
+}

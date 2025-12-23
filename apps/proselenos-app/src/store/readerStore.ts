@@ -33,7 +33,6 @@ interface ViewState {
   error: string | null;
   progress: BookProgress | null;
   ribbonVisible: boolean;
-  ttsEnabled: boolean;
   syncing: boolean;
   gridInsets: Insets | null;
   /* View settings for the view: 
@@ -50,7 +49,6 @@ interface ReaderStore {
   setBookKeys: (keys: string[]) => void;
   setHoveredBookKey: (key: string | null) => void;
   setBookmarkRibbonVisibility: (key: string, visible: boolean) => void;
-  setTTSEnabled: (key: string, enabled: boolean) => void;
   setIsSyncing: (key: string, syncing: boolean) => void;
   setProgress: (
     key: string,
@@ -136,7 +134,6 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
           error: null,
           progress: null,
           ribbonVisible: false,
-          ttsEnabled: false,
           syncing: false,
           gridInsets: null,
           viewSettings: null,
@@ -201,7 +198,6 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
             error: null,
             progress: null,
             ribbonVisible: false,
-            ttsEnabled: false,
             syncing: false,
             gridInsets: null,
             viewSettings: { ...globalViewSettings, ...configViewSettings },
@@ -224,7 +220,6 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
             error: 'Failed to load book.',
             progress: null,
             ribbonVisible: false,
-            ttsEnabled: false,
             syncing: false,
             gridInsets: null,
             viewSettings: null,
@@ -342,17 +337,6 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         [key]: {
           ...state.viewStates[key]!,
           ribbonVisible: visible,
-        },
-      },
-    })),
-
-  setTTSEnabled: (key: string, enabled: boolean) =>
-    set((state) => ({
-      viewStates: {
-        ...state.viewStates,
-        [key]: {
-          ...state.viewStates[key]!,
-          ttsEnabled: enabled,
         },
       },
     })),

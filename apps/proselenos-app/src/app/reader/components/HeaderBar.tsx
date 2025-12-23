@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { PiDotsThreeVerticalBold, PiXBold } from 'react-icons/pi';
-import { FaHeadphones } from 'react-icons/fa6';
+import { PiDotsThreeVerticalBold, PiXBold, PiPlayFill, PiPauseFill, PiStopFill } from 'react-icons/pi';
+import { Overlayer } from 'foliate-js/overlayer.js';
 
 import { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
@@ -10,8 +10,8 @@ import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTrafficLightStore } from '@/store/trafficLightStore';
-import { eventDispatcher } from '@/utils/event';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
+import { useReadAloud } from '@/hooks/useReadAloud';
 import Dropdown from '@/components/Dropdown';
 import SidebarToggler from './SidebarToggler';
 import BookmarkToggler from './BookmarkToggler';
@@ -48,10 +48,150 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
     cleanupTrafficLightListeners,
   } = useTrafficLightStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { bookKeys: _bookKeys, hoveredBookKey, setHoveredBookKey, getView, getProgress, getViewState } = useReaderStore();
+  const { bookKeys: _bookKeys, hoveredBookKey, setHoveredBookKey, getView } = useReaderStore();
   const { systemUIVisible, statusBarHeight } = useThemeStore();
   const { isSideBarVisible } = useSidebarStore();
   const iconSize16 = useResponsiveSize(16);
+
+  // TTS (Read Aloud)
+  const {
+    play,
+    pause,
+    resume,
+    stop,
+    voices,
+    selectedVoice,
+    setSelectedVoice,
+    isSpeaking,
+    isPaused,
+  } = useReadAloud();
+
+  // Track if TTS is initialized for this view
+  const ttsInitialized = useRef(false);
+
+  // TTS sentence tracking
+  const sentencesRef = useRef<string[]>([]);
+  const sentenceIndexRef = useRef(0);
+
+  // TTS highlight key for overlayer
+  const TTS_HIGHLIGHT_KEY = 'tts-highlight';
+
+  // Parse SSML to extract sentences between marks
+  const parseSentences = (ssml: string): string[] => {
+    const sentences: string[] = [];
+    // Match text after each mark: <mark name="N"/>...text...
+    const regex = /<mark[^>]*>([^<]*)/g;
+    let match;
+    while ((match = regex.exec(ssml)) !== null) {
+      const text = match[1]?.trim();
+      if (text) sentences.push(text);
+    }
+    // If no marks found, fall back to stripping all tags
+    if (sentences.length === 0) {
+      const text = ssml.replace(/<[^>]*>/g, '').trim();
+      if (text) sentences.push(text);
+    }
+    return sentences;
+  };
+
+  // Highlight current sentence during TTS
+  const highlightSentence = useCallback((range: Range) => {
+    const view = getView(bookKey);
+    if (!view) return;
+
+    const contents = view.renderer.getContents();
+    if (!contents?.[0]) return;
+
+    const { overlayer } = contents[0];
+    if (!overlayer) return;
+
+    // Add highlight (automatically removes previous one with same key)
+    overlayer.add(TTS_HIGHLIGHT_KEY, range, Overlayer.highlight, { color: '#FFEB3B' });
+  }, [bookKey, getView]);
+
+  // Clear TTS highlight
+  const clearHighlight = useCallback(() => {
+    const view = getView(bookKey);
+    if (!view) return;
+
+    const contents = view.renderer.getContents();
+    const { overlayer } = contents?.[0] || {};
+    overlayer?.remove(TTS_HIGHLIGHT_KEY);
+  }, [bookKey, getView]);
+
+  // Speak next sentence (called recursively on utterance end)
+  const speakNextSentence = useCallback(() => {
+    const view = getView(bookKey);
+    if (!view?.tts) return;
+
+    // More sentences in current block?
+    if (sentenceIndexRef.current < sentencesRef.current.length) {
+      const text = sentencesRef.current[sentenceIndexRef.current]!;
+      view.tts.setMark(String(sentenceIndexRef.current));
+      sentenceIndexRef.current++;
+      play(text, speakNextSentence);
+      return;
+    }
+
+    // Get next block
+    const ssml = view.tts.next();
+    if (!ssml) {
+      clearHighlight(); // No more content
+      return;
+    }
+
+    // Parse new block's sentences
+    sentencesRef.current = parseSentences(ssml);
+    sentenceIndexRef.current = 0;
+
+    if (sentencesRef.current.length > 0) {
+      view.tts.setMark('0');
+      sentenceIndexRef.current = 1;
+      play(sentencesRef.current[0]!, speakNextSentence);
+    }
+  }, [bookKey, clearHighlight, getView, play]);
+
+  // Handle play button - initialize TTS and start speaking
+  const handlePlay = useCallback(async () => {
+    // If paused, just resume
+    if (isPaused) {
+      resume();
+      return;
+    }
+
+    const view = getView(bookKey);
+    if (!view) return;
+
+    // Initialize TTS once per view (with highlight callback)
+    if (!ttsInitialized.current) {
+      await view.initTTS('sentence', undefined, highlightSentence);
+      ttsInitialized.current = true;
+    }
+
+    if (!view.tts) return;
+
+    // Get SSML for first block
+    const ssml = view.tts.start();
+    if (!ssml) return;
+
+    // Parse into sentences
+    sentencesRef.current = parseSentences(ssml);
+    sentenceIndexRef.current = 0;
+
+    if (sentencesRef.current.length > 0) {
+      // Highlight and speak first sentence
+      view.tts.setMark('0');
+      sentenceIndexRef.current = 1;
+      play(sentencesRef.current[0]!, speakNextSentence);
+    }
+  }, [bookKey, getView, highlightSentence, isPaused, play, resume, speakNextSentence]);
+
+  // Handle stop - clear highlight and stop TTS
+  const handleStop = useCallback(() => {
+    clearHighlight();
+    stop();
+    ttsInitialized.current = false; // Reset so next play reinitializes
+  }, [clearHighlight, stop]);
 
   const windowButtonVisible = appService?.hasWindowBar && !isTrafficLightVisible;
 
@@ -92,15 +232,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       clientX <= rect.left || clientX >= rect.right || clientY <= rect.top || clientY >= rect.bottom
     );
   }, []);
-
-  const handleSpeakText = useCallback(() => {
-    const view = getView(bookKey);
-    const progress = getProgress(bookKey);
-    const viewState = getViewState(bookKey);
-    if (!view || !progress || !viewState) return;
-    const eventType = viewState.ttsEnabled ? 'tts-stop' : 'tts-speak';
-    eventDispatcher.dispatch(eventType, { bookKey });
-  }, [bookKey, getView, getProgress, getViewState]);
 
   const isHeaderVisible = hoveredBookKey === bookKey || isDropdownOpen;
   const trafficLightInHeader =
@@ -182,19 +313,54 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         </div>
 
         <div className='bg-base-100 z-20 ml-auto flex h-full items-center space-x-4 ps-2'>
-          <button
-            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
-            onClick={handleSpeakText}
-            aria-label={_('Speak')}
-            title={_('Speak')}
-          >
-            <FaHeadphones
-              size={iconSize16}
-              className={getViewState(bookKey)?.ttsEnabled ? 'text-blue-500' : ''}
-            />
-          </button>
           <SettingsToggler />
           <NotebookToggler bookKey={bookKey} />
+
+          {/* TTS Controls */}
+          <button
+            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            onClick={handlePlay}
+            aria-label={isPaused ? _('Resume') : _('Play')}
+            title={isPaused ? _('Resume reading') : _('Read aloud')}
+          >
+            <PiPlayFill size={iconSize16} />
+          </button>
+          <button
+            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            onClick={pause}
+            disabled={!isSpeaking || isPaused}
+            aria-label={_('Pause')}
+            title={_('Pause reading')}
+          >
+            <PiPauseFill size={iconSize16} />
+          </button>
+          <button
+            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            onClick={handleStop}
+            disabled={!isSpeaking && !isPaused}
+            aria-label={_('Stop')}
+            title={_('Stop reading')}
+          >
+            <PiStopFill size={iconSize16} />
+          </button>
+          {voices.length > 1 && (
+            <select
+              value={selectedVoice?.name || ''}
+              onChange={(e) => {
+                const voice = voices.find((v) => v.name === e.target.value);
+                if (voice) setSelectedVoice(voice);
+              }}
+              title={_('Select voice')}
+              className='select select-ghost select-xs h-8 max-w-24 text-xs'
+            >
+              {voices.map((voice) => (
+                <option key={voice.name} value={voice.name}>
+                  {voice.name.replace('Microsoft ', '').replace(' Online', '')}
+                </option>
+              ))}
+            </select>
+          )}
+
           <Dropdown
             label={_('View Options')}
             className='exclude-title-bar-mousedown dropdown-bottom dropdown-end'

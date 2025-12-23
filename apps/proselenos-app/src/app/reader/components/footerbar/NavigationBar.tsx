@@ -4,28 +4,22 @@ import { IoIosList as TOCIcon } from 'react-icons/io';
 import { RxSlider as SliderIcon } from 'react-icons/rx';
 import { RiFontFamily as FontIcon } from 'react-icons/ri';
 import { PiSun as ColorIcon } from 'react-icons/pi';
-import { MdOutlineHeadphones as TTSIcon } from 'react-icons/md';
-import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import Button from '@/components/Button';
 
 interface NavigationBarProps {
-  bookKey: string;
   actionTab: string;
   navPadding: string;
   onSetActionTab: (tab: string) => void;
 }
 
 export const NavigationBar: React.FC<NavigationBarProps> = ({
-  bookKey,
   actionTab,
   navPadding: mobileNavPadding,
   onSetActionTab,
 }) => {
   const _ = useTranslation();
-  const { getViewState } = useReaderStore();
-  const viewState = getViewState(bookKey);
   const tocIconSize = useResponsiveSize(23);
   const fontIconSize = useResponsiveSize(18);
 
@@ -55,11 +49,6 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
           <FontIcon size={fontIconSize} className={clsx(actionTab === 'font' && 'text-blue-500')} />
         }
         onClick={() => onSetActionTab('font')}
-      />
-      <Button
-        label={_('Speak')}
-        icon={<TTSIcon className={viewState?.ttsEnabled ? 'text-blue-500' : ''} />}
-        onClick={() => onSetActionTab('tts')}
       />
     </div>
   );

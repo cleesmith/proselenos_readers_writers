@@ -162,7 +162,6 @@ export async function listProjectFilesAction(projectName: string): Promise<Actio
       path: `${projectName}/${file.name}`,
       mimeType: file.name.endsWith('.txt') ? 'text/plain' :
                 file.name.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
-                file.name.endsWith('.pdf') ? 'application/pdf' :
                 file.name.endsWith('.epub') ? 'application/epub+zip' :
                 file.name.endsWith('.html') ? 'text/html' :
                 'application/octet-stream'
@@ -360,12 +359,12 @@ export async function uploadFileToProjectAction(
     }
 
     // Validate file type
-    const allowedExtensions = ['.docx', '.txt', '.html', '.epub', '.pdf'];
+    const allowedExtensions = ['.docx', '.txt', '.html', '.epub'];
     const fileName = file.name.toLowerCase();
     const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
 
     if (!hasValidExtension) {
-      return { success: false, error: 'Only .txt, .html, .docx, .epub, and .pdf files are allowed' };
+      return { success: false, error: 'Only .txt, .html, .docx, and .epub files are allowed' };
     }
 
     // Use custom filename if provided, otherwise use original file name
@@ -408,16 +407,14 @@ export async function checkManuscriptFilesExistAction(projectName: string): Prom
 
     const exists = await checkFilesExist(session.user.id, projectName, [
       'manuscript.html',
-      'manuscript.epub',
-      'manuscript.pdf'
+      'manuscript.epub'
     ]);
 
     return {
       success: true,
       data: {
         html: exists['manuscript.html'],
-        epub: exists['manuscript.epub'],
-        pdf: exists['manuscript.pdf']
+        epub: exists['manuscript.epub']
       },
       message: 'File existence check completed'
     };
@@ -435,7 +432,7 @@ export async function checkManuscriptFilesExistAction(projectName: string): Prom
  */
 export async function deleteManuscriptOutputAction(
   projectName: string,
-  fileType: 'html' | 'epub' | 'pdf'
+  fileType: 'html' | 'epub'
 ): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions) as ExtendedSession;

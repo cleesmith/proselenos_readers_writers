@@ -10,57 +10,54 @@ import ToolProgressIndicator from './ToolProgressIndicator';
 import DualPanelEditor from './DualPanelEditor';
 import WritingAssistantModal from '../writing-assistant/WritingAssistantModal';
 import OneByOneModal from '../one-by-one/OneByOneModal';
-import { getToolPromptAction } from '@/lib/tools-actions';
+import { getToolPrompt, saveManuscript } from '@/services/manuscriptStorage';
 import ChatButton from '@/components/ChatButton';
-import { createOrUpdateFileAction } from '@/lib/project-actions';
+import { isValidToolReport } from '@/utils/parseToolReport';
+// createOrUpdateFileAction removed - saves go to IndexedDB now
 
 interface AIToolsSectionProps {
   // Session
   session: any;
-  
+
   // Tool selection
   selectedCategory: string;
   selectedTool: string;
   toolsInCategory: any[];
   toolsReady: boolean;
   isInstallingToolPrompts: boolean;
-  
-  // File selection
-  selectedManuscriptForTool: any | null;
-  
+
   // Execution state
   toolExecuting: boolean;
   toolResult: string;
   toolJustFinished: boolean;
   savedReportFileName: string | null;
   savedReportFileId: string | null;
-  
+
   // Timer
   elapsedTime: number;
-  
+
   // Cached manuscript content
   manuscriptContent: string;
-  
-  // Project state
+
+  // Project state (kept for compatibility)
   currentProject: string | null;
   currentProjectId: string | null;
   isStorageOperationPending: boolean;
   isSystemInitializing: boolean;
-  
+
   // Theme
   theme: ThemeConfig;
   isDarkMode: boolean;
-  
+
   // AI model info for report formatting
   currentProvider?: string;
   currentModel?: string;
   hasConfiguredProvider?: boolean;
   hasApiKey?: boolean;
-  
+
   // Callbacks
   onCategoryChange: (category: string) => void;
   onToolChange: (tool: string) => void;
-  onSetupTool: () => void;
   onClearTool: () => void;
   onExecuteTool: () => void;
   onLoadFileIntoEditor?: (content: string, fileName: string, fileId?: string) => void;
@@ -75,7 +72,6 @@ export default function AIToolsSection({
   toolsInCategory,
   toolsReady,
   isInstallingToolPrompts,
-  selectedManuscriptForTool,
   toolExecuting,
   toolResult,
   toolJustFinished,
@@ -95,7 +91,6 @@ export default function AIToolsSection({
   hasApiKey = false,
   onCategoryChange,
   onToolChange,
-  onSetupTool,
   onClearTool,
   onExecuteTool,
   onLoadFileIntoEditor,
@@ -186,62 +181,42 @@ https://proselenos.com
   };
 
   const handleEditClick = () => {
-    if (!selectedManuscriptForTool) return;
+    if (!manuscriptContent) return;
     setEditorManuscriptContent(manuscriptContent);
-    // Pass selectedManuscriptForTool.id into DualPanelEditor
     setShowDualEditor(true);
   };
 
   // One-by-one editing handlers
   const handleOneByOneClick = () => {
-    if (!selectedManuscriptForTool) return;
+    if (!manuscriptContent) return;
     setShowOneByOne(true);
   };
 
   const handleOneByOneSave = async (content: string) => {
-    if (!currentProject || !selectedManuscriptForTool) {
-      throw new Error('No project or manuscript selected');
-    }
-    const result = await createOrUpdateFileAction(
-      currentProject,
-      selectedManuscriptForTool.name,
-      content,
-      selectedManuscriptForTool.path || selectedManuscriptForTool.id
-    );
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to save');
-    }
+    // Save the updated manuscript to IndexedDB
+    await saveManuscript(content);
   };
 
   const handleCategoryChange = (category: string) => {
-    if (!currentProject) {
-      showAlert('Please select a project first', 'warning', undefined, isDarkMode);
-      return;
-    }
     onCategoryChange(category);
     onToolChange(''); // Reset tool selection when category changes
   };
 
   const handleToolChange = (tool: string) => {
-    if (!currentProject) {
-      showAlert('Please select a project first', 'warning', undefined, isDarkMode);
-      return;
-    }
     onToolChange(tool);
   };
 
   const handlePromptEdit = async () => {
     if (!selectedTool || !onLoadFileIntoEditor || isLoadingPrompt) return;
-    
+
     setIsLoadingPrompt(true);
     try {
-      const result = await getToolPromptAction(selectedTool);
-      if (result.success && typeof result.content === 'string') {
-        // Pass the file ID for proper existing file mode
-        const toolPromptPath = `tool-prompts/${selectedTool}`;
-        onLoadFileIntoEditor(result.content, toolPromptPath, result.fileId);
+      const content = await getToolPrompt(selectedTool);
+      if (content) {
+        // Pass with prompt: prefix so Editor knows to use prompt mode
+        onLoadFileIntoEditor(content, `prompt:${selectedTool}`, selectedTool);
       } else {
-        showAlert(result.error || 'Failed to load tool prompt', 'error', undefined, isDarkMode);
+        showAlert('Failed to load tool prompt', 'error', undefined, isDarkMode);
       }
     } catch (error) {
       showAlert('Error loading tool prompt', 'error', undefined, isDarkMode);
@@ -289,7 +264,7 @@ https://proselenos.com
         {!hasApiKey ? (
           <span>No AI API key</span>
         ) : !currentModel ? (
-          <span>No AI model selected</span>
+          <span>Your Key is valid, now click Models</span>
         ) : (
           <span title={`Provider: ${currentProvider}, Model: ${currentModel}`}>
             {currentProvider}:{currentModel}
@@ -319,7 +294,7 @@ https://proselenos.com
             <span style={{ fontSize: '9px', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}> </span>
             <StyledSmallButton
               onClick={onModelsClick}
-              disabled={isSystemInitializing || !currentProject}
+              disabled={isSystemInitializing || toolExecuting}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
@@ -327,7 +302,7 @@ https://proselenos.com
             </StyledSmallButton>
             <StyledSmallButton
               onClick={onSettingsClick}
-              disabled={isSystemInitializing || isStorageOperationPending || !currentProject}
+              disabled={isSystemInitializing || isStorageOperationPending || toolExecuting}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
@@ -335,15 +310,14 @@ https://proselenos.com
             </StyledSmallButton>
             <ChatButton
               isDarkMode={isDarkMode}
-              currentProject={currentProject}
-              currentProjectId={currentProjectId}
               isSystemInitializing={isSystemInitializing}
               hasApiKey={hasApiKey}
+              toolExecuting={toolExecuting}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             />
             <StyledSmallButton
               onClick={() => setShowWritingAssistant(true)}
-              disabled={isSystemInitializing || !currentProject || isStorageOperationPending || toolExecuting || !hasApiKey}
+              disabled={isSystemInitializing || isStorageOperationPending || toolExecuting || !hasApiKey}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
@@ -368,7 +342,7 @@ https://proselenos.com
       <select
         value={selectedCategory}
         onChange={(e) => handleCategoryChange(e.target.value)}
-        disabled={!toolsReady || toolExecuting || !currentProject || !hasApiKey}
+        disabled={!toolsReady || toolExecuting || !hasApiKey}
         style={{
           width: '100%',
           maxWidth: '300px',
@@ -400,7 +374,7 @@ https://proselenos.com
         <select
           value={selectedTool}
           onChange={(e) => handleToolChange(e.target.value)}
-          disabled={!selectedCategory || !toolsReady || toolExecuting || !currentProject || !hasApiKey}
+          disabled={!selectedCategory || !toolsReady || toolExecuting || !hasApiKey}
           style={{
             width: '100%',
             maxWidth: '300px',
@@ -464,26 +438,10 @@ https://proselenos.com
         </StyledSmallButton>
 
         <StyledSmallButton
-          onClick={onSetupTool}
-          disabled={
-            isSystemInitializing ||
-            !selectedTool ||
-            !toolsReady ||
-            !currentProject ||
-            isStorageOperationPending ||
-            toolExecuting ||
-            !hasApiKey
-          }
-          theme={theme}
-        >
-          Select
-        </StyledSmallButton>
-
-        <StyledSmallButton
           onClick={onClearTool}
           disabled={
             isSystemInitializing ||
-            (!selectedManuscriptForTool && !toolResult && elapsedTime === 0) ||
+            (!toolResult && elapsedTime === 0) ||
             toolExecuting
           }
           theme={theme}
@@ -495,7 +453,7 @@ https://proselenos.com
           onClick={onExecuteTool}
           disabled={
             isSystemInitializing ||
-            !selectedManuscriptForTool ||
+            !selectedTool ||
             toolExecuting ||
             !toolsReady ||
             isStorageOperationPending ||
@@ -516,7 +474,7 @@ https://proselenos.com
         />
 
         {/* One-by-one button - appears when tool finishes with OBO-formatted results */}
-        {!toolExecuting && elapsedTime > 0 && toolResult && savedReportFileName?.includes('_obo') && (
+        {!toolExecuting && elapsedTime > 0 && toolResult && isValidToolReport(toolResult) && (
           <StyledSmallButton
             onClick={handleOneByOneClick}
             theme={theme}
@@ -527,39 +485,22 @@ https://proselenos.com
         )}
       </div>
       
-      {/* Show selected manuscript info */}
-      {selectedManuscriptForTool && (
-        <div
-          style={{
-            marginTop: '8px',
-            padding: '6px 8px',
-            backgroundColor: theme.statusBg,
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            fontSize: '11px',
-            color: theme.text,
-          }}
-        >
-          <strong>Selected manuscript:</strong> {selectedManuscriptForTool.name}
-        </div>
-      )}
-
       {/* Dual Panel Editor Modal */}
-      {showDualEditor && selectedManuscriptForTool && (
+      {showDualEditor && manuscriptContent && (
         <DualPanelEditor
           isVisible={showDualEditor}
           onClose={() => setShowDualEditor(false)}
           manuscriptContent={editorManuscriptContent}
-          manuscriptName={selectedManuscriptForTool.name ?? 'manuscript'}
-          manuscriptFileId={selectedManuscriptForTool.path || selectedManuscriptForTool.id}
+          manuscriptName="manuscript.txt"
+          manuscriptFileId="manuscript.txt"
           aiReport={
-            selectedTool && selectedManuscriptForTool.name && currentProject
+            selectedTool && currentProject
               ? formatFullReport(
                   toolResult,
                   selectedTool,
                   currentProvider,
                   currentModel,
-                  selectedManuscriptForTool.name,
+                  'manuscript.txt',
                   currentProject as string
                 )
               : toolResult
@@ -591,14 +532,14 @@ https://proselenos.com
       )}
 
       {/* One-by-one Editing Modal */}
-      {showOneByOne && selectedManuscriptForTool && (
+      {showOneByOne && manuscriptContent && (
         <OneByOneModal
           isOpen={showOneByOne}
           theme={theme}
           isDarkMode={isDarkMode}
           projectName={currentProject}
-          fileName={selectedManuscriptForTool.name}
-          filePath={selectedManuscriptForTool.path || selectedManuscriptForTool.id}
+          fileName="manuscript.txt"
+          filePath="manuscript.txt"
           manuscriptContent={manuscriptContent}
           reportContent={toolResult}
           onClose={() => setShowOneByOne(false)}

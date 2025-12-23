@@ -1,20 +1,33 @@
 // app/writing-assistant/useWritingAssistant.ts
+// Local-first: IndexedDB + client-side OpenRouter API calls
 
 import { useState, useCallback } from 'react';
 import { WorkflowState, WorkflowStep, WorkflowStepId } from './types';
 import { INITIAL_WORKFLOW_STEPS } from './constants';
-import { 
-  detectExistingWorkflowFilesAction,
-  executeWorkflowStepAction,
-  getWorkflowFileContentAction
-} from '@/lib/writing-assistant/workflow-actions';
-import { getToolPromptAction } from '@/lib/tools-actions';
 import { showAlert } from '../shared/alerts';
+import {
+  loadWorkflowFile,
+  saveWorkflowFile,
+  workflowFileExists,
+  loadManuscript,
+  saveManuscript,
+  loadApiKey,
+  loadAppSettings,
+  getWritingAssistantPrompt
+} from '@/services/manuscriptStorage';
+
+// Output filenames for each workflow step
+const OUTPUT_FILES: Record<WorkflowStepId, string> = {
+  brainstorm: 'brainstorm.txt',
+  outline: 'outline.txt',
+  world: 'world.txt',
+  chapters: 'manuscript.txt'
+};
 
 export function useWritingAssistant(
-  currentProjectId: string | null,
-  currentProvider: string,
-  currentModel: string,
+  _currentProjectId: string | null,
+  _currentProvider: string,
+  _currentModel: string,
   _session: any,
   isDarkMode: boolean,
   onLoadFileIntoEditor?: (content: string, fileName: string, fileId?: string) => void,
@@ -27,104 +40,100 @@ export function useWritingAssistant(
     isLoading: false,
     projectFiles: { chapters: [] }
   });
-  
+
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
+
+  // Check which files exist in IndexedDB
+  const detectExistingFiles = useCallback(async () => {
+    const [hasBrainstorm, hasOutline, hasWorld, manuscriptContent] = await Promise.all([
+      workflowFileExists('brainstorm.txt'),
+      workflowFileExists('outline.txt'),
+      workflowFileExists('world.txt'),
+      loadManuscript()  // manuscript.txt is in MANUSCRIPT store, not AI store
+    ]);
+
+    const hasManuscript = manuscriptContent !== null && manuscriptContent.length > 0;
+
+    return {
+      brainstorm: hasBrainstorm ? { id: 'brainstorm.txt', name: 'brainstorm.txt', path: 'brainstorm.txt' } : undefined,
+      outline: hasOutline ? { id: 'outline.txt', name: 'outline.txt', path: 'outline.txt' } : undefined,
+      world: hasWorld ? { id: 'world.txt', name: 'world.txt', path: 'world.txt' } : undefined,
+      manuscript: hasManuscript ? { id: 'manuscript.txt', name: 'manuscript.txt', path: 'manuscript.txt' } : undefined,
+      chapters: []
+    };
+  }, []);
 
   // Open modal and detect existing files
   const openModal = useCallback(async () => {
-    if (!currentProjectId) return;
-
     setState(prev => ({ ...prev, isModalOpen: true, isLoading: true }));
 
     try {
-      const existingFiles = await detectExistingWorkflowFilesAction(currentProjectId);
+      const existingFiles = await detectExistingFiles();
+      const updatedSteps = updateStepsWithFiles(state.steps, existingFiles);
 
-      if (existingFiles.success && existingFiles.data) {
-        const updatedSteps = await updateStepsWithFiles(state.steps, existingFiles.data);
-
-        setState(prev => ({
-          ...prev,
-          steps: updatedSteps,
-          projectFiles: existingFiles.data || { chapters: [] },
-          isLoading: false
-        }));
-      } else {
-        setState(prev => ({
-          ...prev,
-          error: 'Failed to load existing workflow files',
-          isLoading: false
-        }));
-      }
+      setState(prev => ({
+        ...prev,
+        steps: updatedSteps,
+        projectFiles: existingFiles,
+        isLoading: false
+      }));
     } catch (error) {
+      console.error('Failed to detect existing files:', error);
       setState(prev => ({
         ...prev,
         error: 'Failed to load existing workflow files',
         isLoading: false
       }));
     }
-  }, [currentProjectId, state.steps]);
+  }, [state.steps, detectExistingFiles]);
 
   // Close modal
   const closeModal = useCallback(() => {
     setState(prev => ({ ...prev, isModalOpen: false }));
   }, []);
 
-  // Open Chat for Brainstorm - closes modal and clicks existing Chat button
-  const openChatForBrainstorm = useCallback((onClose?: () => void) => {
-    // Close the modal first (both internal state and parent modal)
+  // Open Chat for Brainstorm - loads brainstorm.txt as context
+  const openChatForBrainstorm = useCallback(async (onClose?: () => void) => {
+    // Close the modal first
     closeModal();
     if (onClose) {
       onClose();
     }
-    
-    // Small delay to ensure modal is closed before trying to find and click Chat button
+
+    // Load brainstorm content for context
+    let brainstormContext: string | null = null;
+    try {
+      brainstormContext = await loadWorkflowFile('brainstorm.txt');
+    } catch (error) {
+      console.error('Failed to load brainstorm for chat context:', error);
+    }
+
+    // Small delay to ensure modal is closed
     setTimeout(() => {
       try {
-        // Try different selectors to find the existing Chat button
-        let chatButton = null;
-        
-        // Try by ID first
-        chatButton = document.getElementById('chat-button');
-        
-        // Try by common class names
+        // Find and click the Chat button, passing context if available
+        let chatButton = document.getElementById('chat-button');
         if (!chatButton) {
           chatButton = document.querySelector('.chat-button');
         }
-        
-        // Try by data attribute
         if (!chatButton) {
           chatButton = document.querySelector('[data-component="chat"]');
         }
-        
-        // Try by text content (less reliable but covers more cases)
         if (!chatButton) {
           const buttons = Array.from(document.querySelectorAll('button'));
-          chatButton = buttons.find(button => 
+          chatButton = buttons.find(button =>
             button.textContent?.toLowerCase().includes('chat') ||
             button.getAttribute('aria-label')?.toLowerCase().includes('chat')
-          );
-        }
-        
-        // Try to find any button with "Chat" in it (broader search)
-        if (!chatButton) {
-          const allElements = Array.from(document.querySelectorAll('*'));
-          chatButton = allElements.find(el => 
-            (el.tagName === 'BUTTON' || el.tagName === 'DIV' || el.tagName === 'A') &&
-            el.textContent?.trim() === 'Chat'
           ) as HTMLElement;
         }
-        
+
         if (chatButton && typeof (chatButton as HTMLElement).click === 'function') {
+          // Store context in sessionStorage for SimpleChatModal to pick up
+          if (brainstormContext) {
+            sessionStorage.setItem('chatInitialContext', brainstormContext);
+          }
           (chatButton as HTMLElement).click();
         } else {
-          console.warn('Chat button not found. Available buttons:', 
-            Array.from(document.querySelectorAll('button')).map(btn => ({
-              text: btn.textContent,
-              id: btn.id,
-              className: btn.className
-            }))
-          );
-          
           showAlert('Chat button not found. Please click the Chat button manually.', 'error', undefined, isDarkMode);
         }
       } catch (error) {
@@ -134,95 +143,71 @@ export function useWritingAssistant(
     }, 100);
   }, [closeModal, isDarkMode]);
 
-  // Check file prerequisites
-  const checkPrerequisites = useCallback((stepId: WorkflowStepId): { canRun: boolean; errorMessage?: string } => {
-    const step = state.steps.find(s => s.id === stepId);
-    if (!step) return { canRun: false, errorMessage: 'Step not found' };
-
-    // Special check for brainstorm - it needs a file created in the Editor first
+  // Check if step can run based on file existence
+  const canRunStep = useCallback((stepId: WorkflowStepId, files: any): { canRun: boolean; errorMessage?: string } => {
     if (stepId === 'brainstorm') {
-      const brainstormFile = state.projectFiles.brainstorm;
-      if (!brainstormFile || !brainstormFile.id) {
-        return { 
-          canRun: false, 
-          errorMessage: `Error: brainstorm.txt must exist.\nClick on Chat or Editor to create some story ideas in a brainstorm.txt file.`
+      // Brainstorm needs the file to exist first (user creates it via Chat or Editor)
+      if (!files.brainstorm) {
+        return {
+          canRun: false,
+          errorMessage: 'Error: brainstorm.txt must exist.\nClick Chat or Editor to create story ideas in brainstorm.txt first.'
         };
       }
       return { canRun: true };
     }
 
-    // Check prerequisites for other steps
     if (stepId === 'outline') {
-      if (!state.projectFiles.brainstorm || !state.projectFiles.brainstorm.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: brainstorm.txt must exist before creating an outline. Please run Brainstorm first.'
+      if (!files.brainstorm) {
+        return {
+          canRun: false,
+          errorMessage: 'Error: brainstorm.txt must exist before creating an outline.'
         };
       }
+      return { canRun: true };
     }
 
     if (stepId === 'world') {
-      if (!state.projectFiles.outline || !state.projectFiles.outline.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: outline.txt must exist before building the world. Please run Outline first.'
+      if (!files.outline) {
+        return {
+          canRun: false,
+          errorMessage: 'Error: outline.txt must exist before building the world.'
         };
       }
+      return { canRun: true };
     }
 
     if (stepId === 'chapters') {
-      if (!state.projectFiles.outline || !state.projectFiles.outline.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: outline.txt must exist before writing chapters. Please run Outline first.'
+      if (!files.outline) {
+        return {
+          canRun: false,
+          errorMessage: 'Error: outline.txt must exist before writing chapters.'
         };
       }
-      if (!state.projectFiles.world || !state.projectFiles.world.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: world.txt must exist before writing chapters. Please run World Builder first.'
+      if (!files.world) {
+        return {
+          canRun: false,
+          errorMessage: 'Error: world.txt must exist before writing chapters.'
         };
       }
+      return { canRun: true };
     }
 
     return { canRun: true };
-  }, [state.steps, state.projectFiles]);
-
-  // Helper function to update dependent steps
-  const updateDependentSteps = useCallback((completedStepId: WorkflowStepId) => {
-    setState(prev => ({
-      ...prev,
-      steps: prev.steps.map(step => {
-        if (step.dependencies.includes(completedStepId)) {
-          const allDependenciesCompleted = step.dependencies.every(depId =>
-            prev.steps.find(s => s.id === depId)?.status === 'completed'
-          );
-          
-          return allDependenciesCompleted 
-            ? { ...step, status: 'ready' }
-            : step;
-        }
-        return step;
-      })
-    }));
   }, []);
 
-  // Execute workflow step with prerequisite check
+  // Execute workflow step - client-side OpenRouter API call
   const executeStep = useCallback(async (stepId: WorkflowStepId) => {
-    if (!currentProjectId) return;
+    // Get fresh file status
+    const currentFiles = await detectExistingFiles();
 
-    // ALWAYS get fresh file data before execution to avoid stale state issues
-    const freshFiles = await detectExistingWorkflowFilesAction(currentProjectId);
-
-    const currentFiles = freshFiles.success && freshFiles.data ? freshFiles.data : state.projectFiles;
-
-    // Check prerequisites with fresh file data
-    const { canRun, errorMessage } = checkPrerequisitesWithFiles(stepId, currentFiles);
+    // Check prerequisites
+    const { canRun, errorMessage } = canRunStep(stepId, currentFiles);
     if (!canRun) {
       showAlert(errorMessage || 'Cannot run this step', 'error', undefined, isDarkMode);
       return;
     }
 
+    // Start timer
     const now = Date.now();
     const interval = setInterval(() => {
       setState(prev => ({
@@ -238,255 +223,223 @@ export function useWritingAssistant(
     setState(prev => ({
       ...prev,
       steps: prev.steps.map(step =>
-        step.id === stepId 
-          ? { 
-              ...step, 
-              status: 'executing',
-              startTime: now,
-              elapsedTime: 0,
-              timerInterval: interval
-            } : step
+        step.id === stepId
+          ? { ...step, status: 'executing', startTime: now, elapsedTime: 0, timerInterval: interval }
+          : step
       )
     }));
 
     try {
-      const result = await executeWorkflowStepAction(
-        stepId,
-        '', // No userInput needed - files contain the content
-        currentProjectId,
-        currentProvider,
-        currentModel,
-        currentFiles // Use fresh files instead of potentially stale state.projectFiles
-      );
+      // Load API key and model
+      const apiKey = await loadApiKey();
+      const settings = await loadAppSettings();
 
-      if (result.success) {
-        // Refresh project files again after successful execution
-        const refreshedFiles = await detectExistingWorkflowFilesAction(currentProjectId!);
-        
-        setState(prev => ({
-          ...prev,
-          steps: prev.steps.map(step => {
-            if (step.id === stepId) {
-              // Clear timer
-              if (step.timerInterval) {
-                clearInterval(step.timerInterval);
-              }
-              return {
-                ...step, 
-                status: 'completed',
-                fileName: result.fileName,
-                fileId: result.fileId,
-                createdAt: new Date().toISOString(),
-                timerInterval: undefined
-              };
-            }
-            return step;
-          }),
-          projectFiles: refreshedFiles.success && refreshedFiles.data ? refreshedFiles.data : {
-            ...prev.projectFiles,
-            [stepId]: result.file
-          }
-        }));
-        
-        // Update dependent steps
-        updateDependentSteps(stepId);
-
-        // Close and reopen modal after successful execution
-        if (onModalCloseReopen) {
-          // Small delay to ensure UI updates are complete
-          setTimeout(() => {
-            onModalCloseReopen();
-          }, 100);
-        }
-      } else {
-        setState(prev => ({
-          ...prev,
-          steps: prev.steps.map(step => {
-            if (step.id === stepId) {
-              // Clear timer on error
-              if (step.timerInterval) {
-                clearInterval(step.timerInterval);
-              }
-              return {
-                ...step, 
-                status: 'error', 
-                error: result.error,
-                timerInterval: undefined
-              };
-            }
-            return step;
-          })
-        }));
+      if (!apiKey) {
+        throw new Error('API key not configured. Please add your OpenRouter API key in Settings.');
       }
-    } catch (error) {
+      if (!settings?.selectedModel) {
+        throw new Error('AI model not selected. Please select a model in Settings.');
+      }
+
+      // Load Writing Assistant prompt (from separate IndexedDB storage)
+      const toolPrompt = await getWritingAssistantPrompt(stepId);
+      if (!toolPrompt) {
+        throw new Error(`Writing Assistant prompt not found for ${stepId}. Please try reloading the app.`);
+      }
+
+      // Build context based on step
+      let context = '';
+
+      if (stepId === 'brainstorm') {
+        // Brainstorm uses its own content as input
+        const brainstormContent = await loadWorkflowFile('brainstorm.txt');
+        context = brainstormContent || '';
+      } else if (stepId === 'outline') {
+        // Outline uses brainstorm as input
+        const brainstormContent = await loadWorkflowFile('brainstorm.txt');
+        context = `=== BRAINSTORM ===\n${brainstormContent || ''}\n=== END BRAINSTORM ===`;
+      } else if (stepId === 'world') {
+        // World uses outline as input
+        const outlineContent = await loadWorkflowFile('outline.txt');
+        context = `=== OUTLINE ===\n${outlineContent || ''}\n=== END OUTLINE ===`;
+      } else if (stepId === 'chapters') {
+        // Chapters uses outline + world + existing manuscript
+        const outlineContent = await loadWorkflowFile('outline.txt');
+        const worldContent = await loadWorkflowFile('world.txt');
+        const manuscriptContent = await loadManuscript();
+
+        // Find next chapter to write
+        const nextChapter = findNextChapter(outlineContent || '', manuscriptContent || '');
+
+        context = `=== OUTLINE ===\n${outlineContent || ''}\n=== END OUTLINE ===\n\n` +
+          `=== WORLD ===\n${worldContent || ''}\n=== END WORLD ===\n\n` +
+          `=== EXISTING MANUSCRIPT ===\n${manuscriptContent || ''}\n=== END EXISTING MANUSCRIPT ===\n\n` +
+          `=== NEXT CHAPTER TO WRITE ===\n${nextChapter}\n=== END NEXT CHAPTER ===`;
+      }
+
+      // Build message
+      const combinedContent = `${context}\n\n=== INSTRUCTIONS ===\n${toolPrompt}\n=== END INSTRUCTIONS ===`;
+
+      // Client-side OpenRouter API call
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': typeof window !== 'undefined' ? window.location.href : 'https://proselenos.com',
+          'X-Title': 'Proselenos Writing Assistant'
+        },
+        body: JSON.stringify({
+          model: settings.selectedModel,
+          messages: [{ role: 'user', content: combinedContent }],
+          temperature: 0.7,
+          max_tokens: 16000
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || `HTTP ${response.status}`);
+      }
+
+      const result = data.choices?.[0]?.message?.content || '';
+      if (!result) {
+        throw new Error('No response from AI');
+      }
+
+      // Save result to appropriate file
+      const outputFile = OUTPUT_FILES[stepId];
+      if (stepId === 'chapters') {
+        // Append to manuscript
+        const existingManuscript = await loadManuscript();
+        const separator = existingManuscript ? '\n\n' : '';
+        await saveManuscript((existingManuscript || '') + separator + result);
+      } else {
+        await saveWorkflowFile(outputFile, result);
+      }
+
+      // Clear timer and update state
+      clearInterval(interval);
+
+      // Refresh file status
+      const refreshedFiles = await detectExistingFiles();
+
       setState(prev => ({
         ...prev,
         steps: prev.steps.map(step => {
           if (step.id === stepId) {
-            // Clear timer on error
-            if (step.timerInterval) {
-              clearInterval(step.timerInterval);
-            }
             return {
-              ...step, 
-              status: 'error', 
-              error: 'Execution failed',
+              ...step,
+              status: 'completed',
+              fileName: outputFile,
+              fileId: outputFile,
+              createdAt: new Date().toISOString(),
+              timerInterval: undefined
+            };
+          }
+          return step;
+        }),
+        projectFiles: refreshedFiles
+      }));
+
+      // Trigger modal refresh
+      if (onModalCloseReopen) {
+        setTimeout(() => onModalCloseReopen(), 100);
+      }
+
+    } catch (error) {
+      clearInterval(interval);
+      const errorMsg = error instanceof Error ? error.message : 'Execution failed';
+
+      setState(prev => ({
+        ...prev,
+        steps: prev.steps.map(step => {
+          if (step.id === stepId) {
+            return {
+              ...step,
+              status: 'error',
+              error: errorMsg,
               timerInterval: undefined
             };
           }
           return step;
         })
       }));
-    }
-  }, [currentProjectId, currentProvider, currentModel, checkPrerequisites, updateDependentSteps, isDarkMode]);
 
-  // Helper function to check prerequisites with provided files instead of state
-  const checkPrerequisitesWithFiles = useCallback((stepId: WorkflowStepId, files: any): { canRun: boolean; errorMessage?: string } => {
-    // Special check for brainstorm - it needs a file created in the Editor first
-    if (stepId === 'brainstorm') {
-      const brainstormFile = files.brainstorm;
-      if (!brainstormFile || !brainstormFile.id) {
-        return { 
-          canRun: false, 
-          errorMessage: `Error: brainstorm.txt must exist.\nClick on Chat or Editor to create some story ideas in a brainstorm.txt file.`
-        };
-      }
-      return { canRun: true };
+      showAlert(errorMsg, 'error', undefined, isDarkMode);
     }
-
-    // Check prerequisites for other steps
-    if (stepId === 'outline') {
-      if (!files.brainstorm || !files.brainstorm.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: brainstorm.txt must exist before creating an outline. Please run Brainstorm first.'
-        };
-      }
-    }
-
-    if (stepId === 'world') {
-      if (!files.outline || !files.outline.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: outline.txt must exist before building the world. Please run Outline first.'
-        };
-      }
-    }
-
-    if (stepId === 'chapters') {
-      if (!files.outline || !files.outline.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: outline.txt must exist before writing chapters. Please run Outline first.'
-        };
-      }
-      if (!files.world || !files.world.id) {
-        return { 
-          canRun: false, 
-          errorMessage: 'Error: world.txt must exist before writing chapters. Please run World Builder first.'
-        };
-      }
-    }
-
-    return { canRun: true };
-  }, []);
+  }, [detectExistingFiles, canRunStep, isDarkMode, onModalCloseReopen]);
 
   // View file content
   const viewFile = useCallback(async (stepId: WorkflowStepId) => {
-    const step = state.steps.find(s => s.id === stepId);
-
-    // Special handling for brainstorm step - check if file exists in project files first
-    if (stepId === 'brainstorm') {
-      const fileName = step?.fileName || 'brainstorm.txt';
-      const brainstormFile = state.projectFiles.brainstorm;
-
-      const filePath = brainstormFile?.path || step?.fileId;
-      if (filePath) {
-        // File exists, load its content
-        try {
-          const result = await getWorkflowFileContentAction(filePath);
-          if (result.success && result.content && onLoadFileIntoEditor) {
-            onLoadFileIntoEditor(result.content, fileName, filePath);
-          }
-        } catch (error) {
-          console.error('Failed to load file content:', error);
-        }
-      } else {
-        // File doesn't exist yet, open editor with default content for brainstorm
-        const defaultContent = 'Type some of your ideas in here, so the AI can extend and enhance ...';
-        if (onLoadFileIntoEditor) {
-          onLoadFileIntoEditor(defaultContent, fileName);
-        }
-      }
-      return;
-    }
-
-    // Original logic for other steps
-    if (!step?.fileId || !step?.fileName) return;
+    const fileName = OUTPUT_FILES[stepId];
 
     try {
-      const result = await getWorkflowFileContentAction(step.fileId);
-      if (result.success && result.content && onLoadFileIntoEditor) {
-        onLoadFileIntoEditor(result.content, step.fileName, step.fileId);
+      let content: string | null = null;
+
+      if (stepId === 'chapters') {
+        content = await loadManuscript();
+      } else {
+        content = await loadWorkflowFile(fileName);
+      }
+
+      if (content && onLoadFileIntoEditor) {
+        onLoadFileIntoEditor(content, fileName, fileName);
+      } else if (!content && stepId === 'brainstorm' && onLoadFileIntoEditor) {
+        // For brainstorm, open editor with default content if file doesn't exist
+        const defaultContent = 'Type some of your ideas in here, so the AI can extend and enhance ...';
+        onLoadFileIntoEditor(defaultContent, fileName);
       }
     } catch (error) {
       console.error('Failed to load file content:', error);
     }
-  }, [state.steps, onLoadFileIntoEditor]);
+  }, [onLoadFileIntoEditor]);
 
-  // Redo step handler with prerequisite check
+  // Redo step
   const redoStep = useCallback(async (stepId: WorkflowStepId) => {
-    // Check prerequisites before redoing
-    const { canRun, errorMessage } = checkPrerequisites(stepId);
+    const currentFiles = await detectExistingFiles();
+    const { canRun, errorMessage } = canRunStep(stepId, currentFiles);
+
     if (!canRun) {
       showAlert(errorMessage || 'Cannot run this step', 'error', undefined, isDarkMode);
       return;
     }
 
+    // Reset step status and execute
     setState(prev => ({
       ...prev,
       steps: prev.steps.map(step =>
-        step.id === stepId 
+        step.id === stepId
           ? { ...step, status: 'ready', error: undefined }
           : step
       )
     }));
-    
-    await executeStep(stepId);
-  }, [checkPrerequisites, executeStep]);
 
-  // Edit prompt handler - using existing AI Tools system
+    await executeStep(stepId);
+  }, [detectExistingFiles, canRunStep, executeStep, isDarkMode]);
+
+  // Edit prompt (Writing Assistant prompts stored separately in IndexedDB)
   const editPrompt = useCallback(async (stepId: WorkflowStepId) => {
     if (!onLoadFileIntoEditor || isLoadingPrompt) return;
-    
-    // Map workflow steps to existing AI Writing Tools prompts
-    const toolPromptMap = {
-      brainstorm: 'AI Writing Tools/brainstorm.txt',
-      outline: 'AI Writing Tools/outline_writer.txt', 
-      world: 'AI Writing Tools/world_writer.txt',
-      chapters: 'AI Writing Tools/chapter_writer.txt'
-    };
-    
-    const toolId = toolPromptMap[stepId];
-    if (!toolId) return;
-    
+
     setIsLoadingPrompt(true);
     try {
-      const result = await getToolPromptAction(toolId);
-      if (result.success && typeof result.content === 'string') {
-        // Pass the file ID for proper existing file mode
-        onLoadFileIntoEditor(result.content, `tool-prompts/${toolId}`, result.fileId);
+      const content = await getWritingAssistantPrompt(stepId);
+      if (content) {
+        // Use special prefix to identify Writing Assistant prompts
+        onLoadFileIntoEditor(content, `writing-assistant/${stepId}`, `wa:${stepId}`);
       } else {
-        console.error('Failed to load workflow prompt:', result.error);
+        showAlert('Prompt not found', 'error', undefined, isDarkMode);
       }
     } catch (error) {
-      console.error('Error loading workflow prompt:', error);
+      console.error('Error loading prompt:', error);
+      showAlert('Failed to load prompt', 'error', undefined, isDarkMode);
     } finally {
       setIsLoadingPrompt(false);
     }
-  }, [onLoadFileIntoEditor, isLoadingPrompt]);
+  }, [onLoadFileIntoEditor, isLoadingPrompt, isDarkMode]);
 
-  // Check if any step is currently executing
+  // Check if any step is executing
   const isAnyStepExecuting = state.steps.some(step => step.status === 'executing');
 
   return {
@@ -502,34 +455,58 @@ export function useWritingAssistant(
       viewFile,
       redoStep,
       editPrompt,
-      openChatForBrainstorm // New action for Chat button
+      openChatForBrainstorm
     }
   };
 }
 
-// Helper function to update steps based on existing files
-async function updateStepsWithFiles(
-  steps: WorkflowStep[], 
-  existingFiles: any
-): Promise<WorkflowStep[]> {
+// Helper: Update steps based on file existence
+function updateStepsWithFiles(steps: WorkflowStep[], existingFiles: any): WorkflowStep[] {
   return steps.map(step => {
-    const fileExists = existingFiles[step.id];
-    if (fileExists && (Array.isArray(fileExists) ? fileExists.length > 0 : fileExists)) {
-      const file = Array.isArray(fileExists) ? fileExists[0] : fileExists;
-
+    // Map chapters step to manuscript file
+    const fileKey = step.id === 'chapters' ? 'manuscript' : step.id;
+    const fileExists = existingFiles[fileKey];
+    if (fileExists) {
       return {
         ...step,
         status: 'completed',
-        fileName: file.name,
-        fileId: file.path || file.id,
-        createdAt: file.modifiedTime || file.createdTime
+        fileName: fileExists.name,
+        fileId: fileExists.path
       };
     }
-    
-    // All steps start as ready (no more pending/blocked states)
-    return {
-      ...step,
-      status: 'ready'
-    };
+    return { ...step, status: 'ready' };
   });
+}
+
+// Helper: Find next chapter to write based on outline vs manuscript
+function findNextChapter(outline: string | undefined, manuscript: string | undefined): string {
+  const outlineText = outline || '';
+  const manuscriptText = manuscript || '';
+
+  // Simple heuristic: look for "Chapter X" patterns in outline
+  // and check which ones are missing from manuscript
+  const chapterPattern = /Chapter\s+(\d+)/gi;
+  const outlineChapters: number[] = [];
+  const manuscriptChapters: number[] = [];
+
+  let match;
+  while ((match = chapterPattern.exec(outlineText)) !== null) {
+    if (match[1]) outlineChapters.push(parseInt(match[1]));
+  }
+
+  chapterPattern.lastIndex = 0;
+  while ((match = chapterPattern.exec(manuscriptText)) !== null) {
+    if (match[1]) manuscriptChapters.push(parseInt(match[1]));
+  }
+
+  // Find first missing chapter
+  for (const chapterNum of outlineChapters) {
+    if (!manuscriptChapters.includes(chapterNum)) {
+      return `Chapter ${chapterNum}`;
+    }
+  }
+
+  // If no chapters found in outline, default to next sequential
+  const maxManuscript = manuscriptChapters.length > 0 ? Math.max(...manuscriptChapters) : 0;
+  return `Chapter ${maxManuscript + 1}`;
 }
