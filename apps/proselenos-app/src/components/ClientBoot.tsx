@@ -1,7 +1,4 @@
-// Modified version of ClientBoot.tsx
-
-// This file mirrors the structure of the original `components/ClientBoot.tsx` from
-// the Proselenos project for the Authors mode integration.
+getproselenosConfigAction// apps/proselenos-app/src/components/ClientBoot.tsx
 
 'use client';
 
@@ -13,7 +10,6 @@ import SettingsDialog from '../components/SettingsDialog';
 import ModelsDropdown from '../components/ModelsDropdown';
 import EditorModal from '../app/proselenos/EditorModal';
 import ProjectSection from '../app/projects/ProjectSection';
-import ProjectSelectorModal from '../app/projects/ProjectSelectorModal';
 import LocalDocxImportModal from '../app/projects/LocalDocxImportModal';
 import FilesModal from '../app/projects/FilesModal';
 import { useProjectManager } from '../app/projects/useProjectManager';
@@ -25,11 +21,7 @@ import { useNonAITools } from '../app/non-ai-tools/useNonAITools';
 import { getTheme } from '../app/shared/theme';
 import { showAlert } from '../app/shared/alerts';
 import AboutModal from '../components/AboutModal';
-import {
-  getproselenosConfigAction,
-} from '@/lib/config-actions';
 import ProjectSettingsModal, { ProjectMetadata } from '../app/projects/ProjectSettingsModal';
-import type { InitPayloadForClient } from '../lib/fastInitServer';
 import { loadSettings, saveSettings, loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, initWritingAssistantPrompts } from '@/services/manuscriptStorage';
 import { initializeToolPrompts } from '@/services/toolPromptsLoader';
 
