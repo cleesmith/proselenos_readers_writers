@@ -38,10 +38,7 @@ interface AIToolsSectionProps {
   // Cached manuscript content
   manuscriptContent: string;
 
-  // Project state (kept for compatibility)
-  currentProject: string | null;
-  currentProjectId: string | null;
-  isStorageOperationPending: boolean;
+  // System state
   isSystemInitializing: boolean;
 
   // Theme
@@ -77,9 +74,6 @@ export default function AIToolsSection({
   savedReportFileName,
   elapsedTime,
   manuscriptContent,
-  currentProject,
-  currentProjectId,
-  isStorageOperationPending,
   isSystemInitializing,
   theme,
   isDarkMode,
@@ -133,8 +127,7 @@ export default function AIToolsSection({
     toolId: string,
     currentProvider: string,
     currentModel: string,
-    manuscriptFileName: string,
-    currentProject: string
+    manuscriptFileName: string
   ) => {
     // Create human-readable timestamp like the original Node.js app
     const formatter = new Intl.DateTimeFormat('en-US', {
@@ -147,28 +140,25 @@ export default function AIToolsSection({
       hour12: true,
     });
     const dateTimeStr = formatter.format(new Date());
-    
+
     // Extract tool name from toolId (e.g., "Core Editing Tools/copy_editing.txt" -> "copy_editing")
     const toolName = toolId.split('/').pop()?.replace('.txt', '') || 'tool_report';
-    
+
     // Get display name for the tool
     const displayToolName = toolName
       .split('_')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
     
-    // Create full manuscript path
-    const manuscriptPath = `${currentProject} › ${manuscriptFileName}`;
-    
-    // Format the report content exactly like the original Node.js app with manuscript file info
+    // Format the report content
     return `
 ${displayToolName.toUpperCase()} REPORT
 
 Date: ${dateTimeStr}
 
 Model: ${currentProvider}:${currentModel}
-      
-Manuscript File: ${manuscriptPath}
+
+Manuscript File: ${manuscriptFileName}
 
 ${toolResult}
 
@@ -300,7 +290,7 @@ https://proselenos.com
             </StyledSmallButton>
             <StyledSmallButton
               onClick={onSettingsClick}
-              disabled={isSystemInitializing || isStorageOperationPending || toolExecuting}
+              disabled={isSystemInitializing || toolExecuting}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
@@ -315,7 +305,7 @@ https://proselenos.com
             />
             <StyledSmallButton
               onClick={() => setShowWritingAssistant(true)}
-              disabled={isSystemInitializing || isStorageOperationPending || toolExecuting || !hasApiKey}
+              disabled={isSystemInitializing || toolExecuting || !hasApiKey}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
@@ -345,13 +335,13 @@ https://proselenos.com
           width: '100%',
           maxWidth: '300px',
           padding: '4px 8px',
-          backgroundColor: toolsReady && currentProject ? theme.inputBg : '#666',
-          color: toolsReady && currentProject ? theme.text : '#999',
+          backgroundColor: toolsReady ? theme.inputBg : '#666',
+          color: toolsReady ? theme.text : '#999',
           border: `1px solid ${theme.border}`,
           borderRadius: '3px',
           fontSize: '11px',
           marginBottom: '8px',
-          cursor: toolsReady && currentProject ? 'pointer' : 'not-allowed',
+          cursor: toolsReady ? 'pointer' : 'not-allowed',
         }}
       >
         <option value="">
@@ -378,13 +368,13 @@ https://proselenos.com
             maxWidth: '300px',
             padding: '4px 8px',
             backgroundColor:
-              selectedCategory && toolsReady && currentProject ? theme.inputBg : '#666',
-            color: selectedCategory && toolsReady && currentProject ? theme.text : '#999',
+              selectedCategory && toolsReady ? theme.inputBg : '#666',
+            color: selectedCategory && toolsReady ? theme.text : '#999',
             border: `1px solid ${theme.border}`,
             borderRadius: '3px',
             fontSize: '11px',
             cursor:
-              selectedCategory && toolsReady && currentProject ? 'pointer' : 'not-allowed',
+              selectedCategory && toolsReady ? 'pointer' : 'not-allowed',
           }}
         >
           {/* Placeholder option */}
@@ -454,7 +444,6 @@ https://proselenos.com
             !selectedTool ||
             toolExecuting ||
             !toolsReady ||
-            isStorageOperationPending ||
             toolJustFinished ||
             !hasApiKey
           }
@@ -497,8 +486,7 @@ https://proselenos.com
                   selectedTool,
                   currentProvider,
                   currentModel,
-                  'manuscript.txt',
-                  'manuscript'
+                  'manuscript.txt'
                 )
               : toolResult
           }
@@ -513,8 +501,6 @@ https://proselenos.com
         <WritingAssistantModal
           isOpen={showWritingAssistant}
           onClose={() => setShowWritingAssistant(false)}
-          currentProject={currentProject}
-          currentProjectId={currentProjectId}
           theme={theme}
           isDarkMode={isDarkMode}
           currentProvider={currentProvider || 'unknown'}
@@ -531,7 +517,6 @@ https://proselenos.com
           isOpen={showOneByOne}
           theme={theme}
           isDarkMode={isDarkMode}
-          projectName={currentProject}
           fileName="manuscript.txt"
           filePath="manuscript.txt"
           manuscriptContent={manuscriptContent}

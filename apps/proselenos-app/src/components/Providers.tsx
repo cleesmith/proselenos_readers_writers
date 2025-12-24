@@ -5,7 +5,6 @@ import i18n from '@/i18n/i18n';
 import { useEffect } from 'react';
 import { IconContext } from 'react-icons';
 import { useEnv } from '@/context/EnvContext';
-import { SyncProvider } from '@/context/SyncContext';
 import { initSystemThemeListener, loadDataTheme } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useDeviceControlStore } from '@/store/deviceStore';
@@ -77,7 +76,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <IconContext.Provider value={{ size: `${iconSize}px` }}>
-      <SyncProvider>{children}</SyncProvider>
+      {children}
     </IconContext.Provider>
   );
 };

@@ -50,8 +50,6 @@ export interface WorkflowState {
 export interface WritingAssistantModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentProject: string | null;
-  currentProjectId: string | null;
   theme: any; // Will use existing ThemeConfig
   isDarkMode: boolean;
   currentProvider: string;

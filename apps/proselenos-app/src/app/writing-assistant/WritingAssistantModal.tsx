@@ -11,8 +11,6 @@ import StyledSmallButton from '@/components/StyledSmallButton';
 export default function WritingAssistantModal({
   isOpen,
   onClose,
-  currentProject: _currentProject,
-  currentProjectId,
   theme,
   isDarkMode,
   currentProvider,
@@ -22,7 +20,6 @@ export default function WritingAssistantModal({
   onModalCloseReopen
 }: WritingAssistantModalProps) {
   const { state, actions } = useWritingAssistant(
-    currentProjectId,
     currentProvider,
     currentModel,
     session,

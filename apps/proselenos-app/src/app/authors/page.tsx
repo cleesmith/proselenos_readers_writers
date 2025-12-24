@@ -6,5 +6,5 @@
 import ClientBoot from '@/components/ClientBoot';
 
 export default function AuthorsPage() {
-  return <ClientBoot init={null} />;
+  return <ClientBoot />;
 }

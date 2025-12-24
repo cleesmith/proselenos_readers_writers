@@ -1,11 +1,7 @@
 // lib/aiService.ts
+// AI Provider Factory - Local-first version (IndexedDB)
 
-// AI Provider Factory
-
-import { getApiKeyAction } from './api-key-actions';
-import { getproselenosConfigAction } from './config-actions';
-// import { getServerSession } from 'next-auth';
-// import { authOptions } from '@proselenosebooks/auth-core/lib/auth';
+import { loadApiKey, loadAppSettings } from '@/services/manuscriptStorage';
 
 export type AIProvider = 'openrouter' | 'skipped';
 
@@ -22,24 +18,12 @@ interface ServiceCacheEntry {
 }
 
 const serviceCache = new Map<string, ServiceCacheEntry>();
-// const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 const CACHE_DURATION = 10 * 1000; // 10 seconds
-
-// setInterval(() => {
-//   const now = Date.now();
-//   const THREE_HOURS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
-//   for (const [key, entry] of serviceCache.entries()) {
-//     if (now - entry.created > THREE_HOURS) {
-//       serviceCache.delete(key);
-//     }
-//   }
-// }, 60 * 60 * 1000); // Run cleanup every hour
 
 function cleanupOldEntries() {
   const now = Date.now();
-  // const THREE_HOURS = 3 * 60 * 60 * 1000;
   const THREE_HOURS = 10 * 1000;
-  
+
   for (const [key, entry] of serviceCache.entries()) {
     if (now - entry.created > THREE_HOURS) {
       console.log(`Cleaning up old service cache entry: ${key}`);
@@ -49,64 +33,45 @@ function cleanupOldEntries() {
 }
 
 /**
- * Gets the current provider and model from stored config
- * @param accessToken - (unused, kept for backwards compatibility)
+ * Gets the current provider and model from IndexedDB
  * @returns Object with provider and model, or throws error if not configured
  */
-export async function getCurrentProviderAndModel(_accessToken: string): Promise<{ provider: AIProvider; model: string }> {
+export async function getCurrentProviderAndModel(): Promise<{ provider: AIProvider; model: string }> {
   try {
-    const result = await getproselenosConfigAction();
-    if (!result.success || !result.data) {
-      throw new Error('Failed to load Proselenos configuration');
+    const settings = await loadAppSettings();
+    if (!settings) {
+      throw new Error('No settings found - please configure your model');
     }
 
-    const config = result.data;
-    const provider = config.selectedApiProvider as AIProvider;
-    const model = config.selectedAiModel;
-    
-    if (!provider) {
-      throw new Error('No AI provider configured');
-    }
+    // Local-first: provider is always openrouter
+    const provider: AIProvider = 'openrouter';
+    const model = settings.selectedModel;
+
     if (!model) {
       throw new Error('No AI model configured');
     }
-    
+
     return { provider, model };
   } catch (error: any) {
-    // Re-throw the error with more context
     throw new Error(`Failed to get provider and model: ${error.message}`);
   }
 }
 
 /**
- * Gets just the current provider (doesn't require model to be set)
- * Use this when you only need the provider, e.g., for fetching available models
- * @param accessToken - (unused, kept for backwards compatibility)
- * @returns The provider, or throws error if not configured
+ * Gets just the current provider
+ * In local-first mode, this is always 'openrouter'
+ * @returns The provider
  */
-export async function getCurrentProvider(_accessToken: string): Promise<AIProvider> {
-  try {
-    const result = await getproselenosConfigAction();
-    if (!result.success || !result.data) {
-      throw new Error('Failed to load Proselenos configuration');
-    }
-
-    const provider = result.data.selectedApiProvider as AIProvider;
-    if (!provider) {
-      throw new Error('No AI provider configured');
-    }
-
-    return provider;
-  } catch (error: any) {
-    throw new Error(`Failed to get provider: ${error.message}`);
-  }
+export async function getCurrentProvider(): Promise<AIProvider> {
+  // Local-first: always openrouter
+  return 'openrouter';
 }
 
 /**
- * Creates an AI service based on the selected provider (with per-user caching)
+ * Creates an AI service based on the selected provider (with caching)
  * @param provider - The AI provider to use
  * @param modelName - The model name to use
- * @param userId - Optional user ID for caching (will try to get from session if not provided)
+ * @param userId - Optional user ID for caching
  * @returns The AI service instance or null if skipped
  */
 export async function createApiService(provider: AIProvider = 'openrouter', modelName?: string, userId?: string): Promise<any | null> {
@@ -119,28 +84,24 @@ export async function createApiService(provider: AIProvider = 'openrouter', mode
       return null;
     }
 
-    // Generate cache key with fallback to anonymous
-    let cacheUserId = userId || 'anonymous';
-    
+    // Generate cache key
+    const cacheUserId = userId || 'local';
     const cacheKey = `${cacheUserId}:${provider}:${modelName}`;
-    
+
     // Check cache first
     const cached = serviceCache.get(cacheKey);
     if (cached && (Date.now() - cached.created < CACHE_DURATION)) {
-      // console.log(`Using cached API service for ${provider}`);
       return cached.service;
     }
 
-    // console.log(`Creating API service for provider: ${provider}`);
-
-    // Get API key from encrypted storage
-    const result = await getApiKeyAction(provider);
-    if (!result.success || !result.apiKey) {
-      throw new Error(`${provider} API key not found in encrypted storage`);
+    // Get API key from IndexedDB
+    const apiKey = await loadApiKey();
+    if (!apiKey) {
+      throw new Error('API key not found - please configure your OpenRouter API key');
     }
 
     let ApiServiceClass: AIServiceClass;
-    
+
     switch (provider) {
       case 'openrouter':
         const { AiApiService } = require('./providers/openrouter');
@@ -149,10 +110,10 @@ export async function createApiService(provider: AIProvider = 'openrouter', mode
       default:
         throw new Error(`Unknown AI provider: ${provider}`);
     }
-    
-    // Create instance with API key and model (model optional for operations like getAvailableModels)
+
+    // Create instance with API key and model
     const service = new ApiServiceClass({
-      apiKey: result.apiKey,
+      apiKey,
       model_name: modelName
     });
 
@@ -165,7 +126,7 @@ export async function createApiService(provider: AIProvider = 'openrouter', mode
     });
 
     return service;
-    
+
   } catch (error) {
     console.error(`Error creating AI service for provider ${provider}:`, error);
     throw error;

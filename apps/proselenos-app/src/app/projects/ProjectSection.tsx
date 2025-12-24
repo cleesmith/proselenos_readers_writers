@@ -6,18 +6,12 @@ import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface ProjectSectionProps {
-  currentProject: string | null;
   uploadStatus: string;
-  isLoadingConfig: boolean;
-  isStorageOperationPending: boolean;
   toolExecuting: boolean;
   theme: ThemeConfig;
   isDarkMode: boolean;
   isSystemInitializing: boolean;
-  isDocxConverting: boolean; // DOCX -> TXT conversion pending
-  isDocxDialogOpen?: boolean; // DOCX selector or filename dialog open
-  isTxtConverting: boolean; // TXT -> DOCX conversion pending
-  isTxtDialogOpen?: boolean; // TXT selector or filename dialog open
+  isTxtConverting: boolean;
   onProjectSettings: () => void;
   onFilesClick: () => void;
   onDocxImport: () => void | Promise<void>;
@@ -26,47 +20,22 @@ interface ProjectSectionProps {
 }
 
 export default function ProjectSection({
-  currentProject: _currentProject,
   uploadStatus,
-  isLoadingConfig: _isLoadingConfig,
-  isStorageOperationPending,
   toolExecuting,
   theme,
   isDarkMode,
   isSystemInitializing,
-  isDocxConverting,
-  isDocxDialogOpen = false,
   isTxtConverting,
-  isTxtDialogOpen = false,
   onProjectSettings,
   onFilesClick,
   onDocxImport,
   onTxtExport,
   onEditorClick
 }: ProjectSectionProps) {
-  const importDisabled =
-    isSystemInitializing ||
-    isStorageOperationPending ||
-    toolExecuting ||
-    isDocxConverting ||
-    isDocxDialogOpen;
-
-  const exportDisabled =
-    isSystemInitializing ||
-    isStorageOperationPending ||
-    toolExecuting ||
-    isTxtConverting ||
-    isTxtDialogOpen;
-
-  const uploadDisabled =
-    isSystemInitializing ||
-    isStorageOperationPending ||
-    toolExecuting;
-
-  const settingsDisabled =
-    isSystemInitializing ||
-    isStorageOperationPending ||
-    toolExecuting;
+  const importDisabled = isSystemInitializing || toolExecuting;
+  const exportDisabled = isSystemInitializing || toolExecuting || isTxtConverting;
+  const uploadDisabled = isSystemInitializing || toolExecuting;
+  const settingsDisabled = isSystemInitializing || toolExecuting;
 
   return (
     <div style={{
@@ -118,7 +87,7 @@ export default function ProjectSection({
 
           <StyledSmallButton
             onClick={onEditorClick}
-            disabled={isSystemInitializing || isStorageOperationPending || toolExecuting}
+            disabled={isSystemInitializing || toolExecuting}
             theme={theme}
           >
             Editor
@@ -137,9 +106,8 @@ export default function ProjectSection({
             disabled={importDisabled}
             title={importDisabled ? 'Please wait…' : 'Import a DOCX file'}
             theme={theme}
-            aria-busy={isDocxConverting}
           >
-            {isDocxConverting ? 'Converting…' : 'Import'}
+            Import
           </StyledSmallButton>
           <StyledSmallButton
             onClick={onTxtExport}

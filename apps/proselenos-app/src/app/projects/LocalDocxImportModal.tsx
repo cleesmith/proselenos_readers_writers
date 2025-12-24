@@ -15,7 +15,6 @@ interface LocalDocxImportModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   isDarkMode: boolean;
-  isConverting: boolean;
   onClose: () => void;
   onConversionComplete: () => void;
   setUploadStatus: (status: string) => void;
@@ -25,7 +24,6 @@ export default function LocalDocxImportModal({
   isOpen,
   theme,
   isDarkMode,
-  isConverting: externalConverting,
   onClose,
   onConversionComplete,
   setUploadStatus
@@ -108,7 +106,7 @@ export default function LocalDocxImportModal({
     }
   };
 
-  const converting = isConverting || externalConverting;
+  const converting = isConverting;
 
   return (
     <div style={{

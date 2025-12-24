@@ -32,7 +32,6 @@ interface UseOneByOneSessionReturn {
 
   // Actions
   initSession: (
-    projectName: string,
     fileName: string,
     filePath: string,
     manuscriptContent: string,
@@ -103,7 +102,6 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
   // Initialize a new session
   const initSession = useCallback(
     async (
-      projectName: string,
       fileName: string,
       filePath: string,
       manuscriptContent: string,
@@ -130,7 +128,7 @@ export function useOneByOneSession(): UseOneByOneSessionReturn {
         // Create new session
         const newSession: OneByOneSession = {
           id: uuidv4(),
-          projectName,
+          projectName: 'Manuscript',
           fileName,
           filePath,
           originalContent: manuscriptContent,

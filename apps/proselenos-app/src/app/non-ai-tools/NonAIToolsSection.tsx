@@ -23,11 +23,6 @@ interface NonAIToolsSectionProps {
   toolJustFinished: boolean;
   elapsedTime: number;
 
-  // Project state
-  currentProject: string | null;
-  currentProjectId: string | null;
-  isStorageOperationPending: boolean;
-
   // Theme
   theme: ThemeConfig;
   isDarkMode: boolean;
@@ -58,9 +53,6 @@ export default function NonAIToolsSection({
   publishResult,
   toolJustFinished,
   elapsedTime,
-  currentProject: _currentProject,
-  currentProjectId: _currentProjectId,
-  isStorageOperationPending,
   theme,
   isDarkMode,
   toolExecuting,
@@ -126,11 +118,11 @@ export default function NonAIToolsSection({
 
   // EPUB to TXT Converter uses manuscript.epub from IndexedDB - no file selection needed
   const isEpubTool = selectedNonAITool === 'EPUB to TXT Converter';
-  const isSetupDisabled = isStorageOperationPending || toolExecuting || isPublishing || !selectedNonAITool || isEpubTool;
+  const isSetupDisabled = toolExecuting || isPublishing || !selectedNonAITool || isEpubTool;
   const isClearDisabled = (!selectedManuscriptForTool && !publishResult) || isPublishing;
   // EPUB tool can run directly without file selection
-  const isRunDisabled = (!selectedManuscriptForTool && !isEpubTool) || isPublishing || isStorageOperationPending || toolExecuting || toolJustFinished;
-  const selectDisabled = isStorageOperationPending || toolExecuting || isPublishing;
+  const isRunDisabled = (!selectedManuscriptForTool && !isEpubTool) || isPublishing || toolExecuting || toolJustFinished;
+  const selectDisabled = toolExecuting || isPublishing;
 
   return (
     <div style={{
@@ -178,7 +170,7 @@ export default function NonAIToolsSection({
             <span style={{ fontSize: '9px', fontStyle: 'italic', color: theme.textSecondary, marginRight: '2px', alignSelf: 'center' }}>Publish:</span>
             <StyledSmallButton
               onClick={() => setShowEpubModal(true)}
-              disabled={isStorageOperationPending || toolExecuting || isPublishing}
+              disabled={toolExecuting || isPublishing}
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >

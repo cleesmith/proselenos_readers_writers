@@ -25,7 +25,6 @@ const OUTPUT_FILES: Record<WorkflowStepId, string> = {
 };
 
 export function useWritingAssistant(
-  _currentProjectId: string | null,
   _currentProvider: string,
   _currentModel: string,
   _session: any,

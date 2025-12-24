@@ -17,7 +17,6 @@ interface OneByOneModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   isDarkMode: boolean;
-  projectName: string | null;
   fileName: string;
   filePath: string;
   manuscriptContent: string;
@@ -30,7 +29,6 @@ export default function OneByOneModal({
   isOpen,
   theme,
   isDarkMode,
-  projectName,
   fileName,
   filePath,
   manuscriptContent,
@@ -65,16 +63,16 @@ export default function OneByOneModal({
 
   // Initialize session when modal opens
   useEffect(() => {
-    if (isOpen && !initializedRef.current && projectName) {
+    if (isOpen && !initializedRef.current) {
       initializedRef.current = true;
       // Note: Error is displayed inline via the error state in JSX
-      initSession(projectName, fileName, filePath, manuscriptContent, reportContent);
+      initSession(fileName, filePath, manuscriptContent, reportContent);
     }
 
     if (!isOpen) {
       initializedRef.current = false;
     }
-  }, [isOpen, projectName, fileName, filePath, manuscriptContent, reportContent, initSession]);
+  }, [isOpen, fileName, filePath, manuscriptContent, reportContent, initSession]);
 
   // Track changes - check if any issue has been accepted or customized
   useEffect(() => {

@@ -19,8 +19,6 @@ interface ProjectSettingsModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   isDarkMode: boolean;
-  currentProject: string | null;
-  currentProjectId: string | null;
   isLoading?: boolean;
   isSaving?: boolean;
   onClose: () => void;
@@ -40,8 +38,6 @@ export default function ProjectSettingsModal({
   isOpen,
   theme,
   isDarkMode: _isDarkMode,
-  currentProject,
-  currentProjectId: _currentProjectId,
   isLoading = false,
   isSaving = false,
   onClose,
@@ -107,7 +103,7 @@ export default function ProjectSettingsModal({
             fontWeight: 'bold',
             color: theme.text
           }}>
-            Project Settings: {currentProject || 'Unknown Project'}
+            Manuscript Settings
           </h2>
           
           <div style={{ display: 'flex', gap: '12px' }}>

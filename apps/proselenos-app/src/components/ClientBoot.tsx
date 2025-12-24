@@ -1,4 +1,4 @@
-getproselenosConfigAction// apps/proselenos-app/src/components/ClientBoot.tsx
+// apps/proselenos-app/src/components/ClientBoot.tsx
 
 'use client';
 
@@ -14,7 +14,6 @@ import LocalDocxImportModal from '../app/projects/LocalDocxImportModal';
 import FilesModal from '../app/projects/FilesModal';
 import { useProjectManager } from '../app/projects/useProjectManager';
 import AIToolsSection from '../app/ai-tools/AIToolsSection';
-// FileSelectorModal removed - manuscript.txt is now used directly
 import { useToolsManager } from '../app/ai-tools/useToolsManager';
 import NonAIToolsSection from '../app/non-ai-tools/NonAIToolsSection';
 import { useNonAITools } from '../app/non-ai-tools/useNonAITools';
@@ -25,7 +24,7 @@ import ProjectSettingsModal, { ProjectMetadata } from '../app/projects/ProjectSe
 import { loadSettings, saveSettings, loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, initWritingAssistantPrompts } from '@/services/manuscriptStorage';
 import { initializeToolPrompts } from '@/services/toolPromptsLoader';
 
-export default function ClientBoot({ init }: { init: InitPayloadForClient | null }) {
+export default function ClientBoot() {
   // Local-first: no session required
   const session = null;
   
@@ -39,7 +38,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   const [nonAIToolsState, nonAIToolsActions] = useNonAITools();
   
   // Core app state
-  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined' && localStorage) {
       return localStorage.getItem('authorsDarkMode') === 'true';
@@ -50,58 +48,24 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   const [editorInitialFile, setEditorInitialFile] = useState<{ key: string; store: string } | null>(null);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
-  const [currentProvider, setCurrentProvider] = useState('openrouter');
+  const [currentProvider] = useState('openrouter');
   const [currentModel, setCurrentModel] = useState('');
-  const [hasConfiguredProvider, setHasConfiguredProvider] = useState(false);
+  const [hasConfiguredProvider] = useState(true);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
-  const [isStorageOperationPending, setIsStorageOperationPending] = useState(false);
-  const [isInstallingToolPrompts] = useState(false); // TODO: For local-first
+  const [isInstallingToolPrompts] = useState(false);
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
   const [hasShownReadyModal, setHasShownReadyModal] = useState(false);
   const [isSystemInitializing, setIsSystemInitializing] = useState(true);
-  const [initFailed] = useState(false); // TODO: For local-first error handling
+  const [initFailed] = useState(false);
   const [showProjectSettingsModal, setShowProjectSettingsModal] = useState(false);
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | undefined>(undefined);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
   const [isSavingMetadata, setIsSavingMetadata] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showFilesModal, setShowFilesModal] = useState(false);
 
   const theme = getTheme(isDarkMode);
-
-  // Utility: add a timeout to any promise to prevent hangs during initialization
-  const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        const id = setTimeout(() => {
-          clearTimeout(id);
-          reject(new Error(`${label} timed out after ${ms}ms`));
-        }, ms);
-      }),
-    ]) as T;
-  }, []);
-
-  // Initialize from fast init payload (config only, tools loaded from IndexedDB)
-  useEffect(() => {
-    if (!init) return;
-
-    // Hydrate config settings (local-first: these have defaults so always set)
-    if (init.config?.settings.current_project) {
-      projectActions.setCurrentProject(init.config.settings.current_project);
-      projectActions.setCurrentProjectId(init.config.settings.current_project_folder_id || '1');
-      projectActions.setUploadStatus(`✅ Project loaded: ${init.config.settings.current_project}`);
-    }
-    if (init.config?.selectedApiProvider) {
-      setCurrentProvider(init.config.selectedApiProvider);
-      setHasConfiguredProvider(true);
-    }
-    if (init.config?.selectedAiModel) {
-      setCurrentModel(init.config.selectedAiModel);
-    }
-
-    console.log(`Fast init completed in ${init.durationMs}ms`);
-  }, [init]); // Removed projectActions and toolsActions from dependencies
 
   // Local-first: Initialize tool prompts from public/ and load from IndexedDB
   useEffect(() => {
@@ -150,12 +114,11 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     const checks = [
       { name: 'Storage', ready: isStorageReady },
       { name: 'AI Tools', ready: toolsState.toolsReady },
-      { name: 'Project', ready: projectState.currentProject || !init?.config?.settings.current_project },
     ];
-    
+
     const readyCount = checks.filter((check) => check.ready).length;
     const notReady = checks.filter((check) => !check.ready);
-    
+
     return {
       allReady: readyCount === checks.length,
       readyCount,
@@ -187,8 +150,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
       //   allowEscapeKey: false,
       // }).then(() => {
         setIsSystemInitializing(false); // Enable UI buttons
-        // Show welcome guide only for new users (treat unknown as missing)
-        const isNewUser = !projectState.currentProject && (hasApiKey === false || hasApiKey === null);
+        // Show welcome guide only for new users
+        const isNewUser = hasApiKey === false || hasApiKey === null;
         const hideWelcome = typeof window !== 'undefined' && localStorage.getItem('authorsHideWelcome') === 'true';
         if (isNewUser && !hideWelcome) {
           setTimeout(() => showWelcomeGuide(), 100); // Brief delay to clear loading state
@@ -222,20 +185,11 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     isStorageReady,
     toolsState.toolsReady,
     hasApiKey,
-    projectState.currentProject,
-    init?.config?.settings.current_project,
     hasShownReadyModal,
     isSystemInitializing,
     isDarkMode,
     initFailed,
   ]);
-
-  // When a project is selected (either by creation or selection), automatically disable system-initializing state so buttons reappear.
-  useEffect(() => {
-    if (projectState.currentProject && isSystemInitializing) {
-      setIsSystemInitializing(false);
-    }
-  }, [projectState.currentProject, isSystemInitializing]);
 
   // Check if API key exists for Models button visibility (local-first: from IndexedDB)
   const checkApiKey = useCallback(async () => {
@@ -263,47 +217,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     }
   }, [currentProvider, checkApiKey]);
 
-  // Load full config (including settings decryption) when needed
-  // TODO: For local-first, load from IndexedDB
-  const loadFullConfig = useCallback(async () => {
-    if (isLoadingConfig) return;
-    
-    setIsLoadingConfig(true);
-    
-    try {
-      const result = await withTimeout(
-        getproselenosConfigAction(),
-        15000,
-        'Loading configuration'
-      );
-      
-      if (result.success && result.data?.config) {
-        const config = result.data.config;
-        const { current_project, current_project_folder_id } = config.settings;
-        
-        // Load provider and model settings if they exist
-        if (config.selectedApiProvider) {
-          setCurrentProvider(config.selectedApiProvider);
-          setHasConfiguredProvider(true);
-        }
-        if (config.selectedAiModel) {
-          setCurrentModel(config.selectedAiModel);
-        }
-        
-        // Set project if it exists in config
-        if (current_project && current_project_folder_id) {
-          projectActions.setCurrentProject(current_project);
-          projectActions.setCurrentProjectId(current_project_folder_id);
-          projectActions.setUploadStatus(`✅ Project loaded: ${current_project}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading config:', error);
-    } finally {
-      setIsLoadingConfig(false);
-    }
-  }, [isLoadingConfig, projectActions.setCurrentProject, projectActions.setCurrentProjectId, projectActions.setUploadStatus, init]);
-
   // Toggle theme
   const toggleTheme = () => {
     const newDarkMode = !isDarkMode;
@@ -326,12 +239,8 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
     await checkApiKey();
   };
 
-  // Project action handlers
-  const handleOpenSettings = async () => {
-    // Load full config including settings decryption when opening settings
-    if (!hasConfiguredProvider && init?.hasSettingsFile) {
-      await loadFullConfig();
-    }
+  // Settings handler
+  const handleOpenSettings = () => {
     setShowSettingsDialog(true);
   };
   
@@ -385,42 +294,11 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   };
 
   const handleFilesClick = () => {
-    // Directly open the Files modal
-    projectActions.setShowUploadModal(true);
+    setShowFilesModal(true);
   };
 
   const handleCloseFilesModal = () => {
-    projectActions.setShowUploadModal(false);
-  };
-  
-  // Project modal handlers
-  const handleProjectSelect = (folder: any) => {
-    projectActions.selectProject(
-      session,
-      folder,
-      setIsStorageOperationPending,
-      () => {
-        // Clear selected manuscript when project changes (placeholder for AI tools phase)
-      }
-    );
-  };
-
-  const handleProjectNavigation = (folderId: string) => {
-    projectActions.navigateToFolder(
-      folderId,
-      setIsStorageOperationPending
-    );
-  };
-
-  // Create the very first project and wait for the async call to finish
-  const handleCreateNewProject = async () => {
-    await projectActions.createNewProject(
-      session,
-      setIsStorageOperationPending,
-      isDarkMode
-    );
-    // Once the project exists and tools are loaded, turn off initialization
-    setIsSystemInitializing(false);
+    setShowFilesModal(false);
   };
 
   // Open file in editor (for AI Tools results or prompt editing)
@@ -490,29 +368,29 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
   const handleNonAISetupTool = () => {
     nonAIToolsActions.setupNonAITool(
       session,
-      projectState.currentProject,
-      projectState.currentProjectId,
-      setIsStorageOperationPending,
+      '', // currentProject - not used in local-first
+      '', // currentProjectId - not used in local-first
+      () => {}, // setIsStorageOperationPending - not used
       isDarkMode
     );
   };
-  
+
   // Non-AI Tools action handlers
   const handleNonAIToolChange = (tool: string) => {
     nonAIToolsActions.setSelectedNonAITool(tool);
   };
-  
+
   const handleNonAIClearTool = () => {
     nonAIToolsActions.clearTool();
   };
-  
+
   const handleNonAIExecuteTool = () => {
     nonAIToolsActions.handleRun(
       session,
-      isStorageOperationPending,
+      false, // isStorageOperationPending
       toolsState.toolExecuting,
-      projectState.currentProject,
-      projectState.currentProjectId,
+      '', // currentProject - not used in local-first
+      '', // currentProjectId - not used in local-first
       (type, message, isDarkMode) => showAlert(message, type, undefined, isDarkMode),
       isDarkMode
     );
@@ -716,10 +594,7 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         theme={theme}
         isDarkMode={isDarkMode}
         hasApiKey={hasApiKey === true}
-        isStorageOperationPending={isStorageOperationPending}
         toolExecuting={toolsState.toolExecuting}
-        currentProject={projectState.currentProject}
-        currentProjectId={projectState.currentProjectId}
         isSystemInitializing={isSystemInitializing}
         onThemeToggle={toggleTheme}
         onAboutClick={handleOpenAbout}
@@ -728,18 +603,12 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
       <div style={{ padding: '16px 20px' }}>
           {/* Projects Section */}
           <ProjectSection
-            currentProject={projectState.currentProject}
             uploadStatus={projectState.uploadStatus}
-            isLoadingConfig={isLoadingConfig}
-            isStorageOperationPending={isStorageOperationPending}
             toolExecuting={toolsState.toolExecuting}
             theme={theme}
             isDarkMode={isDarkMode}
             isSystemInitializing={isSystemInitializing}
-            isDocxConverting={projectState.isConverting}
-            isDocxDialogOpen={projectState.showDocxSelector || projectState.showFilenameDialog}
             isTxtConverting={projectState.isTxtConverting}
-            isTxtDialogOpen={false}
             onProjectSettings={handleProjectSettings}
             onFilesClick={handleFilesClick}
             onDocxImport={handleDocxImport}
@@ -761,9 +630,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             savedReportFileName={toolsState.savedReportFileName}
             elapsedTime={toolsState.elapsedTime}
             manuscriptContent={toolsState.manuscriptContent}
-            currentProject={projectState.currentProject}
-            currentProjectId={projectState.currentProjectId}
-            isStorageOperationPending={isStorageOperationPending}
             isSystemInitializing={isSystemInitializing}
             theme={theme}
             isDarkMode={isDarkMode}
@@ -789,9 +655,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
               publishResult={nonAIToolsState.publishResult}
               toolJustFinished={nonAIToolsState.toolJustFinished}
               elapsedTime={nonAIToolsState.elapsedTime}
-              currentProject={projectState.currentProject}
-              currentProjectId={projectState.currentProjectId}
-              isStorageOperationPending={isStorageOperationPending}
               theme={theme}
               isDarkMode={isDarkMode}
               toolExecuting={toolsState.toolExecuting}
@@ -840,35 +703,9 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         initialFile={editorInitialFile}
       />
       
-      {/* Project Selector Modal */}
-      <ProjectSelectorModal
-        session={session}
-        isOpen={projectState.showModal}
-        theme={theme}
-        isDarkMode={isDarkMode}
-        currentProject={projectState.currentProject}
-        modalFiles={projectState.modalFiles}
-        breadcrumbs={projectState.breadcrumbs}
-        newProjectName={projectState.newProjectName}
-        isProjectFilesBrowser={projectState.isProjectFilesBrowser}
-        isStorageOperationPending={isStorageOperationPending}
-        toolExecuting={toolsState.toolExecuting}
-        onClose={projectActions.closeModal}
-        onSelectProject={handleProjectSelect}
-        onNavigateToFolder={handleProjectNavigation}
-        onCreateNewProject={handleCreateNewProject}
-        onNewProjectNameChange={projectActions.setNewProjectName}
-        onLoadFileIntoEditor={handleLoadFileIntoEditor}
-        onUploadStatusUpdate={projectActions.setUploadStatus}
-      />
-
-      {/* Import DOCX - now handled by LocalDocxImportModal (local file upload) */}
-
-      {/* Export: manuscript.txt → .docx is now a direct download (no modal needed) */}
-
       {/* Files Modal (Upload/Download/Delete) - Local IndexedDB */}
       <FilesModal
-        isOpen={projectState.showUploadModal}
+        isOpen={showFilesModal}
         theme={theme}
         isDarkMode={isDarkMode}
         onClose={handleCloseFilesModal}
@@ -879,21 +716,16 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
         isOpen={projectState.showLocalDocxImportModal}
         theme={theme}
         isDarkMode={isDarkMode}
-        isConverting={projectState.isLocalDocxConverting}
         onClose={() => projectActions.setShowLocalDocxImportModal(false)}
         onConversionComplete={() => projectActions.setShowLocalDocxImportModal(false)}
         setUploadStatus={projectActions.setUploadStatus}
       />
 
-      {/* File selector modals removed - manuscript.txt is used directly */}
-      
       {/* Project Settings Modal */}
       <ProjectSettingsModal
         isOpen={showProjectSettingsModal}
         theme={theme}
         isDarkMode={isDarkMode}
-        currentProject={projectState.currentProject}
-        currentProjectId={projectState.currentProjectId}
         isLoading={isLoadingMetadata}
         isSaving={isSavingMetadata}
         initialMetadata={projectMetadata}

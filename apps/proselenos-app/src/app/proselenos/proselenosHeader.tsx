@@ -12,10 +12,7 @@ interface ProselenosHeaderProps {
   theme: ThemeConfig;
   isDarkMode: boolean;
   hasApiKey: boolean;
-  isStorageOperationPending: boolean;
   toolExecuting: boolean;
-  currentProject?: string | null;
-  currentProjectId?: string | null;
   isSystemInitializing: boolean;
   onThemeToggle: () => void;
   onAboutClick: () => void;
@@ -25,10 +22,7 @@ export default function ProselenosHeader({
   theme,
   isDarkMode,
   hasApiKey: _hasApiKey,
-  isStorageOperationPending: _isStorageOperationPending,
   toolExecuting: _toolExecuting,
-  currentProject: _currentProject,
-  currentProjectId: _currentProjectId,
   isSystemInitializing: _isSystemInitializing,
   onThemeToggle,
   onAboutClick
