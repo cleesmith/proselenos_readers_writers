@@ -759,7 +759,6 @@ export default function ClientBoot({ init }: { init: InitPayloadForClient | null
             toolResult={toolsState.toolResult}
             toolJustFinished={toolsState.toolJustFinished}
             savedReportFileName={toolsState.savedReportFileName}
-            savedReportFileId={toolsState.savedReportFileId}
             elapsedTime={toolsState.elapsedTime}
             manuscriptContent={toolsState.manuscriptContent}
             currentProject={projectState.currentProject}

@@ -30,7 +30,6 @@ interface ToolsManagerState {
   toolResult: string;
   toolJustFinished: boolean;
   savedReportFileName: string | null;
-  savedReportFileId: string | null;
   manuscriptContent: string;
 
   // Timer state
@@ -75,7 +74,6 @@ export function useToolsManager(): [ToolsManagerState, ToolsManagerActions] {
   const [toolResult, setToolResult] = useState('');
   const [toolJustFinished, setToolJustFinished] = useState(false);
   const [savedReportFileName, setSavedReportFileName] = useState<string | null>(null);
-  const [savedReportFileId, setSavedReportFileId] = useState<string | null>(null);
   const [manuscriptContent, setManuscriptContent] = useState('');
 
   // Timer state
@@ -230,7 +228,6 @@ ${toolPrompt}
       try {
         await saveReport(result);
         setSavedReportFileName('report.txt');
-        setSavedReportFileId('report.txt');
       } catch (error) {
         console.error('Report save error:', error);
       } finally {
@@ -253,7 +250,6 @@ ${toolPrompt}
     setManuscriptContent('');
     setToolJustFinished(false);
     setSavedReportFileName(null);
-    setSavedReportFileId(null);
     // Reset timer
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -274,7 +270,6 @@ ${toolPrompt}
     toolResult,
     toolJustFinished,
     savedReportFileName,
-    savedReportFileId,
     manuscriptContent,
     startTime,
     elapsedTime,

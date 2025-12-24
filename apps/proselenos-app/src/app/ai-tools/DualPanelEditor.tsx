@@ -11,7 +11,7 @@ import { showAlert, showConfirm } from '../shared/alerts';
 // import '@uiw/react-markdown-preview/markdown.css';
 // import { commands } from '@uiw/react-md-editor';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { createOrUpdateFileAction } from '@/lib/project-actions';
+import { saveManuscript, saveChatFile } from '@/services/manuscriptStorage';
 
 // MDEditor import removed: we will use a simple textarea.
 // const MDEditor = dynamic(
@@ -24,14 +24,10 @@ interface DualPanelEditorProps {
   onClose: () => void;
   manuscriptContent: string;
   manuscriptName: string;
-  manuscriptFileId: string;
   aiReport: string;
   savedReportFileName: string | null;
-  reportFileId: string | null;
   theme: ThemeConfig;
   isDarkMode: boolean;
-  currentProject: string | null;
-  currentProjectId: string | null;
 }
 
 export default function DualPanelEditor({
@@ -39,14 +35,10 @@ export default function DualPanelEditor({
   onClose,
   manuscriptContent,
   manuscriptName,
-  manuscriptFileId,
   aiReport,
   savedReportFileName,
-  reportFileId,
   theme,
   isDarkMode,
-  currentProject,
-  currentProjectId,
 }: DualPanelEditorProps) {
   
   const [editedManuscript, setEditedManuscript] = useState('');
@@ -91,67 +83,42 @@ export default function DualPanelEditor({
   };
 
   const handleSaveManuscript = async () => {
-    if (!currentProject || !currentProjectId || !editedManuscript.trim()) {
-      showAlert('Please ensure project is selected and manuscript has content!', 'error', undefined, isDarkMode);
+    if (!editedManuscript.trim()) {
+      showAlert('Manuscript has no content!', 'error', undefined, isDarkMode);
       return;
     }
-    
-    // Indicate that an update is in progress
+
     setIsUpdatingManuscript(true);
     try {
-      // Always update because the manuscript already exists
-      const result = await createOrUpdateFileAction(
-        currentProject!,
-        manuscriptName,
-        editedManuscript,
-        manuscriptFileId
-      );
-      if (result.success) {
-        showAlert(`✅ Manuscript updated: ${manuscriptName}`, 'success', undefined, isDarkMode);
-        setInitialManuscript(editedManuscript);
-      } else {
-        showAlert(`❌ Failed to update manuscript: ${result.error}`, 'error', undefined, isDarkMode);
-      }
+      await saveManuscript(editedManuscript);
+      showAlert(`✅ Manuscript updated: ${manuscriptName}`, 'success', undefined, isDarkMode);
+      setInitialManuscript(editedManuscript);
     } catch (error) {
       showAlert(`❌ Error updating manuscript: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error', undefined, isDarkMode);
     } finally {
-      // Reset updating state
       setIsUpdatingManuscript(false);
     }
   };
 
   const handleSaveAiReport = async () => {
-    if (!currentProject || !currentProjectId || !editedAiReport.trim()) {
-      showAlert('Please ensure project is selected and AI report has content!', 'error', undefined, isDarkMode);
-      return;
-    }
-    
-    if (!reportFileId) {
-      showAlert('No report file ID available! Please run the tool to create the report first.', 'error', undefined, isDarkMode);
+    if (!editedAiReport.trim()) {
+      showAlert('AI report has no content!', 'error', undefined, isDarkMode);
       return;
     }
 
-    // Indicate that an update is in progress
+    if (!savedReportFileName) {
+      showAlert('No report filename available!', 'error', undefined, isDarkMode);
+      return;
+    }
+
     setIsUpdatingAiReport(true);
-
     try {
-      const result = await createOrUpdateFileAction(
-        currentProject!,
-        savedReportFileName!,
-        editedAiReport,
-        reportFileId
-      );
-
-      if (result.success) {
-        showAlert('✅ AI report updated', 'success', undefined, isDarkMode);
-        setInitialAiReport(editedAiReport);
-      } else {
-        showAlert(`❌ Failed to update AI report: ${result.error}`, 'error', undefined, isDarkMode);
-      }
+      await saveChatFile(savedReportFileName, editedAiReport);
+      showAlert('✅ AI report updated', 'success', undefined, isDarkMode);
+      setInitialAiReport(editedAiReport);
     } catch (error) {
       showAlert(`❌ Error updating AI report: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error', undefined, isDarkMode);
     } finally {
-      // Reset updating state
       setIsUpdatingAiReport(false);
     }
   };

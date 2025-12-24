@@ -31,7 +31,6 @@ interface AIToolsSectionProps {
   toolResult: string;
   toolJustFinished: boolean;
   savedReportFileName: string | null;
-  savedReportFileId: string | null;
 
   // Timer
   elapsedTime: number;
@@ -76,7 +75,6 @@ export default function AIToolsSection({
   toolResult,
   toolJustFinished,
   savedReportFileName,
-  savedReportFileId,
   elapsedTime,
   manuscriptContent,
   currentProject,
@@ -492,25 +490,21 @@ https://proselenos.com
           onClose={() => setShowDualEditor(false)}
           manuscriptContent={editorManuscriptContent}
           manuscriptName="manuscript.txt"
-          manuscriptFileId="manuscript.txt"
           aiReport={
-            selectedTool && currentProject
+            selectedTool
               ? formatFullReport(
                   toolResult,
                   selectedTool,
                   currentProvider,
                   currentModel,
                   'manuscript.txt',
-                  currentProject as string
+                  'manuscript'
                 )
               : toolResult
           }
           savedReportFileName={savedReportFileName}
-          reportFileId={savedReportFileId}
           theme={theme}
           isDarkMode={isDarkMode}
-          currentProject={currentProject}
-          currentProjectId={currentProjectId}
         />
       )}
       
