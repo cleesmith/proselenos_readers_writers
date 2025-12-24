@@ -10,7 +10,7 @@ type ActionResult<T = any> = {
 
 /**
  * Server Action: Parses download pages with meta-refresh redirects to extract and download EPUBs.
- * Works with StandardEbooks.org, OceanofPDF, and other sites using meta refresh tags.
+ * Works with StandardEbooks.org and other sites using meta refresh tags.
  */
 export async function parseMetaRefreshAction(
   downloadPageUrl: string
