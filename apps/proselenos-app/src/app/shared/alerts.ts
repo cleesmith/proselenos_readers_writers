@@ -3,7 +3,6 @@
 // Shared alert utilities
 
 import Swal from 'sweetalert2';
-import { signOut } from 'next-auth/react';
 
 export const showAlert = (
   message: string,
@@ -204,7 +203,7 @@ export const showStickyErrorWithLogout = (
     document.head.removeChild(style);
     // Force logout route navigation
     // window.location.href = '/api/auth/signout?callbackUrl=/';
-    signOut({ callbackUrl: '/', redirect: true });
+    window.location.href = '/';
   });
 };
 

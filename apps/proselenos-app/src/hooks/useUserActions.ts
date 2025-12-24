@@ -1,5 +1,4 @@
 import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import { useEnv } from '@/context/EnvContext';
 import { deleteUser } from '@/libs/user';
 import { eventDispatcher } from '@/utils/event';
@@ -11,7 +10,7 @@ export const useUserActions = () => {
   const { envConfig } = useEnv();
 
   const handleLogout = () => {
-    signOut({ callbackUrl: '/' });
+    window.location.href = '/';
     saveSysSettings(envConfig, 'keepLogin', false);
   };
 

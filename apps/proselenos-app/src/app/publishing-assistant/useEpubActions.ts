@@ -1,5 +1,5 @@
 // useEpubActions.ts - Local-first EPUB generation and import
-// No Supabase - reads from IndexedDB, generates client-side, imports to library
+// Reads from IndexedDB, generates client-side, imports to library
 
 'use client';
 
