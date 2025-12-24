@@ -1,4 +1,3 @@
 packages:
   - 'apps/*'
   - 'packages/foliate-js'
-  - 'packages/auth-core'

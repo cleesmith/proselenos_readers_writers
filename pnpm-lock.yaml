@@ -46,9 +46,6 @@ importers:
       '@ducanh2912/next-pwa':
         specifier: ^10.2.9
         version: 10.2.9(@types/babel__core@7.20.5)(next@15.5.7(@babel/core@7.28.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(webpack@5.103.0)
-      '@proselenosebooks/auth-core':
-        specifier: workspace:*
-        version: link:../../packages/auth-core
       '@supabase/supabase-js':
         specifier: ^2.86.2
         version: 2.86.2
@@ -141,7 +138,7 @@ importers:
         version: 15.5.7(@babel/core@7.28.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-auth:
         specifier: 4.24.13
-        version: 4.24.13(next@15.5.7(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 4.24.13(next@15.5.7(@babel/core@7.28.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       openai:
         specifier: ^5.12.2
         version: 5.23.2(ws@8.18.3)(zod@4.1.13)
@@ -296,21 +293,6 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.1)(jiti@1.21.7)(jsdom@26.1.0(canvas@3.2.0))(terser@5.44.1)(yaml@2.8.2)
-
-  packages/auth-core:
-    dependencies:
-      next:
-        specifier: '>=13.5.0'
-        version: 15.5.7(@babel/core@7.28.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      next-auth:
-        specifier: 4.24.13
-        version: 4.24.13(next@15.5.7(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      react:
-        specifier: 19.1.0
-        version: 19.1.0
-      react-dom:
-        specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
 
   packages/foliate-js:
     dependencies:
@@ -10095,7 +10077,7 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next-auth@4.24.13(next@15.5.7(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  next-auth@4.24.13(next@15.5.7(@babel/core@7.28.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@babel/runtime': 7.28.4
       '@panva/hkdf': 1.2.1

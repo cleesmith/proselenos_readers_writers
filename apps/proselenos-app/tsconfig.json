@@ -30,8 +30,7 @@
       "@pdfjs/*": [
         "./public/vendor/pdfjs/*"
       ],
-    },
-    "types": ["../../packages/auth-core/types"]
+    }
   },
   "include": [
     "next-env.d.ts",

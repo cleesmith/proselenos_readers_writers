@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
-    "@proselenosebooks/auth-core": "workspace:*",
     "@supabase/supabase-js": "^2.86.2",
     "@uiw/react-md-editor": "^4.0.8",
     "@xmldom/xmldom": "^0.9.8",
