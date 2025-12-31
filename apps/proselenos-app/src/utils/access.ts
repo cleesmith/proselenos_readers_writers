@@ -43,7 +43,6 @@ export const getUserProfilePlan = (token: string | null): UserPlan => {
 export const STORAGE_QUOTA_GRACE_BYTES = 10 * 1024 * 1024; // 10 MB grace
 
 export const getStoragePlanData = (token: string | null) => {
-  // No backend JWT tokens with Google OAuth - return defaults
   if (!token || token === 'authenticated') {
     return {
       plan: 'free' as const,
@@ -77,13 +76,11 @@ export const getStoragePlanData = (token: string | null) => {
 };
 
 export const getAccessToken = async (): Promise<string | null> => {
-  // No backend API with NextAuth Google OAuth - no access tokens for sync
   // Your Library sync disabled
   return null;
 };
 
 export const getUserID = async (): Promise<string | null> => {
-  // No backend API with NextAuth Google OAuth
   // Would need to get from NextAuth session if needed
   return null;
 };

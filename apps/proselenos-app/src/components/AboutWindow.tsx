@@ -58,7 +58,7 @@ export const AboutWindow = () => {
     <Dialog
       id='about_window'
       isOpen={isOpen}
-      title={_('EverythingEbooks for Writers')}
+      title={_('EverythingEbooks')}
       onClose={handleClose}
       boxClassName='sm:!w-[480px] sm:!max-w-screen-sm sm:h-auto'
     >

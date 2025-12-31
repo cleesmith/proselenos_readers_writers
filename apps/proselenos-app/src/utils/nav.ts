@@ -50,6 +50,5 @@ export const redirectToLibrary = () => {
 };
 
 export const navigateToResetPassword = (router: ReturnType<typeof useRouter>) => {
-  // Password reset not needed - using Google OAuth
   router.push('/');
 };

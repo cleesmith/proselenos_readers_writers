@@ -127,12 +127,6 @@ export default function WelcomeModal({
               <li style={{ marginBottom: '8px' }}>
                 <strong>Beautiful E-Reader</strong> — Read your EPUB ebooks with a modern, customizable reader
               </li>
-              <li style={{ marginBottom: '8px' }}>
-                <strong>Public Ebooks</strong> — Browse and download ebooks shared by authors to your library
-              </li>
-              <li style={{ marginBottom: '8px' }}>
-                <strong>Cloud Backup</strong> — <i>Sign in with Google</i> to backup your library to Private Ebooks
-              </li>
             </ul>
           </div>
 

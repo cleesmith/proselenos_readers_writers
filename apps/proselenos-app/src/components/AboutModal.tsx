@@ -58,7 +58,7 @@ export default function AboutModal({
             fontSize: '24px',
             fontWeight: '600'
           }}>
-            EverythingEbooks for Writers
+            EverythingEbooks - Readers & Writers
           </h2>
           <div style={{ display: 'flex', gap: '8px' }}>
             <StyledSmallButton
@@ -87,8 +87,6 @@ export default function AboutModal({
           <div style={{ marginBottom: '32px' }}>
             <div style={{ marginBottom: '24px' }}>
               <p style={{ margin: '0 0 16px 0', color: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: '14px' }}>
-                You can <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" style={{ color: '#4299e1' }}>revoke these permissions</a> at any time through your Google Account settings.
-                <br /><br />
                 For more information, see our
                 <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#4299e1' }}> Privacy Policy</a> 
                 &nbsp;and&nbsp;  
