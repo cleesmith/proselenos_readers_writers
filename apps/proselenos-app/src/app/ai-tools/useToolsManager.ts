@@ -218,8 +218,8 @@ ${toolPrompt}
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': typeof window !== 'undefined' ? window.location.href : 'https://proselenos.com',
-          'X-Title': 'Proselenos AI Tools'
+          'HTTP-Referer': typeof window !== 'undefined' ? window.location.href : 'https://everythingebooks.org',
+          'X-Title': 'EverythingEbooks'
         },
         body: JSON.stringify({
           model: settings.selectedModel,

@@ -33,7 +33,7 @@ export async function generateEpubFromManuscript(
     publisher: settings.publisher || 'Independent Publisher',
     aboutAuthor: settings.aboutAuthor || '',
     language: 'en',
-    description: 'Created with Proselenos'
+    description: 'Created with EverythingEbooks'
   };
 
   // Convert cover image if provided
@@ -105,7 +105,7 @@ export async function generateEpubFromWorkingCopy(
     publisher: meta.publisher || 'Independent Publisher',
     aboutAuthor: '', // Could add to WorkingCopyMeta later
     language: meta.language || 'en',
-    description: meta.description || 'Created with Proselenos',
+    description: meta.description || 'Created with EverythingEbooks',
     rights: meta.rights || '',
     copyrightContent: copyrightContent, // Custom copyright text from working copy
   };
@@ -727,7 +727,7 @@ ${navItems}
  * Create Kindle-compatible CSS (exact copy from working code)
  */
 function createFullWidthCSS(): string {
-  return `/* Proselenos EPUB - Kindle-Compatible CSS */
+  return `/* EverythingEbooks EPUB - Kindle-Compatible CSS */
 
 /* Reset and base styles */
 html {

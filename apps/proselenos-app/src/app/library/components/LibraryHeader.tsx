@@ -145,11 +145,30 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
             onClick={() => window.location.reload()}
             aria-label={_('Reload Page')}
             title={_('Reload Page')}
-            className='mr-2 flex h-6 w-6 items-center justify-center text-gray-500 hover:text-gray-400'
+            className='mr-4 flex h-6 w-6 items-center justify-center text-gray-500 hover:text-gray-400'
           >
             <PiArrowClockwise className='h-5 w-5' />
           </button>
-          <div className='relative flex h-9 max-w-xl flex-1 items-center sm:h-7'>
+          <button
+            onClick={onImportBooks}
+            aria-label={_('Add Ebook')}
+            title={_('Add Ebook')}
+            className='mr-4 flex items-center gap-0 text-gray-500 hover:text-gray-400'
+          >
+            <PiBooks className='h-5 w-5' />
+            <span className='text-lg'>+</span>
+            <span className='text-sm'>Ebook</span>
+          </button>
+          <button
+            onClick={switchToAuthorsMode}
+            aria-label={_('Authors')}
+            title={_('Write Ebook')}
+            className='mr-4 flex items-center gap-0 text-gray-500 hover:text-gray-400'
+          >
+            <PiPencil className='h-5 w-5' />
+            <span className='text-sm'>Authors</span>
+          </button>
+          <div className='relative flex h-9 max-w-sm flex-1 items-center sm:h-7'>
             <span className='absolute left-3 text-gray-500'>
               <FaSearch className='h-4 w-4' />
             </span>
@@ -158,54 +177,34 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
               value={searchQuery}
               placeholder={
                 currentBooksCount > 1
-                  ? _("Search the descriptions and metadata of ebooks (not their text!)...", {
+                  ? _('Search ebook metadata...', {
                       count: currentBooksCount,
                     })
-                  : _('Search the descriptions and metadata of ebooks (not their text!)...')
+                  : _('Search ebook metadata...')
               }
               onChange={handleSearchChange}
               spellCheck='false'
               className={clsx(
-                'input rounded-badge bg-base-300/45 h-9 w-full pl-10 pr-20 sm:h-7',
+                'input rounded-badge bg-base-300/45 h-9 w-full pl-10 pr-8 sm:h-7',
                 'font-sans text-sm font-light',
                 'placeholder:text-base-content/50',
                 'border-none focus:outline-none focus:ring-0',
               )}
             />
           </div>
-          <div className='absolute right-4 flex items-center space-x-2 text-gray-500 sm:space-x-4'>
-            {searchQuery && (
-              <button
-                type='button'
-                onClick={() => {
-                  setSearchQuery('');
-                  debouncedUpdateQueryParam('');
-                }}
-                className='pe-1 text-gray-400 hover:text-gray-600'
-                aria-label={_('Clear Search')}
-              >
-                <IoMdCloseCircle className='h-4 w-4' />
-              </button>
-            )}
+          {searchQuery && (
             <button
-              onClick={onImportBooks}
-              aria-label={_('Add Ebook')}
-              title={_('Add Ebook')}
-              className='flex items-center gap-1 text-gray-500 hover:text-gray-400'
+              type='button'
+              onClick={() => {
+                setSearchQuery('');
+                debouncedUpdateQueryParam('');
+              }}
+              className='ml-2 text-gray-400 hover:text-gray-600'
+              aria-label={_('Clear Search')}
             >
-              <PiBooks className='h-5 w-5' />
-              <span className='text-sm'>Add Ebook</span>
+              <IoMdCloseCircle className='h-4 w-4' />
             </button>
-            <button
-              onClick={switchToAuthorsMode}
-              aria-label={_('Authors')}
-              title={_('Authors')}
-              className='flex items-center gap-1 text-gray-500 hover:text-gray-400'
-            >
-              <PiPencil className='h-5 w-5' />
-              <span className='text-sm'>Authors</span>
-            </button>
-          </div>
+          )}
         </div>
         {isSelectMode ? (
           <div

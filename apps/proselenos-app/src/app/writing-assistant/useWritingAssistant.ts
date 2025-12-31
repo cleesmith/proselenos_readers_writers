@@ -317,8 +317,8 @@ export function useWritingAssistant(
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': typeof window !== 'undefined' ? window.location.href : 'https://proselenos.com',
-          'X-Title': 'Proselenos AI Writing'
+          'HTTP-Referer': typeof window !== 'undefined' ? window.location.href : 'https://everythingebooks.org',
+          'X-Title': 'EverythingEbooks'
         },
         body: JSON.stringify({
           model: settings.selectedModel,

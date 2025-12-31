@@ -6,10 +6,10 @@ import Providers from '@/components/Providers';
 
 import '../styles/globals.css';
 
-const title = 'Proselenos — Read and Write';
-const url = 'https://proselenos.com';
+const title = 'EverythingEbooks — Read and Write';
+const url = 'https://everythingebooks.org';
 const description =
-  'Proselenos is an ebook reader for EPUB files with text-to-speech read-aloud, highlighting, notes, and access to a ebooks store. ' +
+  'EverythingEbooks is an ebook reader for EPUB files with text-to-speech read-aloud, highlighting, notes, and access to a ebooks store. ' +
   'Authors and Writers offers AI chat, AI Writing for brainstorming, outlining, world-building, and chapter writing, AI editing tools, and an editor with read-aloud. ' +
   'Generate EPUBs.';
 
@@ -20,7 +20,7 @@ export const metadata = {
   keywords: ['epub', 'ebook', 'reader', 'writing', 'publishing', 'AI'],
   authors: [
     {
-      name: 'proselenos',
+      name: 'EverythingEbooks',
       url: 'https://github.com/cleesmith/proselenos_readers_writers',
     },
   ],
@@ -50,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name='mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
-        <meta name='apple-mobile-web-app-title' content='Proselenos' />
+        <meta name='apple-mobile-web-app-title' content='EverythingEbooks' />
         <link rel='apple-touch-icon' sizes='180x180' href='/icon_180x180.png' />
         <link rel='icon' href='/favicon.ico' />
         <meta name='description' content={description} />

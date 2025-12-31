@@ -58,7 +58,7 @@ export default function AboutModal({
             fontSize: '24px',
             fontWeight: '600'
           }}>
-            Proselenos for Writers
+            EverythingEbooks for Writers
           </h2>
           <div style={{ display: 'flex', gap: '8px' }}>
             <StyledSmallButton
@@ -105,7 +105,7 @@ export default function AboutModal({
               🎉 Getting Started
             </h3>
             <p style={{ margin: '0 0 20px 0', color: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: '14px', paddingLeft: '36px' }}>
-              Follow these 4 essential steps to set up Proselenos:
+              Follow these 4 essential steps to set up EverythingEbooks:
             </p>
             
               {/* Step 1: Create First Project */}
@@ -245,7 +245,7 @@ export default function AboutModal({
               ✏️ Editing Manuscripts with AI
             </h3>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
-              Proselenos offers powerful AI-powered editing tools:
+              EverythingEbooks offers powerful AI-powered editing tools:
             </p>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
               <li style={{ marginBottom: '8px' }}><strong>Grammar & Style:</strong> Fix grammar, improve sentence structure, enhance readability</li>
@@ -287,7 +287,7 @@ export default function AboutModal({
               ✍️ AI AI Writing
             </h3>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
-              Proselenos isn&apos;t just for editing - it&apos;s also a writing companion:
+              EverythingEbooks isn&apos;t just for editing - it&apos;s also a writing companion:
             </p>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
               <li style={{ marginBottom: '8px' }}><strong>Writer&apos;s Block:</strong> Overcome creative blocks with AI-generated rough draft writing</li>
@@ -340,9 +340,9 @@ export default function AboutModal({
               rel="noopener noreferrer"
               className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium shadow hover:opacity-90 focus:outline-none focus:ring"
               style={{ backgroundColor: '#794bc4', color: '#fff' }}
-              aria-label="Proselenos book"
+              aria-label="EverythingEbooks book"
             >
-              Proselenos the book
+              EverythingEbooks (Proselenos) the book
             </a>
             <a
               href="https://ko-fi.com/slipthetrap"

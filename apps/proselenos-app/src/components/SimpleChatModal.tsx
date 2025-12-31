@@ -181,7 +181,7 @@ export default function SimpleChatModal({
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': window.location.href,
-          'X-Title': 'Proselenos Chat'
+          'X-Title': 'EverythingEbooks'
         },
         body: JSON.stringify({
           model: settings.selectedModel,

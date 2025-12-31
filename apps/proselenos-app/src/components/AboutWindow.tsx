@@ -48,6 +48,9 @@ export const AboutWindow = () => {
   }, []);
 
   const handleClose = () => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setIsOpen(false);
   };
 
@@ -55,7 +58,7 @@ export const AboutWindow = () => {
     <Dialog
       id='about_window'
       isOpen={isOpen}
-      title={_('Proselenos for Writers')}
+      title={_('EverythingEbooks for Writers')}
       onClose={handleClose}
       boxClassName='sm:!w-[480px] sm:!max-w-screen-sm sm:h-auto'
     >
@@ -66,7 +69,7 @@ export const AboutWindow = () => {
               <Image src='/icon.png' alt='App Logo' className='h-20 w-20' width={64} height={64} />
             </div>
             <div className='flex select-text flex-col items-center'>
-              <h2 className='mb-1 text-2xl font-bold'>Proselenos</h2>
+              <h2 className='mb-1 text-2xl font-bold'>EverythingEbooks</h2>
               <p className='mb-2 text-sm italic tracking-wide text-neutral-content'>Readers and Writers</p>
               <p className='text-neutral-content text-center text-sm'>
                 {_('Version {{version}}', { version: getAppVersion() })} {`(${browserInfo})`}
@@ -113,7 +116,7 @@ export const AboutWindow = () => {
               AGPL v3 license. Please see the license for more details.
             </p>
             <p className='text-neutral-content text-xs italic'>
-              Proselenos ebooks are based on{' '}
+              EverythingEbooks ebooks are compatible with{' '}
               <Link href='https://readest.com/' className='text-blue-500 underline'>
                 Readest
               </Link>

@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiGear, PiPencil, PiTrash, PiArrowClockwise } from 'react-icons/pi';
+import { PiGear, PiPencil, PiTrash, PiArrowClockwise, PiDatabase, PiInfo } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { showConfirm, showAlert } from '@/app/shared/alerts';
 import { TbSunMoon } from 'react-icons/tb';
@@ -301,7 +301,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
         </>
       )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
-      <MenuItem label={_('Storage')} onClick={showStorageInfo} />
+      <MenuItem label={_('Storage')} Icon={PiDatabase} onClick={showStorageInfo} />
       <MenuItem
         label={_('Reset Library')}
         description={_('clear local library')}
@@ -309,7 +309,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
         buttonClass='bg-red-900/20 hover:!bg-red-900/30'
         onClick={handleResetLibrary}
       />
-      <MenuItem label={_('About')} onClick={showAboutProselenosebooks} />
+      <MenuItem label={_('About')} Icon={PiInfo} onClick={showAboutProselenosebooks} />
     </Menu>
   );
 };

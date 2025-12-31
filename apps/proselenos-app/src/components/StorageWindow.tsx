@@ -72,6 +72,10 @@ export const StorageWindow = () => {
   }, [isOpen, _]);
 
   const handleClose = () => {
+    // Blur any focused element before closing to avoid aria-hidden warning
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setIsOpen(false);
   };
 

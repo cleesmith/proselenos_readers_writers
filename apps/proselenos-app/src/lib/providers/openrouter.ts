@@ -1,7 +1,6 @@
 // @ts-nocheck
 
-// openrouter.ts — OpenRouter provider (OpenAI-compatible) with robust streaming error handling (no retries)
-// Drop-in module for Next.js server-side usage.
+// apps/proselenos-app/src/lib/providers/openrouter.ts
 
 import { OpenAI } from 'openai';
 
@@ -56,8 +55,8 @@ export class AiApiService {
     const apiKey = config.apiKey;
     const baseURL = "https://openrouter.ai/api/v1";
     const headers = config.headers ?? {
-        'HTTP-Referer': 'https://proselenos.com',
-        'X-Title': 'Proselenos'
+        'HTTP-Referer': 'https://everythingebooks.org',
+        'X-Title': 'EverythingEbooks'
     };
 
     this.model = config.model_name ?? ' ';

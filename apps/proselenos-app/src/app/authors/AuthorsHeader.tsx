@@ -128,8 +128,8 @@ export default function AuthorsHeader({
         {/* Logo */}
         <img
           src="/icon.png"
-          alt="Proselenos"
-          title="Proselenos"
+          alt="EverythingEbooks"
+          title="EverythingEbooks"
           style={{
             width: '32px',
             height: '32px',

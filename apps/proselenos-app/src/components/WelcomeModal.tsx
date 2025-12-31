@@ -63,7 +63,7 @@ export default function WelcomeModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img
               src="icon.png"
-              alt="Proselenos Logo"
+              alt="EverythingEbooks Logo"
               style={{ width: '32px', height: '32px' }}
             />
             <h2 style={{
@@ -71,7 +71,7 @@ export default function WelcomeModal({
               fontSize: '24px',
               fontWeight: '600'
             }}>
-              Welcome to Proselenos
+              Welcome to EverythingEbooks
             </h2>
           </div>
           <StyledSmallButton onClick={handleDismiss} theme={theme}>
