@@ -3,8 +3,8 @@
 
 'use client';
 
-import ClientBoot from '@/components/ClientBoot';
+import AuthorsClient from './AuthorsClient';
 
 export default function AuthorsPage() {
-  return <ClientBoot />;
+  return <AuthorsClient />;
 }

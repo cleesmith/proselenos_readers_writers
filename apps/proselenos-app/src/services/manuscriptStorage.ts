@@ -2,6 +2,8 @@
 // Client-side only - IndexedDB for Authors mode (ProselenosLocal database)
 // SEPARATE from E-Reader's Proselenosebooks database
 
+import { ElementType } from '@/app/authors/elementTypes';
+
 export interface ManuscriptSettings {
   title: string;
   author: string;
@@ -173,6 +175,8 @@ export interface ToolPromptsData {
   originals: Record<string, string>;   // toolId -> content (from public/)
   customized: Record<string, string>;  // toolId -> content (user edits)
   categories: string[];                // ["AI Writing Tools", "Core Editing Tools", ...]
+  toolOrder: string[];                 // tool IDs in manifest order
+  toolScopes: Record<string, string>;  // toolId -> "chapter" | "all"
   initialized: boolean;
 }
 
@@ -239,8 +243,9 @@ export async function listToolsByCategory(): Promise<{ category: string; tools: 
   for (const category of data.categories) {
     const tools: ToolInfo[] = [];
 
-    // Find all tools in this category from originals
-    for (const toolId of Object.keys(data.originals)) {
+    // Use toolOrder to preserve manifest order (Object.keys doesn't preserve order after IndexedDB)
+    const toolIds = data.toolOrder || Object.keys(data.originals);
+    for (const toolId of toolIds) {
       if (toolId.startsWith(category + '/')) {
         const name = toolId.split('/')[1] || toolId;
         tools.push({
@@ -251,9 +256,6 @@ export async function listToolsByCategory(): Promise<{ category: string; tools: 
         });
       }
     }
-
-    // Sort tools alphabetically
-    tools.sort((a, b) => a.name.localeCompare(b.name));
 
     if (tools.length > 0) {
       result.push({ category, tools });
@@ -269,11 +271,67 @@ export async function listAllTools(): Promise<ToolInfo[]> {
   return grouped.flatMap(g => g.tools);
 }
 
+// Get tool scope: "chapter" or "all"
+export async function getToolScope(toolId: string): Promise<string> {
+  const data = await loadToolPromptsData();
+  if (!data?.toolScopes) return 'all';
+  return data.toolScopes[toolId] || 'all';
+}
+
+// Front/back matter section titles to exclude from "full manuscript"
+const EXCLUDED_SECTIONS = [
+  'title page',
+  'copyright',
+  'dedication',
+  'acknowledgments',
+  'acknowledgements',
+  'about the author',
+  'also by',
+  'books by',
+  'contents',
+  'table of contents',
+];
+
+/**
+ * Check if a section title indicates front/back matter (should be excluded from manuscript).
+ */
+function isFrontBackMatter(title: string): boolean {
+  const lower = title.toLowerCase().trim();
+  return EXCLUDED_SECTIONS.some(exc => lower === exc || lower.startsWith(exc + ':'));
+}
+
+/**
+ * Assemble chapters from working copy into manuscript text.
+ * Excludes front/back matter (Title Page, Copyright, etc.).
+ * Format: 2 blank lines before EVERY chapter (including first), 1 blank line between paragraphs.
+ */
+export async function assembleManuscriptFromWorkingCopy(): Promise<string> {
+  const meta = await loadWorkingCopyMeta();
+  if (!meta) return '';
+
+  const parts: string[] = [];
+
+  for (const id of meta.sectionIds) {
+    const section = await loadSection(id);
+    if (!section) continue;
+
+    // Skip front/back matter
+    if (isFrontBackMatter(section.title)) continue;
+
+    // Add chapter with 2 blank lines before it
+    // Format: \n\n + Title + \n\n + Content
+    parts.push(`\n\n${section.title}\n\n${section.content}`);
+  }
+
+  // Join all parts and ensure it starts with the 2 blank lines
+  return parts.join('');
+}
+
 // ============================================
-// Writing Assistant Prompts (SEPARATE from general tool_prompts)
+// AI Writing Prompts (SEPARATE from general tool_prompts)
 // ============================================
 
-// Generic default prompts for Writing Assistant workflow
+// Generic default prompts for AI Writing workflow
 const WRITING_ASSISTANT_DEFAULTS: Record<string, string> = {
   brainstorm: `You are a skilled creative writing assistant specializing in brainstorming and character development. Your task is to take the provided story ideas and expand them into a rich foundation for fiction writing.
 
@@ -486,7 +544,7 @@ export interface WritingAssistantPromptsData {
   initialized: boolean;
 }
 
-// Initialize Writing Assistant prompts with defaults (ALWAYS writes defaults to ensure latest version)
+// Initialize AI Writing prompts with defaults (ALWAYS writes defaults to ensure latest version)
 export async function initWritingAssistantPrompts(): Promise<void> {
   // Always write the defaults to ensure IndexedDB has the latest prompts
   const data: WritingAssistantPromptsData = {
@@ -496,7 +554,7 @@ export async function initWritingAssistantPrompts(): Promise<void> {
   await setValue(STORES.AI, 'writing_assistant_prompts.json', data);
 }
 
-// Get a Writing Assistant prompt (returns user's version or default)
+// Get a AI Writing prompt (returns user's version or default)
 export async function getWritingAssistantPrompt(stepId: string): Promise<string> {
   const data = await getValue<WritingAssistantPromptsData>(STORES.AI, 'writing_assistant_prompts.json');
   if (data?.prompts[stepId]) {
@@ -506,7 +564,7 @@ export async function getWritingAssistantPrompt(stepId: string): Promise<string>
   return WRITING_ASSISTANT_DEFAULTS[stepId] || '';
 }
 
-// Save a Writing Assistant prompt (user customization)
+// Save a AI Writing prompt (user customization)
 export async function saveWritingAssistantPrompt(stepId: string, content: string): Promise<void> {
   let data = await getValue<WritingAssistantPromptsData>(STORES.AI, 'writing_assistant_prompts.json');
   if (!data) {
@@ -516,7 +574,7 @@ export async function saveWritingAssistantPrompt(stepId: string, content: string
   await setValue(STORES.AI, 'writing_assistant_prompts.json', data);
 }
 
-// Reset a Writing Assistant prompt to default
+// Reset a AI Writing prompt to default
 export async function resetWritingAssistantPrompt(stepId: string): Promise<void> {
   const data = await getValue<WritingAssistantPromptsData>(STORES.AI, 'writing_assistant_prompts.json');
   if (data && WRITING_ASSISTANT_DEFAULTS[stepId]) {
@@ -536,6 +594,15 @@ export async function loadEpub(): Promise<ArrayBuffer | null> {
 
 export async function saveEpub(content: ArrayBuffer): Promise<void> {
   await setValue(STORES.PUBLISH, 'manuscript.epub', content);
+}
+
+// DOCX (manuscript.docx)
+export async function loadDocx(): Promise<ArrayBuffer | null> {
+  return getValue<ArrayBuffer>(STORES.PUBLISH, 'manuscript.docx');
+}
+
+export async function saveDocx(content: ArrayBuffer): Promise<void> {
+  await setValue(STORES.PUBLISH, 'manuscript.docx', content);
 }
 
 // ============================================
@@ -564,6 +631,10 @@ export async function deleteReport(): Promise<void> {
 
 export async function deleteEpub(): Promise<void> {
   await deleteValue(STORES.PUBLISH, 'manuscript.epub');
+}
+
+export async function deleteDocx(): Promise<void> {
+  await deleteValue(STORES.PUBLISH, 'manuscript.docx');
 }
 
 // ============================================
@@ -643,5 +714,221 @@ export async function listFiles(): Promise<FileInfo[]> {
     exists: epub !== null
   });
 
+  // Check manuscript.docx
+  const docx = await loadDocx();
+  files.push({
+    key: 'manuscript.docx',
+    name: 'manuscript.docx',
+    store: STORES.PUBLISH,
+    exists: docx !== null
+  });
+
   return files;
+}
+
+// ============================================
+// Working Copy (normalized epub structure)
+// Auto-persisted scratchpad - not user-facing "save"
+// Stores: meta + individual sections + cover image
+// ============================================
+
+export interface WorkingCopyMeta {
+  // Core book identity (required for EPUB)
+  title: string;
+  author: string;
+  language: string;
+
+  // Optional metadata for EPUB
+  subtitle?: string;
+  publisher?: string;
+  rights?: string;        // Copyright statement
+  description?: string;   // Book blurb
+  publicationDate?: string;
+  isbn?: string;
+
+  // Structure
+  sectionIds: string[];
+  coverImageId: string | null;
+
+  // Library integration
+  libraryBookHash?: string;  // Hash of book in e-reader library (for updates)
+}
+
+export interface WorkingCopySection {
+  id: string;
+  title: string;
+  content: string;
+  type: ElementType;
+}
+
+// Meta functions
+export async function loadWorkingCopyMeta(): Promise<WorkingCopyMeta | null> {
+  return getValue<WorkingCopyMeta>(STORES.MANUSCRIPT, 'working_copy_meta.json');
+}
+
+export async function saveWorkingCopyMeta(meta: WorkingCopyMeta): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, 'working_copy_meta.json', meta);
+}
+
+/**
+ * Infer section type from title for formatting support.
+ * Only structural/metadata sections are non-chapters.
+ */
+function inferSectionType(title: string): ElementType {
+  const lowerTitle = title.toLowerCase();
+
+  // Only truly structural/metadata sections are non-chapters
+  if (lowerTitle.includes('title page')) return 'title-page';
+  if (lowerTitle.includes('copyright')) return 'copyright';
+  if (lowerTitle.includes('table of contents') || lowerTitle === 'contents') return 'table-of-contents';
+  if (lowerTitle.includes('about the author')) return 'about-the-author';
+  if (lowerTitle.includes('also by')) return 'also-by';
+
+  // Everything else is author-written content that should support formatting
+  return 'chapter';
+}
+
+// Section functions
+export async function loadSection(id: string): Promise<WorkingCopySection | null> {
+  const section = await getValue<WorkingCopySection>(STORES.MANUSCRIPT, `${id}.json`);
+  // Apply type inference if type is missing or generic
+  if (section && (!section.type || section.type === 'section')) {
+    section.type = inferSectionType(section.title);
+  }
+  return section;
+}
+
+export async function saveSection(section: WorkingCopySection): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, `${section.id}.json`, section);
+}
+
+export async function deleteSection(id: string): Promise<void> {
+  await deleteValue(STORES.MANUSCRIPT, `${id}.json`);
+}
+
+// Cover image functions
+export async function loadCoverImage(): Promise<Blob | null> {
+  const meta = await loadWorkingCopyMeta();
+  if (!meta?.coverImageId) return null;
+  return getValue<Blob>(STORES.MANUSCRIPT, meta.coverImageId);
+}
+
+export async function saveCoverImage(blob: Blob, filename: string): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, filename, blob);
+}
+
+export async function deleteCoverImage(): Promise<void> {
+  const meta = await loadWorkingCopyMeta();
+  if (meta?.coverImageId) {
+    await deleteValue(STORES.MANUSCRIPT, meta.coverImageId);
+  }
+}
+
+// Full working copy functions (for convenience)
+export interface FullWorkingCopy {
+  title: string;
+  author: string;
+  language: string;
+  coverImage: Blob | null;
+  sections: WorkingCopySection[];
+}
+
+export async function loadFullWorkingCopy(): Promise<FullWorkingCopy | null> {
+  const meta = await loadWorkingCopyMeta();
+  if (!meta) return null;
+
+  // Load all sections in order
+  const sections: WorkingCopySection[] = [];
+  for (const id of meta.sectionIds) {
+    const section = await loadSection(id);
+    if (section) {
+      sections.push(section);
+    }
+  }
+
+  // Load cover image
+  let coverImage: Blob | null = null;
+  if (meta.coverImageId) {
+    coverImage = await getValue<Blob>(STORES.MANUSCRIPT, meta.coverImageId);
+  }
+
+  return {
+    title: meta.title,
+    author: meta.author,
+    language: meta.language,
+    coverImage,
+    sections,
+  };
+}
+
+/**
+ * Save full working copy with normalization.
+ * Normalizes section IDs to section-001, section-002, etc.
+ */
+export async function saveFullWorkingCopy(epub: {
+  title: string;
+  author: string;
+  language: string;
+  coverImage: Blob | null;
+  sections: { id: string; title: string; content: string; type?: 'section' | 'chapter' }[];
+}): Promise<void> {
+  // Normalize section IDs
+  const normalizedSections: WorkingCopySection[] = [];
+  const sectionIds: string[] = [];
+
+  epub.sections.forEach((section, i) => {
+    const normalizedId = `section-${String(i + 1).padStart(3, '0')}`;
+    sectionIds.push(normalizedId);
+    normalizedSections.push({
+      id: normalizedId,
+      title: section.title,
+      content: section.content,
+      type: section.type || 'section', // Default to 'section' for backward compatibility
+    });
+  });
+
+  // Save cover image if present
+  let coverImageId: string | null = null;
+  if (epub.coverImage) {
+    // Determine filename based on blob type
+    const ext = epub.coverImage.type === 'image/png' ? 'png' : 'jpg';
+    coverImageId = `cover.${ext}`;
+    await saveCoverImage(epub.coverImage, coverImageId);
+  }
+
+  // Save meta
+  const meta: WorkingCopyMeta = {
+    title: epub.title,
+    author: epub.author,
+    language: epub.language,
+    sectionIds,
+    coverImageId,
+  };
+  await saveWorkingCopyMeta(meta);
+
+  // Save all sections
+  for (const section of normalizedSections) {
+    await saveSection(section);
+  }
+}
+
+/**
+ * Clear all working copy data from IndexedDB
+ */
+export async function clearWorkingCopy(): Promise<void> {
+  const meta = await loadWorkingCopyMeta();
+  if (!meta) return;
+
+  // Delete all sections
+  for (const id of meta.sectionIds) {
+    await deleteSection(id);
+  }
+
+  // Delete cover image
+  if (meta.coverImageId) {
+    await deleteValue(STORES.MANUSCRIPT, meta.coverImageId);
+  }
+
+  // Delete meta
+  await deleteValue(STORES.MANUSCRIPT, 'working_copy_meta.json');
 }

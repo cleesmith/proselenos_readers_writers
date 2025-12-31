@@ -171,10 +171,10 @@ export default function WelcomeModal({
                 <strong>AI Editing Tools</strong> — Powered by <a href="https://openrouter.ai" target="_blank" style={{ color: '#4285F4', textDecoration: 'none' }}>OpenRouter</a> with access to Anthropic, OpenAI, Google, and more (AI usage is not free)
               </li>
               <li style={{ marginBottom: '8px' }}>
-                <strong>Writing Assistant</strong> — Brainstorm, outline, world, and very rough drafts (AI writing)
+                <strong>AI Writing</strong> — Brainstorm, outline, world, and very rough drafts (AI writing)
               </li>
               <li style={{ marginBottom: '8px' }}>
-                <strong>Free Publishing</strong> — Create EPUB (optionally to bookstore) and PDF - without AI (no API key needed)
+                <strong>Free Publishing</strong> — Create EPUB - without AI (no API key needed)
               </li>
             </ul>
           </div>

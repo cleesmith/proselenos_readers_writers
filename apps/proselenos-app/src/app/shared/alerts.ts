@@ -82,6 +82,53 @@ export const showInputAlert = async (
   return result.isConfirmed ? result.value : null;
 };
 
+export const showUrlInput = async (
+  title: string = 'Enter URL',
+  defaultValue: string = 'https://',
+  isDarkMode: boolean = true
+): Promise<string | null> => {
+  document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+
+  // Add style for high z-index if not already present
+  if (!document.getElementById('swal-high-z-style')) {
+    const style = document.createElement('style');
+    style.id = 'swal-high-z-style';
+    style.textContent = '.swal-above-modal { z-index: 10000 !important; }';
+    document.head.appendChild(style);
+  }
+
+  const result = await Swal.fire({
+    title,
+    input: 'url',
+    inputValue: defaultValue,
+    inputPlaceholder: 'https://example.com',
+    showCancelButton: true,
+    confirmButtonText: 'Add Link',
+    cancelButtonText: 'Cancel',
+    background: isDarkMode ? '#222' : '#fff',
+    color: isDarkMode ? '#fff' : '#333',
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#6c757d',
+    customClass: {
+      container: 'swal-above-modal'
+    },
+    inputValidator: (value) => {
+      if (!value || !value.trim()) {
+        return 'Please enter a URL';
+      }
+      // Basic URL validation
+      try {
+        new URL(value);
+        return null;
+      } catch {
+        return 'Please enter a valid URL (e.g., https://example.com)';
+      }
+    }
+  });
+
+  return result.isConfirmed ? result.value : null;
+};
+
 export const showConfirm = async (
   message: string,
   isDarkMode: boolean = true,

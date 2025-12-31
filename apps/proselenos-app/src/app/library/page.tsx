@@ -32,6 +32,7 @@ import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
 import { BookMetadata } from '@/libs/document';
 import { parseMetaRefreshAction } from '@/app/actions/download-page-parser';
 import { AboutWindow } from '@/components/AboutWindow';
+import { StorageWindow } from '@/components/StorageWindow';
 import { BookDetailModal } from '@/components/metadata';
 import { useDragDropImport } from './hooks/useDragDropImport';
 import { Toast } from '@/components/Toast';
@@ -294,7 +295,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setLoading(true);
     const { library } = useLibraryStore.getState();
     const failedImports: Array<{ filename: string; errorMessage: string }> = [];
-    const maxUploadSizeMB = process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB'];
     const errorMap: [string, string][] = [
       ['No chapters detected', _('No chapters detected')],
       ['Failed to parse EPUB', _('Failed to parse the EPUB file')],
@@ -302,7 +302,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       ['Failed to open file', _('Failed to open the book file')],
       ['Invalid or empty book file', _('The book file is empty')],
       ['Unsupported or corrupted book file', _('The book file is corrupted')],
-      ['File too large', _(`File is too large. Maximum size is ${maxUploadSizeMB}MB.`)],
+      ['QuotaExceeded', _('Not enough storage space on device')],
     ];
 
     const processFile = async (selectedFile: SelectedFile) => {
@@ -387,15 +387,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       try {
         await appService?.deleteBook(book, deleteAction);
 
-        // For 'both' action, remove book from library entirely
-        if (deleteAction === 'both') {
-          const updatedLibrary = libraryBooks.filter((b) => b.hash !== book.hash);
-          setLibrary(updatedLibrary);
-          await appService?.saveLibraryBooks(updatedLibrary);
-        } else {
-          // For 'local' or 'cloud' only, update the book
-          await updateBook(envConfig, book);
-        }
+        // Hard-delete: always remove book from library entirely
+        const updatedLibrary = libraryBooks.filter((b) => b.hash !== book.hash);
+        setLibrary(updatedLibrary);
+        await appService?.saveLibraryBooks(updatedLibrary);
 
         eventDispatcher.dispatch('toast', {
           type: 'info',
@@ -723,6 +718,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         />
       )}
       <AboutWindow />
+      <StorageWindow />
       {isSettingsDialogOpen && <SettingsDialog bookKey={''} />}
       <Dialog
         isOpen={showImportModal}

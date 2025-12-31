@@ -15,9 +15,12 @@ import {
   loadReport,
   loadEpub,
   saveEpub,
+  loadDocx,
+  saveDocx,
   deleteManuscript,
   deleteReport,
   deleteEpub,
+  deleteDocx,
   loadChatFile,
   deleteChatFile,
   FileInfo
@@ -76,9 +79,10 @@ export default function FilesModal({
     const fileName = file.name.toLowerCase();
     const isTxt = fileName.endsWith('.txt');
     const isEpub = fileName.endsWith('.epub');
+    const isDocx = fileName.endsWith('.docx');
 
-    if (!isTxt && !isEpub) {
-      showAlert('Please select a .txt or .epub file only.', 'warning', undefined, isDarkMode);
+    if (!isTxt && !isEpub && !isDocx) {
+      showAlert('Please select a .txt, .epub, or .docx file only.', 'warning', undefined, isDarkMode);
       return;
     }
 
@@ -96,6 +100,11 @@ export default function FilesModal({
         const buffer = await file.arrayBuffer();
         await saveEpub(buffer);
         showAlert('Imported as manuscript.epub', 'success', undefined, isDarkMode);
+      } else if (isDocx) {
+        // Read as ArrayBuffer and save as manuscript.docx
+        const buffer = await file.arrayBuffer();
+        await saveDocx(buffer);
+        showAlert('Imported as manuscript.docx', 'success', undefined, isDarkMode);
       }
 
       // Refresh file list
@@ -141,6 +150,10 @@ export default function FilesModal({
           case 'manuscript.epub':
             content = await loadEpub();
             mimeType = 'application/epub+zip';
+            break;
+          case 'manuscript.docx':
+            content = await loadDocx();
+            mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
             break;
         }
       }
@@ -194,6 +207,9 @@ export default function FilesModal({
             break;
           case 'manuscript.epub':
             await deleteEpub();
+            break;
+          case 'manuscript.docx':
+            await deleteDocx();
             break;
         }
       }
@@ -273,7 +289,7 @@ export default function FilesModal({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".txt,.epub,.pdf,text/plain,application/epub+zip,application/pdf"
+            accept=".txt,.epub,.docx"
             onChange={handleFileChange}
             style={{ display: 'none' }}
             disabled={isImporting}
@@ -283,7 +299,7 @@ export default function FilesModal({
             {isImporting ? 'Importing...' : 'Import a file'}
           </StyledSmallButton>
           <span style={{ fontSize: '10px', color: theme.textMuted }}>
-            .txt .epub .pdf
+            .txt .epub .docx
           </span>
         </div>
 

@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
-import { PiGear, PiPencil, PiTrash } from 'react-icons/pi';
+import { useRouter } from 'next/navigation';
+import { PiGear, PiPencil, PiTrash, PiArrowClockwise } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { showConfirm, showAlert } from '@/app/shared/alerts';
 import { TbSunMoon } from 'react-icons/tb';
@@ -11,6 +12,7 @@ import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
+import { setStorageDialogVisible } from '@/components/StorageWindow';
 import { saveSysSettings } from '@/helpers/settings';
 import { invoke } from '@/utils/desktop-stubs';
 import MenuItem from '@/components/MenuItem';
@@ -26,6 +28,7 @@ interface Permissions {
 }
 
 const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
+  const router = useRouter();
   const _ = useTranslation();
   const { envConfig, appService } = useEnv();
   const { themeMode, setThemeMode } = useThemeStore();
@@ -44,6 +47,11 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
 
   const showAboutProselenosebooks = () => {
     setAboutDialogVisible(true);
+    setIsDropdownOpen?.(false);
+  };
+
+  const showStorageInfo = () => {
+    setStorageDialogVisible(true);
     setIsDropdownOpen?.(false);
   };
 
@@ -106,13 +114,16 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
 
   const switchToAuthorsMode = () => {
     setIsDropdownOpen?.(false);
-    // router.push('/authors'); // Navigate to authors page
 
-    // open in a new tab ('_blank') instead of navigating in the current window
-    // window.open('/authors', '_blank');
+    // If Authors tab that opened this Library is still open, just show message
+    if (window.opener && !window.opener.closed) {
+      const isDark = themeMode === 'dark' || (themeMode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      showAlert('Authors is already open in another tab', 'info', undefined, isDark);
+      return;
+    }
 
-    // force the browser to reuse the existing tab if it's already open:
-    window.open('/authors', 'proselenos_authors_mode');
+    // Otherwise navigate to Authors in this tab
+    router.push('/authors');
   };
 
   const handleResetLibrary = async () => {
@@ -247,17 +258,15 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
           onClick={toggleAlwaysInForeground}
         />
       )}
-            <MenuItem
+      <MenuItem
+        label={_('Reload Page')}
+        Icon={PiArrowClockwise}
+        onClick={() => window.location.reload()}
+      />
+      <MenuItem
         label={themeModeLabel}
         Icon={themeMode === 'dark' ? PiMoon : themeMode === 'light' ? PiSun : TbSunMoon}
         onClick={cycleThemeMode}
-      />
-      <MenuItem
-        label={_('Reset Library')}
-        description={_('clear local library')}
-        Icon={PiTrash}
-        buttonClass='bg-red-900/20 hover:!bg-red-900/30'
-        onClick={handleResetLibrary}
       />
       <MenuItem label={_('Settings')} Icon={PiGear} onClick={openSettingsDialog} />
       <hr aria-hidden='true' className='border-base-200 my-1' />
@@ -292,6 +301,14 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
         </>
       )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
+      <MenuItem label={_('Storage')} onClick={showStorageInfo} />
+      <MenuItem
+        label={_('Reset Library')}
+        description={_('clear local library')}
+        Icon={PiTrash}
+        buttonClass='bg-red-900/20 hover:!bg-red-900/30'
+        onClick={handleResetLibrary}
+      />
       <MenuItem label={_('About')} onClick={showAboutProselenosebooks} />
     </Menu>
   );

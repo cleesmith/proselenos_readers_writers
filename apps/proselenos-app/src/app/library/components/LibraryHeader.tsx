@@ -2,14 +2,13 @@ import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaSearch } from 'react-icons/fa';
-import { PiPlus } from 'react-icons/pi';
-import { PiSelectionAll, PiSelectionAllFill } from 'react-icons/pi';
-import { PiDotsThreeCircle } from 'react-icons/pi';
+import { PiBooks, PiArrowClockwise, PiPencil, PiDotsThreeCircle } from 'react-icons/pi';
 import { MdOutlineMenu, MdArrowBackIosNew } from 'react-icons/md';
 import { IoMdCloseCircle } from 'react-icons/io';
 
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
+import { showAlert } from '@/app/shared/alerts';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
@@ -19,7 +18,6 @@ import { debounce } from '@/utils/debounce';
 import useShortcuts from '@/hooks/useShortcuts';
 import Dropdown from '@/components/Dropdown';
 import SettingsMenu from './SettingsMenu';
-import ImportMenu from './ImportMenu';
 import ViewMenu from './ViewMenu';
 
 interface LibraryHeaderProps {
@@ -43,7 +41,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { appService } = useEnv();
-  const { systemUIVisible, statusBarHeight } = useThemeStore();
+  const { systemUIVisible, statusBarHeight, themeMode } = useThemeStore();
   const { currentBookshelf } = useLibraryStore();
   const {
     isTrafficLightVisible,
@@ -81,6 +79,17 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
     const newQuery = e.target.value;
     setSearchQuery(newQuery);
     debouncedUpdateQueryParam(newQuery);
+  };
+
+  const switchToAuthorsMode = () => {
+    // If Authors tab that opened this Library is still open, just show message
+    if (window.opener && !window.opener.closed) {
+      const isDark = themeMode === 'dark' || (themeMode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      showAlert('Authors is already open in another tab', 'info', undefined, isDark);
+      return;
+    }
+    // Otherwise navigate to Authors in this tab
+    router.push('/authors');
   };
 
   useEffect(() => {
@@ -132,7 +141,15 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
               </div>
             </button>
           )}
-          <div className='relative flex h-9 w-full items-center sm:h-7'>
+          <button
+            onClick={() => window.location.reload()}
+            aria-label={_('Reload Page')}
+            title={_('Reload Page')}
+            className='mr-2 flex h-6 w-6 items-center justify-center text-gray-500 hover:text-gray-400'
+          >
+            <PiArrowClockwise className='h-5 w-5' />
+          </button>
+          <div className='relative flex h-9 max-w-xl flex-1 items-center sm:h-7'>
             <span className='absolute left-3 text-gray-500'>
               <FaSearch className='h-4 w-4' />
             </span>
@@ -170,32 +187,24 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
                 <IoMdCloseCircle className='h-4 w-4' />
               </button>
             )}
-            <span className='bg-base-content/50 mx-2 h-4 w-[0.5px]'></span>
-            <Dropdown
-              label={_('Import Books')}
-              className={clsx(
-                'exclude-title-bar-mousedown dropdown-bottom flex h-6 cursor-pointer justify-center',
-                appService?.isMobile ? 'dropdown-end' : 'dropdown-center',
-              )}
-              buttonClassName='p-0 h-6 min-h-6 w-6 flex items-center justify-center'
-              toggleButton={<PiPlus role='none' className='m-0.5 h-5 w-5' />}
+            <button
+              onClick={onImportBooks}
+              aria-label={_('Add Ebook')}
+              title={_('Add Ebook')}
+              className='flex items-center gap-1 text-gray-500 hover:text-gray-400'
             >
-              <ImportMenu onImportBooks={onImportBooks} />
-            </Dropdown>
-            {appService?.isMobile ? null : (
-              <button
-                onClick={onToggleSelectMode}
-                aria-label={_('Select Books')}
-                title={_('Select Books')}
-                className='h-6'
-              >
-                {isSelectMode ? (
-                  <PiSelectionAllFill role='button' className='h-6 w-6 text-gray-500' />
-                ) : (
-                  <PiSelectionAll role='button' className='h-6 w-6 text-gray-500' />
-                )}
-              </button>
-            )}
+              <PiBooks className='h-5 w-5' />
+              <span className='text-sm'>Add Ebook</span>
+            </button>
+            <button
+              onClick={switchToAuthorsMode}
+              aria-label={_('Authors')}
+              title={_('Authors')}
+              className='flex items-center gap-1 text-gray-500 hover:text-gray-400'
+            >
+              <PiPencil className='h-5 w-5' />
+              <span className='text-sm'>Authors</span>
+            </button>
           </div>
         </div>
         {isSelectMode ? (

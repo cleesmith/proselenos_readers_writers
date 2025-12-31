@@ -133,8 +133,8 @@ export default function WorkflowStep({
               Chat
             </StyledSmallButton>
           )}
-          {/* File button for completed steps */}
-          {step.status === 'completed' && step.fileName && (
+          {/* File button for completed steps (not for chapters - they're in sidebar) */}
+          {step.status === 'completed' && step.fileName && step.id !== 'chapters' && (
             <StyledSmallButton
               onClick={() => onView(step.id)}
               disabled={isAnyStepExecuting}

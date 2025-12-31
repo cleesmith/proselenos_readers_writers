@@ -66,11 +66,11 @@ export default function SimpleChatModal({
       setElapsedTime(0);
     } else {
       loadProviderModel();
-      // Check for initial context from Writing Assistant
+      // Check for initial context from AI Writing (brainstorm.txt)
       const initialContext = sessionStorage.getItem('chatInitialContext');
       if (initialContext) {
-        // Pre-populate the input with context reference
-        setInput(`Here are my story ideas so far:\n\n${initialContext}\n\nPlease help me develop these ideas further.`);
+        // Display brainstorm content as first user message
+        setMessages([{ role: 'user', content: initialContext }]);
         // Clear the context so it's not reused
         sessionStorage.removeItem('chatInitialContext');
       }

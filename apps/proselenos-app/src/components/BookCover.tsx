@@ -62,11 +62,12 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
             <div className='flex h-1/2 items-center justify-center'>
               <span
                 className={clsx(
-                  isPreview ? 'line-clamp-2' : mode === 'grid' ? 'line-clamp-3' : 'line-clamp-2',
                   isPreview ? 'text-[0.5em]' : mode === 'grid' ? 'text-lg' : 'text-sm',
                 )}
               >
-                {formatTitle(book.title)}
+                {formatTitle(book.title).split('\n').map((line, i) => (
+                  <span key={i} className="block">{line}</span>
+                ))}
               </span>
             </div>
             <div className='h-1/6'></div>
@@ -148,11 +149,12 @@ const BookCover: React.FC<BookCoverProps> = memo<BookCoverProps>(
           <div className='flex h-1/2 items-center justify-center'>
             <span
               className={clsx(
-                isPreview ? 'line-clamp-2' : mode === 'grid' ? 'line-clamp-3' : 'line-clamp-2',
                 isPreview ? 'text-[0.5em]' : mode === 'grid' ? 'text-lg' : 'text-sm',
               )}
             >
-              {formatTitle(book.title)}
+              {formatTitle(book.title).split('\n').map((line, i) => (
+                <span key={i} className="block">{line}</span>
+              ))}
             </span>
           </div>
           <div className='h-1/6'></div>

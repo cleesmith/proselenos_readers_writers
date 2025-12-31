@@ -3,7 +3,7 @@
 // Only 2 changes: nodebuffer → uint8array, Buffer → Uint8Array via atob
 
 import JSZip from 'jszip';
-import { ManuscriptSettings } from '@/services/manuscriptStorage';
+import { ManuscriptSettings, WorkingCopyMeta, WorkingCopySection } from '@/services/manuscriptStorage';
 
 // TypeScript Interfaces
 export interface Chapter {
@@ -47,6 +47,74 @@ export async function generateEpubFromManuscript(
     for (let i = 0; i < binaryString.length; i++) {
       coverImageData[i] = binaryString.charCodeAt(i);
     }
+  }
+
+  return generateEPUB(chapters, metadata, coverImageData);
+}
+
+/**
+ * Generate EPUB from structured working copy data (for Authors Mode "Save" button)
+ * Unlike generateEpubFromManuscript which parses raw text, this takes structured sections directly.
+ */
+export async function generateEpubFromWorkingCopy(
+  meta: WorkingCopyMeta,
+  sections: WorkingCopySection[],
+  coverBlob?: Blob | null
+): Promise<Uint8Array> {
+  // Find Copyright section content (if exists)
+  const copyrightSection = sections.find(s =>
+    s.id === 'copyright' || s.title.toLowerCase() === 'copyright'
+  );
+  const copyrightContent = copyrightSection?.content || '';
+
+  // Convert sections to Chapter format, skipping Title Page and Copyright (we generate those separately)
+  const chapters: Chapter[] = [];
+  let chapterNum = 0;
+
+  for (const section of sections) {
+    // Skip title page and copyright sections - we generate those from metadata
+    if (section.id === 'title-page' || section.title.toLowerCase() === 'title page') {
+      continue;
+    }
+    if (section.id === 'copyright' || section.title.toLowerCase() === 'copyright') {
+      continue;
+    }
+
+    chapterNum++;
+    // Split content into paragraphs (double newline = paragraph break)
+    const paragraphs = section.content
+      .split(/\n\s*\n/)
+      .map(p => p.replace(/\n/g, ' ').trim())
+      .filter(p => p.length > 0);
+
+    chapters.push({
+      id: section.id,
+      number: chapterNum,
+      title: section.title,
+      content: paragraphs,
+      paragraphs: paragraphs,
+    });
+  }
+
+  // Build metadata object from WorkingCopyMeta
+  const metadata = {
+    title: meta.title || 'Untitled',
+    displayTitle: meta.title || 'Untitled',
+    subtitle: meta.subtitle || '',
+    author: meta.author || 'Unknown Author',
+    publisher: meta.publisher || 'Independent Publisher',
+    aboutAuthor: '', // Could add to WorkingCopyMeta later
+    language: meta.language || 'en',
+    description: meta.description || 'Created with Proselenos',
+    rights: meta.rights || '',
+    copyrightContent: copyrightContent, // Custom copyright text from working copy
+  };
+
+  // Convert cover Blob to Uint8Array if provided
+  let coverImageData: Uint8Array | undefined;
+  if (coverBlob) {
+    const arrayBuffer = await coverBlob.arrayBuffer();
+    coverImageData = new Uint8Array(arrayBuffer);
   }
 
   return generateEPUB(chapters, metadata, coverImageData);
@@ -287,11 +355,22 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Convert markdown links [text](url) to HTML <a> tags
- * Applied after escapeHtml since markdown links don't contain <>
+ * Convert markdown (bold, italic, links) to HTML
+ * Applied after escapeHtml since markdown syntax doesn't contain <>
  */
-function processMarkdownLinks(text: string): string {
-  return text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
+function processMarkdown(text: string): string {
+  let result = text;
+
+  // Bold: **text**
+  result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic: __text__
+  result = result.replace(/__(.+?)__/g, '<em>$1</em>');
+
+  // Links: [text](url)
+  result = result.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
+
+  return result;
 }
 
 /**
@@ -299,6 +378,11 @@ function processMarkdownLinks(text: string): string {
  */
 function createTitlePage(metadata: any): string {
   const upperTitle = metadata.displayTitle.toUpperCase();
+
+  // Add subtitle element if present
+  const subtitleHTML = metadata.subtitle
+    ? `\n    <p class="book-subtitle">${escapeHtml(metadata.subtitle)}</p>`
+    : '';
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -309,7 +393,7 @@ function createTitlePage(metadata: any): string {
 </head>
 <body>
   <section class="title-page" epub:type="titlepage">
-    <h1 class="book-title">${escapeHtml(upperTitle)}</h1>
+    <h1 class="book-title">${escapeHtml(upperTitle)}</h1>${subtitleHTML}
     <p class="book-author">${escapeHtml(metadata.author)}</p>
     <p class="book-publisher">${escapeHtml(metadata.publisher || 'Independent Publisher')}</p>
   </section>
@@ -321,18 +405,26 @@ function createTitlePage(metadata: any): string {
  * Create copyright page HTML
  */
 function createCopyrightPage(metadata: any): string {
-  const year = new Date().getFullYear();
+  let copyrightContent: string;
 
-  // Standard copyright template (like Vellum)
-  const copyrightContent = `    <p>Copyright © ${year} ${escapeHtml(metadata.author)}</p>
-    <p></p>
+  // Use custom copyright content from working copy if provided
+  if (metadata.copyrightContent && metadata.copyrightContent.trim()) {
+    // Convert plain text paragraphs to HTML
+    copyrightContent = metadata.copyrightContent
+      .split(/\n\s*\n/)
+      .map((p: string) => `    <p>${escapeHtml(p.replace(/\n/g, ' ').trim())}</p>`)
+      .join('\n');
+  } else {
+    // Standard copyright template (Vellum style)
+    const year = new Date().getFullYear();
+    const author = metadata.author || 'Anonymous';
+    copyrightContent = `    <p>Copyright © ${year} by ${escapeHtml(author)}</p>
     <p>All rights reserved.</p>
+    <p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>
     <p></p>
     <p>Published by ${escapeHtml(metadata.publisher || 'Independent Publisher')}</p>
-    <p></p>
-    <p>This is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously. Any resemblance to actual persons, living or dead, events, or locales is entirely coincidental.</p>
-    <p></p>
-    <p>First Edition: ${year}</p>`;
+    <p></p>`;
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -387,7 +479,7 @@ ${tocItems}
  */
 function createChapterHTML(chapter: Chapter, _metadata: any): string {
   const paragraphs = chapter.content
-    .map(p => `    <p>${processMarkdownLinks(escapeHtml(p))}</p>`)
+    .map(p => `    <p>${processMarkdown(escapeHtml(p))}</p>`)
     .join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -666,6 +758,14 @@ body {
   padding-top: 25%;  /* Position from top */
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+.book-subtitle {
+  text-align: center;
+  font-size: 1.1em;
+  font-style: italic;
+  margin: 0;
+  padding-top: 5%;
 }
 
 .book-author {

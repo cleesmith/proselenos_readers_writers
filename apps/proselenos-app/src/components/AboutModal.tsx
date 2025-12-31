@@ -276,7 +276,7 @@ export default function AboutModal({
             </ul>
           </div>
 
-          {/* AI Writing Assistant */}
+          {/* AI AI Writing */}
           <div style={{ marginBottom: '32px' }}>
             <h3 style={{
               fontSize: '18px',
@@ -284,7 +284,7 @@ export default function AboutModal({
               marginBottom: '12px',
               color: '#10b981'
             }}>
-              ✍️ AI Writing Assistant
+              ✍️ AI AI Writing
             </h3>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
               Proselenos isn&apos;t just for editing - it&apos;s also a writing companion:

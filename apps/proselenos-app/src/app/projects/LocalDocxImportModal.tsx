@@ -44,15 +44,6 @@ export default function LocalDocxImportModal({
         return;
       }
 
-      // Validate file size (uses NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB env var)
-      const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB']!, 10);
-      const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-        showAlert(`File too large (${sizeMB}MB). Maximum is ${MAX_FILE_SIZE_MB}MB.`, 'error', undefined, isDarkMode);
-        return;
-      }
-
       setSelectedFile(file);
     }
   };

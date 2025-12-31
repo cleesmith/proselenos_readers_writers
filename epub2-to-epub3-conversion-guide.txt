@@ -1,0 +1,317 @@
+For EPUB 2 to EPUB 3 conversion, the most important sections would be the differences in the package document, navigation document, and content requirements. Let me extract those key sections for you.Now I have the key information. Let me create a summary document with the essential details for your EPUB 2 to EPUB 3 conversion project.I've extracted the most relevant information for your EPUB 2 to EPUB 3 conversion project. Here are the key things your Next.js code needs to handle:
+
+THE BIG CHANGES:
+
+1. Package document (OPF): Change version to "3.0" and add a required dcterms:modified meta element with a timestamp.
+
+2. Navigation: The NCX file (toc.ncx) is replaced by an XHTML navigation document (typically nav.xhtml). You need to convert the NCX navPoints into an HTML nav element with epub:type="toc" containing nested ordered lists.
+
+3. Manifest properties: EPUB 3 uses a properties attribute on manifest items. You must mark your nav document with properties="nav" and your cover image with properties="cover-image".
+
+4. Content documents: EPUB 2 used XHTML 1.1, EPUB 3 uses XHTML5. The DOCTYPE changes and you can add the epub namespace for semantic markup.
+
+BACKWARD COMPATIBILITY TIP:
+You can keep the NCX file in your EPUB 3 output so older EPUB 2 readers can still read it. Just include it in the manifest and the file will be ignored by EPUB 3 readers but used by EPUB 2 readers.
+
+The guide includes sample TypeScript code snippets showing how to generate the nav document from NCX data and create the EPUB 3 package document structure.
+
+
+EPUB 2 TO EPUB 3 CONVERSION GUIDE
+==================================
+Extracted from EPUB 3.3 W3C Recommendation (March 27, 2025)
+
+This guide covers the key changes your Next.js code needs to handle when converting EPUB 2 files to EPUB 3.
+
+
+1. PACKAGE DOCUMENT (OPF FILE) CHANGES
+======================================
+
+VERSION ATTRIBUTE:
+- EPUB 2: version="2.0"
+- EPUB 3: version="3.0"
+
+REQUIRED METADATA (minimum):
+- dc:identifier (with id attribute referenced by unique-identifier)
+- dc:title  
+- dc:language
+- meta property="dcterms:modified" (NEW in EPUB 3 - timestamp required)
+
+Example minimal EPUB 3 metadata:
+
+  <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id">
+    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <dc:identifier id="pub-id">urn:uuid:A1B0D67E-2E81-4DF5-9E67-A64CBE366809</dc:identifier>
+      <dc:title>Book Title</dc:title>
+      <dc:language>en</dc:language>
+      <meta property="dcterms:modified">2024-01-01T12:00:00Z</meta>
+    </metadata>
+    ...
+  </package>
+
+NAMESPACE:
+- Same: http://www.idpf.org/2007/opf
+
+NEW ATTRIBUTES:
+- dir attribute (ltr, rtl, auto) for text direction
+- properties attribute on manifest items (nav, cover-image, mathml, scripted, svg, etc.)
+- refines attribute for metadata refinement
+
+
+2. NAVIGATION: NCX vs NAV DOCUMENT
+==================================
+
+EPUB 2: Uses toc.ncx (application/x-dtbncx+xml)
+EPUB 3: Uses XHTML navigation document (nav.xhtml)
+
+The NCX is now LEGACY but can be included for backward compatibility with EPUB 2 readers.
+
+NAV DOCUMENT REQUIREMENTS:
+- Must be valid XHTML
+- Must include exactly one "toc nav" element
+- Must be declared in manifest with properties="nav"
+
+Example manifest entry:
+  <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+
+NAV DOCUMENT STRUCTURE:
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <head>
+    <title>Table of Contents</title>
+  </head>
+  <body>
+    <nav epub:type="toc">
+      <h1>Table of Contents</h1>
+      <ol>
+        <li><a href="chapter1.xhtml">Chapter 1</a></li>
+        <li><a href="chapter2.xhtml">Chapter 2</a>
+          <ol>
+            <li><a href="chapter2.xhtml#section1">Section 2.1</a></li>
+          </ol>
+        </li>
+      </ol>
+    </nav>
+    
+    <!-- Optional: page-list for page numbers -->
+    <nav epub:type="page-list" hidden="">
+      <ol>
+        <li><a href="chapter1.xhtml#page1">1</a></li>
+        <li><a href="chapter1.xhtml#page2">2</a></li>
+      </ol>
+    </nav>
+    
+    <!-- Optional: landmarks -->
+    <nav epub:type="landmarks" hidden="">
+      <ol>
+        <li><a epub:type="toc" href="nav.xhtml">Table of Contents</a></li>
+        <li><a epub:type="bodymatter" href="chapter1.xhtml">Start of Content</a></li>
+      </ol>
+    </nav>
+  </body>
+  </html>
+
+
+3. CONTENT DOCUMENTS
+====================
+
+EPUB 2: XHTML 1.1 or DTBook
+EPUB 3: HTML5 (XML syntax - XHTML5)
+
+DOCTYPE:
+- EPUB 2: <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+- EPUB 3: No DOCTYPE required, or use <!DOCTYPE html>
+
+HTML ELEMENT:
+- EPUB 3: <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+
+NEW EPUB 3 FEATURES:
+- epub:type attribute for structural semantics
+- MathML support (Presentation Markup)
+- SVG as content documents
+- JavaScript/scripting support
+- Audio/video elements
+
+
+4. CORE MEDIA TYPES
+===================
+
+Images:
+- image/gif
+- image/jpeg  
+- image/png
+- image/svg+xml
+- image/webp (new)
+
+Audio:
+- audio/mpeg (MP3)
+- audio/mp4 (AAC)
+- audio/ogg; codecs=opus (new)
+
+Fonts:
+- font/ttf, application/font-sfnt (TrueType)
+- font/otf, application/font-sfnt, application/vnd.ms-opentype (OpenType)
+- font/woff, application/font-woff (WOFF)
+- font/woff2 (WOFF2 - new)
+
+Other:
+- text/css
+- application/xhtml+xml
+- application/javascript, text/javascript
+- application/x-dtbncx+xml (legacy NCX)
+- application/smil+xml (media overlays)
+
+
+5. MANIFEST PROPERTIES (NEW IN EPUB 3)
+======================================
+
+Add to manifest item elements as needed:
+
+- nav           : identifies the navigation document
+- cover-image   : identifies the cover image
+- mathml        : content contains MathML
+- scripted      : content contains scripts
+- svg           : content contains SVG
+- remote-resources : content references remote resources
+
+Example:
+  <item id="cover" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/>
+  <item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml" properties="scripted svg"/>
+
+
+6. SPINE CHANGES
+================
+
+- toc attribute is DEPRECATED (was used to reference NCX)
+- page-progression-direction attribute added (ltr, rtl, default)
+
+Example:
+  <spine page-progression-direction="ltr">
+    <itemref idref="nav"/>
+    <itemref idref="chapter1"/>
+  </spine>
+
+
+7. CONTAINER.XML
+================
+
+Same location: META-INF/container.xml
+Same format, but ensure rootfile points to EPUB 3 package document:
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+    <rootfiles>
+      <rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/>
+    </rootfiles>
+  </container>
+
+
+8. CONVERSION CHECKLIST FOR YOUR CODE
+=====================================
+
+1. Parse EPUB 2 package.opf:
+   [ ] Extract metadata (dc:title, dc:creator, dc:identifier, dc:language, etc.)
+   [ ] Extract manifest items
+   [ ] Extract spine order
+   [ ] Parse toc.ncx for navigation
+
+2. Create EPUB 3 package.opf:
+   [ ] Set version="3.0"
+   [ ] Add meta property="dcterms:modified" with current timestamp
+   [ ] Add properties="nav" to navigation document manifest item
+   [ ] Add properties="cover-image" to cover image manifest item
+   [ ] Remove toc attribute from spine (optional, it's deprecated)
+
+3. Create nav.xhtml from toc.ncx:
+   [ ] Convert NCX navPoints to nav > ol > li > a structure
+   [ ] Add epub:type="toc" to main nav element
+   [ ] Add xmlns:epub="http://www.idpf.org/2007/ops" to html element
+   [ ] Optionally convert NCX pageList to nav epub:type="page-list"
+
+4. Update content documents:
+   [ ] Change DOCTYPE (or remove it)
+   [ ] Add epub namespace if using epub:type
+   [ ] Ensure valid XHTML5 syntax
+
+5. Keep NCX for backward compatibility (optional):
+   [ ] Keep the toc.ncx file
+   [ ] Keep it in manifest
+   [ ] Can keep toc attribute in spine for older readers
+
+
+9. SAMPLE CODE STRUCTURE (TYPESCRIPT/NEXT.JS)
+=============================================
+
+interface EPub2Metadata {
+  identifier: string;
+  title: string;
+  language: string;
+  creator?: string;
+  // ... other fields
+}
+
+interface NavPoint {
+  id: string;
+  label: string;
+  src: string;
+  children?: NavPoint[];
+}
+
+function generateModifiedDate(): string {
+  return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+function convertNcxToNav(navPoints: NavPoint[]): string {
+  const renderNavPoints = (points: NavPoint[]): string => {
+    return points.map(point => {
+      const children = point.children?.length 
+        ? `\n<ol>${renderNavPoints(point.children)}</ol>` 
+        : '';
+      return `<li><a href="${point.src}">${point.label}</a>${children}</li>`;
+    }).join('\n');
+  };
+  
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head><title>Table of Contents</title></head>
+<body>
+<nav epub:type="toc">
+<h1>Table of Contents</h1>
+<ol>
+${renderNavPoints(navPoints)}
+</ol>
+</nav>
+</body>
+</html>`;
+}
+
+function generateEpub3Opf(metadata: EPub2Metadata, manifestItems: Item[], spineItems: string[]): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="pub-id">${metadata.identifier}</dc:identifier>
+    <dc:title>${metadata.title}</dc:title>
+    <dc:language>${metadata.language}</dc:language>
+    <meta property="dcterms:modified">${generateModifiedDate()}</meta>
+  </metadata>
+  <manifest>
+    <!-- items here with properties attribute as needed -->
+  </manifest>
+  <spine>
+    <!-- itemrefs here -->
+  </spine>
+</package>`;
+}
+
+
+10. USEFUL LIBRARIES FOR NODE.JS/NEXT.JS
+========================================
+
+- epub-parser or epubjs: Parse EPUB 2 files
+- jszip: Handle ZIP operations
+- xmldom or fast-xml-parser: Parse/generate XML
+- uuid: Generate unique identifiers
+
+
+For the full specification, refer to:
+https://www.w3.org/TR/epub-33/

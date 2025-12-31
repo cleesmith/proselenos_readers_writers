@@ -9,10 +9,8 @@ import { showAlert } from '../shared/alerts';
 import ToolProgressIndicator from './ToolProgressIndicator';
 import DualPanelEditor from './DualPanelEditor';
 import WritingAssistantModal from '../writing-assistant/WritingAssistantModal';
-import OneByOneModal from '../one-by-one/OneByOneModal';
-import { getToolPrompt, saveManuscript } from '@/services/manuscriptStorage';
+import { getToolPrompt } from '@/services/manuscriptStorage';
 import ChatButton from '@/components/ChatButton';
-import { isValidToolReport } from '@/utils/parseToolReport';
 // createOrUpdateFileAction removed - saves go to IndexedDB now
 
 interface AIToolsSectionProps {
@@ -94,12 +92,9 @@ export default function AIToolsSection({
   const [showDualEditor, setShowDualEditor] = useState(false);
   const [editorManuscriptContent, setEditorManuscriptContent] = useState('');
 
-  // AI Writing Assistant state
+  // AI Writing state
   const [showWritingAssistant, setShowWritingAssistant] = useState(false);
 
-  // One-by-one editing state
-  const [showOneByOne, setShowOneByOne] = useState(false);
-  
   // Tool prompt editing state
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
 
@@ -172,17 +167,6 @@ https://proselenos.com
     if (!manuscriptContent) return;
     setEditorManuscriptContent(manuscriptContent);
     setShowDualEditor(true);
-  };
-
-  // One-by-one editing handlers
-  const handleOneByOneClick = () => {
-    if (!manuscriptContent) return;
-    setShowOneByOne(true);
-  };
-
-  const handleOneByOneSave = async (content: string) => {
-    // Save the updated manuscript to IndexedDB
-    await saveManuscript(content);
   };
 
   const handleCategoryChange = (category: string) => {
@@ -309,7 +293,7 @@ https://proselenos.com
               theme={theme}
               styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
             >
-              Writing Assistant
+              AI Writing
             </StyledSmallButton>
           </div>
         </div>
@@ -388,14 +372,8 @@ https://proselenos.com
               : 'Please select a category first'}
           </option>
 
-          {/* Sorted tool options */}
-          {[...toolsInCategory]
-            .sort((a, b) => {
-              const nameA = a.name.replace(/_/g, ' ').toLowerCase();
-              const nameB = b.name.replace(/_/g, ' ').toLowerCase();
-              return nameA.localeCompare(nameB);
-            })
-            .map((tool) => (
+          {/* Tool options (in manifest order) */}
+          {toolsInCategory.map((tool) => (
               <option key={tool.id} value={tool.id}>
                 {tool.name
                   .split('_')
@@ -457,19 +435,10 @@ https://proselenos.com
           elapsedTime={elapsedTime}
           theme={theme}
           toolResult={toolResult}
-          onEditClick={handleEditClick}
+          onReportClick={handleEditClick}
         />
 
-        {/* One-by-one button - appears when tool finishes with OBO-formatted results */}
-        {!toolExecuting && elapsedTime > 0 && toolResult && isValidToolReport(toolResult) && (
-          <StyledSmallButton
-            onClick={handleOneByOneClick}
-            theme={theme}
-            styleOverrides={{ fontSize: '10px', padding: '2px 8px', fontWeight: 'bold' }}
-          >
-            One-by-one
-          </StyledSmallButton>
-        )}
+        {/* One-by-one button removed - use Authors mode for chapter-level One-by-one editing */}
       </div>
       
       {/* Dual Panel Editor Modal */}
@@ -496,7 +465,7 @@ https://proselenos.com
         />
       )}
       
-      {/* AI Writing Assistant Modal */}
+      {/* AI Writing Modal */}
       {showWritingAssistant && (
         <WritingAssistantModal
           isOpen={showWritingAssistant}
@@ -508,21 +477,6 @@ https://proselenos.com
           session={_session}
           onLoadFileIntoEditor={onLoadFileIntoEditor}
           onModalCloseReopen={handleWritingAssistantCloseReopen}
-        />
-      )}
-
-      {/* One-by-one Editing Modal */}
-      {showOneByOne && manuscriptContent && (
-        <OneByOneModal
-          isOpen={showOneByOne}
-          theme={theme}
-          isDarkMode={isDarkMode}
-          fileName="manuscript.txt"
-          filePath="manuscript.txt"
-          manuscriptContent={manuscriptContent}
-          reportContent={toolResult}
-          onClose={() => setShowOneByOne(false)}
-          onSave={handleOneByOneSave}
         />
       )}
     </div>

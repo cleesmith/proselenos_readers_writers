@@ -9,7 +9,7 @@ import {
 
 interface ToolManifest {
   categories: string[];
-  tools: { id: string; category: string; name: string }[];
+  tools: { id: string; category: string; name: string; scope?: string }[];
 }
 
 /**
@@ -46,11 +46,13 @@ export async function initializeToolPrompts(): Promise<void> {
       }
     }
 
-    // Save to IndexedDB
+    // Save to IndexedDB (toolOrder preserves manifest order, toolScopes for chapter vs all)
     const data: ToolPromptsData = {
       originals,
       customized: {},
       categories: manifest.categories,
+      toolOrder: manifest.tools.map(t => t.id),
+      toolScopes: Object.fromEntries(manifest.tools.map(t => [t.id, t.scope || 'all'])),
       initialized: true
     };
 

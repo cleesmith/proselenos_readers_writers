@@ -60,10 +60,6 @@ import { CustomTextureInfo } from '@/styles/textures';
 import { CustomFont, CustomFontInfo } from '@/styles/fonts';
 import { parseFontInfo } from '@/utils/font';
 
-// File size limit for ebook imports (from NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB)
-const MAX_FILE_SIZE_MB = parseInt(process.env['NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB']!, 10);
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
 export abstract class BaseAppService implements AppService {
   osPlatform: OsPlatform = getOSPlatform();
   appPlatform: AppPlatform = 'desktop';
@@ -306,11 +302,6 @@ export abstract class BaseAppService implements AppService {
         if (!fileobj || fileobj.size === 0) {
           throw new Error('Invalid or empty book file');
         }
-        // Check file size limit
-        if (fileobj.size > MAX_FILE_SIZE_BYTES) {
-          const sizeMB = (fileobj.size / (1024 * 1024)).toFixed(1);
-          throw new Error(`File too large (${sizeMB}MB). Maximum is ${MAX_FILE_SIZE_MB}MB.`);
-        }
         ({ book: loadedBook, format } = await new DocumentLoader(fileobj).open());
         if (!loadedBook) {
           throw new Error('Unsupported or corrupted book file');
@@ -415,15 +406,18 @@ export abstract class BaseAppService implements AppService {
 
   async deleteBook(book: Book, deleteAction: DeleteAction): Promise<void> {
     console.log('Deleting book with action:', deleteAction, book.title);
-    const localDeleteFps = [getLocalBookFilename(book), getCoverFilename(book)];
-    for (const fp of localDeleteFps) {
+    // Remove all files in book directory (directories are virtual in IndexedDB)
+    const filesToDelete = [
+      getLocalBookFilename(book),
+      getCoverFilename(book),
+      getConfigFilename(book),
+    ];
+    for (const fp of filesToDelete) {
       if (await this.fs.exists(fp, 'Books')) {
         await this.fs.removeFile(fp, 'Books');
       }
     }
-    book.deletedAt = Date.now();
-    book.downloadedAt = null;
-    book.coverDownloadedAt = null;
+    // Book will be removed from library.json by caller (hard-delete)
   }
 
 

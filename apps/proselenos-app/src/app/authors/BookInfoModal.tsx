@@ -1,5 +1,5 @@
-// ProjectSettingsModal Component
-// Full-screen modal for project metadata settings
+// BookInfoModal Component
+// Full-screen modal for book metadata settings
 
 'use client';
 
@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
-export interface ProjectMetadata {
+export interface BookMetadata {
   title: string;
   author: string;
   publisher: string;
@@ -15,18 +15,18 @@ export interface ProjectMetadata {
   aboutAuthor: string;
 }
 
-interface ProjectSettingsModalProps {
+interface BookInfoModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   isDarkMode: boolean;
   isLoading?: boolean;
   isSaving?: boolean;
   onClose: () => void;
-  onSave: (metadata: ProjectMetadata) => void;
-  initialMetadata?: ProjectMetadata;
+  onSave: (metadata: BookMetadata) => void;
+  initialMetadata?: BookMetadata;
 }
 
-const defaultMetadata: ProjectMetadata = {
+const defaultMetadata: BookMetadata = {
   title: '',
   author: '',
   publisher: '',
@@ -34,7 +34,7 @@ const defaultMetadata: ProjectMetadata = {
   aboutAuthor: ''
 };
 
-export default function ProjectSettingsModal({
+export default function BookInfoModal({
   isOpen,
   theme,
   isDarkMode: _isDarkMode,
@@ -43,8 +43,8 @@ export default function ProjectSettingsModal({
   onClose,
   onSave,
   initialMetadata
-}: ProjectSettingsModalProps) {
-  const [metadata, setMetadata] = useState<ProjectMetadata>(defaultMetadata);
+}: BookInfoModalProps) {
+  const [metadata, setMetadata] = useState<BookMetadata>(defaultMetadata);
   const [hasChanges, setHasChanges] = useState(false);
 
   // Update metadata when initialMetadata changes
@@ -56,7 +56,7 @@ export default function ProjectSettingsModal({
   }, [initialMetadata]);
 
   // Track changes
-  const handleChange = (field: keyof ProjectMetadata, value: string) => {
+  const handleChange = (field: keyof BookMetadata, value: string) => {
     setMetadata(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
@@ -103,7 +103,7 @@ export default function ProjectSettingsModal({
             fontWeight: 'bold',
             color: theme.text
           }}>
-            Manuscript Settings
+            Book Info
           </h2>
           
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -299,7 +299,7 @@ export default function ProjectSettingsModal({
             fontSize: '12px',
             textAlign: 'center'
           }}>
-            {isLoading ? 'Loading project settings...' : 'Saving project settings...'}
+            {isLoading ? 'Loading book info...' : 'Saving book info...'}
           </div>
         )}
     </div>

@@ -57,6 +57,8 @@ export interface WritingAssistantModalProps {
   session: any;
   onLoadFileIntoEditor?: (content: string, fileName: string, fileId?: string) => void;
   onModalCloseReopen?: () => void;
+  onOpenChat?: () => void;
+  onChapterAdded?: (chapterId: string) => void;
 }
 
 export interface WorkflowStepProps {

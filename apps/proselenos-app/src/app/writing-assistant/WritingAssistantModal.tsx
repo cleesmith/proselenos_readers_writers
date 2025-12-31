@@ -3,10 +3,12 @@
 'use client';
 
 import { useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { WritingAssistantModalProps } from './types';
 import { useWritingAssistant } from './useWritingAssistant';
 import WorkflowStep from './WorkflowStep';
 import StyledSmallButton from '@/components/StyledSmallButton';
+import { deleteWorkflowFile } from '@/services/manuscriptStorage';
 
 export default function WritingAssistantModal({
   isOpen,
@@ -17,7 +19,9 @@ export default function WritingAssistantModal({
   currentModel,
   session,
   onLoadFileIntoEditor,
-  onModalCloseReopen
+  onModalCloseReopen,
+  onOpenChat,
+  onChapterAdded
 }: WritingAssistantModalProps) {
   const { state, actions } = useWritingAssistant(
     currentProvider,
@@ -25,7 +29,9 @@ export default function WritingAssistantModal({
     session,
     isDarkMode,
     onLoadFileIntoEditor,
-    onModalCloseReopen
+    onModalCloseReopen,
+    onOpenChat,
+    onChapterAdded
   );
 
   // Handle modal open/close
@@ -34,6 +40,30 @@ export default function WritingAssistantModal({
       actions.openModal();
     }
   }, [isOpen, state.isModalOpen, actions.openModal]);
+
+  // Handle Start Over - delete all workflow files
+  const handleStartOver = async () => {
+    const result = await Swal.fire({
+      title: 'Start Over?',
+      text: 'This will delete brainstorm.txt, outline.txt, and world.txt',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Start Over',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      background: isDarkMode ? '#222' : '#fff',
+      color: isDarkMode ? '#fff' : '#333',
+    });
+
+    if (result.isConfirmed) {
+      await deleteWorkflowFile('brainstorm.txt');
+      await deleteWorkflowFile('outline.txt');
+      await deleteWorkflowFile('world.txt');
+      // Refresh modal to show reset state
+      actions.openModal();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -84,17 +114,22 @@ export default function WritingAssistantModal({
               color: theme.text
             }}
           >
-            Writing Assistant
+            AI Writing
           </h3>
-          <StyledSmallButton
-            onClick={() => {
-              onClose();
-              actions.closeModal();
-            }}
-            theme={theme}
-          >
-            Close
-          </StyledSmallButton>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <StyledSmallButton onClick={handleStartOver} theme={theme}>
+              Start Over
+            </StyledSmallButton>
+            <StyledSmallButton
+              onClick={() => {
+                onClose();
+                actions.closeModal();
+              }}
+              theme={theme}
+            >
+              Close
+            </StyledSmallButton>
+          </div>
         </div>
 
         {/* Loading State */}

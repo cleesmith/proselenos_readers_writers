@@ -170,7 +170,7 @@ export default function EditorModal({
             setIsCustomized(customized);
             setCurrentFile(toolId.split('/').pop() || toolId); // Show just filename
           } else if (initialFile.key.startsWith('wa:')) {
-            // Writing Assistant prompts (stored separately in IndexedDB)
+            // AI Writing prompts (stored separately in IndexedDB)
             const stepId = initialFile.key.substring(3); // Remove "wa:" prefix
             content = await getWritingAssistantPrompt(stepId);
             setIsPromptMode(true);
@@ -230,11 +230,11 @@ export default function EditorModal({
     try {
       // Handle prompt saves
       if (isPromptMode && promptToolId) {
-        // Check if this is a Writing Assistant prompt (wa: prefix)
+        // Check if this is a AI Writing prompt (wa: prefix)
         if (promptToolId.startsWith('wa:')) {
           const stepId = promptToolId.substring(3); // Remove "wa:" prefix
           await saveWritingAssistantPrompt(stepId, editorContent);
-          showAlert(`✅ Writing Assistant prompt updated: ${stepId}`, 'success', undefined, isDarkMode);
+          showAlert(`✅ AI Writing prompt updated: ${stepId}`, 'success', undefined, isDarkMode);
         } else {
           await updateToolPrompt(promptToolId, editorContent);
           setIsCustomized(true);
@@ -330,7 +330,7 @@ export default function EditorModal({
     <div
       style={{
         position: 'fixed',
-        zIndex: 1000,
+        zIndex: 1100,
         top: 0,
         left: 0,
         width: '100%',

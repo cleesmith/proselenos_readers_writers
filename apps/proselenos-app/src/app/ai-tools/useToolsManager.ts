@@ -4,10 +4,16 @@ import { useState, useMemo, useCallback } from 'react';
 import { showAlert } from '../shared/alerts';
 import {
   saveReport,
-  loadManuscript,
+  saveManuscript,
+  saveChatFile,
   loadApiKey,
   loadAppSettings,
-  getToolPrompt
+  getToolPrompt,
+  getToolScope,
+  assembleManuscriptFromWorkingCopy,
+  deleteManuscript,
+  deleteReport,
+  deleteChatFile
 } from '@/services/manuscriptStorage';
 
 interface Tool {
@@ -51,7 +57,8 @@ interface ToolsManagerActions {
   executeAITool: (
     currentProvider: string,
     currentModel: string,
-    isDarkMode: boolean
+    isDarkMode: boolean,
+    currentEditorText?: string
   ) => Promise<void>;
   clearTool: () => void;
 
@@ -88,11 +95,12 @@ export function useToolsManager(): [ToolsManagerState, ToolsManagerActions] {
     // This function is kept for interface compatibility
   }, []);
 
-  // Execute AI tool - loads manuscript.txt from IndexedDB
+  // Execute AI tool - uses working copy sections based on tool scope
   const executeAITool = useCallback(async (
     _currentProvider: string,
     _currentModel: string,
-    isDarkMode: boolean
+    isDarkMode: boolean,
+    currentEditorText?: string
   ) => {
     // Prevent multiple simultaneous executions
     if (toolExecuting || isUploadingReport) {
@@ -126,29 +134,41 @@ export function useToolsManager(): [ToolsManagerState, ToolsManagerActions] {
     setTimerInterval(interval);
 
     try {
-      setToolResult('Loading manuscript.txt...');
+      // Check tool scope: "chapter" uses current editor text, "all" uses full manuscript
+      setToolResult('Checking tool scope...');
+      const scope = await getToolScope(selectedTool);
 
-      // Load manuscript.txt from IndexedDB
-      const loadedManuscriptContent = await loadManuscript();
+      let manuscriptText: string;
+      if (scope === 'chapter') {
+        // Use current chapter text from editor
+        if (!currentEditorText || !currentEditorText.trim()) {
+          setToolResult('❌ No chapter content. Please add content to the current chapter first.');
+          setToolExecuting(false);
+          clearInterval(interval);
+          setTimerInterval(null);
+          return;
+        }
+        manuscriptText = currentEditorText;
+        setToolResult('Using current chapter...');
+      } else {
+        // Assemble full manuscript from working copy (chapters only)
+        setToolResult('Assembling manuscript from chapters...');
+        manuscriptText = await assembleManuscriptFromWorkingCopy();
 
-      if (!loadedManuscriptContent) {
-        setToolResult('❌ No manuscript.txt found. Please add your manuscript first using the Files button.');
-        setToolExecuting(false);
-        clearInterval(interval);
-        setTimerInterval(null);
-        return;
-      }
-
-      if (!loadedManuscriptContent.trim()) {
-        setToolResult('❌ manuscript.txt is empty. Please add content to your manuscript first.');
-        setToolExecuting(false);
-        clearInterval(interval);
-        setTimerInterval(null);
-        return;
+        if (!manuscriptText || !manuscriptText.trim()) {
+          setToolResult('❌ No chapters found. Please add chapters to your manuscript first.');
+          setToolExecuting(false);
+          clearInterval(interval);
+          setTimerInterval(null);
+          return;
+        }
       }
 
       // Store manuscript content for later use by View-Edit
-      setManuscriptContent(loadedManuscriptContent);
+      setManuscriptContent(manuscriptText);
+
+      // Save manuscript.txt to IndexedDB (overwritten each Run)
+      await saveManuscript(manuscriptText);
 
       // Get tool prompt from IndexedDB
       setToolResult('Loading tool prompt...');
@@ -181,12 +201,15 @@ export function useToolsManager(): [ToolsManagerState, ToolsManagerActions] {
 
       // Build message (same format as openrouter.ts buildMessages)
       const combinedContent = `=== MANUSCRIPT ===
-${loadedManuscriptContent}
+${manuscriptText}
 === END MANUSCRIPT ===
 
 === INSTRUCTIONS ===
 ${toolPrompt}
 === END INSTRUCTIONS ===`;
+
+      // Save ai_request.txt to IndexedDB (overwritten each Run)
+      await saveChatFile('ai_request.txt', combinedContent);
 
       // Client-side OpenRouter API call
       setToolResult('Executing tool...');
@@ -244,8 +267,14 @@ ${toolPrompt}
     }
   }, [selectedTool, timerInterval, toolExecuting, isUploadingReport]);
 
-  // Clear tool state
-  const clearTool = useCallback(() => {
+  // Clear tool state and delete IndexedDB artifacts
+  const clearTool = useCallback(async () => {
+    // Delete IndexedDB artifacts
+    await deleteManuscript();
+    await deleteReport();
+    await deleteChatFile('ai_request.txt');
+
+    // Reset state
     setToolResult('');
     setManuscriptContent('');
     setToolJustFinished(false);

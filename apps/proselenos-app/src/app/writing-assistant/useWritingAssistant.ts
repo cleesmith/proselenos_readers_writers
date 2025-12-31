@@ -9,11 +9,13 @@ import {
   loadWorkflowFile,
   saveWorkflowFile,
   workflowFileExists,
-  loadManuscript,
-  saveManuscript,
   loadApiKey,
   loadAppSettings,
-  getWritingAssistantPrompt
+  getWritingAssistantPrompt,
+  loadWorkingCopyMeta,
+  saveWorkingCopyMeta,
+  saveSection,
+  loadSection
 } from '@/services/manuscriptStorage';
 
 // Output filenames for each workflow step
@@ -30,7 +32,9 @@ export function useWritingAssistant(
   _session: any,
   isDarkMode: boolean,
   onLoadFileIntoEditor?: (content: string, fileName: string, fileId?: string) => void,
-  onModalCloseReopen?: () => void
+  onModalCloseReopen?: () => void,
+  onOpenChat?: () => void,
+  onChapterAdded?: (chapterId: string) => void
 ) {
   const [state, setState] = useState<WorkflowState>({
     isModalOpen: false,
@@ -44,20 +48,30 @@ export function useWritingAssistant(
 
   // Check which files exist in IndexedDB
   const detectExistingFiles = useCallback(async () => {
-    const [hasBrainstorm, hasOutline, hasWorld, manuscriptContent] = await Promise.all([
+    const [hasBrainstorm, hasOutline, hasWorld] = await Promise.all([
       workflowFileExists('brainstorm.txt'),
       workflowFileExists('outline.txt'),
       workflowFileExists('world.txt'),
-      loadManuscript()  // manuscript.txt is in MANUSCRIPT store, not AI store
     ]);
 
-    const hasManuscript = manuscriptContent !== null && manuscriptContent.length > 0;
+    // Check if Working Copy has any chapters
+    const meta = await loadWorkingCopyMeta();
+    let hasChapters = false;
+    if (meta) {
+      for (const id of meta.sectionIds) {
+        const section = await loadSection(id);
+        if (section?.type === 'chapter') {
+          hasChapters = true;
+          break;
+        }
+      }
+    }
 
     return {
       brainstorm: hasBrainstorm ? { id: 'brainstorm.txt', name: 'brainstorm.txt', path: 'brainstorm.txt' } : undefined,
       outline: hasOutline ? { id: 'outline.txt', name: 'outline.txt', path: 'outline.txt' } : undefined,
       world: hasWorld ? { id: 'world.txt', name: 'world.txt', path: 'world.txt' } : undefined,
-      manuscript: hasManuscript ? { id: 'manuscript.txt', name: 'manuscript.txt', path: 'manuscript.txt' } : undefined,
+      manuscript: hasChapters ? { id: 'working-copy', name: 'chapters', path: 'working-copy' } : undefined,
       chapters: []
     };
   }, []);
@@ -107,7 +121,18 @@ export function useWritingAssistant(
       console.error('Failed to load brainstorm for chat context:', error);
     }
 
-    // Small delay to ensure modal is closed
+    // Store context in sessionStorage for SimpleChatModal to pick up
+    if (brainstormContext) {
+      sessionStorage.setItem('chatInitialContext', brainstormContext);
+    }
+
+    // Use callback if provided (preferred), otherwise fall back to DOM search
+    if (onOpenChat) {
+      setTimeout(() => onOpenChat(), 100);
+      return;
+    }
+
+    // Fallback: Small delay to ensure modal is closed, then search DOM
     setTimeout(() => {
       try {
         // Find and click the Chat button, passing context if available
@@ -127,10 +152,6 @@ export function useWritingAssistant(
         }
 
         if (chatButton && typeof (chatButton as HTMLElement).click === 'function') {
-          // Store context in sessionStorage for SimpleChatModal to pick up
-          if (brainstormContext) {
-            sessionStorage.setItem('chatInitialContext', brainstormContext);
-          }
           (chatButton as HTMLElement).click();
         } else {
           showAlert('Chat button not found. Please click the Chat button manually.', 'error', undefined, isDarkMode);
@@ -140,7 +161,7 @@ export function useWritingAssistant(
         showAlert('Could not open Chat. Please click the Chat button manually.', 'error', undefined, isDarkMode);
       }
     }, 100);
-  }, [closeModal, isDarkMode]);
+  }, [closeModal, isDarkMode, onOpenChat]);
 
   // Check if step can run based on file existence
   const canRunStep = useCallback((stepId: WorkflowStepId, files: any): { canRun: boolean; errorMessage?: string } => {
@@ -240,10 +261,10 @@ export function useWritingAssistant(
         throw new Error('AI model not selected. Please select a model in Settings.');
       }
 
-      // Load Writing Assistant prompt (from separate IndexedDB storage)
+      // Load AI Writing prompt (from separate IndexedDB storage)
       const toolPrompt = await getWritingAssistantPrompt(stepId);
       if (!toolPrompt) {
-        throw new Error(`Writing Assistant prompt not found for ${stepId}. Please try reloading the app.`);
+        throw new Error(`AI Writing prompt not found for ${stepId}. Please try reloading the app.`);
       }
 
       // Build context based on step
@@ -262,17 +283,28 @@ export function useWritingAssistant(
         const outlineContent = await loadWorkflowFile('outline.txt');
         context = `=== OUTLINE ===\n${outlineContent || ''}\n=== END OUTLINE ===`;
       } else if (stepId === 'chapters') {
-        // Chapters uses outline + world + existing manuscript
+        // Chapters uses outline + world + existing chapters from Working Copy
         const outlineContent = await loadWorkflowFile('outline.txt');
         const worldContent = await loadWorkflowFile('world.txt');
-        const manuscriptContent = await loadManuscript();
+
+        // Build manuscript content from Working Copy chapters
+        const meta = await loadWorkingCopyMeta();
+        let manuscriptContent = '';
+        if (meta) {
+          for (const id of meta.sectionIds) {
+            const section = await loadSection(id);
+            if (section && section.type === 'chapter') {
+              manuscriptContent += `\n\n${section.title}\n\n${section.content}`;
+            }
+          }
+        }
 
         // Find next chapter to write
-        const nextChapter = findNextChapter(outlineContent || '', manuscriptContent || '');
+        const nextChapter = findNextChapter(outlineContent || '', manuscriptContent);
 
         context = `=== OUTLINE ===\n${outlineContent || ''}\n=== END OUTLINE ===\n\n` +
           `=== WORLD ===\n${worldContent || ''}\n=== END WORLD ===\n\n` +
-          `=== EXISTING MANUSCRIPT ===\n${manuscriptContent || ''}\n=== END EXISTING MANUSCRIPT ===\n\n` +
+          `=== EXISTING MANUSCRIPT ===\n${manuscriptContent}\n=== END EXISTING MANUSCRIPT ===\n\n` +
           `=== NEXT CHAPTER TO WRITE ===\n${nextChapter}\n=== END NEXT CHAPTER ===`;
       }
 
@@ -286,7 +318,7 @@ export function useWritingAssistant(
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': typeof window !== 'undefined' ? window.location.href : 'https://proselenos.com',
-          'X-Title': 'Proselenos Writing Assistant'
+          'X-Title': 'Proselenos AI Writing'
         },
         body: JSON.stringify({
           model: settings.selectedModel,
@@ -308,11 +340,38 @@ export function useWritingAssistant(
 
       // Save result to appropriate file
       const outputFile = OUTPUT_FILES[stepId];
+      let newChapterId: string | null = null;
+
       if (stepId === 'chapters') {
-        // Append to manuscript
-        const existingManuscript = await loadManuscript();
-        const separator = existingManuscript ? '\n\n' : '';
-        await saveManuscript((existingManuscript || '') + separator + result);
+        // Create new chapter in Working Copy structure
+        const meta = await loadWorkingCopyMeta();
+        if (!meta) {
+          throw new Error('No manuscript loaded. Please create or open a manuscript first.');
+        }
+
+        // Extract chapter title from AI result (first line typically "Chapter X: Title")
+        const firstLine = result.split('\n')[0]?.trim() || '';
+        const chapterTitle = firstLine.startsWith('Chapter') ? firstLine : findNextChapter(
+          await loadWorkflowFile('outline.txt') || '',
+          ''
+        );
+
+        // Generate next section ID
+        const numbers = meta.sectionIds.map(id => parseInt(id.split('-')[1] || '0') || 0);
+        const nextNum = Math.max(0, ...numbers) + 1;
+        newChapterId = `section-${String(nextNum).padStart(3, '0')}`;
+
+        // Save new chapter section
+        await saveSection({
+          id: newChapterId,
+          title: chapterTitle,
+          content: result,
+          type: 'chapter',
+        });
+
+        // Append to sectionIds and save meta
+        meta.sectionIds.push(newChapterId);
+        await saveWorkingCopyMeta(meta);
       } else {
         await saveWorkflowFile(outputFile, result);
       }
@@ -341,8 +400,11 @@ export function useWritingAssistant(
         projectFiles: refreshedFiles
       }));
 
-      // Trigger modal refresh
-      if (onModalCloseReopen) {
+      // For chapters, call onChapterAdded to refresh sidebar (modal stays open)
+      // For other steps, trigger modal refresh
+      if (stepId === 'chapters' && newChapterId && onChapterAdded) {
+        setTimeout(() => onChapterAdded(newChapterId), 100);
+      } else if (onModalCloseReopen) {
         setTimeout(() => onModalCloseReopen(), 100);
       }
 
@@ -377,7 +439,18 @@ export function useWritingAssistant(
       let content: string | null = null;
 
       if (stepId === 'chapters') {
-        content = await loadManuscript();
+        // Build manuscript view from Working Copy chapters
+        const meta = await loadWorkingCopyMeta();
+        if (meta) {
+          let manuscriptContent = '';
+          for (const id of meta.sectionIds) {
+            const section = await loadSection(id);
+            if (section?.type === 'chapter') {
+              manuscriptContent += `\n\n${section.title}\n\n${section.content}`;
+            }
+          }
+          content = manuscriptContent.trim();
+        }
       } else {
         content = await loadWorkflowFile(fileName);
       }
@@ -417,7 +490,7 @@ export function useWritingAssistant(
     await executeStep(stepId);
   }, [detectExistingFiles, canRunStep, executeStep, isDarkMode]);
 
-  // Edit prompt (Writing Assistant prompts stored separately in IndexedDB)
+  // Edit prompt (AI Writing prompts stored separately in IndexedDB)
   const editPrompt = useCallback(async (stepId: WorkflowStepId) => {
     if (!onLoadFileIntoEditor || isLoadingPrompt) return;
 
@@ -425,7 +498,7 @@ export function useWritingAssistant(
     try {
       const content = await getWritingAssistantPrompt(stepId);
       if (content) {
-        // Use special prefix to identify Writing Assistant prompts
+        // Use special prefix to identify AI Writing prompts
         onLoadFileIntoEditor(content, `writing-assistant/${stepId}`, `wa:${stepId}`);
       } else {
         showAlert('Prompt not found', 'error', undefined, isDarkMode);

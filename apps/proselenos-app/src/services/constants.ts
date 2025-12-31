@@ -127,7 +127,7 @@ export const DEFAULT_BOOK_LAYOUT: BookLayout = {
   compactMarginLeftPx: 16,
   compactMarginRightPx: 16,
   gapPercent: 5,
-  scrolled: false,
+  scrolled: true,
   disableClick: false,
   fullscreenClickArea: false,
   swapClickArea: false,

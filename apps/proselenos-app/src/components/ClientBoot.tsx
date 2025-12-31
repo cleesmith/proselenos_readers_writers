@@ -20,7 +20,7 @@ import { useNonAITools } from '../app/non-ai-tools/useNonAITools';
 import { getTheme } from '../app/shared/theme';
 import { showAlert } from '../app/shared/alerts';
 import AboutModal from '../components/AboutModal';
-import ProjectSettingsModal, { ProjectMetadata } from '../app/projects/ProjectSettingsModal';
+import BookInfoModal, { BookMetadata } from '../app/authors/BookInfoModal';
 import { loadSettings, saveSettings, loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, initWritingAssistantPrompts } from '@/services/manuscriptStorage';
 import { initializeToolPrompts } from '@/services/toolPromptsLoader';
 
@@ -58,8 +58,8 @@ export default function ClientBoot() {
   const [hasShownReadyModal, setHasShownReadyModal] = useState(false);
   const [isSystemInitializing, setIsSystemInitializing] = useState(true);
   const [initFailed] = useState(false);
-  const [showProjectSettingsModal, setShowProjectSettingsModal] = useState(false);
-  const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | undefined>(undefined);
+  const [showBookInfoModal, setShowBookInfoModal] = useState(false);
+  const [projectMetadata, setBookMetadata] = useState<BookMetadata | undefined>(undefined);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
   const [isSavingMetadata, setIsSavingMetadata] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
@@ -74,7 +74,7 @@ export default function ClientBoot() {
         // Initialize tool prompts (fetches from public/ if not already in IndexedDB)
         await initializeToolPrompts();
 
-        // Initialize Writing Assistant prompts (separate storage with defaults)
+        // Initialize AI Writing prompts (separate storage with defaults)
         await initWritingAssistantPrompts();
 
         // Load tools from IndexedDB
@@ -271,12 +271,12 @@ export default function ClientBoot() {
 
   const handleProjectSettings = async () => {
     setIsLoadingMetadata(true);
-    setShowProjectSettingsModal(true);
+    setShowBookInfoModal(true);
 
     try {
       const settings = await loadSettings();
       if (settings) {
-        setProjectMetadata(settings);
+        setBookMetadata(settings);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -311,7 +311,7 @@ export default function ClientBoot() {
       return;
     }
 
-    // Check if this is a Writing Assistant prompt (prefix: "writing-assistant/")
+    // Check if this is a AI Writing prompt (prefix: "writing-assistant/")
     if (fileName.startsWith('writing-assistant/')) {
       const stepId = fileName.substring(18); // Remove "writing-assistant/" prefix
       setEditorInitialFile({ key: `wa:${stepId}`, store: 'ai' });
@@ -342,17 +342,8 @@ export default function ClientBoot() {
   // AI Tools handlers
   const handleCategoryChange = (category: string) => {
     toolsActions.setSelectedCategory(category);
-    
-    // Filter and sort tools alphabetically by their display name.
-    const filtered = toolsState.availableTools
-      .filter((tool) => tool.category === category)
-      .sort((a, b) => {
-        // Remove underscores and compare case‑insensitively
-        const nameA = a.name.replace(/_/g, ' ').toLowerCase();
-        const nameB = b.name.replace(/_/g, ' ').toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-    
+    // Filter tools for this category (already in manifest order)
+    const filtered = toolsState.availableTools.filter((tool) => tool.category === category);
     toolsActions.setToolsInCategory(filtered);
   };
   
@@ -398,20 +389,20 @@ export default function ClientBoot() {
   
   // Project Settings Modal handlers
   const handleProjectSettingsClose = () => {
-    setShowProjectSettingsModal(false);
-    setProjectMetadata(undefined);
+    setShowBookInfoModal(false);
+    setBookMetadata(undefined);
   };
   
-  const handleProjectSettingsSave = async (metadata: ProjectMetadata) => {
+  const handleProjectSettingsSave = async (metadata: BookMetadata) => {
     setIsSavingMetadata(true);
     projectActions.setUploadStatus('Saving settings...');
 
     try {
       await saveSettings(metadata);
-      setProjectMetadata(metadata);
+      setBookMetadata(metadata);
       projectActions.setUploadStatus('✅ Settings saved');
-      setShowProjectSettingsModal(false);
-      setProjectMetadata(undefined);
+      setShowBookInfoModal(false);
+      setBookMetadata(undefined);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       projectActions.setUploadStatus(`❌ Error: ${msg}`);
@@ -722,8 +713,8 @@ export default function ClientBoot() {
       />
 
       {/* Project Settings Modal */}
-      <ProjectSettingsModal
-        isOpen={showProjectSettingsModal}
+      <BookInfoModal
+        isOpen={showBookInfoModal}
         theme={theme}
         isDarkMode={isDarkMode}
         isLoading={isLoadingMetadata}
