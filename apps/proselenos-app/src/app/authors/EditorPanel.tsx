@@ -23,6 +23,7 @@ interface EditorPanelProps {
   onToggleSidebar: () => void;
   onAIWritingClick: () => void;
   hasApiKey: boolean;
+  currentModel: string;
   // Section content
   sectionTitle: string;
   sectionContent: string;
@@ -79,6 +80,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   onToggleSidebar,
   onAIWritingClick,
   hasApiKey,
+  currentModel,
   sectionTitle,
   sectionContent,
   sectionType: _sectionType,
@@ -119,6 +121,9 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
+
+  // AI features require both API key AND a selected model
+  const aiReady = hasApiKey && !!currentModel;
 
   // Editable chapter title state (initialized from prop, but editable locally for now)
   const [chapterTitle, setChapterTitle] = useState(sectionTitle);
@@ -507,25 +512,26 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           )}
         </div>
 
-        <StyledSmallButton theme={theme} onClick={onAIWritingClick} disabled={!hasApiKey || toolExecuting}>
+        <StyledSmallButton theme={theme} onClick={onAIWritingClick} disabled={!aiReady || toolExecuting}>
           AI Writing
         </StyledSmallButton>
 
-        <span style={{ fontSize: '11px', color: theme.textMuted, marginLeft: '8px' }}>AI Editing:</span>
+        <span style={{ fontSize: '11px', color: theme.textMuted, marginLeft: '8px', opacity: aiReady ? 1 : 0.4 }}>AI Editing:</span>
 
         {/* Category dropdown */}
         <select
           value={selectedCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
-          disabled={!toolsReady || toolExecuting || !hasApiKey}
+          disabled={!toolsReady || toolExecuting || !aiReady}
           style={{
             padding: '2px 6px',
-            backgroundColor: toolsReady ? theme.inputBg : '#666',
-            color: toolsReady ? theme.text : '#999',
+            backgroundColor: (toolsReady && aiReady) ? theme.inputBg : '#666',
+            color: (toolsReady && aiReady) ? theme.text : '#999',
             border: `1px solid ${theme.border}`,
             borderRadius: '3px',
             fontSize: '11px',
-            cursor: toolsReady ? 'pointer' : 'not-allowed',
+            cursor: (toolsReady && aiReady) ? 'pointer' : 'not-allowed',
+            opacity: aiReady ? 1 : 0.4,
           }}
         >
           <option value="">Category...</option>
@@ -538,7 +544,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         <select
           value={selectedTool}
           onChange={(e) => onToolChange(e.target.value)}
-          disabled={!selectedCategory || !toolsReady || toolExecuting || !hasApiKey}
+          disabled={!selectedCategory || !toolsReady || toolExecuting || !aiReady}
           style={{
             padding: '2px 6px',
             backgroundColor: selectedCategory && toolsReady ? theme.inputBg : '#666',
@@ -566,7 +572,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         {/* Prompt button */}
         <StyledSmallButton
           onClick={onPromptEdit}
-          disabled={!selectedTool || !toolsReady || toolExecuting || isLoadingPrompt || !hasApiKey}
+          disabled={!selectedTool || !toolsReady || toolExecuting || isLoadingPrompt || !aiReady}
           theme={theme}
         >
           {isLoadingPrompt ? '...' : 'Prompt'}
@@ -575,7 +581,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         {/* Run button */}
         <StyledSmallButton
           onClick={onExecuteTool}
-          disabled={!selectedTool || !toolsReady || toolExecuting || !hasApiKey}
+          disabled={!selectedTool || !toolsReady || toolExecuting || !aiReady}
           theme={theme}
         >
           {toolExecuting ? 'Running...' : 'Send'}

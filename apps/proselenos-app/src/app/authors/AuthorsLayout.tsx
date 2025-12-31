@@ -1012,6 +1012,7 @@ export default function AuthorsLayout({
             onToggleSidebar={onToggleSidebar}
             onAIWritingClick={onAIWritingClick}
             hasApiKey={hasApiKey}
+            currentModel={currentModel}
             sectionTitle={selectedSection?.title ?? ''}
             sectionContent={selectedSection?.content ?? ''}
             sectionType={selectedSection?.type}
