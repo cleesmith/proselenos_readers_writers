@@ -1,3 +1,5 @@
+// apps/proselenos-app/src/components/AboutWindow.tsx
+
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useEnv } from '@/context/EnvContext';
@@ -116,7 +118,7 @@ export const AboutWindow = () => {
               AGPL v3 license. Please see the license for more details.
             </p>
             <p className='text-neutral-content text-xs italic'>
-              EverythingEbooks ebooks are compatible with{' '}
+              EverythingEbooks is compatible with{' '}
               <Link href='https://readest.com/' className='text-blue-500 underline'>
                 Readest
               </Link>

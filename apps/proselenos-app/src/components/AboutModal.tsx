@@ -58,7 +58,7 @@ export default function AboutModal({
             fontSize: '24px',
             fontWeight: '600'
           }}>
-            EverythingEbooks - Readers & Writers
+            EverythingEbooks
           </h2>
           <div style={{ display: 'flex', gap: '8px' }}>
             <StyledSmallButton
@@ -83,57 +83,80 @@ export default function AboutModal({
           overflow: 'auto',
           flex: 1
         }}>
-          {/* Welcome Guide Section */}
+          {/* Privacy/Terms Links */}
+          <div style={{ marginBottom: '24px' }}>
+            <p style={{ margin: '0 0 16px 0', color: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: '14px' }}>
+              For more information, see our
+              <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#4299e1' }}> Privacy Policy</a>
+              &nbsp;and&nbsp;
+              <a href="/terms.html" target="_blank" rel="noopener noreferrer" style={{ color: '#4299e1' }}> Terms of Service</a>.
+            </p>
+            <div style={{ borderTop: `1px solid ${isDarkMode ? '#333' : '#e5e7eb'}`, marginTop: '16px' }} />
+          </div>
+
+          {/* Getting Started Section */}
           <div style={{ marginBottom: '32px' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <p style={{ margin: '0 0 16px 0', color: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: '14px' }}>
-                For more information, see our
-                <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: '#4299e1' }}> Privacy Policy</a> 
-                &nbsp;and&nbsp;  
-                <a href="/terms.html" target="_blank" rel="noopener noreferrer" style={{ color: '#4299e1' }}> Terms of Service</a>.
-              </p>
-              <div style={{ borderTop: `1px solid ${isDarkMode ? '#333' : '#e5e7eb'}`, marginTop: '16px' }} />
-            </div>
             <h3 style={{
               fontSize: '20px',
               fontWeight: '600',
               marginBottom: '16px',
               color: '#10b981'
             }}>
-              🎉 Getting Started
+              Getting Started
             </h3>
-            <p style={{ margin: '0 0 20px 0', color: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: '14px', paddingLeft: '36px' }}>
-              Follow these 4 essential steps to set up EverythingEbooks:
+            <div style={{ fontWeight: '600', marginBottom: '8px' }}>
+              Open or Create an Ebook
+            </div>
+            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
+              Click &quot;Open&quot; in the header. Choose &quot;New&quot; for a blank ebook, &quot;Load EPUB&quot; to import an existing one, &quot;Load DOCX&quot; for a Word document, or &quot;Load from Library&quot; to edit a book from your e-reader.
             </p>
-            
-              {/* Step 1: Create First Project */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div style={{
-                  background: '#10b981',
-                  color: 'white',
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  marginRight: '12px',
-                  flexShrink: 0
-                }}>1</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                    Create First Project
-                  </div>
-                  <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                    Click &quot;Select Project&quot; button to create your first writing project folder
-                  </div>
+            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6' }}>
+              That&apos;s it - you can now create and edit ebooks entirely by hand.
+            </p>
+          </div>
+
+          {/* Want AI Writing & Editing Section */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              marginBottom: '12px',
+              color: '#10b981'
+            }}>
+              Want AI Writing &amp; Editing?
+            </h3>
+            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '16px' }}>
+              If you want to use the AI features, complete these 3 steps:
+            </p>
+
+            {/* Step 1 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div style={{
+                background: '#10b981',
+                color: 'white',
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: '600',
+                marginRight: '12px',
+                flexShrink: 0
+              }}>1</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                  Add OpenRouter API Key
+                </div>
+                <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
+                  Click the hamburger menu (&#9776;) then &quot;Key&quot; to add your <a href="https://openrouter.ai" target="_blank" style={{ color: '#4285F4', textDecoration: 'none' }}>OpenRouter</a> API key.
                 </div>
               </div>
+            </div>
 
-            {/* Step 2: Add OpenRouter API Key */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+            {/* Step 2 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div style={{
                 background: '#10b981',
                 color: 'white',
@@ -150,16 +173,16 @@ export default function AboutModal({
               }}>2</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                  Add OpenRouter API Key
+                  Choose AI Model
                 </div>
                 <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                  Click the &quot;AI API key&quot; button in the header to add your <a href="https://openrouter.ai" target="_blank" style={{ color: '#4285F4', textDecoration: 'none' }}>OpenRouter</a> API key
+                  Click the hamburger menu (&#9776;) then &quot;Models&quot; to select which AI model to use.
                 </div>
               </div>
             </div>
-            
-            {/* Step 3: Choose AI Model */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+
+            {/* Step 3 */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div style={{
                 background: '#10b981',
                 color: 'white',
@@ -176,42 +199,16 @@ export default function AboutModal({
               }}>3</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                  Choose AI Model
-                </div>
-                <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                  Click &quot;Models&quot; button and select a model
-                </div>
-              </div>
-            </div>
-            
-            {/* Step 4: Test with Chat */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div style={{
-                background: '#10b981',
-                color: 'white',
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: '600',
-                marginRight: '12px',
-                flexShrink: 0
-              }}>4</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
                   Test with Chat
                 </div>
                 <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                  Click the &quot;Chat&quot; button to verify your setup is working correctly
+                  Click the hamburger menu (&#9776;) then &quot;Chat&quot; to verify your setup is working correctly.
                 </div>
               </div>
             </div>
           </div>
 
-          {/* How Projects Work */}
+          {/* How Your Ebook Works */}
           <div style={{ marginBottom: '32px' }}>
             <h3 style={{
               fontSize: '18px',
@@ -219,20 +216,20 @@ export default function AboutModal({
               marginBottom: '12px',
               color: '#10b981'
             }}>
-              📁 How Projects Work
+              How Your Ebook Works
             </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
-              Projects are a way to organize your writing:
+            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
+              Your ebook is stored entirely in your browser:
             </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
-              <li style={{ marginBottom: '8px' }}>Each project is a separate folder in storage</li>
-              <li style={{ marginBottom: '8px' }}>Upload manuscript files (.docx or .txt) to your project folder</li>
-              <li style={{ marginBottom: '8px' }}>AI tools work on/with .txt files within your selected project</li>
-              <li style={{ marginBottom: '8px' }}>Keep different writing projects organized separately</li>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
+              <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere</li>
+              <li style={{ marginBottom: '8px' }}>Organized into sections: front matter, chapters, and back matter</li>
+              <li style={{ marginBottom: '8px' }}>Click &quot;send Ebook&quot; to export as EPUB and add to your Library</li>
+              <li style={{ marginBottom: '8px' }}>No accounts, no sign up, no sign in, no emails - completely private</li>
             </ul>
           </div>
 
-          {/* Editing Manuscripts with AI */}
+          {/* AI Editing */}
           <div style={{ marginBottom: '32px' }}>
             <h3 style={{
               fontSize: '18px',
@@ -240,17 +237,41 @@ export default function AboutModal({
               marginBottom: '12px',
               color: '#10b981'
             }}>
-              ✏️ Editing Manuscripts with AI
+              AI Editing
             </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
-              EverythingEbooks offers powerful AI-powered editing tools:
+            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
+              Select a chapter, then use the AI Editing tools:
             </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Grammar & Style:</strong> Fix grammar, improve sentence structure, enhance readability</li>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
+              <li style={{ marginBottom: '8px' }}><strong>Grammar &amp; Style:</strong> Fix grammar, improve sentence structure, enhance readability</li>
               <li style={{ marginBottom: '8px' }}><strong>Content Analysis:</strong> Character development, plot consistency, pacing feedback</li>
-              <li style={{ marginBottom: '8px' }}><strong>Genre-Specific:</strong> Tools tailored for fiction, non-fiction (a few)</li>
+              <li style={{ marginBottom: '8px' }}><strong>Genre-Specific:</strong> Tools tailored for fiction, non-fiction</li>
               <li style={{ marginBottom: '8px' }}><strong>Custom Tools:</strong> Specialized editing prompts for specific needs</li>
             </ul>
+          </div>
+
+          {/* AI Writing */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              marginBottom: '12px',
+              color: '#10b981'
+            }}>
+              AI Writing
+            </h3>
+            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
+              Click &quot;AI Writing&quot; to access writing tools:
+            </p>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
+              <li style={{ marginBottom: '8px' }}><strong>Brainstorming:</strong> Develop characters, plot ideas, and settings</li>
+              <li style={{ marginBottom: '8px' }}><strong>Outlining:</strong> Generate outlines and story structures</li>
+              <li style={{ marginBottom: '8px' }}><strong>World Building:</strong> Creates a world file based on your outline and ideas</li>
+              <li style={{ marginBottom: '8px' }}><strong>Chapter Writing:</strong> Generate rough draft chapters aware of previous chapters, outline, and world files</li>
+            </ul>
+            <p style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.5', fontStyle: 'italic', marginTop: '12px', paddingLeft: '12px', borderLeft: `3px solid ${isDarkMode ? '#444' : '#ddd'}` }}>
+              AI models with larger context windows can be more thorough. AI creative writing is still rough draft quality, but it excels at editing.
+            </p>
           </div>
 
           {/* Why OpenRouter */}
@@ -261,57 +282,12 @@ export default function AboutModal({
               marginBottom: '12px',
               color: '#10b981'
             }}>
-              🤖 Why OpenRouter?
+              Why OpenRouter?
             </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
-              OpenRouter provides a good AI experience for writers:
-            </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Model Variety:</strong> Access to OpenAI, Anthropic, Google, and more from one API key</li>
-              <li style={{ marginBottom: '8px' }}><strong>Flexibility:</strong> Switch between models based on your specific editing needs</li>
-              <li style={{ marginBottom: '8px' }}><strong>Reliability:</strong> Automatic fallbacks if one model is unavailable</li>
-              <li style={{ marginBottom: '8px' }}><strong>Competitive Pricing:</strong> Sometimes cheaper than direct provider APIs</li>
-            </ul>
-          </div>
-
-          {/* AI AI Writing */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              marginBottom: '12px',
-              color: '#10b981'
-            }}>
-              ✍️ AI AI Writing
-            </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
-              EverythingEbooks isn&apos;t just for editing - it&apos;s also a writing companion:
-            </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Writer&apos;s Block:</strong> Overcome creative blocks with AI-generated rough draft writing</li>
-              <li style={{ marginBottom: '8px' }}><strong>Brainstorming:</strong> Develop characters, plot ideas, and settings</li>
-              <li style={{ marginBottom: '8px' }}><strong>Outling:</strong> Generate initial drafts, outlines, and story structures</li>
-              <li style={{ marginBottom: '8px' }}><strong>World Building:</strong> Creates a world file based on outline and ideas</li>
-              <li style={{ marginBottom: '8px' }}><strong>Chapter Writing:</strong> Generate rough draft chapters one-at-time that&apos;s aware of<br /> previous chapters plus the outline and world files<br /><blockquote><i>Aside: AI models with a larger input size, <b>context window</b>, can be more thorough.<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alas, AI creative writing is still very rough draft, but it does excel at editing.</i></blockquote></li>
-            </ul>
-          </div>
-
-          {/* Publishing Assistant */}
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              marginBottom: '12px',
-              color: '#10b981'
-            }}>
-              📚 Publishing Assistant
-            </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px', paddingLeft: '20px' }}>
-              Get your manuscript ready for Kindle Direct Publishing (KDP) and other booksellers:
-            </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '40px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Format Optimization:</strong> Prepare your manuscript for both ebook (.epub) and paperback formats (.pdf)</li>
-              <li style={{ marginBottom: '8px' }}><strong>Metadata Generation:</strong> Create compelling book descriptions, keywords, and categories</li>
+            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
+              <li style={{ marginBottom: '8px' }}><strong>Model Variety:</strong> Access OpenAI, Anthropic, Google, and more from one API key</li>
+              <li style={{ marginBottom: '8px' }}><strong>Flexibility:</strong> Switch models based on your needs</li>
+              <li style={{ marginBottom: '8px' }}><strong>Competitive Pricing:</strong> Often cheaper than direct provider APIs</li>
             </ul>
           </div>
 
@@ -323,14 +299,14 @@ export default function AboutModal({
             borderLeft: '4px solid #10b981'
           }}>
             <div style={{ fontWeight: '600', marginBottom: '8px', color: isDarkMode ? '#10b981' : '#059669', fontSize: '14px' }}>
-              💡 Pro Tip
+              Pro Tip
             </div>
             <div style={{ fontSize: '13px', color: isDarkMode ? '#d1d5db' : '#4b5563', lineHeight: '1.5' }}>
-              Start with uploading a chapter or section of your work to test different AI models and find the one that best matches your writing style and needs. You can upload Word documents (.docx) or text files (.txt) to get started!
+              Test different AI models on a single chapter to find the one that best matches your writing style.
             </div>
           </div>
 
-          {/* --- Book on Amazon & Ko-fi Donate --- */}
+          {/* Book on Amazon & Ko-fi Donate */}
           <div className="mt-6 flex items-center justify-center gap-4">
             <a
               href="https://a.co/d/5feXsK0"
