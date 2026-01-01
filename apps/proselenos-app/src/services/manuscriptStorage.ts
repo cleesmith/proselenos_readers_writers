@@ -15,6 +15,7 @@ export interface ManuscriptSettings {
 export interface AppSettings {
   darkMode: boolean;
   selectedModel: string;
+  hideAboutModal?: boolean;
 }
 
 const DB_NAME = 'ProselenosLocal';

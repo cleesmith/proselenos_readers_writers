@@ -38,6 +38,7 @@ export default function AuthorsClient() {
 
   // About modal state
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [hideAboutOnStartup, setHideAboutOnStartup] = useState(true); // default to hidden until we load settings
 
   // Storage modal state
   const [showStorageModal, setShowStorageModal] = useState(false);
@@ -130,13 +131,19 @@ export default function AuthorsClient() {
     }
   }, []);
 
-  // Check API key and load model on mount
+  // Check API key and load model on mount, and show About if needed
   useEffect(() => {
     checkApiKey();
-    // Load current model
+    // Load current model and check if About should auto-show
     loadAppSettings().then((settings) => {
       if (settings?.selectedModel) {
         setCurrentModel(settings.selectedModel);
+      }
+      // Show About on startup if hideAboutModal is not set or false
+      const shouldHide = settings?.hideAboutModal ?? false;
+      setHideAboutOnStartup(shouldHide);
+      if (!shouldHide) {
+        setShowAboutModal(true);
       }
     });
   }, [checkApiKey]);
@@ -175,6 +182,14 @@ export default function AuthorsClient() {
     settings.selectedModel = model;
     await saveAppSettings(settings);
     setCurrentModel(model);
+  };
+
+  // Toggle "Don't show About on startup" setting
+  const handleToggleHideAboutOnStartup = async (hide: boolean) => {
+    setHideAboutOnStartup(hide);
+    const settings = await loadAppSettings() || { darkMode: isDarkMode, selectedModel: '' };
+    settings.hideAboutModal = hide;
+    await saveAppSettings(settings);
   };
 
   // Settings save handler
@@ -383,6 +398,8 @@ export default function AuthorsClient() {
         onClose={() => setShowAboutModal(false)}
         isDarkMode={isDarkMode}
         theme={theme}
+        hideOnStartup={hideAboutOnStartup}
+        onToggleHideOnStartup={handleToggleHideAboutOnStartup}
       />
 
       {/* Storage Modal */}

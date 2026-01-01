@@ -1,5 +1,7 @@
 // apps/proselenos-app/src/components/AboutModal.tsx
 // About for Authors page
+// Shows on startup until user checks "Don't show me this again"
+// User can always open via Menu > About and toggle the setting
 
 'use client';
 
@@ -11,13 +13,17 @@ interface AboutModalProps {
   onClose: () => void;
   isDarkMode: boolean;
   theme: ThemeConfig;
+  hideOnStartup: boolean; // current setting value
+  onToggleHideOnStartup: (hide: boolean) => void; // called when checkbox toggled
 }
 
 export default function AboutModal({
   isOpen,
   onClose,
   isDarkMode,
-  theme
+  theme,
+  hideOnStartup,
+  onToggleHideOnStartup
 }: AboutModalProps) {
   if (!isOpen) return null;
 
@@ -304,6 +310,29 @@ export default function AboutModal({
               Donate
             </a>
           </div>
+
+          {/* Don't show on startup checkbox */}
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '24px',
+            fontSize: '13px',
+            color: isDarkMode ? '#9ca3af' : '#6b7280',
+            cursor: 'pointer'
+          }}>
+            <input
+              type="checkbox"
+              checked={hideOnStartup}
+              onChange={(e) => onToggleHideOnStartup(e.target.checked)}
+              style={{
+                width: '16px',
+                height: '16px',
+                cursor: 'pointer'
+              }}
+            />
+            Don&apos;t show me this again
+          </label>
 
         </div>
       </div>
