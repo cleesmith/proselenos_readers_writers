@@ -1,3 +1,6 @@
+// apps/proselenos-app/src/components/WelcomeModal.tsx
+// Welcome for ereader Library page, which can be hiddened/revealed by users
+
 'use client';
 
 import { useState } from 'react';
@@ -45,7 +48,7 @@ export default function WelcomeModal({
         background: isDarkMode ? '#222' : '#fff',
         color: isDarkMode ? '#fff' : '#333',
         borderRadius: '12px',
-        maxWidth: '600px',
+        maxWidth: '750px',
         width: '100%',
         maxHeight: '90vh',
         overflow: 'hidden',
@@ -75,7 +78,7 @@ export default function WelcomeModal({
             </h2>
           </div>
           <StyledSmallButton onClick={handleDismiss} theme={theme}>
-            Got it
+            Close
           </StyledSmallButton>
         </div>
 
@@ -85,25 +88,8 @@ export default function WelcomeModal({
           overflow: 'auto',
           flex: 1
         }}>
-          {/* Free Banner */}
-          <div style={{
-            background: isDarkMode ? '#1a3a2a' : '#ecfdf5',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            borderLeft: '4px solid #10b981',
-            marginBottom: '24px',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              fontWeight: '600',
-              color: '#10b981',
-              fontSize: '16px'
-            }}>
-              Free. No subscriptions. No hidden fees.
-            </div>
-          </div>
 
-          {/* Section 1: For Readers */}
+          {/* For Readers */}
           <div style={{ marginBottom: '28px' }}>
             <h3 style={{
               fontSize: '18px',
@@ -125,12 +111,24 @@ export default function WelcomeModal({
               margin: 0
             }}>
               <li style={{ marginBottom: '8px' }}>
-                <strong>Beautiful E-Reader</strong> — Read your EPUB ebooks with a modern, customizable reader
+                <strong>Reading Essentials</strong> — Highlight, bookmark, take notes, and perform full-text searches all in one place
+              </li>
+              <li style={{ marginBottom: '8px' }}>
+                <strong>Customization</strong> — Adjust fonts, layouts, and theme colors to create your perfect reading environment
+              </li>
+              <li style={{ marginBottom: '8px' }}>
+                <strong>Smart Tools</strong> — Use built-in dictionary and Wikipedia for effortless understanding
+              </li>
+              <li style={{ marginBottom: '8px' }}>
+                <strong>Read Aloud</strong> — Read aloud your books with AI-powered text-to-speech (TTS) functionality
+              </li>
+              <li style={{ marginBottom: '8px' }}>
+                <strong>Parallel Read</strong> — Synchronize views seamlessly while reading two documents side by side
               </li>
             </ul>
           </div>
 
-          {/* Section 2: For Authors */}
+          {/* For Authors */}
           <div style={{ marginBottom: '20px' }}>
             <h3 style={{
               fontSize: '18px',
@@ -143,16 +141,6 @@ export default function WelcomeModal({
             }}>
               <span style={{ fontSize: '20px' }}>✍️</span>
               For Authors
-              <span style={{
-                fontSize: '11px',
-                background: isDarkMode ? '#333' : '#e5e7eb',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontWeight: 'normal',
-                color: isDarkMode ? '#9ca3af' : '#6b7280'
-              }}>
-                Sign in required
-              </span>
             </h3>
             <ul style={{
               fontSize: '14px',
@@ -162,30 +150,36 @@ export default function WelcomeModal({
               margin: 0
             }}>
               <li style={{ marginBottom: '8px' }}>
-                <strong>AI Editing Tools</strong> — Powered by <a href="https://openrouter.ai" target="_blank" style={{ color: '#4285F4', textDecoration: 'none' }}>OpenRouter</a> with access to Anthropic, OpenAI, Google, and more (AI usage is not free)
+                <strong>Writing Work Space</strong> — Create directly in EPUB format with or without AI
               </li>
               <li style={{ marginBottom: '8px' }}>
-                <strong>AI Writing</strong> — Brainstorm, outline, world, and very rough drafts (AI writing)
+                <strong>AI Editing Tools</strong> — Powered by <a href="https://openrouter.ai" target="_blank" style={{ color: '#4285F4', textDecoration: 'none' }}>OpenRouter</a> with access to Anthropic, OpenAI, Google, and more (<i>AI usage is <b>NOT</b> free</i>)
               </li>
               <li style={{ marginBottom: '8px' }}>
-                <strong>Free Publishing</strong> — Create EPUB - without AI (no API key needed)
+                <strong>AI Writing</strong> — Brainstorm, outline, world, and very rough chapter drafts
               </li>
             </ul>
           </div>
 
-          {/* Get Started Tip */}
+          {/* Free Banner */}
           <div style={{
-            background: isDarkMode ? '#333' : '#f3f4f6',
-            padding: '14px 16px',
+            background: isDarkMode ? '#1a3a2a' : '#ecfdf5',
+            padding: '12px 16px',
             borderRadius: '8px',
-            borderLeft: '4px solid #10b981'
+            borderLeft: '4px solid #10b981',
+            marginBottom: '24px',
+            textAlign: 'center'
           }}>
             <div style={{
-              fontSize: '13px',
-              color: isDarkMode ? '#d1d5db' : '#4b5563',
-              lineHeight: '1.5'
+              fontWeight: '600',
+              color: '#10b981',
+              fontSize: '16px'
             }}>
-              <strong style={{ color: isDarkMode ? '#10b981' : '#059669' }}>Get started:</strong> Import an EPUB using the <strong>+</strong> button, or explore <strong>Public Ebooks</strong> from the menu.
+              Free forever<br />
+              No subscriptions, no hidden fees<br />
+              No sign up, no sign in, no emails<br />
+              No tracking, total privacy<br />
+              Everything happens in your web browser
             </div>
           </div>
 

@@ -1,4 +1,5 @@
 // apps/proselenos-app/src/components/AboutWindow.tsx
+// About for ereader Library page
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';

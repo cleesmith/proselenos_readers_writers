@@ -1,3 +1,6 @@
+// apps/proselenos-app/src/components/AboutModal.tsx
+// About for Authors page
+
 'use client';
 
 import { ThemeConfig } from '../app/shared/theme';
@@ -105,13 +108,13 @@ export default function AboutModal({
               Getting Started
             </h3>
             <div style={{ fontWeight: '600', marginBottom: '8px' }}>
-              Open or Create an Ebook
+              Work on an Ebook
             </div>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
-              Click &quot;Open&quot; in the header. Choose &quot;New&quot; for a blank ebook, &quot;Load EPUB&quot; to import an existing one, &quot;Load DOCX&quot; for a Word document, or &quot;Load from Library&quot; to edit a book from your e-reader.
+              Click &quot;Open&quot; in the header. Choose &quot;New&quot; for a blank ebook, &quot;Load EPUB&quot; to import an existing one, &quot;Load DOCX&quot; for a Word document, or &quot;Load from Library&quot; to edit a book from your e-reader Library.
             </p>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6' }}>
-              That&apos;s it - you can now create and edit ebooks entirely by hand.
+              That&apos;s it - you can now create and edit ebooks entirely by hand, and/or proceed to setup and get AI assistance.
             </p>
           </div>
 
@@ -123,7 +126,7 @@ export default function AboutModal({
               marginBottom: '12px',
               color: '#10b981'
             }}>
-              Want AI Writing &amp; Editing?
+              Want AI Editing and Writing?
             </h3>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '16px' }}>
               If you want to use the AI features, complete these 3 steps:
@@ -219,12 +222,12 @@ export default function AboutModal({
               How Your Ebook Works
             </h3>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
-              Your ebook is stored entirely in your browser:
+              Your ebook is stored entirely in your web browser:
             </p>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere</li>
+              <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere (<i>except OpenRouter/AI</i>)</li>
               <li style={{ marginBottom: '8px' }}>Organized into sections: front matter, chapters, and back matter</li>
-              <li style={{ marginBottom: '8px' }}>Click &quot;send Ebook&quot; to export as EPUB and add to your Library</li>
+              <li style={{ marginBottom: '8px' }}>Click &quot;send Ebook&quot; to export as EPUB and add to your Library for instant reading and listening</li>
               <li style={{ marginBottom: '8px' }}>No accounts, no sign up, no sign in, no emails - completely private</li>
             </ul>
           </div>
@@ -243,10 +246,9 @@ export default function AboutModal({
               Select a chapter, then use the AI Editing tools:
             </p>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Grammar &amp; Style:</strong> Fix grammar, improve sentence structure, enhance readability</li>
+              <li style={{ marginBottom: '8px' }}><strong>Line Editing:</strong> Fix grammar, improve sentences one-at-a-time with AI suggestions</li>
               <li style={{ marginBottom: '8px' }}><strong>Content Analysis:</strong> Character development, plot consistency, pacing feedback</li>
-              <li style={{ marginBottom: '8px' }}><strong>Genre-Specific:</strong> Tools tailored for fiction, non-fiction</li>
-              <li style={{ marginBottom: '8px' }}><strong>Custom Tools:</strong> Specialized editing prompts for specific needs</li>
+              <li style={{ marginBottom: '8px' }}><strong>Custom Tools:</strong> Specialized and customizable editing/writing prompts for specific needs</li>
             </ul>
           </div>
 
@@ -264,14 +266,11 @@ export default function AboutModal({
               Click &quot;AI Writing&quot; to access writing tools:
             </p>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Brainstorming:</strong> Develop characters, plot ideas, and settings</li>
-              <li style={{ marginBottom: '8px' }}><strong>Outlining:</strong> Generate outlines and story structures</li>
-              <li style={{ marginBottom: '8px' }}><strong>World Building:</strong> Creates a world file based on your outline and ideas</li>
-              <li style={{ marginBottom: '8px' }}><strong>Chapter Writing:</strong> Generate rough draft chapters aware of previous chapters, outline, and world files</li>
+              <li style={{ marginBottom: '8px' }}><strong>Brainstorm:</strong> Develop characters, plot ideas, and settings</li>
+              <li style={{ marginBottom: '8px' }}><strong>Outline:</strong> Generate outlines and story structures</li>
+              <li style={{ marginBottom: '8px' }}><strong>World:</strong> Creates a world file based on your outline and brainstorm</li>
+              <li style={{ marginBottom: '8px' }}><strong>Chapter Writing:</strong> Generate rough draft chapters using the outline and world files, that are aware of previous chapters</li>
             </ul>
-            <p style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.5', fontStyle: 'italic', marginTop: '12px', paddingLeft: '12px', borderLeft: `3px solid ${isDarkMode ? '#444' : '#ddd'}` }}>
-              AI models with larger context windows can be more thorough. AI creative writing is still rough draft quality, but it excels at editing.
-            </p>
           </div>
 
           {/* Why OpenRouter */}
@@ -285,25 +284,9 @@ export default function AboutModal({
               Why OpenRouter?
             </h3>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Model Variety:</strong> Access OpenAI, Anthropic, Google, and more from one API key</li>
+              <li style={{ marginBottom: '8px' }}><strong>Model Variety:</strong> Access OpenAI, Anthropic, Google, and more from that one OpenRouter API key</li>
               <li style={{ marginBottom: '8px' }}><strong>Flexibility:</strong> Switch models based on your needs</li>
-              <li style={{ marginBottom: '8px' }}><strong>Competitive Pricing:</strong> Often cheaper than direct provider APIs</li>
             </ul>
-          </div>
-
-          {/* Pro Tip */}
-          <div style={{
-            background: isDarkMode ? '#333' : '#f3f4f6',
-            padding: '16px',
-            borderRadius: '8px',
-            borderLeft: '4px solid #10b981'
-          }}>
-            <div style={{ fontWeight: '600', marginBottom: '8px', color: isDarkMode ? '#10b981' : '#059669', fontSize: '14px' }}>
-              Pro Tip
-            </div>
-            <div style={{ fontSize: '13px', color: isDarkMode ? '#d1d5db' : '#4b5563', lineHeight: '1.5' }}>
-              Test different AI models on a single chapter to find the one that best matches your writing style.
-            </div>
           </div>
 
           {/* Book on Amazon & Ko-fi Donate */}
@@ -316,7 +299,7 @@ export default function AboutModal({
               style={{ backgroundColor: '#794bc4', color: '#fff' }}
               aria-label="EverythingEbooks book"
             >
-              EverythingEbooks (Proselenos) the book
+              EverythingEbooks (fka Proselenos) the book
             </a>
             <a
               href="https://ko-fi.com/slipthetrap"
