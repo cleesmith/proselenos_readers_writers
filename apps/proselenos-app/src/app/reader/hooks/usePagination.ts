@@ -1,5 +1,5 @@
 import { desktopGetWindowLogicalPosition } from '@/utils/desktop-stubs';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { FoliateView } from '@/types/view';
 import { ViewSettings } from '@/types/book';
@@ -71,6 +71,10 @@ export const usePagination = (
   const { getViewSettings, getViewState } = useReaderStore();
   const { hoveredBookKey, setHoveredBookKey } = useReaderStore();
   const { acquireVolumeKeyInterception, releaseVolumeKeyInterception } = useDeviceControlStore();
+
+  // PERF: Prevents multiple section transitions from being queued (causes blur)
+  // REVERT: Remove this ref and the transitionPendingRef checks to restore original behavior
+  const transitionPendingRef = useRef(false);
 
   const handlePageFlip = async (
     msg: MessageEvent | CustomEvent | React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -203,24 +207,59 @@ export const usePagination = (
     const renderer = viewRef.current?.renderer;
     const viewSettings = getViewSettings(bookKey)!;
     const bookData = getBookData(bookKey)!;
+
+    // PERF: Small sections (content < viewport) get extra delay to prevent blur
+    // REVERT: Remove this constant and the isSmallSection check to restore fast behavior
+    const SMALL_SECTION_DELAY = 300;
+
     // Currently continuous scroll is not supported in pre-paginated layout
     if (bookData.bookDoc?.rendition?.layout === 'pre-paginated') return;
 
     if (renderer && viewSettings.scrolled && viewSettings.continuousScroll) {
       const doScroll = () => {
+        // PERF: Skip if transition already pending (prevents blur through small sections)
+        // REVERT: Remove this check to restore original behavior
+        if (transitionPendingRef.current) return;
+
+        // PERF: Small sections get extra delay to prevent "blur" through front matter
+        // REVERT: Change isSmallSection to false or remove this check
+        const isSmallSection = renderer.size < renderer.viewSize;
+        const delay = isSmallSection ? SMALL_SECTION_DELAY : 16;
+        // PERF: Post-transition cooldown prevents immediate re-trigger on new section
+        // REVERT: Set to 0 to restore original behavior
+        const postTransitionCooldown = isSmallSection ? 200 : 0;
+
         // may have overscroll where the start is greater than 0
         if (renderer.start <= scrollDelta && scrollDelta > threshold) {
-          setTimeout(() => {
-            viewRef.current?.prev(renderer.start + 1);
-          }, 100);
+          transitionPendingRef.current = true;
+          setTimeout(async () => {
+            // PERF: For small sections, just go to prev section (don't calculate distance)
+            // REVERT: Remove the ternary and always use renderer.start + 1
+            const distance = isSmallSection ? undefined : renderer.start + 1;
+            await viewRef.current?.prev(distance);
+            // PERF: Wait for section to load and render before allowing next transition
+            // REVERT: Remove this setTimeout wrapper, just set false directly
+            setTimeout(() => {
+              transitionPendingRef.current = false;
+            }, postTransitionCooldown);
+          }, delay);
           // sometimes viewSize has subpixel value that the end never reaches
         } else if (
           Math.ceil(renderer.end) - scrollDelta >= renderer.viewSize &&
           scrollDelta < -threshold
         ) {
-          setTimeout(() => {
-            viewRef.current?.next(renderer.viewSize - Math.floor(renderer.end) + 1);
-          }, 100);
+          transitionPendingRef.current = true;
+          setTimeout(async () => {
+            // PERF: For small sections, just go to next section (don't calculate huge distance)
+            // REVERT: Remove the ternary and always use renderer.viewSize - Math.floor(renderer.end) + 1
+            const distance = isSmallSection ? undefined : renderer.viewSize - Math.floor(renderer.end) + 1;
+            await viewRef.current?.next(distance);
+            // PERF: Wait for section to load and render before allowing next transition
+            // REVERT: Remove this setTimeout wrapper, just set false directly
+            setTimeout(() => {
+              transitionPendingRef.current = false;
+            }, postTransitionCooldown);
+          }, delay);
         }
       };
       if (mode === 'mouse') {

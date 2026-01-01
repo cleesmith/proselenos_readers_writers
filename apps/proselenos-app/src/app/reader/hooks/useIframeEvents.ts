@@ -10,7 +10,10 @@ export const useMouseEvent = (
   handleContinuousScroll: (source: ScrollSource, delta: number, threshold: number) => void,
 ) => {
   const { hoveredBookKey } = useReaderStore();
-  const debounceScroll = debounce(handleContinuousScroll, 500);
+  // PERF: Reduced to 16ms (was 500ms originally, then 100ms)
+  // WHY: Trailing debounce waits until scroll STOPS - causes "stick" at section boundaries
+  // REVERT: Change 16 back to 100 (or 500 for original) if rapid scroll causes issues
+  const debounceScroll = debounce(handleContinuousScroll, 16);
   const debounceFlip = debounce(handlePageFlip, 100);
   const handleMouseEvent = (msg: MessageEvent | React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (msg instanceof MessageEvent) {
