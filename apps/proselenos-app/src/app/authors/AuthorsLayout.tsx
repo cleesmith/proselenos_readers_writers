@@ -338,6 +338,46 @@ export default function AuthorsLayout({
         };
         setEpub(epub);
         setSelectedSectionId(epub.sections[0]?.id ?? null);
+      } else {
+        // No existing book - auto-create a new blank manuscript
+        await clearWorkingCopy();
+        const year = new Date().getFullYear();
+        const blank = {
+          title: 'Untitled',
+          author: 'Anonymous',
+          language: 'en',
+          coverImage: null,
+          sections: [
+            { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'section' as const },
+            { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`, type: 'section' as const },
+            { id: 'chapter-1', title: 'Chapter 1', content: '', type: 'chapter' as const },
+          ],
+        };
+        await saveFullWorkingCopy(blank);
+        // Reload from IndexedDB to get normalized IDs
+        const newSaved = await loadFullWorkingCopy();
+        if (newSaved) {
+          const newEpub: ParsedEpub = {
+            title: newSaved.title,
+            author: newSaved.author,
+            language: newSaved.language,
+            coverImage: newSaved.coverImage,
+            sections: newSaved.sections.map((s) => ({
+              id: s.id,
+              title: s.title,
+              href: `${s.id}.xhtml`,
+              content: s.content,
+              type: s.type,
+            })),
+          };
+          setEpub(newEpub);
+          setSelectedSectionId(newEpub.sections[0]?.id ?? null);
+        }
+        const newMeta = await loadWorkingCopyMeta();
+        if (newMeta) {
+          setBookMeta(newMeta);
+        }
+        return;
       }
       // Also load full metadata for Title Page form
       const meta = await loadWorkingCopyMeta();
