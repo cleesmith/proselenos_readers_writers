@@ -50,7 +50,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       initSystemThemeListener(appService);
       appService.loadSettings().then((settings) => {
         const globalViewSettings = settings.globalViewSettings;
-        applyUILanguage(globalViewSettings.uiLanguage);
+        applyUILanguage();
         const brightness = settings.screenBrightness;
         const autoBrightness = settings.autoScreenBrightness;
         if (appService.hasScreenBrightness && !autoBrightness && brightness >= 0) {

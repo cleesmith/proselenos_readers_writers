@@ -17,7 +17,7 @@ interface SettingsState {
   setSettingsGlobal: (global: boolean) => void;
   setFontPanelView: (view: FontPanelView) => void;
 
-  applyUILanguage: (uiLanguage?: string) => void;
+  applyUILanguage: () => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -34,9 +34,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setSettingsGlobal: (global) => set({ isSettingsGlobal: global }),
   setFontPanelView: (view) => set({ fontPanelView: view }),
 
-  applyUILanguage: (uiLanguage?: string) => {
-    const locale = uiLanguage ? uiLanguage : navigator.language;
-    i18n.changeLanguage(locale);
-    initDayjs(locale);
+  applyUILanguage: () => {
+    i18n.changeLanguage('en');
+    initDayjs('en');
   },
 }));

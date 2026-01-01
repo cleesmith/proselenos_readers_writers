@@ -5,7 +5,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
 import { RiFontSize } from 'react-icons/ri';
-import { RiDashboardLine, RiTranslate } from 'react-icons/ri';
+import { RiDashboardLine } from 'react-icons/ri';
 import { VscSymbolColor } from 'react-icons/vsc';
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { LiaHandPointerSolid } from 'react-icons/lia';
@@ -19,10 +19,9 @@ import Dropdown from '@/components/Dropdown';
 import Dialog from '@/components/Dialog';
 import DialogMenu from './DialogMenu';
 import ControlPanel from './ControlPanel';
-import LangPanel from './LangPanel';
 import MiscPanel from './MiscPanel';
 
-export type SettingsPanelType = 'Font' | 'Layout' | 'Color' | 'Control' | 'Language' | 'Custom';
+export type SettingsPanelType = 'Font' | 'Layout' | 'Color' | 'Control' | 'Custom';
 export type SettingsPanelPanelProp = {
   bookKey: string;
   onRegisterReset: (resetFn: () => void) => void;
@@ -65,11 +64,6 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       label: _('Behavior'),
     },
     {
-      tab: 'Language',
-      icon: RiTranslate,
-      label: _('Language'),
-    },
-    {
       tab: 'Custom',
       icon: IoAccessibilityOutline,
       label: _('Custom'),
@@ -97,7 +91,6 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     Layout: null,
     Color: null,
     Control: null,
-    Language: null,
     Custom: null,
   });
 
@@ -270,12 +263,6 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
           <ControlPanel
             bookKey={bookKey}
             onRegisterReset={(fn) => registerResetFunction('Control', fn)}
-          />
-        )}
-        {activePanel === 'Language' && (
-          <LangPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Language', fn)}
           />
         )}
         {activePanel === 'Custom' && (

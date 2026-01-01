@@ -647,31 +647,6 @@ export const MIGHT_BE_RTL_LANGS = [
 
 export const TRANSLATED_LANGS = {
   en: 'English',
-  fr: 'Français',
-  de: 'Deutsch',
-  nl: 'Nederlands',
-  it: 'Italiano',
-  ja: '日本語',
-  ko: '한국어',
-  es: 'Español',
-  pt: 'Português',
-  ru: 'Русский',
-  ar: 'العربية',
-  fa: 'فارسی',
-  el: 'Ελληνικά',
-  uk: 'Українська',
-  pl: 'Polski',
-  tr: 'Türkçe',
-  hi: 'हिन्दी',
-  id: 'Indonesia',
-  vi: 'Tiếng Việt',
-  th: 'ภาษาไทย',
-  bo: 'བོད་སྐད་',
-  bn: 'বাংলা',
-  ta: 'தமிழ்',
-  si: 'සිංහල',
-  'zh-CN': '简体中文',
-  'zh-TW': '正體中文',
 };
 
 export const SUPPORTED_LANGS: Record<string, string> = { ...TRANSLATED_LANGS, zh: '中文' };
