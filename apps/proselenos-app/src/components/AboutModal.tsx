@@ -11,15 +11,13 @@ interface AboutModalProps {
   onClose: () => void;
   isDarkMode: boolean;
   theme: ThemeConfig;
-  onShowWelcome?: () => void;
 }
 
 export default function AboutModal({
   isOpen,
   onClose,
   isDarkMode,
-  theme,
-  onShowWelcome
+  theme
 }: AboutModalProps) {
   if (!isOpen) return null;
 
@@ -63,21 +61,9 @@ export default function AboutModal({
           }}>
             EverythingEbooks
           </h2>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <StyledSmallButton
-              onClick={() => {
-                localStorage.removeItem('authorsHideWelcome');
-                onShowWelcome?.();
-                onClose();
-              }}
-              theme={theme}
-            >
-              Show Welcome
-            </StyledSmallButton>
-            <StyledSmallButton onClick={onClose} theme={theme}>
-              Close
-            </StyledSmallButton>
-          </div>
+          <StyledSmallButton onClick={onClose} theme={theme}>
+            Close
+          </StyledSmallButton>
         </div>
 
         {/* Content */}
@@ -108,13 +94,18 @@ export default function AboutModal({
               Getting Started
             </h3>
             <div style={{ fontWeight: '600', marginBottom: '8px' }}>
-              Work on an Ebook
+              Work directly on an Ebook in plain text that is always EPUB ready
             </div>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
-              Click &quot;Open&quot; in the header. Choose &quot;New&quot; for a blank ebook, &quot;Load EPUB&quot; to import an existing one, &quot;Load DOCX&quot; for a Word document, or &quot;Load from Library&quot; to edit a book from your e-reader Library.
+              Click the &quot;Open&quot; button, then choose: <br />
+              &quot;New&quot; - create a blank starter ebook, <br />
+              &quot;Load EPUB&quot; - import an existing <b>.epub</b> from your device, <br />
+              &quot;Load DOCX&quot; - convert a Word document <b>.docx</b> to EPUB, <br />
+              &quot;Load from Library&quot; - import an ebook from your e-reader Library.
             </p>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6' }}>
-              That&apos;s it - you can now create and edit ebooks entirely by hand, and/or proceed to setup and get AI assistance.
+              That&apos;s it - you can now create and edit ebooks entirely by hand, <br />
+              and/or proceed to the following setup to get AI editing and writing assistance.
             </p>
           </div>
 
@@ -129,7 +120,7 @@ export default function AboutModal({
               Want AI Editing and Writing?
             </h3>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '16px' }}>
-              If you want to use the AI features, complete these 3 steps:
+              Optionally, if you want to use the AI features, complete these 3 steps:
             </p>
 
             {/* Step 1 */}
@@ -225,8 +216,8 @@ export default function AboutModal({
               Your ebook is stored entirely in your web browser:
             </p>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere (<i>except OpenRouter/AI</i>)</li>
-              <li style={{ marginBottom: '8px' }}>Organized into sections: front matter, chapters, and back matter</li>
+              <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere (<i>except when using OpenRouter/AI</i>)</li>
+              <li style={{ marginBottom: '8px' }}>Organized into sections: front matter, chapters, and back matter - the ebook is your manuscript</li>
               <li style={{ marginBottom: '8px' }}>Click &quot;send Ebook&quot; to export as EPUB and add to your Library for instant reading and listening</li>
               <li style={{ marginBottom: '8px' }}>No accounts, no sign up, no sign in, no emails - completely private</li>
             </ul>
@@ -248,7 +239,8 @@ export default function AboutModal({
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
               <li style={{ marginBottom: '8px' }}><strong>Line Editing:</strong> Fix grammar, improve sentences one-at-a-time with AI suggestions</li>
               <li style={{ marginBottom: '8px' }}><strong>Content Analysis:</strong> Character development, plot consistency, pacing feedback</li>
-              <li style={{ marginBottom: '8px' }}><strong>Custom Tools:</strong> Specialized and customizable editing/writing prompts for specific needs</li>
+              <li style={{ marginBottom: '8px' }}><strong>Custom Tools:</strong> Specialized and customizable editing/writing <b>prompts</b> for specific needs</li>
+              <li style={{ marginBottom: '8px' }}><strong><i>Note</i>:</strong> Most of the AI Editing tools will use your entire Ebook as a <b><i>manuscript</i></b> along with the instruction <b>prompt</b></li>
             </ul>
           </div>
 
