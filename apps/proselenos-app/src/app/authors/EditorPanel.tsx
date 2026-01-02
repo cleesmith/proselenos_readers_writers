@@ -592,6 +592,21 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           )}
         </div>
 
+        {/* AI Section with green background */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            flexWrap: 'wrap',
+            background: 'rgba(34, 197, 94, 0.2)',
+            padding: '4px 8px',
+            marginLeft: '4px',
+            marginRight: '-8px',
+            paddingRight: '12px',
+          }}
+        >
         <StyledSmallButton theme={theme} onClick={onAIWritingClick} disabled={!aiReady || toolExecuting}>
           AI Writing
         </StyledSmallButton>
@@ -686,6 +701,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           onOneByOneClick={onOneByOne}
           showOneByOneButton={isValidToolReport(toolResult)}
         />
+        </div>
       </div>
 
       {/* Editor content area - fills space edge-to-edge */}
