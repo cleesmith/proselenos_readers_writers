@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo } from 'react-icons/pi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
@@ -299,10 +300,12 @@ export default function AuthorsHeader({
             <button
               onClick={() => { onKeyClick(); setMenuOpen(false); }}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'none',
+                background: 'rgba(34, 197, 94, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
@@ -310,15 +313,18 @@ export default function AuthorsHeader({
                 fontSize: '13px',
               }}
             >
+              <PiKey size={16} />
               Key
             </button>
             <button
               onClick={() => { onModelsClick(); setMenuOpen(false); }}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'none',
+                background: 'rgba(34, 197, 94, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
@@ -326,16 +332,19 @@ export default function AuthorsHeader({
                 fontSize: '13px',
               }}
             >
+              <PiCpu size={16} />
               Models
             </button>
             <button
               id="chat-button"
               onClick={() => { onChatClick(); setMenuOpen(false); }}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'none',
+                background: 'rgba(34, 197, 94, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
@@ -343,15 +352,18 @@ export default function AuthorsHeader({
                 fontSize: '13px',
               }}
             >
+              <PiChatCircle size={16} />
               Chat
             </button>
             <button
               onClick={() => { onFilesClick(); setMenuOpen(false); }}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'none',
+                background: 'rgba(59, 130, 246, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
@@ -359,15 +371,18 @@ export default function AuthorsHeader({
                 fontSize: '13px',
               }}
             >
+              <PiFolderOpen size={16} />
               Files
             </button>
             <button
               onClick={() => { onEditorClick(); setMenuOpen(false); }}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'none',
+                background: 'rgba(168, 85, 247, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
@@ -375,15 +390,18 @@ export default function AuthorsHeader({
                 fontSize: '13px',
               }}
             >
+              <PiNotePencil size={16} />
               Editor
             </button>
             <button
               onClick={() => { onStorageClick(); setMenuOpen(false); }}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'none',
+                background: 'rgba(245, 158, 11, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
@@ -391,15 +409,18 @@ export default function AuthorsHeader({
                 fontSize: '13px',
               }}
             >
+              <PiDatabase size={16} />
               Storage
             </button>
             <button
               onClick={() => { onAboutClick(); setMenuOpen(false); }}
               style={{
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'none',
+                background: 'rgba(148, 163, 184, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
@@ -407,6 +428,7 @@ export default function AuthorsHeader({
                 fontSize: '13px',
               }}
             >
+              <PiInfo size={16} />
               About
             </button>
             </div>

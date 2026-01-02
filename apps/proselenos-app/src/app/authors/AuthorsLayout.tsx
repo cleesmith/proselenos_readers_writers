@@ -125,6 +125,13 @@ export default function AuthorsLayout({
   const [oneByOneIssues, setOneByOneIssues] = useState<ReportIssueWithStatus[]>([]);
   const [oneByOneIndex, setOneByOneIndex] = useState(0);
 
+  // Full-text search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ sectionId: string; sectionTitle: string; matchIndex: number; matchText: string; contextBefore: string; contextAfter: string }[]>([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [searchActive, setSearchActive] = useState(false);
+  const [sectionsWithMatches, setSectionsWithMatches] = useState<Set<string>>(new Set());
+
   // Computed values
   const selectedSection = epub?.sections.find((s) => s.id === selectedSectionId);
   const totalWordCount = epub?.sections.reduce((sum, s) => sum + countWords(s.content), 0) ?? 0;
@@ -317,6 +324,100 @@ export default function AuthorsLayout({
       }, 100);
     }
   }, [oneByOneIndex, oneByOneIssues]);
+
+  // Full-text search: perform search across all sections
+  const performSearch = useCallback((query: string) => {
+    if (!epub || !query.trim()) {
+      setSearchResults([]);
+      setSearchActive(false);
+      setSectionsWithMatches(new Set());
+      return;
+    }
+
+    const results: typeof searchResults = [];
+    const matchingSections = new Set<string>();
+    const lowerQuery = query.toLowerCase();
+    const maxResults = 100;
+
+    for (const section of epub.sections) {
+      // Search in title
+      const titleLower = section.title.toLowerCase();
+      let titleIndex = titleLower.indexOf(lowerQuery);
+      while (titleIndex !== -1 && results.length < maxResults) {
+        matchingSections.add(section.id);
+        results.push({
+          sectionId: section.id,
+          sectionTitle: section.title,
+          matchIndex: titleIndex,
+          matchText: section.title.substring(titleIndex, titleIndex + query.length),
+          contextBefore: '[Title] ' + section.title.substring(Math.max(0, titleIndex - 20), titleIndex),
+          contextAfter: section.title.substring(titleIndex + query.length, titleIndex + query.length + 20),
+        });
+        titleIndex = titleLower.indexOf(lowerQuery, titleIndex + 1);
+      }
+
+      // Search in content
+      const contentLower = section.content.toLowerCase();
+      let contentIndex = contentLower.indexOf(lowerQuery);
+      while (contentIndex !== -1 && results.length < maxResults) {
+        matchingSections.add(section.id);
+        const contextStart = Math.max(0, contentIndex - 50);
+        const contextEnd = Math.min(section.content.length, contentIndex + query.length + 50);
+        results.push({
+          sectionId: section.id,
+          sectionTitle: section.title,
+          matchIndex: contentIndex,
+          matchText: section.content.substring(contentIndex, contentIndex + query.length),
+          contextBefore: section.content.substring(contextStart, contentIndex).replace(/\n/g, ' '),
+          contextAfter: section.content.substring(contentIndex + query.length, contextEnd).replace(/\n/g, ' '),
+        });
+        contentIndex = contentLower.indexOf(lowerQuery, contentIndex + 1);
+      }
+
+      if (results.length >= maxResults) break;
+    }
+
+    setSearchResults(results);
+    setCurrentSearchIndex(0);
+    setSearchActive(results.length > 0);
+    setSectionsWithMatches(matchingSections);
+  }, [epub]);
+
+  // Search handlers
+  const handleSearchSubmit = useCallback(() => {
+    performSearch(searchQuery);
+  }, [searchQuery, performSearch]);
+
+  const handleSearchClose = useCallback(() => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchActive(false);
+    setCurrentSearchIndex(0);
+    setSectionsWithMatches(new Set());
+  }, []);
+
+  const handleSearchPrev = useCallback(() => {
+    if (currentSearchIndex > 0) {
+      setCurrentSearchIndex(currentSearchIndex - 1);
+    }
+  }, [currentSearchIndex]);
+
+  const handleSearchNext = useCallback(() => {
+    if (currentSearchIndex < searchResults.length - 1) {
+      setCurrentSearchIndex(currentSearchIndex + 1);
+    }
+  }, [currentSearchIndex, searchResults.length]);
+
+  const handleSearchNavigate = useCallback((result: typeof searchResults[0], index: number) => {
+    setCurrentSearchIndex(index);
+    setSelectedSectionId(result.sectionId);
+    // Scroll to match after section loads
+    setTimeout(() => {
+      if (editorPanelRef.current) {
+        editorPanelRef.current.scrollToPassage(result.matchText);
+      }
+    }, 100);
+  }, []);
 
   // Auto-load working copy from IndexedDB on mount
   useEffect(() => {
@@ -1027,6 +1128,12 @@ export default function AuthorsLayout({
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
             toolExecuting={toolExecuting}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearchSubmit={handleSearchSubmit}
+            onSearchClose={handleSearchClose}
+            searchResultCount={searchResults.length}
+            sectionsWithMatches={sectionsWithMatches}
           />
         )}
 
@@ -1094,6 +1201,15 @@ export default function AuthorsLayout({
             onOneByOneClose={handleOneByOneClose}
             onOneByOnePrev={handleOneByOnePrev}
             onOneByOneNext={handleOneByOneNext}
+            // Search panel props
+            searchActive={searchActive}
+            searchResults={searchResults}
+            currentSearchIndex={currentSearchIndex}
+            searchQuery={searchQuery}
+            onSearchNavigate={handleSearchNavigate}
+            onSearchPrev={handleSearchPrev}
+            onSearchNext={handleSearchNext}
+            onSearchClose={handleSearchClose}
           />
         )}
       </div>

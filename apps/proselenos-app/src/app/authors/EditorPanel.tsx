@@ -8,6 +8,7 @@ import StyledSmallButton from '@/components/StyledSmallButton';
 import ToolProgressIndicator from '../ai-tools/ToolProgressIndicator';
 import { isValidToolReport } from '@/utils/parseToolReport';
 import OneByOnePanel from './OneByOnePanel';
+import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { showUrlInput } from '../shared/alerts';
 
@@ -65,6 +66,15 @@ interface EditorPanelProps {
   onOneByOneClose?: () => void;
   onOneByOnePrev?: () => void;
   onOneByOneNext?: () => void;
+  // Search panel props
+  searchActive?: boolean;
+  searchResults?: SearchResult[];
+  currentSearchIndex?: number;
+  searchQuery?: string;
+  onSearchNavigate?: (result: SearchResult, index: number) => void;
+  onSearchPrev?: () => void;
+  onSearchNext?: () => void;
+  onSearchClose?: () => void;
 }
 
 // Ref handle for parent to control textarea
@@ -118,6 +128,15 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   onOneByOneClose,
   onOneByOnePrev,
   onOneByOneNext,
+  // Search panel props
+  searchActive,
+  searchResults,
+  currentSearchIndex,
+  searchQuery,
+  onSearchNavigate,
+  onSearchPrev,
+  onSearchNext,
+  onSearchClose,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -658,6 +677,21 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           onClose={onOneByOneClose ?? (() => {})}
           onPrev={onOneByOnePrev ?? (() => {})}
           onNext={onOneByOneNext ?? (() => {})}
+        />
+      )}
+
+      {/* Search results panel */}
+      {searchActive && searchResults && searchResults.length > 0 && (
+        <SearchResultsPanel
+          theme={theme}
+          isDarkMode={isDarkMode}
+          results={searchResults}
+          currentIndex={currentSearchIndex ?? 0}
+          searchQuery={searchQuery ?? ''}
+          onNavigate={onSearchNavigate ?? (() => {})}
+          onPrev={onSearchPrev ?? (() => {})}
+          onNext={onSearchNext ?? (() => {})}
+          onClose={onSearchClose ?? (() => {})}
         />
       )}
     </main>

@@ -30,6 +30,13 @@ interface ChapterSidebarProps {
   onMoveUp?: (sectionId: string) => void;
   onMoveDown?: (sectionId: string) => void;
   toolExecuting?: boolean; // When true, disable all interactive elements
+  // Search props
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onSearchSubmit?: () => void;
+  onSearchClose?: () => void;
+  searchResultCount?: number;
+  sectionsWithMatches?: Set<string>;
 }
 
 export default function ChapterSidebar({
@@ -48,6 +55,12 @@ export default function ChapterSidebar({
   onMoveUp,
   onMoveDown,
   toolExecuting = false,
+  searchQuery = '',
+  onSearchChange,
+  onSearchSubmit,
+  onSearchClose,
+  searchResultCount = 0,
+  sectionsWithMatches,
 }: ChapterSidebarProps) {
   const sidebarBg = isDarkMode ? '#252525' : '#ffffff';
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
@@ -189,6 +202,7 @@ export default function ChapterSidebar({
       >
         {sections.map((section) => {
           const isSelected = section.id === selectedSectionId;
+          const hasMatch = sectionsWithMatches?.has(section.id);
           return (
             <div
               key={section.id}
@@ -196,7 +210,7 @@ export default function ChapterSidebar({
               style={{
                 padding: '4px 8px',
                 cursor: toolExecuting ? 'not-allowed' : 'pointer',
-                backgroundColor: isSelected ? selectedBg : 'transparent',
+                backgroundColor: isSelected ? selectedBg : (hasMatch ? (isDarkMode ? '#2d3a2d' : '#e8f5e9') : 'transparent'),
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -207,12 +221,16 @@ export default function ChapterSidebar({
               {isSelected && (
                 <span style={{ color: '#6366f1', fontSize: '8px' }}>●</span>
               )}
+              {/* Match indicator */}
+              {!isSelected && hasMatch && (
+                <span style={{ color: '#4caf50', fontSize: '8px' }}>●</span>
+              )}
               {/* Section title */}
               <span
                 style={{
                   fontSize: '12px',
-                  color: isSelected ? '#6366f1' : theme.text,
-                  fontWeight: isSelected ? 500 : 400,
+                  color: isSelected ? '#6366f1' : (hasMatch ? '#4caf50' : theme.text),
+                  fontWeight: isSelected ? 500 : (hasMatch ? 500 : 400),
                 }}
               >
                 {section.title}
@@ -221,6 +239,62 @@ export default function ChapterSidebar({
           );
         })}
       </nav>
+
+      {/* Divider */}
+      <div style={{ height: '1px', backgroundColor: borderColor, margin: '0 8px' }} />
+
+      {/* Search input */}
+      <div style={{ padding: '4px 8px' }}>
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange?.(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onSearchSubmit?.();
+              }
+            }}
+            placeholder="Search..."
+            disabled={toolExecuting}
+            style={{
+              flex: 1,
+              padding: '4px 6px',
+              fontSize: '11px',
+              border: `1px solid ${borderColor}`,
+              borderRadius: '4px',
+              backgroundColor: isDarkMode ? '#1a1a1a' : '#fff',
+              color: theme.text,
+              outline: 'none',
+              minWidth: 0,
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchClose?.()}
+              disabled={toolExecuting}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: mutedText,
+                cursor: toolExecuting ? 'not-allowed' : 'pointer',
+                padding: '2px',
+                fontSize: '12px',
+                lineHeight: 1,
+              }}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {searchResultCount > 0 && (
+          <div style={{ fontSize: '10px', color: '#4caf50', marginTop: '2px' }}>
+            {searchResultCount} match{searchResultCount !== 1 ? 'es' : ''}
+          </div>
+        )}
+      </div>
 
       {/* Divider */}
       <div style={{ height: '1px', backgroundColor: borderColor, margin: '0 8px' }} />
