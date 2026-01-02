@@ -1,4 +1,5 @@
 // apps/proselenos-app/src/components/AboutModal.tsx
+
 // About for Authors page
 // Shows on startup until user checks "Don't show me this again"
 // User can always open via Menu > About and toggle the setting

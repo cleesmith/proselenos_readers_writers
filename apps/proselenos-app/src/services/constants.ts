@@ -142,7 +142,8 @@ export const DEFAULT_BOOK_LAYOUT: BookLayout = {
   writingMode: 'auto',
   vertical: false,
   rtl: false,
-  scrollingOverlap: 0,
+  // REVERT: Change 60 back to 0 for original behavior
+  scrollingOverlap: 60,
   allowScript: false,
 };
 

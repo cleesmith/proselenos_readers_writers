@@ -586,14 +586,12 @@ export class Paginator extends HTMLElement {
 
         this.#observer.observe(this.#container)
         this.#container.addEventListener('scroll', () => this.dispatchEvent(new Event('scroll')))
-        // PERF: Reduced from 250ms for faster scroll position updates
-        // REVERT: Change 50 back to 250 if position tracking issues occur
         this.#container.addEventListener('scroll', debounce(() => {
             if (this.scrolled) {
                 if (this.#justAnchored) this.#justAnchored = false
                 else this.#afterScroll('scroll')
             }
-        }, 50))
+        }, 250))
 
         const opts = { passive: false }
         this.addEventListener('touchstart', this.#onTouchStart.bind(this), opts)
@@ -1175,9 +1173,7 @@ export class Paginator extends HTMLElement {
             index: this.#adjacentIndex(dir),
             anchor: prev ? () => 1 : () => 0,
         })
-        // PERF: Reduced from 100ms for faster page turn response
-        // REVERT: Change 16 back to 100 if double-page issues occur
-        if (shouldGo || !this.hasAttribute('animated')) await wait(16)
+        if (shouldGo || !this.hasAttribute('animated')) await wait(100)
         this.#locked = false
     }
     async prev(distance) {

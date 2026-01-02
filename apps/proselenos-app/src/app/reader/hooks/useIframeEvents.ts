@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { debounce } from '@/utils/debounce';
@@ -10,16 +10,25 @@ export const useMouseEvent = (
   handleContinuousScroll: (source: ScrollSource, delta: number, threshold: number) => void,
 ) => {
   const { hoveredBookKey } = useReaderStore();
-  // PERF: Reduced to 16ms (was 500ms originally, then 100ms)
-  // WHY: Trailing debounce waits until scroll STOPS - causes "stick" at section boundaries
-  // REVERT: Change 16 back to 100 (or 500 for original) if rapid scroll causes issues
-  const debounceScroll = debounce(handleContinuousScroll, 16);
+
+  // REVERT: Remove ticking ref and RAF pattern, restore debounce:
+  // const debounceScroll = debounce(handleContinuousScroll, 100);
+  const ticking = useRef(false);
+
   const debounceFlip = debounce(handlePageFlip, 100);
   const handleMouseEvent = (msg: MessageEvent | React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (msg instanceof MessageEvent) {
       if (msg.data && msg.data.bookKey === bookKey) {
         if (msg.data.type === 'iframe-wheel') {
-          debounceScroll('mouse', -msg.data.deltaY, 0);
+          // REVERT: Replace RAF with: debounceScroll('mouse', -msg.data.deltaY, 0);
+          if (!ticking.current) {
+            window.requestAnimationFrame(() => {
+              // REVERT: Change 30 back to 0 for original threshold
+              handleContinuousScroll('mouse', -msg.data.deltaY, 30);
+              ticking.current = false;
+            });
+            ticking.current = true;
+          }
         }
         if (msg.data.type === 'iframe-wheel') {
           debounceFlip(msg);
@@ -29,7 +38,15 @@ export const useMouseEvent = (
       }
     } else if (msg.type === 'wheel') {
       const event = msg as React.WheelEvent<HTMLDivElement>;
-      debounceScroll('mouse', -event.deltaY, 0);
+      // REVERT: Replace RAF with: debounceScroll('mouse', -event.deltaY, 0);
+      if (!ticking.current) {
+        window.requestAnimationFrame(() => {
+          // REVERT: Change 30 back to 0 for original threshold
+          handleContinuousScroll('mouse', -event.deltaY, 30);
+          ticking.current = false;
+        });
+        ticking.current = true;
+      }
     } else {
       handlePageFlip(msg);
     }
