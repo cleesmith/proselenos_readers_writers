@@ -14,7 +14,7 @@ import TitlePagePanel, { BookMetadata } from './TitlePagePanel';
 import { parseEpub, ParsedEpub } from '@/services/epubService';
 import { parseDocx } from '@/services/docxService';
 import { countWords } from '@/services/htmlExtractor';
-import { loadFullWorkingCopy, saveFullWorkingCopy, deleteSection, saveWorkingCopyMeta, loadWorkingCopyMeta, clearWorkingCopy, saveSection, saveCoverImage, deleteCoverImage, loadCoverImage, WorkingCopyMeta } from '@/services/manuscriptStorage';
+import { loadFullWorkingCopy, saveFullWorkingCopy, deleteSection, saveWorkingCopyMeta, loadWorkingCopyMeta, clearWorkingCopy, saveSection, saveCoverImage, deleteCoverImage, loadCoverImage, WorkingCopyMeta, saveManuscriptImage, deleteManuscriptImage, getAllManuscriptImages } from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
 import environmentConfig from '@/services/environment';
 import { parseToolReport } from '@/utils/parseToolReport';
@@ -131,6 +131,10 @@ export default function AuthorsLayout({
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [searchActive, setSearchActive] = useState(false);
   const [sectionsWithMatches, setSectionsWithMatches] = useState<Set<string>>(new Set());
+
+  // Inline images state
+  const [manuscriptImages, setManuscriptImages] = useState<Array<{filename: string, blob: Blob}>>([]);
+  const [imageUrls, setImageUrls] = useState<Array<{filename: string, url: string}>>([]);
 
   // Computed values
   const selectedSection = epub?.sections.find((s) => s.id === selectedSectionId);
@@ -526,6 +530,93 @@ export default function AuthorsLayout({
     reloadData();
   }, [refreshKey, pendingSectionId, onPendingSectionHandled]);
 
+  // Load manuscript images on mount and when bookMeta changes
+  useEffect(() => {
+    const loadImages = async () => {
+      const images = await getAllManuscriptImages();
+      setManuscriptImages(images);
+
+      // Create object URLs for display (revoke old ones first)
+      imageUrls.forEach(img => URL.revokeObjectURL(img.url));
+      const urls = images.map(img => ({
+        filename: img.filename,
+        url: URL.createObjectURL(img.blob)
+      }));
+      setImageUrls(urls);
+    };
+    loadImages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookMeta]);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      imageUrls.forEach(img => URL.revokeObjectURL(img.url));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Image upload handler
+  const handleImageUpload = useCallback(async (file: File) => {
+    // Generate unique filename if needed
+    let filename = file.name;
+    const existingNames = manuscriptImages.map(i => i.filename);
+    if (existingNames.includes(filename)) {
+      const ext = filename.split('.').pop();
+      const base = filename.slice(0, -(ext?.length || 0) - 1);
+      let counter = 1;
+      while (existingNames.includes(`${base}-${counter}.${ext}`)) {
+        counter++;
+      }
+      filename = `${base}-${counter}.${ext}`;
+    }
+
+    // Save to IndexedDB
+    await saveManuscriptImage(filename, file);
+
+    // Update meta with new imageId
+    if (bookMeta) {
+      const newImageIds = [...(bookMeta.imageIds || []), filename];
+      const updatedMeta = { ...bookMeta, imageIds: newImageIds };
+      await saveWorkingCopyMeta(updatedMeta);
+      setBookMeta(updatedMeta);
+    }
+
+    // Reload images to update UI
+    const images = await getAllManuscriptImages();
+    setManuscriptImages(images);
+    imageUrls.forEach(img => URL.revokeObjectURL(img.url));
+    const urls = images.map(img => ({
+      filename: img.filename,
+      url: URL.createObjectURL(img.blob)
+    }));
+    setImageUrls(urls);
+  }, [manuscriptImages, bookMeta, imageUrls]);
+
+  // Image delete handler
+  const handleImageDelete = useCallback(async (filename: string) => {
+    // Delete from IndexedDB
+    await deleteManuscriptImage(filename);
+
+    // Update meta
+    if (bookMeta) {
+      const newImageIds = (bookMeta.imageIds || []).filter(id => id !== filename);
+      const updatedMeta = { ...bookMeta, imageIds: newImageIds };
+      await saveWorkingCopyMeta(updatedMeta);
+      setBookMeta(updatedMeta);
+    }
+
+    // Reload images
+    const images = await getAllManuscriptImages();
+    setManuscriptImages(images);
+    imageUrls.forEach(img => URL.revokeObjectURL(img.url));
+    const urls = images.map(img => ({
+      filename: img.filename,
+      url: URL.createObjectURL(img.blob)
+    }));
+    setImageUrls(urls);
+  }, [bookMeta, imageUrls]);
+
   // Handle opening an epub file
   const handleOpenEpub = async () => {
     const input = document.createElement('input');
@@ -538,6 +629,16 @@ export default function AuthorsLayout({
           const parsed = await parseEpub(file);
           // Clear any existing working copy first
           await clearWorkingCopy();
+
+          // Save extracted inline images to IndexedDB
+          const imageIds: string[] = [];
+          if (parsed.images && parsed.images.length > 0) {
+            for (const img of parsed.images) {
+              await saveManuscriptImage(img.filename, img.blob);
+              imageIds.push(img.filename);
+            }
+          }
+
           // Save to IndexedDB with normalization (section-001, section-002, etc.)
           await saveFullWorkingCopy({
             title: parsed.title,
@@ -550,6 +651,13 @@ export default function AuthorsLayout({
               content: s.content,
             })),
           });
+
+          // Update metadata with imageIds
+          const existingMeta = await loadWorkingCopyMeta();
+          if (existingMeta) {
+            await saveWorkingCopyMeta({ ...existingMeta, imageIds });
+          }
+
           // Reload from IndexedDB to get normalized IDs
           const saved = await loadFullWorkingCopy();
           if (saved) {
@@ -564,6 +672,7 @@ export default function AuthorsLayout({
                 href: `${s.id}.xhtml`,
                 content: s.content,
               })),
+              images: parsed.images, // Pass through for immediate access
             };
             setEpub(epub);
             setSelectedSectionId(epub.sections[0]?.id ?? null);
@@ -914,11 +1023,12 @@ export default function AuthorsLayout({
     const coverBlob = await loadCoverImage();
 
     try {
-      // 5. Generate EPUB
+      // 5. Generate EPUB (include inline images)
       const epubData = await generateEpubFromWorkingCopy(
         meta,
         workingCopy.sections,
-        coverBlob
+        coverBlob,
+        manuscriptImages
       );
 
       // 6. Create File object
@@ -1210,6 +1320,10 @@ export default function AuthorsLayout({
             onSearchPrev={handleSearchPrev}
             onSearchNext={handleSearchNext}
             onSearchClose={handleSearchClose}
+            // Image picker props
+            images={imageUrls}
+            onImageUpload={handleImageUpload}
+            onImageDelete={handleImageDelete}
           />
         )}
       </div>

@@ -52,6 +52,12 @@ export async function generateEpubFromManuscript(
   return generateEPUB(chapters, metadata, coverImageData);
 }
 
+// Interface for inline images
+export interface ManuscriptImage {
+  filename: string;
+  blob: Blob;
+}
+
 /**
  * Generate EPUB from structured working copy data (for Authors Mode "Save" button)
  * Unlike generateEpubFromManuscript which parses raw text, this takes structured sections directly.
@@ -59,7 +65,8 @@ export async function generateEpubFromManuscript(
 export async function generateEpubFromWorkingCopy(
   meta: WorkingCopyMeta,
   sections: WorkingCopySection[],
-  coverBlob?: Blob | null
+  coverBlob?: Blob | null,
+  images?: ManuscriptImage[]
 ): Promise<Uint8Array> {
   // Find Copyright section content (if exists)
   const copyrightSection = sections.find(s =>
@@ -117,7 +124,19 @@ export async function generateEpubFromWorkingCopy(
     coverImageData = new Uint8Array(arrayBuffer);
   }
 
-  return generateEPUB(chapters, metadata, coverImageData);
+  // Convert inline images to Uint8Array format
+  const inlineImages: Array<{filename: string, data: Uint8Array}> = [];
+  if (images && images.length > 0) {
+    for (const img of images) {
+      const arrayBuffer = await img.blob.arrayBuffer();
+      inlineImages.push({
+        filename: img.filename,
+        data: new Uint8Array(arrayBuffer)
+      });
+    }
+  }
+
+  return generateEPUB(chapters, metadata, coverImageData, inlineImages);
 }
 
 /**
@@ -126,7 +145,8 @@ export async function generateEpubFromWorkingCopy(
 async function generateEPUB(
   chapters: Chapter[],
   metadata: any,
-  coverImageData?: Uint8Array
+  coverImageData?: Uint8Array,
+  inlineImages?: Array<{filename: string, data: Uint8Array}>
 ): Promise<Uint8Array> {
   const zip = new JSZip();
 
@@ -151,6 +171,13 @@ async function generateEPUB(
     // Add cover page XHTML
     const coverXHTML = createCoverPage();
     zip.file('OEBPS/cover.xhtml', coverXHTML);
+  }
+
+  // 3b. Add inline images to OEBPS/images/
+  if (inlineImages && inlineImages.length > 0) {
+    for (const img of inlineImages) {
+      zip.file(`OEBPS/images/${img.filename}`, img.data);
+    }
   }
 
   // 4. Create title page
@@ -178,7 +205,7 @@ async function generateEPUB(
   }
 
   // 9. Create content.opf (EPUB 3.0 format) with all new items
-  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null);
+  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages);
   zip.file('OEBPS/content.opf', contentOPF);
 
   // 10. Create nav.xhtml (EPUB 3.0 navigation)
@@ -355,7 +382,29 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Convert markdown (bold, italic, links) to HTML
+ * Get media type for image filename
+ */
+function getImageMediaType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'svg':
+      return 'image/svg+xml';
+    default:
+      return 'image/jpeg';
+  }
+}
+
+/**
+ * Convert markdown (bold, italic, links, images) to HTML
  * Applied after escapeHtml since markdown syntax doesn't contain <>
  */
 function processMarkdown(text: string): string {
@@ -367,7 +416,14 @@ function processMarkdown(text: string): string {
   // Italic: __text__
   result = result.replace(/__(.+?)__/g, '<em>$1</em>');
 
-  // Links: [text](url)
+  // Images: ![alt](filename) - convert to block-level image
+  // This breaks out of the <p> tag and creates a centered image container
+  result = result.replace(
+    /!\[([^\]]*)\]\(([^)]+)\)/g,
+    '</p><div class="image-container"><img src="images/$2" alt="$1"/></div><p>'
+  );
+
+  // Links: [text](url) - must come after images since both use []()
   result = result.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2">$1</a>');
 
   return result;
@@ -555,7 +611,12 @@ function createCoverPage(): string {
 /**
  * Create EPUB 3.0 content.opf file
  */
-function createEpub3ContentOPF(chapters: Chapter[], metadata: any, coverImageId: string | null = null): string {
+function createEpub3ContentOPF(
+  chapters: Chapter[],
+  metadata: any,
+  coverImageId: string | null = null,
+  inlineImages?: Array<{filename: string, data: Uint8Array}>
+): string {
   const uuid = generateUUID();
   const date = new Date().toISOString().split('T')[0];
 
@@ -568,6 +629,19 @@ function createEpub3ContentOPF(chapters: Chapter[], metadata: any, coverImageId:
     coverMeta = `    <meta name="cover" content="${coverImageId}"/>`;
     coverManifest = `    <item id="${coverImageId}" href="images/cover.jpg" media-type="image/jpeg" properties="cover-image"/>`;
     coverPageManifest = `    <item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
+  }
+
+  // Inline images manifest entries
+  let inlineImagesManifest = '';
+  if (inlineImages && inlineImages.length > 0) {
+    inlineImagesManifest = inlineImages
+      .map(img => {
+        // Create safe ID from filename (replace non-alphanumeric with dash)
+        const safeId = `img-${img.filename.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        const mediaType = getImageMediaType(img.filename);
+        return `    <item id="${safeId}" href="images/${img.filename}" media-type="${mediaType}"/>`;
+      })
+      .join('\n');
   }
 
   const manifest = chapters
@@ -607,6 +681,7 @@ ${coverPageManifest}
     ${metadata.aboutAuthor && metadata.aboutAuthor.trim() ? '<item id="about-author" href="about-author.xhtml" media-type="application/xhtml+xml"/>' : ''}
     <item id="style" href="css/style.css" media-type="text/css"/>
 ${coverManifest}
+${inlineImagesManifest}
 ${manifest}
   </manifest>
   <spine toc="toc">
@@ -851,6 +926,18 @@ p {
 .chapter p:first-of-type {
   text-indent: 0;
   margin-top: 1.5em;
+}
+
+/* Inline images */
+.image-container {
+  text-align: center;
+  margin: 1.5em 0;
+  page-break-inside: avoid;
+}
+
+.image-container img {
+  max-width: 100%;
+  height: auto;
 }
 
 /* About author page */

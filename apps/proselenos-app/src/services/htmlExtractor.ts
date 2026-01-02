@@ -53,6 +53,18 @@ function convertNodeToMarkdown(node: Node): string {
       }
       return innerText;
 
+    case 'img':
+      // Convert img to markdown image syntax: ![alt](filename)
+      const src = element.getAttribute('src') || '';
+      const alt = element.getAttribute('alt') || '';
+      if (src) {
+        // Extract just the filename from paths like "images/foo.jpg" or "../images/foo.jpg"
+        const filename = src.split('/').pop() || src;
+        // Return on its own line to ensure proper paragraph break
+        return `\n![${alt}](${filename})\n`;
+      }
+      return '';
+
     default:
       // For all other elements, just return the processed children
       return innerText;

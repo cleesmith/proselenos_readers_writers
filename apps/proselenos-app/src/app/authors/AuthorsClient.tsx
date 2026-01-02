@@ -15,7 +15,7 @@ import WritingAssistantModal from '@/app/writing-assistant/WritingAssistantModal
 import SimpleChatModal from '@/components/SimpleChatModal';
 import BookInfoModal from './BookInfoModal';
 import LibraryBooksModal from './LibraryBooksModal';
-import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy } from '@/services/manuscriptStorage';
+import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
 import { parseEpub } from '@/services/epubService';
 import { Book } from '@/types/book';
 import { getLocalBookFilename } from '@/utils/book';
@@ -228,6 +228,16 @@ export default function AuthorsClient() {
 
       // Clear existing working copy and save new one
       await clearWorkingCopy();
+
+      // Save extracted inline images to IndexedDB
+      const imageIds: string[] = [];
+      if (parsed.images && parsed.images.length > 0) {
+        for (const img of parsed.images) {
+          await saveManuscriptImage(img.filename, img.blob);
+          imageIds.push(img.filename);
+        }
+      }
+
       await saveFullWorkingCopy({
         title: parsed.title,
         author: parsed.author,
@@ -239,6 +249,14 @@ export default function AuthorsClient() {
           content: s.content,
         })),
       });
+
+      // Update metadata with imageIds
+      if (imageIds.length > 0) {
+        const existingMeta = await loadWorkingCopyMeta();
+        if (existingMeta) {
+          await saveWorkingCopyMeta({ ...existingMeta, imageIds });
+        }
+      }
 
       // Trigger AuthorsLayout to reload from Working Copy
       setRefreshKey(prev => prev + 1);

@@ -19,6 +19,7 @@ export interface ParsedEpub {
   language: string;
   coverImage: Blob | null;
   sections: ParsedSection[];
+  images?: Array<{filename: string, blob: Blob}>;  // Inline images (not cover), optional for backwards compatibility
 }
 
 /**
@@ -82,6 +83,28 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
         // Create blob with correct media type
         coverImage = new Blob([coverData], { type: coverItem.mediaType });
       }
+    }
+  }
+
+  // Step 3b: Extract inline images (all images except cover)
+  const images: Array<{filename: string, blob: Blob}> = [];
+  for (const [id, item] of manifest) {
+    // Skip if not an image or if it's the cover
+    if (!item.mediaType.startsWith('image/')) continue;
+    if (id === coverImageId) continue;
+
+    try {
+      const imagePath = baseDir + item.href;
+      const imageData = await zip.file(imagePath)?.async('blob');
+      if (imageData) {
+        // Extract just the filename from the href
+        const filename = item.href.split('/').pop() || item.href;
+        const blob = new Blob([imageData], { type: item.mediaType });
+        images.push({ filename, blob });
+      }
+    } catch {
+      // Skip images that fail to load
+      console.warn(`Failed to extract image: ${item.href}`);
     }
   }
 
@@ -157,6 +180,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     language: language || 'en',
     coverImage,
     sections,
+    images,
   };
 }
 

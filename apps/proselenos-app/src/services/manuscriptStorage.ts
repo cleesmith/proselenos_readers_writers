@@ -750,6 +750,7 @@ export interface WorkingCopyMeta {
   // Structure
   sectionIds: string[];
   coverImageId: string | null;
+  imageIds?: string[];    // Inline image filenames (stored in images/{filename})
 
   // Library integration
   libraryBookHash?: string;  // Hash of book in e-reader library (for updates)
@@ -822,6 +823,93 @@ export async function deleteCoverImage(): Promise<void> {
   const meta = await loadWorkingCopyMeta();
   if (meta?.coverImageId) {
     await deleteValue(STORES.MANUSCRIPT, meta.coverImageId);
+  }
+}
+
+// ============================================
+// Inline image functions (for images beyond cover)
+// Storage key pattern: images/{filename}
+// ============================================
+
+/**
+ * Save an inline image to IndexedDB
+ */
+export async function saveManuscriptImage(filename: string, blob: Blob): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, `images/${filename}`, blob);
+}
+
+/**
+ * Get an inline image from IndexedDB
+ */
+export async function getManuscriptImage(filename: string): Promise<Blob | null> {
+  return getValue<Blob>(STORES.MANUSCRIPT, `images/${filename}`);
+}
+
+/**
+ * Delete an inline image from IndexedDB
+ */
+export async function deleteManuscriptImage(filename: string): Promise<void> {
+  await deleteValue(STORES.MANUSCRIPT, `images/${filename}`);
+}
+
+/**
+ * Get all inline images (for picker display)
+ * Returns array of {filename, blob} for each stored image
+ */
+export async function getAllManuscriptImages(): Promise<Array<{filename: string, blob: Blob}>> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORES.MANUSCRIPT, 'readonly');
+      const store = tx.objectStore(STORES.MANUSCRIPT);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const results = req.result || [];
+        const images: Array<{filename: string, blob: Blob}> = [];
+
+        for (const item of results) {
+          // Check if this is an image (key starts with 'images/')
+          if (item.key && typeof item.key === 'string' && item.key.startsWith('images/')) {
+            const filename = item.key.replace('images/', '');
+            if (item.value instanceof Blob) {
+              images.push({ filename, blob: item.value });
+            }
+          }
+        }
+
+        resolve(images);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Clear all inline images from IndexedDB
+ * Called when creating a new manuscript
+ */
+export async function clearManuscriptImages(): Promise<void> {
+  try {
+    const db = await openDB();
+    const keys = await new Promise<string[]>((resolve, reject) => {
+      const tx = db.transaction(STORES.MANUSCRIPT, 'readonly');
+      const store = tx.objectStore(STORES.MANUSCRIPT);
+      const req = store.getAllKeys();
+      req.onsuccess = () => resolve(req.result as string[]);
+      req.onerror = () => reject(req.error);
+    });
+
+    // Delete all keys that start with 'images/'
+    for (const key of keys) {
+      if (typeof key === 'string' && key.startsWith('images/')) {
+        await deleteValue(STORES.MANUSCRIPT, key);
+      }
+    }
+  } catch {
+    // Ignore errors during cleanup
   }
 }
 
@@ -929,6 +1017,9 @@ export async function clearWorkingCopy(): Promise<void> {
   if (meta.coverImageId) {
     await deleteValue(STORES.MANUSCRIPT, meta.coverImageId);
   }
+
+  // Delete all inline images
+  await clearManuscriptImages();
 
   // Delete meta
   await deleteValue(STORES.MANUSCRIPT, 'working_copy_meta.json');

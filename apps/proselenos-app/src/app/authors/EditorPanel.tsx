@@ -9,8 +9,14 @@ import ToolProgressIndicator from '../ai-tools/ToolProgressIndicator';
 import { isValidToolReport } from '@/utils/parseToolReport';
 import OneByOnePanel from './OneByOnePanel';
 import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
+import ImagePickerModal from './ImagePickerModal';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { showUrlInput } from '../shared/alerts';
+
+interface ImageInfo {
+  filename: string;
+  url: string;
+}
 
 interface Tool {
   id: string;
@@ -75,6 +81,10 @@ interface EditorPanelProps {
   onSearchPrev?: () => void;
   onSearchNext?: () => void;
   onSearchClose?: () => void;
+  // Image picker props
+  images?: ImageInfo[];
+  onImageUpload?: (file: File) => Promise<void>;
+  onImageDelete?: (filename: string) => void;
 }
 
 // Ref handle for parent to control textarea
@@ -137,6 +147,10 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   onSearchPrev,
   onSearchNext,
   onSearchClose,
+  // Image picker props
+  images,
+  onImageUpload,
+  onImageDelete,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -168,6 +182,9 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Formatting dropdown state
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
+
+  // Image picker state
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   // Close format dropdown when clicking outside
   useEffect(() => {
@@ -240,6 +257,32 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
       textarea.focus();
     }, 0);
   }, [localContent, sectionContent, onContentChange, isDarkMode]);
+
+  // Handle image insertion from picker
+  const handleImageInsert = useCallback((filename: string, altText: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const { selectionStart } = textarea;
+    const markdown = `![${altText}](${filename})`;
+
+    // Insert at cursor position
+    const newContent =
+      localContent.slice(0, selectionStart) +
+      markdown +
+      localContent.slice(selectionStart);
+
+    setLocalContent(newContent);
+    onContentChange?.(newContent !== sectionContent, newContent);
+    setShowImagePicker(false);
+
+    // Restore focus
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = selectionStart + markdown.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  }, [localContent, sectionContent, onContentChange]);
 
   // Scroll to and select a passage in the textarea
   const scrollToPassage = useCallback((passage: string) => {
@@ -527,6 +570,24 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
               >
                 Web Link
               </button>
+              <button
+                onClick={() => { setShowFormatDropdown(false); setShowImagePicker(true); }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'none',
+                  color: theme.text,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#3a3a3a' : '#f0f0f0'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                Image
+              </button>
             </div>
           )}
         </div>
@@ -694,6 +755,18 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           onClose={onSearchClose ?? (() => {})}
         />
       )}
+
+      {/* Image picker modal */}
+      <ImagePickerModal
+        isOpen={showImagePicker}
+        theme={theme}
+        isDarkMode={isDarkMode}
+        images={images ?? []}
+        onSelect={handleImageInsert}
+        onUpload={onImageUpload ?? (async () => {})}
+        onDelete={onImageDelete ?? (() => {})}
+        onClose={() => setShowImagePicker(false)}
+      />
     </main>
   );
 });
