@@ -9,9 +9,14 @@
  * Other elements are processed for their children only.
  */
 function convertNodeToMarkdown(node: Node): string {
-  // Text node: return text as-is
+  // Text node: skip whitespace-only nodes (formatting), keep actual text
   if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent || '';
+    const text = node.textContent || '';
+    // Skip whitespace-only text nodes (indentation, newlines between tags)
+    if (!text.trim()) {
+      return '';
+    }
+    return text;
   }
 
   // Not an element: skip
@@ -22,10 +27,20 @@ function convertNodeToMarkdown(node: Node): string {
   const element = node as Element;
   const tagName = element.tagName.toLowerCase();
 
-  // Recursively process all children first
+  // Recursively process all children, adding paragraph breaks between block elements
   let innerText = '';
   for (const child of Array.from(element.childNodes)) {
-    innerText += convertNodeToMarkdown(child);
+    const childText = convertNodeToMarkdown(child);
+    // Add paragraph break before block-level elements (if we already have content)
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const tag = (child as Element).tagName.toLowerCase();
+      if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote'].includes(tag)) {
+        if (innerText.trim()) {
+          innerText += '\n\n';
+        }
+      }
+    }
+    innerText += childText;
   }
 
   // Apply markdown wrappers based on tag type

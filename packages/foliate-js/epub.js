@@ -1105,7 +1105,14 @@ ${doc.querySelector('parsererror').innerText}`)
     }
     resolveHref(href) {
         const [path, hash] = href.split('#')
-        const item = this.resources.getItemByHref(decodeURI(path))
+        const decodedPath = decodeURI(path)
+        // Try direct lookup first
+        let item = this.resources.getItemByHref(decodedPath)
+        // If not found, try basename only (strip directory prefix like OEBPS/)
+        if (!item) {
+            const basename = decodedPath.split('/').pop()
+            item = this.resources.getItemByHref(basename)
+        }
         if (!item) return null
         const index = this.resources.spine.findIndex(({ idref }) => idref === item.id)
         const anchor = hash ? doc => getHTMLFragment(doc, hash) : () => 0

@@ -498,34 +498,34 @@ ${copyrightContent}
 }
 
 /**
- * Create contents page HTML
+ * Create contents page HTML (Vellum-style structure for clickable links)
  */
 function createContentsPage(chapters: Chapter[], metadata: any): string {
   const chapterItems = chapters
-    .map(ch => `    <li><a href="${ch.id}.xhtml">${escapeHtml(ch.title)}</a></li>`)
+    .map(ch => `      <div class="toc-item">
+        <p class="toc-content"><a href="${ch.id}.xhtml"><span class="toc-item-title">${escapeHtml(ch.title)}</span></a></p>
+      </div>`)
     .join('\n');
 
-  const tocItems = [
-    chapterItems,
-    ...(metadata.aboutAuthor && metadata.aboutAuthor.trim() ? ['    <li><a href="about-author.xhtml">About the Author</a></li>'] : [])
-  ].join('\n');
+  const aboutAuthorItem = metadata.aboutAuthor && metadata.aboutAuthor.trim()
+    ? `\n      <div class="toc-item">
+        <p class="toc-content"><a href="about-author.xhtml"><span class="toc-item-title">About the Author</span></a></p>
+      </div>`
+    : '';
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en" lang="en">
 <head>
   <title>Contents</title>
   <link rel="stylesheet" type="text/css" href="css/style.css"/>
 </head>
 <body>
-  <section class="contents-page" epub:type="toc">
-    <h1>Contents</h1>
-    <nav class="book-toc">
-      <ol>
-${tocItems}
-      </ol>
-    </nav>
-  </section>
+  <div id="table-of-contents" class="contents-page" role="doc-toc" epub:type="toc">
+    <h1 class="toc-title">CONTENTS</h1>
+    <div class="toc-contents">
+${chapterItems}${aboutAuthorItem}
+    </div>
+  </div>
 </body>
 </html>`;
 }
@@ -878,27 +878,36 @@ body {
   margin: 2em 0;
 }
 
-.contents-page h1 {
+.toc-title {
   text-align: center;
   font-size: 1.5em;
   margin: 2em 0;
   font-weight: bold;
+  text-transform: uppercase;
 }
 
-.book-toc ol {
-  list-style: none;
+.toc-contents {
   margin: 1em 0;
   padding: 0;
 }
 
-.book-toc li {
+.toc-item {
   margin: 1em 0;
   text-align: left;
 }
 
-.book-toc a {
+.toc-content {
+  margin: 0;
+  text-indent: 0;
+}
+
+.toc-content a {
   text-decoration: none;
   color: inherit;
+}
+
+.toc-item-title {
+  display: inline;
 }
 
 /* Chapter styles */
