@@ -89,7 +89,7 @@ interface EditorPanelProps {
 
 // Ref handle for parent to control textarea
 export interface EditorPanelRef {
-  scrollToPassage: (passage: string) => void;
+  scrollToPassage: (passage: string, startIndex?: number) => void;
   updateContent: (content: string) => void;
   getContent: () => string;
 }
@@ -285,11 +285,11 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   }, [localContent, sectionContent, onContentChange]);
 
   // Scroll to and select a passage in the textarea
-  const scrollToPassage = useCallback((passage: string) => {
+  const scrollToPassage = useCallback((passage: string, startIndex?: number) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    const start = localContent.indexOf(passage);
+    const start = startIndex ?? localContent.indexOf(passage);
     if (start === -1) return;
 
     const end = start + passage.length;
@@ -712,6 +712,13 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           padding: '4px',
         }}
       >
+        {/* Custom selection color for search highlighting */}
+        <style>{`
+          .editor-textarea::selection {
+            background-color: ${isDarkMode ? '#5a4a00' : '#fff59d'};
+            color: ${isDarkMode ? '#fff' : '#000'};
+          }
+        `}</style>
         <textarea
           ref={textareaRef}
           className="editor-textarea"

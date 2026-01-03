@@ -210,7 +210,7 @@ export default function ChapterSidebar({
               style={{
                 padding: '4px 8px',
                 cursor: toolExecuting ? 'not-allowed' : 'pointer',
-                backgroundColor: isSelected ? selectedBg : (hasMatch ? (isDarkMode ? '#2d3a2d' : '#e8f5e9') : 'transparent'),
+                backgroundColor: isSelected ? selectedBg : (hasMatch ? (isDarkMode ? '#3d2a0a' : '#fef3c7') : 'transparent'),
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -223,13 +223,13 @@ export default function ChapterSidebar({
               )}
               {/* Match indicator */}
               {!isSelected && hasMatch && (
-                <span style={{ color: '#4caf50', fontSize: '8px' }}>●</span>
+                <span style={{ color: '#f59e0b', fontSize: '8px' }}>●</span>
               )}
               {/* Section title */}
               <span
                 style={{
                   fontSize: '12px',
-                  color: isSelected ? '#6366f1' : (hasMatch ? '#4caf50' : theme.text),
+                  color: isSelected ? '#6366f1' : (hasMatch ? '#f59e0b' : theme.text),
                   fontWeight: isSelected ? 500 : (hasMatch ? 500 : 400),
                 }}
               >
@@ -290,7 +290,7 @@ export default function ChapterSidebar({
           )}
         </div>
         {searchResultCount > 0 && (
-          <div style={{ fontSize: '10px', color: '#4caf50', marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', color: '#f59e0b', marginTop: '2px' }}>
             {searchResultCount} match{searchResultCount !== 1 ? 'es' : ''}
           </div>
         )}

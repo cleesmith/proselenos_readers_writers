@@ -16,6 +16,7 @@ import { parseDocx } from '@/services/docxService';
 import { countWords } from '@/services/htmlExtractor';
 import { loadFullWorkingCopy, saveFullWorkingCopy, deleteSection, saveWorkingCopyMeta, loadWorkingCopyMeta, clearWorkingCopy, saveSection, saveCoverImage, deleteCoverImage, loadCoverImage, WorkingCopyMeta, saveManuscriptImage, deleteManuscriptImage, getAllManuscriptImages } from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
+import { generateHtmlFromSections, downloadHtmlFile } from '@/lib/html-generator';
 import environmentConfig from '@/services/environment';
 import { parseToolReport } from '@/utils/parseToolReport';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
@@ -418,10 +419,25 @@ export default function AuthorsLayout({
     // Scroll to match after section loads
     setTimeout(() => {
       if (editorPanelRef.current) {
-        editorPanelRef.current.scrollToPassage(result.matchText);
+        editorPanelRef.current.scrollToPassage(result.matchText, result.matchIndex);
       }
     }, 100);
   }, []);
+
+  // Auto-navigate to search result when search is performed or index changes
+  useEffect(() => {
+    if (searchActive && searchResults.length > 0) {
+      const result = searchResults[currentSearchIndex];
+      if (result) {
+        setSelectedSectionId(result.sectionId);
+        setTimeout(() => {
+          if (editorPanelRef.current) {
+            editorPanelRef.current.scrollToPassage(result.matchText, result.matchIndex);
+          }
+        }, 100);
+      }
+    }
+  }, [searchActive, searchResults, currentSearchIndex]);
 
   // Auto-load working copy from IndexedDB on mount
   useEffect(() => {
@@ -1081,6 +1097,46 @@ export default function AuthorsLayout({
     }
   };
 
+  // Handle HTML export - download manuscript as single-page HTML
+  const handleHtmlExport = async () => {
+    // 1. Save any pending editor changes first
+    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
+      await saveCurrentSection();
+    }
+
+    // 2. Load full working copy
+    const workingCopy = await loadFullWorkingCopy();
+    if (!workingCopy) {
+      showAlert('No manuscript to export. Please create or load a manuscript first.', 'warning', undefined, isDarkMode);
+      return;
+    }
+
+    // 3. Load metadata for author info
+    const meta = await loadWorkingCopyMeta();
+
+    try {
+      // 4. Generate HTML
+      const html = generateHtmlFromSections({
+        title: workingCopy.title || 'Untitled',
+        author: workingCopy.author || meta?.author || 'Unknown Author',
+        year: new Date().getFullYear().toString(),
+        sections: workingCopy.sections.map(s => ({
+          title: s.title,
+          content: s.content,
+        })),
+      });
+
+      // 5. Download the file
+      const safeTitle = (workingCopy.title || 'manuscript').replace(/[^a-zA-Z0-9\s-]/g, '').trim();
+      downloadHtmlFile(html, `${safeTitle}.html`);
+
+      showAlert('HTML file downloaded successfully!', 'success', undefined, isDarkMode);
+    } catch (error) {
+      console.error('Error exporting HTML:', error);
+      showAlert(`Error exporting HTML: ${(error as Error).message}`, 'error', undefined, isDarkMode);
+    }
+  };
+
   // Handle section selection with unsaved changes check
   const handleSelectSection = (sectionId: string) => {
     if (sectionId === selectedSectionId) return; // Same section, no action needed
@@ -1210,6 +1266,8 @@ export default function AuthorsLayout({
         currentModel={currentModel}
         currentProvider={currentProvider}
         toolExecuting={toolExecuting}
+        onSearchClose={handleSearchClose}
+        onHtmlExportClick={handleHtmlExport}
       />
 
       {/* Main content: 2-panel layout */}

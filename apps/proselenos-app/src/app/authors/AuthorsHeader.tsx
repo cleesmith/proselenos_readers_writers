@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo } from 'react-icons/pi';
+import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml } from 'react-icons/pi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
@@ -28,6 +28,8 @@ interface AuthorsHeaderProps {
   currentModel: string;
   currentProvider: string;
   toolExecuting?: boolean; // When true, disable all buttons except Exit
+  onSearchClose?: () => void;
+  onHtmlExportClick?: () => void;
 }
 
 export default function AuthorsHeader({
@@ -50,6 +52,8 @@ export default function AuthorsHeader({
   currentModel,
   currentProvider,
   toolExecuting = false,
+  onSearchClose,
+  onHtmlExportClick,
 }: AuthorsHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -147,7 +151,10 @@ export default function AuthorsHeader({
           <div ref={openDropdownRef} style={{ position: 'relative' }}>
             <StyledSmallButton
               theme={theme}
-              onClick={() => setOpenDropdownOpen(!openDropdownOpen)}
+              onClick={() => {
+                onSearchClose?.();
+                setOpenDropdownOpen(!openDropdownOpen);
+              }}
               disabled={toolExecuting}
               title="Open to work on ebook"
             >
@@ -394,6 +401,25 @@ export default function AuthorsHeader({
               Editor
             </button>
             <button
+              onClick={() => { onHtmlExportClick?.(); setMenuOpen(false); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '8px 12px',
+                background: 'rgba(184, 134, 11, 0.15)',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                color: '#b8860b',
+                fontSize: '13px',
+              }}
+            >
+              <PiFileHtml size={16} />
+              HTML
+            </button>
+            <button
               onClick={() => { onStorageClick(); setMenuOpen(false); }}
               style={{
                 display: 'flex',
@@ -401,7 +427,7 @@ export default function AuthorsHeader({
                 gap: '8px',
                 width: '100%',
                 padding: '8px 12px',
-                background: 'rgba(245, 158, 11, 0.2)',
+                background: 'rgba(100, 116, 139, 0.2)',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
