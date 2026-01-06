@@ -112,21 +112,21 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
       max-width: 700px;
       margin: 0 auto 30px auto;
       padding: 20px 25px;
-      border: 2px solid #b8860b;
+      border: 2px solid #707070;
       border-radius: 6px;
       background: #fff;
     }
 
     body.dark-mode .chapter-container {
       background: #1e1e1e;
-      border-color: #b8860b;
+      border-color: #707070;
     }
 
     .chapter-title {
       font-weight: bold;
       font-size: 1.3em;
       margin-bottom: 15px;
-      color: #b8860b;
+      color: #707070;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -145,7 +145,7 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
     }
 
     .chapter-text a {
-      color: #b8860b;
+      color: #707070;
       text-decoration: underline;
     }
 
@@ -181,7 +181,7 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
 
     .footer-title {
       font-weight: bold;
-      color: #b8860b;
+      color: #707070;
     }
 
     .footer-author {
@@ -206,6 +206,38 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
       background: rgba(255, 255, 255, 0.1);
     }
 
+    .download-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+    }
+
+    .download-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .download-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: #ccc;
+      transition: fill 0.2s;
+    }
+
+    .download-btn:hover svg {
+      fill: #22c55e;
+    }
+
+    .footer-buttons {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
     @media (max-width: 600px) {
       body {
         padding: 10px;
@@ -228,7 +260,7 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
     }
   </style>
 </head>
-<body>
+<body class="dark-mode">
 ${chaptersHtml}
 
   <div class="footer">
@@ -237,7 +269,12 @@ ${chaptersHtml}
       <span class="footer-author">by ${escapeHtml(author)}</span>
       <span class="footer-copyright">© ${escapeHtml(year)}</span>
     </div>
-    <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">☀️</button>
+    <div class="footer-buttons">
+      <button class="download-btn" id="downloadBtn" title="Download HTML file">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      </button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">🌙</button>
+    </div>
   </div>
 
   <script>
@@ -245,11 +282,11 @@ ${chaptersHtml}
     const themeToggle = document.getElementById('themeToggle');
     const body = document.body;
 
-    // Check for saved preference or default to light
+    // Check for saved preference - default is dark (set in body class)
     const savedTheme = localStorage.getItem('html-ebook-theme');
-    if (savedTheme === 'dark') {
-      body.classList.add('dark-mode');
-      themeToggle.textContent = '🌙';
+    if (savedTheme === 'light') {
+      body.classList.remove('dark-mode');
+      themeToggle.textContent = '☀️';
     }
 
     themeToggle.addEventListener('click', () => {
@@ -257,6 +294,23 @@ ${chaptersHtml}
       const isDark = body.classList.contains('dark-mode');
       themeToggle.textContent = isDark ? '🌙' : '☀️';
       localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
+    });
+
+    // Download functionality
+    const downloadBtn = document.getElementById('downloadBtn');
+    downloadBtn.addEventListener('click', () => {
+      // Hide download button before capturing HTML (not needed in downloaded file)
+      downloadBtn.style.display = 'none';
+      const html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+      downloadBtn.style.display = '';
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = document.title + '.html';
+      a.click();
+      URL.revokeObjectURL(url);
     });
   </script>
 </body>
@@ -278,16 +332,11 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Trigger download of HTML file
+ * Open HTML content in a new browser tab
  */
-export function downloadHtmlFile(html: string, filename: string): void {
+export function openHtmlInNewTab(html: string): void {
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename.endsWith('.html') ? filename : `${filename}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  window.open(url, '_blank');
+  // URL will be garbage collected when tab closes
 }

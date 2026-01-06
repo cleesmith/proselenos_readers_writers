@@ -16,7 +16,7 @@ import { parseDocx } from '@/services/docxService';
 import { countWords } from '@/services/htmlExtractor';
 import { loadFullWorkingCopy, saveFullWorkingCopy, deleteSection, saveWorkingCopyMeta, loadWorkingCopyMeta, clearWorkingCopy, saveSection, saveCoverImage, deleteCoverImage, loadCoverImage, WorkingCopyMeta, saveManuscriptImage, deleteManuscriptImage, getAllManuscriptImages } from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
-import { generateHtmlFromSections, downloadHtmlFile } from '@/lib/html-generator';
+import { generateHtmlFromSections, openHtmlInNewTab } from '@/lib/html-generator';
 import environmentConfig from '@/services/environment';
 import { parseToolReport } from '@/utils/parseToolReport';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
@@ -1126,11 +1126,10 @@ export default function AuthorsLayout({
         })),
       });
 
-      // 5. Download the file
-      const safeTitle = (workingCopy.title || 'manuscript').replace(/[^a-zA-Z0-9\s-]/g, '').trim();
-      downloadHtmlFile(html, `${safeTitle}.html`);
+      // 5. Open in new tab
+      openHtmlInNewTab(html);
 
-      showAlert('HTML file downloaded successfully!', 'success', undefined, isDarkMode);
+      showAlert('HTML opened in new tab!', 'success', undefined, isDarkMode);
     } catch (error) {
       console.error('Error exporting HTML:', error);
       showAlert(`Error exporting HTML: ${(error as Error).message}`, 'error', undefined, isDarkMode);
