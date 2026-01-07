@@ -7,7 +7,7 @@ import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { showConfirm } from '../shared/alerts';
 import ElementPickerDropdown from './ElementPickerDropdown';
-import { ElementType } from './elementTypes';
+import { ElementType, PROTECTED_SECTION_IDS, PROTECTED_SECTION_COUNT } from './elementTypes';
 
 interface Section {
   id: string;
@@ -79,8 +79,14 @@ export default function ChapterSidebar({
     return () => URL.revokeObjectURL(url);
   }, [coverImage]);
 
+  // Check if selected section is protected (Cover, Title Page, Copyright)
+  const isProtectedSection = !!(selectedSectionId &&
+    (PROTECTED_SECTION_IDS as readonly string[]).includes(selectedSectionId));
+
   const handleRemove = async () => {
     if (!selectedSectionId) return;
+    // Don't allow deletion of protected sections
+    if (isProtectedSection) return;
     const section = sections.find((s) => s.id === selectedSectionId);
     const confirmed = await showConfirm(
       `Remove "${section?.title}"?`,
@@ -95,9 +101,14 @@ export default function ChapterSidebar({
   };
 
   // Compute whether move up/down is possible
+  // Protected sections (indices 0, 1, 2) cannot move, and other sections cannot move into protected zone
   const selectedIndex = sections.findIndex(s => s.id === selectedSectionId);
-  const canMoveUp = selectedSectionId && selectedIndex > 0;
-  const canMoveDown = selectedSectionId && selectedIndex >= 0 && selectedIndex < sections.length - 1;
+  const canMoveUp = selectedSectionId &&
+    selectedIndex >= PROTECTED_SECTION_COUNT &&  // Not in protected zone
+    selectedIndex > PROTECTED_SECTION_COUNT;      // Can't move into protected zone (must stay at index 3+)
+  const canMoveDown = selectedSectionId &&
+    selectedIndex >= PROTECTED_SECTION_COUNT &&  // Not in protected zone
+    selectedIndex < sections.length - 1;
 
   const handleMoveUp = () => {
     if (selectedSectionId && onMoveUp) {
@@ -327,8 +338,8 @@ export default function ChapterSidebar({
           <StyledSmallButton
             theme={theme}
             onClick={handleRemove}
-            disabled={toolExecuting}
-            title="Remove Element"
+            disabled={toolExecuting || isProtectedSection}
+            title={isProtectedSection ? "Cannot remove protected section" : "Remove Element"}
           >
             -
           </StyledSmallButton>

@@ -5,6 +5,8 @@
 export type ElementType =
   // Main content
   | 'chapter'
+  // Cover (always first, cannot be deleted or moved)
+  | 'cover'
   // Front Matter
   | 'blurbs'
   | 'half-title'
@@ -95,6 +97,18 @@ export const ELEMENT_GROUPS: ElementGroup[] = [
 export const ELEMENT_MAP = new Map<ElementType, ElementDefinition>(
   ELEMENT_GROUPS.flatMap(g => g.elements).map(e => [e.type, e])
 );
+
+// Add cover element (not in ELEMENT_GROUPS since users can't add more covers)
+ELEMENT_MAP.set('cover', {
+  type: 'cover',
+  displayName: 'Cover',
+  defaultTitle: 'Cover',
+  description: 'Book cover image',
+});
+
+// Protected sections that cannot be deleted or moved (always first 3)
+export const PROTECTED_SECTION_IDS = ['cover', 'title-page', 'copyright'] as const;
+export const PROTECTED_SECTION_COUNT = PROTECTED_SECTION_IDS.length;
 
 // Helper to get default title for a type
 export function getDefaultTitle(elementType: ElementType): string {

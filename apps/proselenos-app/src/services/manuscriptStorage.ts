@@ -780,6 +780,7 @@ function inferSectionType(title: string): ElementType {
   const lowerTitle = title.toLowerCase();
 
   // Only truly structural/metadata sections are non-chapters
+  if (lowerTitle === 'cover') return 'cover';
   if (lowerTitle.includes('title page')) return 'title-page';
   if (lowerTitle.includes('copyright')) return 'copyright';
   if (lowerTitle.includes('table of contents') || lowerTitle === 'contents') return 'table-of-contents';
@@ -959,7 +960,7 @@ export async function saveFullWorkingCopy(epub: {
   author: string;
   language: string;
   coverImage: Blob | null;
-  sections: { id: string; title: string; content: string; type?: 'section' | 'chapter' }[];
+  sections: { id: string; title: string; content: string; type?: ElementType }[];
 }): Promise<void> {
   // Normalize section IDs
   const normalizedSections: WorkingCopySection[] = [];

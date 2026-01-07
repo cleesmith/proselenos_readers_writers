@@ -74,12 +74,29 @@ export async function generateEpubFromWorkingCopy(
   );
   const copyrightContent = copyrightSection?.content || '';
 
-  // Convert sections to Chapter format, skipping Title Page and Copyright (we generate those separately)
+  // Find Cover section to extract cover image (if user added one via Format > Image)
+  const coverSection = sections.find(s =>
+    s.id === 'cover' || s.title.toLowerCase() === 'cover'
+  );
+
+  // Extract inline image from Cover section content (e.g., "![alt](filename.png)")
+  let coverImageFromSection: string | null = null;
+  if (coverSection) {
+    const imageMatch = coverSection.content.match(/!\[[^\]]*\]\(([^)]+)\)/);
+    if (imageMatch && imageMatch[1]) {
+      coverImageFromSection = imageMatch[1]; // e.g., "ny2026.png"
+    }
+  }
+
+  // Convert sections to Chapter format, skipping Cover, Title Page and Copyright (we generate those separately)
   const chapters: Chapter[] = [];
   let chapterNum = 0;
 
   for (const section of sections) {
-    // Skip title page and copyright sections - we generate those from metadata
+    // Skip cover, title page and copyright sections - we generate those from metadata
+    if (section.id === 'cover' || section.title.toLowerCase() === 'cover') {
+      continue;
+    }
     if (section.id === 'title-page' || section.title.toLowerCase() === 'title page') {
       continue;
     }
@@ -117,14 +134,7 @@ export async function generateEpubFromWorkingCopy(
     copyrightContent: copyrightContent, // Custom copyright text from working copy
   };
 
-  // Convert cover Blob to Uint8Array if provided
-  let coverImageData: Uint8Array | undefined;
-  if (coverBlob) {
-    const arrayBuffer = await coverBlob.arrayBuffer();
-    coverImageData = new Uint8Array(arrayBuffer);
-  }
-
-  // Convert inline images to Uint8Array format
+  // Convert inline images to Uint8Array format (do this first so we can check for cover image)
   const inlineImages: Array<{filename: string, data: Uint8Array}> = [];
   if (images && images.length > 0) {
     for (const img of images) {
@@ -133,6 +143,20 @@ export async function generateEpubFromWorkingCopy(
         filename: img.filename,
         data: new Uint8Array(arrayBuffer)
       });
+    }
+  }
+
+  // Convert cover Blob to Uint8Array if provided
+  let coverImageData: Uint8Array | undefined;
+  if (coverBlob) {
+    // Use metadata cover (sidebar thumbnail)
+    const arrayBuffer = await coverBlob.arrayBuffer();
+    coverImageData = new Uint8Array(arrayBuffer);
+  } else if (coverImageFromSection) {
+    // Fallback: use image from Cover section content
+    const coverImg = inlineImages.find(img => img.filename === coverImageFromSection);
+    if (coverImg) {
+      coverImageData = coverImg.data;
     }
   }
 
@@ -162,16 +186,15 @@ async function generateEPUB(
 </container>`;
   zip.file('META-INF/container.xml', containerXML);
 
-  // 3. Handle cover image if provided
+  // 3. Handle cover - always create cover.xhtml (with image or text fallback)
   const hasCover = !!coverImageData;
   if (coverImageData) {
     // Add cover image file
     zip.file('OEBPS/images/cover.jpg', coverImageData);
-
-    // Add cover page XHTML
-    const coverXHTML = createCoverPage();
-    zip.file('OEBPS/cover.xhtml', coverXHTML);
   }
+  // Always create cover page (with image or text fallback)
+  const coverXHTML = createCoverPage(metadata, hasCover);
+  zip.file('OEBPS/cover.xhtml', coverXHTML);
 
   // 3b. Add inline images to OEBPS/images/
   if (inlineImages && inlineImages.length > 0) {
@@ -590,9 +613,13 @@ ${aboutContent}
 
 /**
  * Create cover page XHTML for EPUB
+ * If hasCoverImage is true, shows the cover image
+ * Otherwise, shows a styled text cover with title and author
  */
-function createCoverPage(): string {
-  return `<?xml version="1.0" encoding="UTF-8"?>
+function createCoverPage(metadata: { title: string; author: string }, hasCoverImage: boolean): string {
+  if (hasCoverImage) {
+    // Image-based cover
+    return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
@@ -606,6 +633,44 @@ function createCoverPage(): string {
   <img src="images/cover.jpg" alt="Cover"/>
 </body>
 </html>`;
+  } else {
+    // Text-based fallback cover (blue background with title/author)
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>Cover</title>
+  <style type="text/css">
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #00517b;
+      color: #ffffff;
+      font-family: Georgia, serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin: 0 0 0.5em 0;
+      padding: 0 1em;
+    }
+    .author {
+      font-size: 1.2em;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body epub:type="cover">
+  <h1>${escapeHtml(metadata.title || 'Untitled')}</h1>
+  <p class="author">${escapeHtml(metadata.author || 'Anonymous')}</p>
+</body>
+</html>`;
+  }
 }
 
 /**
@@ -620,15 +685,15 @@ function createEpub3ContentOPF(
   const uuid = generateUUID();
   const date = new Date().toISOString().split('T')[0];
 
-  // Cover metadata and manifest
+  // Cover metadata and manifest - always include cover page, optionally include cover image
   let coverMeta = '';
   let coverManifest = '';
-  let coverPageManifest = '';
+  // Cover page is always included (with image or text fallback)
+  const coverPageManifest = `    <item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
 
   if (coverImageId) {
     coverMeta = `    <meta name="cover" content="${coverImageId}"/>`;
     coverManifest = `    <item id="${coverImageId}" href="images/cover.jpg" media-type="image/jpeg" properties="cover-image"/>`;
-    coverPageManifest = `    <item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
   }
 
   // Inline images manifest entries
@@ -648,9 +713,9 @@ function createEpub3ContentOPF(
     .map(ch => `    <item id="${ch.id}" href="${ch.id}.xhtml" media-type="application/xhtml+xml"/>`)
     .join('\n');
 
-  // Build spine items - cover page first if present
+  // Build spine items - cover page is always first
   const spineItems = [
-    ...(coverImageId ? ['    <itemref idref="cover-page"/>'] : []),
+    '    <itemref idref="cover-page"/>',
     '    <itemref idref="title-page"/>',
     '    <itemref idref="copyright"/>',
     '    <itemref idref="contents"/>',

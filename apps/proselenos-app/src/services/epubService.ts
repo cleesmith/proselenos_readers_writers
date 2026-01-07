@@ -31,6 +31,7 @@ function inferSectionType(title: string): ElementType {
 
   // Only truly structural/metadata sections are non-chapters
   // (these don't need markdown formatting)
+  if (lowerTitle === 'cover') return 'cover';
   if (lowerTitle.includes('title page')) return 'title-page';
   if (lowerTitle.includes('copyright')) return 'copyright';
   if (lowerTitle.includes('table of contents') || lowerTitle === 'contents') return 'table-of-contents';
@@ -145,41 +146,63 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     });
   }
 
-  // Ensure Title Page exists
-  const hasTitlePage = sections.some(s =>
-    s.id === 'title-page' || s.title.toLowerCase() === 'title page'
-  );
-  if (!hasTitlePage) {
-    sections.unshift({
-      id: 'title-page',
-      title: 'Title Page',
-      href: 'title-page.xhtml',
-      content: `${title || 'Untitled'}\n\nby ${author || 'Anonymous'}`,
-    });
-  }
+  // Enforce first 3 sections: Cover, Title Page, Copyright (in that order)
+  // These sections cannot be deleted or moved by the user
+  const year = new Date().getFullYear();
 
-  // Ensure Copyright section exists
-  const hasCopyright = sections.some(s =>
-    s.id === 'copyright' || s.title.toLowerCase() === 'copyright'
+  // Helper to find a section by id or title
+  const findSection = (id: string, titleKeyword: string) =>
+    sections.find(s => s.id === id || s.title.toLowerCase() === titleKeyword);
+
+  // Extract existing protected sections (if any)
+  const existingCover = findSection('cover', 'cover');
+  const existingTitlePage = findSection('title-page', 'title page');
+  const existingCopyright = findSection('copyright', 'copyright');
+
+  // Remove existing protected sections from their current positions
+  const otherSections = sections.filter(s =>
+    s !== existingCover && s !== existingTitlePage && s !== existingCopyright
   );
-  if (!hasCopyright) {
-    const year = new Date().getFullYear();
-    // Insert after Title Page (index 1) or at beginning
-    const insertIndex = hasTitlePage ? 1 : 0;
-    sections.splice(insertIndex, 0, {
-      id: 'copyright',
-      title: 'Copyright',
-      href: 'copyright.xhtml',
-      content: `Copyright © ${year} ${author || 'Anonymous'}\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`,
-    });
-  }
+
+  // Create Cover section (use existing or create new)
+  const coverSection: ParsedSection = existingCover || {
+    id: 'cover',
+    title: 'Cover',
+    href: 'cover.xhtml',
+    content: 'Use Format > Image to add your cover image',
+    type: 'cover',
+  };
+  if (!coverSection.type) coverSection.type = 'cover';
+
+  // Create Title Page section (use existing or create new)
+  const titlePageSection: ParsedSection = existingTitlePage || {
+    id: 'title-page',
+    title: 'Title Page',
+    href: 'title-page.xhtml',
+    content: `${title || 'Untitled'}\n\nby ${author || 'Anonymous'}`,
+    type: 'title-page',
+  };
+  if (!titlePageSection.type) titlePageSection.type = 'title-page';
+
+  // Create Copyright section (use existing or create new)
+  const copyrightSection: ParsedSection = existingCopyright || {
+    id: 'copyright',
+    title: 'Copyright',
+    href: 'copyright.xhtml',
+    content: `Copyright © ${year} ${author || 'Anonymous'}\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`,
+    type: 'copyright',
+  };
+  if (!copyrightSection.type) copyrightSection.type = 'copyright';
+
+  // Rebuild sections array with protected sections first
+  const orderedSections = [coverSection, titlePageSection, copyrightSection, ...otherSections];
 
   return {
     title: title || 'Untitled',
     author: author || '',
     language: language || 'en',
     coverImage,
-    sections,
+    sections: orderedSections,
     images,
   };
 }

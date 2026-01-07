@@ -9,7 +9,7 @@ import Swal from 'sweetalert2';
 import AuthorsHeader from './AuthorsHeader';
 import ChapterSidebar from './ChapterSidebar';
 import EditorPanel, { EditorPanelRef } from './EditorPanel';
-import { ElementType, getDefaultTitle } from './elementTypes';
+import { ElementType, getDefaultTitle, PROTECTED_SECTION_IDS, PROTECTED_SECTION_COUNT } from './elementTypes';
 import TitlePagePanel, { BookMetadata } from './TitlePagePanel';
 import { parseEpub, ParsedEpub } from '@/services/epubService';
 import { parseDocx } from '@/services/docxService';
@@ -461,6 +461,7 @@ export default function AuthorsLayout({
         setSelectedSectionId(epub.sections[0]?.id ?? null);
       } else {
         // No existing book - auto-create a new blank manuscript
+        // First 3 sections (Cover, Title Page, Copyright) are protected - cannot be deleted or moved
         await clearWorkingCopy();
         const year = new Date().getFullYear();
         const blank = {
@@ -469,8 +470,9 @@ export default function AuthorsLayout({
           language: 'en',
           coverImage: null,
           sections: [
-            { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'section' as const },
-            { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`, type: 'section' as const },
+            { id: 'cover', title: 'Cover', content: 'Use Format > Image to add your cover image', type: 'cover' as const },
+            { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'title-page' as const },
+            { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`, type: 'copyright' as const },
             { id: 'chapter-1', title: 'Chapter 1', content: '', type: 'chapter' as const },
           ],
         };
@@ -767,6 +769,8 @@ export default function AuthorsLayout({
   // Handle removing a section/chapter
   const handleRemoveSection = async (sectionId: string) => {
     if (!epub) return;
+    // Don't allow deletion of protected sections (Cover, Title Page, Copyright)
+    if ((PROTECTED_SECTION_IDS as readonly string[]).includes(sectionId)) return;
     const idx = epub.sections.findIndex((s) => s.id === sectionId);
     const newSections = epub.sections.filter((s) => s.id !== sectionId);
 
@@ -796,14 +800,16 @@ export default function AuthorsLayout({
     await clearWorkingCopy();
     const year = new Date().getFullYear();
     // Create blank manuscript with typed sections
+    // First 3 sections (Cover, Title Page, Copyright) are protected - cannot be deleted or moved
     const blank = {
       title: 'Untitled',
       author: 'Anonymous',
       language: 'en',
       coverImage: null,
       sections: [
-        { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'section' as const },
-        { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`, type: 'section' as const },
+        { id: 'cover', title: 'Cover', content: 'Use Format > Image to add your cover image', type: 'cover' as const },
+        { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'title-page' as const },
+        { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`, type: 'copyright' as const },
         { id: 'chapter-1', title: 'Chapter 1', content: '', type: 'chapter' as const },
       ],
     };
@@ -888,6 +894,8 @@ export default function AuthorsLayout({
     if (!epub) return;
     const idx = epub.sections.findIndex(s => s.id === sectionId);
     if (idx <= 0) return; // Can't move up if first or not found
+    // Can't move if in protected zone or would enter protected zone
+    if (idx <= PROTECTED_SECTION_COUNT) return;
 
     // Swap in sections array using splice (removes and returns element, then inserts)
     const newSections = [...epub.sections];
@@ -917,6 +925,8 @@ export default function AuthorsLayout({
     if (!epub) return;
     const idx = epub.sections.findIndex(s => s.id === sectionId);
     if (idx < 0 || idx >= epub.sections.length - 1) return; // Can't move down if last or not found
+    // Can't move if in protected zone
+    if (idx < PROTECTED_SECTION_COUNT) return;
 
     // Swap in sections array using splice (removes and returns element, then inserts)
     const newSections = [...epub.sections];
