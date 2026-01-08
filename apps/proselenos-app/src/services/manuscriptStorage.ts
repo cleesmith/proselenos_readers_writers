@@ -12,6 +12,12 @@ export interface ManuscriptSettings {
   aboutAuthor: string;
 }
 
+export interface CoverSettings {
+  bgColor: string;
+  fontColor: string;
+  bgImageDataUrl?: string;  // Optional background image as data URL
+}
+
 export interface AppSettings {
   darkMode: boolean;
   selectedModel: string;
@@ -131,6 +137,15 @@ export async function loadSettings(): Promise<ManuscriptSettings | null> {
 
 export async function saveSettings(settings: ManuscriptSettings): Promise<void> {
   await setValue(STORES.MANUSCRIPT, 'metadata.json', settings);
+}
+
+// Cover settings (cover_settings.json) - colors and optional background image
+export async function loadCoverSettings(): Promise<CoverSettings | null> {
+  return getValue<CoverSettings>(STORES.MANUSCRIPT, 'cover_settings.json');
+}
+
+export async function saveCoverSettings(settings: CoverSettings): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, 'cover_settings.json', settings);
 }
 
 // ============================================

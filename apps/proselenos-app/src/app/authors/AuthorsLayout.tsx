@@ -41,6 +41,7 @@ interface AuthorsLayoutProps {
   onEditorClick: () => void;
   onAIWritingClick: () => void;
   onChatClick: () => void;
+  onCoverClick: () => void;
   onLoadFromLibraryClick: () => void;
   hasApiKey: boolean;
   currentModel: string;
@@ -82,6 +83,7 @@ export default function AuthorsLayout({
   onEditorClick,
   onAIWritingClick,
   onChatClick,
+  onCoverClick,
   onLoadFromLibraryClick,
   hasApiKey,
   currentModel,
@@ -1276,6 +1278,7 @@ export default function AuthorsLayout({
         currentProvider={currentProvider}
         toolExecuting={toolExecuting}
         onSearchClose={handleSearchClose}
+        onCoverClick={onCoverClick}
         onHtmlExportClick={handleHtmlExport}
       />
 

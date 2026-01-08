@@ -15,6 +15,7 @@ import WritingAssistantModal from '@/app/writing-assistant/WritingAssistantModal
 import SimpleChatModal from '@/components/SimpleChatModal';
 import BookInfoModal from './BookInfoModal';
 import LibraryBooksModal from './LibraryBooksModal';
+import CoverModal from './CoverModal';
 import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
 import { parseEpub } from '@/services/epubService';
 import { Book } from '@/types/book';
@@ -73,6 +74,11 @@ export default function AuthorsClient() {
 
   // Library Books modal state
   const [showLibraryModal, setShowLibraryModal] = useState(false);
+
+  // Cover modal state
+  const [showCoverModal, setShowCoverModal] = useState(false);
+  const [coverTitle, setCoverTitle] = useState('');
+  const [coverAuthor, setCoverAuthor] = useState('');
 
   // AI Tools state
   const [toolsState, toolsActions] = useToolsManager();
@@ -277,6 +283,19 @@ export default function AuthorsClient() {
     }
   };
 
+  // Open cover modal (loads title/author from working copy)
+  const handleOpenCoverModal = async () => {
+    const meta = await loadWorkingCopyMeta();
+    setCoverTitle(meta?.title ?? '');
+    setCoverAuthor(meta?.author ?? '');
+    setShowCoverModal(true);
+  };
+
+  // Handle cover saved (refresh to show new cover)
+  const handleCoverSaved = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   // AI Tools handlers
   const handleCategoryChange = (category: string) => {
     toolsActions.setSelectedCategory(category);
@@ -383,6 +402,7 @@ export default function AuthorsClient() {
         onEditorClick={() => setShowEditor(true)}
         onAIWritingClick={() => setShowAIWriting(true)}
         onChatClick={() => setShowChat(true)}
+        onCoverClick={handleOpenCoverModal}
         onLoadFromLibraryClick={() => setShowLibraryModal(true)}
         hasApiKey={hasApiKey}
         currentModel={currentModel}
@@ -514,6 +534,16 @@ export default function AuthorsClient() {
         onSelectBook={handleLoadFromLibrary}
         theme={theme}
         isDarkMode={isDarkMode}
+      />
+
+      {/* Cover Generator Modal */}
+      <CoverModal
+        isOpen={showCoverModal}
+        onClose={() => setShowCoverModal(false)}
+        theme={theme}
+        title={coverTitle}
+        author={coverAuthor}
+        onCoverSaved={handleCoverSaved}
       />
 
       {/* Dual Panel Editor (View-Edit for AI tool results) */}

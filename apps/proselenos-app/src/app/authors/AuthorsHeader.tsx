@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml } from 'react-icons/pi';
+import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiImage } from 'react-icons/pi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
@@ -29,6 +29,7 @@ interface AuthorsHeaderProps {
   currentProvider: string;
   toolExecuting?: boolean; // When true, disable all buttons except Exit
   onSearchClose?: () => void;
+  onCoverClick?: () => void;
   onHtmlExportClick?: () => void;
 }
 
@@ -53,6 +54,7 @@ export default function AuthorsHeader({
   currentProvider,
   toolExecuting = false,
   onSearchClose,
+  onCoverClick,
   onHtmlExportClick,
 }: AuthorsHeaderProps) {
   const router = useRouter();
@@ -399,6 +401,25 @@ export default function AuthorsHeader({
             >
               <PiNotePencil size={16} />
               Editor
+            </button>
+            <button
+              onClick={() => { onCoverClick?.(); setMenuOpen(false); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '8px 12px',
+                background: 'rgba(236, 72, 153, 0.2)',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                color: theme.text,
+                fontSize: '13px',
+              }}
+            >
+              <PiImage size={16} />
+              Cover
             </button>
             <button
               onClick={() => { onHtmlExportClick?.(); setMenuOpen(false); }}
