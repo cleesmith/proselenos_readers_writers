@@ -474,7 +474,7 @@ export default function AuthorsLayout({
           sections: [
             { id: 'cover', title: 'Cover', content: 'Use Format > Image to add your cover image', type: 'cover' as const },
             { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'title-page' as const },
-            { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`, type: 'copyright' as const },
+            { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} by Anonymous\n\nAll rights reserved.\n\nNo part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.`, type: 'copyright' as const },
             { id: 'chapter-1', title: 'Chapter 1', content: '', type: 'chapter' as const },
           ],
         };
@@ -811,7 +811,7 @@ export default function AuthorsLayout({
       sections: [
         { id: 'cover', title: 'Cover', content: 'Use Format > Image to add your cover image', type: 'cover' as const },
         { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'title-page' as const },
-        { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`, type: 'copyright' as const },
+        { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} by Anonymous\n\nAll rights reserved.\n\nNo part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.`, type: 'copyright' as const },
         { id: 'chapter-1', title: 'Chapter 1', content: '', type: 'chapter' as const },
       ],
     };
@@ -867,10 +867,11 @@ export default function AuthorsLayout({
     };
 
     // Find insert position (after currently selected, or at end)
+    // Always insert after protected sections (Cover, Title Page, Copyright)
     const currentIndex = selectedSectionId
       ? epub.sections.findIndex(s => s.id === selectedSectionId)
       : epub.sections.length - 1;
-    const insertIndex = currentIndex + 1;
+    const insertIndex = Math.max(currentIndex + 1, PROTECTED_SECTION_COUNT);
 
     // Save to IndexedDB
     await saveSection({ id: newId, title: newSection.title, content: '', type: elementType });
@@ -1090,7 +1091,7 @@ export default function AuthorsLayout({
 
         await Swal.fire({
           title: 'Saved!',
-          text: `"${meta.title}" saved to Library. You can read it in the Library.`,
+          html: `"${meta.title}" saved to Library.<br>You can read it in the Library.`,
           icon: 'success',
           confirmButtonText: 'OK',
           confirmButtonColor: '#28a745',
@@ -1127,7 +1128,33 @@ export default function AuthorsLayout({
     const meta = await loadWorkingCopyMeta();
 
     try {
-      // 4. Generate HTML
+      // 4. Load images and convert to base64 data URLs
+      const manuscriptImages = await getAllManuscriptImages();
+      const imagesMap = new Map<string, string>();
+
+      for (const img of manuscriptImages) {
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(img.blob);
+        });
+        imagesMap.set(img.filename, dataUrl);
+      }
+
+      // Also load cover image (stored separately with different key pattern)
+      if (meta?.coverImageId) {
+        const coverBlob = await loadCoverImage();
+        if (coverBlob) {
+          const coverDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(coverBlob);
+          });
+          imagesMap.set(meta.coverImageId, coverDataUrl);
+        }
+      }
+
+      // 5. Generate HTML with embedded images
       const html = generateHtmlFromSections({
         title: workingCopy.title || 'Untitled',
         author: workingCopy.author || meta?.author || 'Unknown Author',
@@ -1136,9 +1163,10 @@ export default function AuthorsLayout({
           title: s.title,
           content: s.content,
         })),
+        images: imagesMap,
       });
 
-      // 5. Open in new tab
+      // 6. Open in new tab
       openHtmlInNewTab(html);
 
       showAlert('HTML opened in new tab!', 'success', undefined, isDarkMode);
@@ -1308,6 +1336,7 @@ export default function AuthorsLayout({
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
             toolExecuting={toolExecuting}
+            existingTypes={epub?.sections.map(s => s.type).filter((t): t is ElementType => !!t) ?? []}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onSearchSubmit={handleSearchSubmit}

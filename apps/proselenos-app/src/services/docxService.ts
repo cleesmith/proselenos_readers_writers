@@ -8,7 +8,7 @@ export interface ParsedDocx {
   author: string;
   language: string;
   coverImage: Blob | null;
-  sections: { id: string; title: string; content: string }[];
+  sections: { id: string; title: string; content: string; type?: string }[];
 }
 
 // Front matter headings that should NOT start a chapter
@@ -194,11 +194,20 @@ export async function parseDocx(file: File): Promise<ParsedDocx> {
     }
   }
 
+  // Create Cover section
+  const coverSection = {
+    id: 'cover',
+    title: 'Cover',
+    content: 'Use Format > Image to add your cover image',
+    type: 'cover' as const,
+  };
+
   // Create Title Page
   const titlePageSection = {
     id: 'title-page',
     title: 'Title Page',
     content: `${fileTitle}\n\nby Anonymous`,
+    type: 'title-page' as const,
   };
 
   // Create Copyright section (use front matter content or default)
@@ -208,7 +217,8 @@ export async function parseDocx(file: File): Promise<ParsedDocx> {
     title: 'Copyright',
     content: frontMatterParagraphs.length > 0
       ? frontMatterParagraphs.join('\n\n')
-      : `Copyright © ${year} Anonymous\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`,
+      : `Copyright © ${year} by Anonymous\n\nAll rights reserved.\n\nNo part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.`,
+    type: 'copyright' as const,
   };
 
   return {
@@ -216,6 +226,6 @@ export async function parseDocx(file: File): Promise<ParsedDocx> {
     author: 'Anonymous',
     language: 'en',
     coverImage: null,
-    sections: [titlePageSection, copyrightSection, ...chapters],
+    sections: [coverSection, titlePageSection, copyrightSection, ...chapters],
   };
 }

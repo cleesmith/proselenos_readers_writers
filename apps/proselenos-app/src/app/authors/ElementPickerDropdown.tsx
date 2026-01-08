@@ -5,13 +5,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { ELEMENT_GROUPS, ElementType } from './elementTypes';
+import { ELEMENT_GROUPS, ElementType, HIDDEN_TYPES, isSingletonType } from './elementTypes';
 
 interface ElementPickerDropdownProps {
   theme: ThemeConfig;
   isDarkMode: boolean;
   onAddElement: (elementType: ElementType) => void;
   disabled?: boolean;
+  existingTypes?: ElementType[]; // Types already in manuscript
 }
 
 export default function ElementPickerDropdown({
@@ -19,9 +20,21 @@ export default function ElementPickerDropdown({
   isDarkMode,
   onAddElement,
   disabled = false,
+  existingTypes = [],
 }: ElementPickerDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Filter out hidden types, keep others visible (some may be disabled)
+  const filteredGroups = ELEMENT_GROUPS.map(group => ({
+    ...group,
+    elements: group.elements.filter(el => !HIDDEN_TYPES.includes(el.type))
+  })).filter(group => group.elements.length > 0);
+
+  // Check if a type is disabled (singleton that already exists)
+  const isTypeDisabled = (type: ElementType): boolean => {
+    return isSingletonType(type) && existingTypes.includes(type);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -76,7 +89,7 @@ export default function ElementPickerDropdown({
             overflowY: 'auto',
           }}
         >
-          {ELEMENT_GROUPS.map((group, groupIndex) => (
+          {filteredGroups.map((group, groupIndex) => (
             <div key={group.name || 'main'}>
               {/* Group separator (not before first group) */}
               {groupIndex > 0 && (
@@ -106,32 +119,39 @@ export default function ElementPickerDropdown({
               )}
 
               {/* Element items */}
-              {group.elements.map((element) => (
-                <button
-                  key={element.type}
-                  onClick={() => handleSelect(element.type)}
-                  title={element.description}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '6px 12px',
-                    background: 'none',
-                    border: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    color: theme.text,
-                    fontSize: '12px',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = hoverBg;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  {element.displayName}
-                </button>
-              ))}
+              {group.elements.map((element) => {
+                const elementDisabled = isTypeDisabled(element.type);
+                return (
+                  <button
+                    key={element.type}
+                    onClick={() => !elementDisabled && handleSelect(element.type)}
+                    title={elementDisabled ? `${element.displayName} already exists` : element.description}
+                    disabled={elementDisabled}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '6px 12px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: elementDisabled ? 'not-allowed' : 'pointer',
+                      color: elementDisabled ? (isDarkMode ? '#555' : '#aaa') : theme.text,
+                      fontSize: '12px',
+                      opacity: elementDisabled ? 0.5 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!elementDisabled) {
+                        e.currentTarget.style.backgroundColor = hoverBg;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {element.displayName}
+                  </button>
+                );
+              })}
             </div>
           ))}
         </div>

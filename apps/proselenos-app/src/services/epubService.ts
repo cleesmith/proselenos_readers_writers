@@ -189,7 +189,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     id: 'copyright',
     title: 'Copyright',
     href: 'copyright.xhtml',
-    content: `Copyright © ${year} ${author || 'Anonymous'}\n\nAll rights reserved.\n\nThis is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously.`,
+    content: `Copyright © ${year} by ${author || 'Anonymous'}\n\nAll rights reserved.\n\nNo part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.`,
     type: 'copyright',
   };
   if (!copyrightSection.type) copyrightSection.type = 'copyright';

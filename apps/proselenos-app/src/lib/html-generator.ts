@@ -6,6 +6,7 @@ export interface HtmlGeneratorOptions {
   author: string;
   year?: string;
   sections: Array<{ title: string; content: string }>;
+  images?: Map<string, string>; // filename -> base64 data URL
 }
 
 /**
@@ -37,6 +38,42 @@ function markdownToHtml(text: string): string {
 }
 
 /**
+ * Check if a section title is front matter (excluded from TOC)
+ */
+function isFrontMatter(title: string): boolean {
+  const lower = title.toLowerCase().trim();
+  return lower === 'cover' ||
+         lower === 'title page' ||
+         lower === 'copyright' ||
+         lower === 'contents' ||
+         lower === 'table of contents';
+}
+
+/**
+ * Replace image references with embedded base64 data URLs
+ * Handles both markdown ![alt](filename) and HTML <img src="filename">
+ */
+function embedImages(html: string, images?: Map<string, string>): string {
+  if (!images || images.size === 0) return html;
+
+  let result = html;
+  images.forEach((dataUrl, filename) => {
+    // Replace HTML img src attributes
+    const srcRegex = new RegExp(`src=["']${escapeRegex(filename)}["']`, 'g');
+    result = result.replace(srcRegex, `src="${dataUrl}"`);
+  });
+
+  return result;
+}
+
+/**
+ * Escape special regex characters in a string
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Process section content - detect HTML vs plain text
  * EPUB content is already HTML, plain text needs markdown conversion
  */
@@ -58,11 +95,11 @@ function processContent(text: string): string {
  * Generate a complete single-page HTML file from manuscript sections
  */
 export function generateHtmlFromSections(options: HtmlGeneratorOptions): string {
-  const { title, author, year = new Date().getFullYear().toString(), sections } = options;
+  const { title, author, year = new Date().getFullYear().toString(), sections, images } = options;
 
-  // Generate chapter HTML
+  // Generate chapter HTML with anchor IDs
   const chaptersHtml = sections
-    .map(section => {
+    .map((section, index) => {
       let contentHtml = processContent(section.content);
 
       // Strip ALL <a> tags from TOC/Contents (keep inner content)
@@ -73,12 +110,37 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
       }
 
       return `
-    <div class="chapter-container">
+    <div class="chapter-container" id="section-${index}">
       <div class="chapter-title">${escapeHtml(section.title)}</div>
       <div class="chapter-text">${contentHtml}</div>
     </div>`;
     })
     .join('\n');
+
+  // Generate TOC with links to non-front-matter sections
+  const tocEntries = sections
+    .map((section, index) => ({ title: section.title, index }))
+    .filter(entry => !isFrontMatter(entry.title));
+
+  const tocHtml = tocEntries.length > 0 ? `
+    <div class="chapter-container toc-container">
+      <div class="chapter-title">Contents</div>
+      <div class="chapter-text">
+        <ul class="toc-list">
+${tocEntries.map(entry => `          <li><a href="#section-${entry.index}">${escapeHtml(entry.title)}</a></li>`).join('\n')}
+        </ul>
+      </div>
+    </div>` : '';
+
+  // Find Copyright section specifically, insert TOC right after it
+  const copyrightIndex = sections.findIndex(s => s.title.toLowerCase().trim() === 'copyright');
+  const insertIndex = copyrightIndex === -1 ? 0 : copyrightIndex + 2;
+
+  // Split chapters and insert TOC
+  const chapterDivs = chaptersHtml.split(/(?=<div class="chapter-container")/);
+  const beforeToc = chapterDivs.slice(0, insertIndex).join('');
+  const afterToc = chapterDivs.slice(insertIndex).join('');
+  const finalChaptersHtml = beforeToc + tocHtml + afterToc;
 
   // Full HTML template
   const html = `<!DOCTYPE html>
@@ -155,6 +217,32 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
 
     .chapter-text em {
       font-style: italic;
+    }
+
+    /* TOC Styles */
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc-list li {
+      margin: 0.5em 0;
+    }
+
+    .toc-list a {
+      color: #707070;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .toc-list a:hover {
+      color: #444;
+      text-decoration: underline;
+    }
+
+    body.dark-mode .toc-list a:hover {
+      color: #ccc;
     }
 
     /* Sticky Footer */
@@ -261,7 +349,7 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
   </style>
 </head>
 <body class="dark-mode">
-${chaptersHtml}
+${finalChaptersHtml}
 
   <div class="footer">
     <div class="footer-info">
@@ -316,7 +404,8 @@ ${chaptersHtml}
 </body>
 </html>`;
 
-  return html;
+  // Embed images as base64 data URLs
+  return embedImages(html, images);
 }
 
 /**

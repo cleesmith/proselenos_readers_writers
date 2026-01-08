@@ -1,5 +1,5 @@
-// makeCoverSvg.ts
-// Client-side cover generator for Next.js React app
+// apps/proselenos-app/src/lib/makeCoverSvg.ts
+
 // Uses fonts from /public/fonts/
 
 const WIDTH = 1600;

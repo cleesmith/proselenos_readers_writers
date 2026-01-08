@@ -30,6 +30,7 @@ interface ChapterSidebarProps {
   onMoveUp?: (sectionId: string) => void;
   onMoveDown?: (sectionId: string) => void;
   toolExecuting?: boolean; // When true, disable all interactive elements
+  existingTypes?: ElementType[]; // Types already in manuscript (for add element filtering)
   // Search props
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
@@ -55,6 +56,7 @@ export default function ChapterSidebar({
   onMoveUp,
   onMoveDown,
   toolExecuting = false,
+  existingTypes = [],
   searchQuery = '',
   onSearchChange,
   onSearchSubmit,
@@ -211,41 +213,50 @@ export default function ChapterSidebar({
           padding: '4px 0',
         }}
       >
-        {sections.map((section) => {
+        {sections.map((section, index) => {
           const isSelected = section.id === selectedSectionId;
           const hasMatch = sectionsWithMatches?.has(section.id);
           return (
-            <div
-              key={section.id}
-              onClick={toolExecuting ? undefined : () => onSelectSection(section.id)}
-              style={{
-                padding: '4px 8px',
-                cursor: toolExecuting ? 'not-allowed' : 'pointer',
-                backgroundColor: isSelected ? selectedBg : (hasMatch ? (isDarkMode ? '#3d2a0a' : '#fef3c7') : 'transparent'),
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                opacity: toolExecuting ? 0.5 : 1,
-              }}
-            >
-              {/* Selection indicator */}
-              {isSelected && (
-                <span style={{ color: '#6366f1', fontSize: '8px' }}>●</span>
-              )}
-              {/* Match indicator */}
-              {!isSelected && hasMatch && (
-                <span style={{ color: '#f59e0b', fontSize: '8px' }}>●</span>
-              )}
-              {/* Section title */}
-              <span
+            <div key={section.id}>
+              <div
+                onClick={toolExecuting ? undefined : () => onSelectSection(section.id)}
                 style={{
-                  fontSize: '12px',
-                  color: isSelected ? '#6366f1' : (hasMatch ? '#f59e0b' : theme.text),
-                  fontWeight: isSelected ? 500 : (hasMatch ? 500 : 400),
+                  padding: '4px 8px',
+                  cursor: toolExecuting ? 'not-allowed' : 'pointer',
+                  backgroundColor: isSelected ? selectedBg : (hasMatch ? (isDarkMode ? '#3d2a0a' : '#fef3c7') : 'transparent'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  opacity: toolExecuting ? 0.5 : 1,
                 }}
               >
-                {section.title}
-              </span>
+                {/* Selection indicator */}
+                {isSelected && (
+                  <span style={{ color: '#6366f1', fontSize: '8px' }}>●</span>
+                )}
+                {/* Match indicator */}
+                {!isSelected && hasMatch && (
+                  <span style={{ color: '#f59e0b', fontSize: '8px' }}>●</span>
+                )}
+                {/* Section title */}
+                <span
+                  style={{
+                    fontSize: '12px',
+                    color: isSelected ? '#6366f1' : (hasMatch ? '#f59e0b' : theme.text),
+                    fontWeight: isSelected ? 500 : (hasMatch ? 500 : 400),
+                  }}
+                >
+                  {section.title}
+                </span>
+              </div>
+              {/* Divider after protected sections (Cover, Title Page, Copyright) */}
+              {index === PROTECTED_SECTION_COUNT - 1 && sections.length > PROTECTED_SECTION_COUNT && (
+                <div style={{
+                  height: '2px',
+                  backgroundColor: borderColor,
+                  margin: '6px 8px',
+                }} />
+              )}
             </div>
           );
         })}
@@ -318,6 +329,7 @@ export default function ChapterSidebar({
             isDarkMode={isDarkMode}
             onAddElement={onAddElement || (() => {})}
             disabled={toolExecuting}
+            existingTypes={existingTypes}
           />
           <StyledSmallButton
             theme={theme}

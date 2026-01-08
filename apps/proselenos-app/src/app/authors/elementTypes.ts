@@ -1,3 +1,5 @@
+// apps/proselenos-app/src/app/authors/elementTypes.ts
+
 // Element type definitions for Vellum-style book sections
 // Based on Vellum's Element Type Catalog
 
@@ -109,6 +111,17 @@ ELEMENT_MAP.set('cover', {
 // Protected sections that cannot be deleted or moved (always first 3)
 export const PROTECTED_SECTION_IDS = ['cover', 'title-page', 'copyright'] as const;
 export const PROTECTED_SECTION_COUNT = PROTECTED_SECTION_IDS.length;
+
+// Types that can have multiple instances (all others are singletons)
+export const MULTI_INSTANCE_TYPES: ElementType[] = ['chapter', 'uncategorized'];
+
+// Types hidden from "Add Section" UI (protected sections that always exist, or generated during publish)
+export const HIDDEN_TYPES: ElementType[] = ['table-of-contents', 'cover', 'title-page', 'copyright'];
+
+// Check if a type can only exist once
+export function isSingletonType(type: ElementType): boolean {
+  return !MULTI_INSTANCE_TYPES.includes(type);
+}
 
 // Helper to get default title for a type
 export function getDefaultTitle(elementType: ElementType): string {
