@@ -9,7 +9,7 @@ import Swal from 'sweetalert2';
 import AuthorsHeader from './AuthorsHeader';
 import ChapterSidebar from './ChapterSidebar';
 import EditorPanel, { EditorPanelRef } from './EditorPanel';
-import { ElementType, getDefaultTitle, PROTECTED_SECTION_IDS, PROTECTED_SECTION_COUNT } from './elementTypes';
+import { ElementType, getDefaultTitle, PROTECTED_SECTION_IDS, PROTECTED_SECTION_COUNT, getSectionNumber, isFloatingType } from './elementTypes';
 import TitlePagePanel, { BookMetadata } from './TitlePagePanel';
 import { parseEpub, ParsedEpub } from '@/services/epubService';
 import { parseDocx } from '@/services/docxService';
@@ -773,6 +773,20 @@ export default function AuthorsLayout({
     if (!epub) return;
     // Don't allow deletion of protected sections (Cover, Title Page, Copyright)
     if ((PROTECTED_SECTION_IDS as readonly string[]).includes(sectionId)) return;
+
+    // Find the section to delete
+    const sectionToDelete = epub.sections.find(s => s.id === sectionId);
+    if (!sectionToDelete) return;
+
+    // Don't allow deletion of the last chapter
+    if (sectionToDelete.type === 'chapter') {
+      const chapterCount = epub.sections.filter(s => s.type === 'chapter').length;
+      if (chapterCount <= 1) {
+        await showAlert('Cannot delete the last chapter. A book must have at least one chapter.', 'warning', undefined, isDarkMode);
+        return;
+      }
+    }
+
     const idx = epub.sections.findIndex((s) => s.id === sectionId);
     const newSections = epub.sections.filter((s) => s.id !== sectionId);
 
@@ -842,7 +856,32 @@ export default function AuthorsLayout({
     }
   };
 
-  // Handle adding a new element (inserts after currently selected)
+  // Helper to find the correct insertion index for a section type
+  const findSectionInsertIndex = (sections: Array<{ id: string; type?: ElementType }>, targetSection: number): number => {
+    // Find the last element of this section, or the correct insertion point
+    let lastIndexOfSection = -1;
+    let firstIndexAfterSection = sections.length;
+
+    for (let i = PROTECTED_SECTION_COUNT; i < sections.length; i++) {
+      const section = sections[i];
+      if (!section) continue;
+      const sectionType = section.type || 'section';
+      const sec = getSectionNumber(sectionType);
+      if (sec === targetSection) {
+        lastIndexOfSection = i;
+      } else if (sec > targetSection && !isFloatingType(sectionType)) {
+        firstIndexAfterSection = i;
+        break;
+      }
+    }
+
+    if (lastIndexOfSection >= 0) {
+      return lastIndexOfSection + 1; // After last element of section
+    }
+    return firstIndexAfterSection; // Before first element of next section
+  };
+
+  // Handle adding a new element (smart insertion based on element type)
   const handleAddElement = async (elementType: ElementType) => {
     if (!epub) return;
 
@@ -866,12 +905,20 @@ export default function AuthorsLayout({
       type: elementType,
     };
 
-    // Find insert position (after currently selected, or at end)
-    // Always insert after protected sections (Cover, Title Page, Copyright)
-    const currentIndex = selectedSectionId
-      ? epub.sections.findIndex(s => s.id === selectedSectionId)
-      : epub.sections.length - 1;
-    const insertIndex = Math.max(currentIndex + 1, PROTECTED_SECTION_COUNT);
+    // Find insert position based on element type
+    let insertIndex: number;
+    const sectionNum = getSectionNumber(elementType);
+
+    if (sectionNum === 0) {
+      // Floating type: insert after current selection (existing behavior)
+      const currentIndex = selectedSectionId
+        ? epub.sections.findIndex(s => s.id === selectedSectionId)
+        : epub.sections.length - 1;
+      insertIndex = Math.max(currentIndex + 1, PROTECTED_SECTION_COUNT);
+    } else {
+      // Section-specific type: insert at end of its section
+      insertIndex = findSectionInsertIndex(epub.sections, sectionNum);
+    }
 
     // Save to IndexedDB
     await saveSection({ id: newId, title: newSection.title, content: '', type: elementType });
@@ -899,6 +946,45 @@ export default function AuthorsLayout({
     if (idx <= 0) return; // Can't move up if first or not found
     // Can't move if in protected zone or would enter protected zone
     if (idx <= PROTECTED_SECTION_COUNT) return;
+
+    const currentSection = epub.sections[idx];
+    if (!currentSection) return;
+    const currentType = currentSection.type || 'section';
+    const targetIdx = idx - 1;
+
+    // Can't move into Required area (indices 0, 1, 2)
+    if (targetIdx < PROTECTED_SECTION_COUNT) return;
+
+    // Section boundary check for non-floating types
+    if (!isFloatingType(currentType)) {
+      const currentSectionNum = getSectionNumber(currentType);
+      const targetSection = epub.sections[targetIdx];
+      if (!targetSection) return;
+      const targetType = targetSection.type || 'section';
+
+      // If target is a different non-floating section, block the move
+      if (!isFloatingType(targetType)) {
+        const targetSectionNum = getSectionNumber(targetType);
+        if (targetSectionNum !== currentSectionNum) {
+          return; // Can't cross section boundary
+        }
+      } else {
+        // Target is floating - check what's above the target to see if we'd leave our section
+        const aboveTargetIdx = targetIdx - 1;
+        if (aboveTargetIdx >= PROTECTED_SECTION_COUNT) {
+          const aboveSection = epub.sections[aboveTargetIdx];
+          if (aboveSection) {
+            const aboveType = aboveSection.type || 'section';
+            if (!isFloatingType(aboveType)) {
+              const aboveSectionNum = getSectionNumber(aboveType);
+              if (aboveSectionNum !== currentSectionNum) {
+                return; // Would cross into a different section
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Swap in sections array using splice (removes and returns element, then inserts)
     const newSections = [...epub.sections];
@@ -930,6 +1016,42 @@ export default function AuthorsLayout({
     if (idx < 0 || idx >= epub.sections.length - 1) return; // Can't move down if last or not found
     // Can't move if in protected zone
     if (idx < PROTECTED_SECTION_COUNT) return;
+
+    const currentSection = epub.sections[idx];
+    if (!currentSection) return;
+    const currentType = currentSection.type || 'section';
+    const targetIdx = idx + 1;
+
+    // Section boundary check for non-floating types
+    if (!isFloatingType(currentType)) {
+      const currentSectionNum = getSectionNumber(currentType);
+      const targetSection = epub.sections[targetIdx];
+      if (!targetSection) return;
+      const targetType = targetSection.type || 'section';
+
+      // If target is a different non-floating section, block the move
+      if (!isFloatingType(targetType)) {
+        const targetSectionNum = getSectionNumber(targetType);
+        if (targetSectionNum !== currentSectionNum) {
+          return; // Can't cross section boundary
+        }
+      } else {
+        // Target is floating - check what's below the target to see if we'd leave our section
+        const belowTargetIdx = targetIdx + 1;
+        if (belowTargetIdx < epub.sections.length) {
+          const belowSection = epub.sections[belowTargetIdx];
+          if (belowSection) {
+            const belowType = belowSection.type || 'section';
+            if (!isFloatingType(belowType)) {
+              const belowSectionNum = getSectionNumber(belowType);
+              if (belowSectionNum !== currentSectionNum) {
+                return; // Would cross into a different section
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Swap in sections array using splice (removes and returns element, then inserts)
     const newSections = [...epub.sections];

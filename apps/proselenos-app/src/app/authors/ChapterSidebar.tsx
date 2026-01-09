@@ -7,11 +7,18 @@ import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { showConfirm } from '../shared/alerts';
 import ElementPickerDropdown from './ElementPickerDropdown';
-import { ElementType, PROTECTED_SECTION_IDS, PROTECTED_SECTION_COUNT } from './elementTypes';
+import {
+  ElementType,
+  PROTECTED_SECTION_IDS,
+  PROTECTED_SECTION_COUNT,
+  getSectionNumber,
+  SECTION_NAMES,
+} from './elementTypes';
 
 interface Section {
   id: string;
   title: string;
+  type?: ElementType;
 }
 
 interface ChapterSidebarProps {
@@ -205,7 +212,7 @@ export default function ChapterSidebar({
       {/* Divider */}
       <div style={{ height: '1px', backgroundColor: borderColor, margin: '0 8px' }} />
 
-      {/* Chapter list */}
+      {/* Chapter list - grouped by section with dividers */}
       <nav
         style={{
           flex: 1,
@@ -213,12 +220,39 @@ export default function ChapterSidebar({
           padding: '4px 0',
         }}
       >
-        {sections.map((section, index) => {
-          const isSelected = section.id === selectedSectionId;
-          const hasMatch = sectionsWithMatches?.has(section.id);
-          return (
-            <div key={section.id}>
+        {(() => {
+          // Group sections by section number
+          // Key insight: First 3 items by INDEX are ALWAYS Required (PROTECTED_SECTION_COUNT = 3)
+          const sectionGroups: Map<number, Section[]> = new Map();
+          for (let i = 1; i <= 5; i++) sectionGroups.set(i, []);
+
+          sections.forEach((section, index) => {
+            // Skip table-of-contents (hidden like in Vellum)
+            if (section.type === 'table-of-contents') {
+              return;
+            }
+
+            // First 3 items are ALWAYS Required - use INDEX, not type/ID
+            if (index < PROTECTED_SECTION_COUNT) {
+              sectionGroups.get(1)?.push(section);
+              return;
+            }
+
+            // For index 3+, determine section by type
+            const sectionNum = section.type ? getSectionNumber(section.type) : 4;
+
+            // Floating types (sectionNum === 0) go to Chapters
+            const targetSection = sectionNum === 0 ? 4 : sectionNum;
+            sectionGroups.get(targetSection)?.push(section);
+          });
+
+          // Render helper for section items
+          const renderSectionItem = (section: Section) => {
+            const isSelected = section.id === selectedSectionId;
+            const hasMatch = sectionsWithMatches?.has(section.id);
+            return (
               <div
+                key={section.id}
                 onClick={toolExecuting ? undefined : () => onSelectSection(section.id)}
                 style={{
                   padding: '4px 8px',
@@ -230,15 +264,8 @@ export default function ChapterSidebar({
                   opacity: toolExecuting ? 0.5 : 1,
                 }}
               >
-                {/* Selection indicator */}
-                {isSelected && (
-                  <span style={{ color: '#6366f1', fontSize: '8px' }}>●</span>
-                )}
-                {/* Match indicator */}
-                {!isSelected && hasMatch && (
-                  <span style={{ color: '#f59e0b', fontSize: '8px' }}>●</span>
-                )}
-                {/* Section title */}
+                {isSelected && <span style={{ color: '#6366f1', fontSize: '8px' }}>●</span>}
+                {!isSelected && hasMatch && <span style={{ color: '#f59e0b', fontSize: '8px' }}>●</span>}
                 <span
                   style={{
                     fontSize: '12px',
@@ -249,17 +276,85 @@ export default function ChapterSidebar({
                   {section.title}
                 </span>
               </div>
-              {/* Divider after protected sections (Cover, Title Page, Copyright) */}
-              {index === PROTECTED_SECTION_COUNT - 1 && sections.length > PROTECTED_SECTION_COUNT && (
-                <div style={{
-                  height: '2px',
-                  backgroundColor: borderColor,
-                  margin: '6px 8px',
-                }} />
-              )}
+            );
+          };
+
+          // Render divider
+          const renderDivider = (key: string) => (
+            <div
+              key={key}
+              style={{
+                height: '2px',
+                backgroundColor: borderColor,
+                margin: '6px 8px',
+              }}
+            />
+          );
+
+          // Render "No X" placeholder (CamelCase, not uppercase)
+          const renderEmptyPlaceholder = (sectionNum: number) => (
+            <div
+              key={`empty-${sectionNum}`}
+              style={{
+                padding: '4px 12px 2px',
+                fontSize: '10px',
+                fontWeight: 600,
+                color: isDarkMode ? '#888' : '#666',
+                letterSpacing: '0.5px',
+              }}
+            >
+              No {SECTION_NAMES[sectionNum]}
             </div>
           );
-        })}
+
+          const elements: React.ReactNode[] = [];
+
+          // Section 1: Required (always present)
+          const requiredSections = sectionGroups.get(1) || [];
+          requiredSections.forEach(s => elements.push(renderSectionItem(s)));
+
+          // Divider after Required
+          elements.push(renderDivider('divider-1'));
+
+          // Section 2: Front Matter
+          const frontMatter = sectionGroups.get(2) || [];
+          if (frontMatter.length > 0) {
+            frontMatter.forEach(s => elements.push(renderSectionItem(s)));
+          } else {
+            elements.push(renderEmptyPlaceholder(2));
+          }
+
+          // Divider after Front Matter
+          elements.push(renderDivider('divider-2'));
+
+          // Section 3: Introductory
+          const introductory = sectionGroups.get(3) || [];
+          if (introductory.length > 0) {
+            introductory.forEach(s => elements.push(renderSectionItem(s)));
+          } else {
+            elements.push(renderEmptyPlaceholder(3));
+          }
+
+          // Divider after Introductory
+          elements.push(renderDivider('divider-3'));
+
+          // Section 4: Chapters (always has at least one)
+          const chapters = sectionGroups.get(4) || [];
+          chapters.forEach(s => elements.push(renderSectionItem(s)));
+
+          // Divider after Chapters
+          elements.push(renderDivider('divider-4'));
+
+          // Section 5: Back Matter
+          const backMatter = sectionGroups.get(5) || [];
+          if (backMatter.length > 0) {
+            backMatter.forEach(s => elements.push(renderSectionItem(s)));
+          } else {
+            elements.push(renderEmptyPlaceholder(5));
+          }
+
+          return elements;
+        })()}
       </nav>
 
       {/* Divider */}

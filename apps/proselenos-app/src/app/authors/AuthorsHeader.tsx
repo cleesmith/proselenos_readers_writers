@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiImage } from 'react-icons/pi';
+import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiImage, PiArrowRight } from 'react-icons/pi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
@@ -210,22 +210,6 @@ export default function AuthorsHeader({
                   Load EPUB
                 </button>
                 <button
-                  onClick={() => { onOpenDocxClick(); setOpenDropdownOpen(false); }}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'none',
-                    border: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    color: theme.text,
-                    fontSize: '13px',
-                  }}
-                >
-                  Load DOCX
-                </button>
-                <button
                   onClick={() => { onLoadFromLibraryClick(); setOpenDropdownOpen(false); }}
                   style={{
                     display: 'block',
@@ -240,6 +224,22 @@ export default function AuthorsHeader({
                   }}
                 >
                   Load from Library
+                </button>
+                <button
+                  onClick={() => { onOpenDocxClick(); setOpenDropdownOpen(false); }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    color: theme.text,
+                    fontSize: '13px',
+                  }}
+                >
+                  Load DOCX <PiArrowRight style={{ display: 'inline', verticalAlign: 'middle' }} /> EPUB
                 </button>
               </div>
             )}

@@ -135,3 +135,49 @@ export function normalizeElementType(type: string | undefined): ElementType {
   if (ELEMENT_MAP.has(type as ElementType)) return type as ElementType;
   return 'section'; // fallback for unknown types
 }
+
+// ============================================================================
+// Section Boundary Types - for enforcing proper ebook structure
+// ============================================================================
+
+// Section 1: Required (fixed order, no move, no delete)
+export const REQUIRED_TYPES: ElementType[] = ['cover', 'title-page', 'copyright'];
+
+// Section 2: Front Matter (optional, reorder within only)
+export const FRONT_MATTER_TYPES: ElementType[] = ['blurbs', 'half-title', 'dedication', 'epigraph'];
+
+// Section 3: Introductory (optional, reorder within only)
+export const INTRODUCTORY_TYPES: ElementType[] = ['foreword', 'introduction', 'preface', 'prologue'];
+
+// Section 4: Chapters (min 1 required, reorder within only)
+export const CHAPTER_TYPES: ElementType[] = ['chapter'];
+
+// Section 5: Back Matter (optional, reorder within only)
+export const BACK_MATTER_TYPES: ElementType[] = ['epilogue', 'afterword', 'endnotes', 'bibliography', 'acknowledgments', 'about-the-author', 'also-by'];
+
+// Floating types: can exist anywhere after Required, can move freely (except into Required)
+export const FLOATING_TYPES: ElementType[] = ['uncategorized', 'section'];
+
+// Get section number for a type (1-5 for section-specific, 0 for floating)
+export function getSectionNumber(type: ElementType): number {
+  if (REQUIRED_TYPES.includes(type)) return 1;
+  if (FRONT_MATTER_TYPES.includes(type)) return 2;
+  if (INTRODUCTORY_TYPES.includes(type)) return 3;
+  if (CHAPTER_TYPES.includes(type)) return 4;
+  if (BACK_MATTER_TYPES.includes(type)) return 5;
+  return 0; // floating
+}
+
+// Check if a type is floating (can move freely between sections)
+export function isFloatingType(type: ElementType): boolean {
+  return FLOATING_TYPES.includes(type);
+}
+
+// Section display names for "No X" placeholders
+export const SECTION_NAMES: Record<number, string> = {
+  1: 'Required',
+  2: 'Front Matter',
+  3: 'Introductory',
+  4: 'Chapters',
+  5: 'Back Matter',
+};
