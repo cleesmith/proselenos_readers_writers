@@ -18,6 +18,16 @@ export const EnvProvider = ({ children }: { children: ReactNode }) => {
 
   React.useEffect(() => {
     envConfig.getAppService().then((service) => setAppService(service));
+
+    // Request persistent storage to protect IndexedDB from automatic eviction
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().then((granted) => {
+        console.log('Storage persistence:', granted ? 'granted' : 'denied');
+      }).catch((err) => {
+        console.warn('Failed to request persistent storage:', err);
+      });
+    }
+
     window.addEventListener('error', (e) => {
       if (e.message === 'ResizeObserver loop limit exceeded') {
         e.stopImmediatePropagation();

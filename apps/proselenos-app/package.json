@@ -15,7 +15,6 @@
     "build-check": "pnpm build && pnpm build-web && pnpm check:all"
   },
   "dependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
     "@uiw/react-md-editor": "^4.0.8",
     "@xmldom/xmldom": "^0.9.8",
     "@zip.js/zip.js": "^2.7.53",

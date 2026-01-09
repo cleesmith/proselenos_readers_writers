@@ -47,10 +47,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           name='viewport'
           content='minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover'
         />
-        <meta name='mobile-web-app-capable' content='yes' />
-        <meta name='apple-mobile-web-app-capable' content='yes' />
-        <meta name='apple-mobile-web-app-status-bar-style' content='default' />
-        <meta name='apple-mobile-web-app-title' content='EverythingEbooks' />
         <link rel='apple-touch-icon' sizes='180x180' href='/icon_180x180.png' />
         <link rel='icon' href='/favicon.ico' />
         <meta name='description' content={description} />
