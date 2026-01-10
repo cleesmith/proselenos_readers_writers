@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { Book } from '@/types/book';
 import { BookMetadata, EXTS } from '@/libs/document';
@@ -41,6 +42,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   handleBookMetadataUpdate,
 }) => {
   const _ = useTranslation();
+  const router = useRouter();
   const { safeAreaInsets } = useThemeStore();
   const [loading, setLoading] = useState(false);
   const [activeDeleteAction, setActiveDeleteAction] = useState<DeleteAction | null>(null);
@@ -170,6 +172,11 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleXray = () => {
+    handleClose();
+    router.push(`/library/xray?book=${encodeURIComponent(book.hash)}`);
+  };
+
   const currentDeleteConfig = activeDeleteAction ? deleteConfigs[activeDeleteAction] : null;
 
   if (!bookMeta)
@@ -220,6 +227,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onDownload={undefined}
                 onUpload={handleBookUpload ? handleReupload : undefined}
                 onDownloadLocal={handleDownloadLocal}
+                onXray={handleXray}
               />
             )}
           </div>

@@ -6,6 +6,7 @@ import {
   MdOutlineEdit,
   MdOutlineFileDownload,
 } from 'react-icons/md';
+import { GiBoxUnpacking } from 'react-icons/gi';
 
 import { Book } from '@/types/book';
 import { BookMetadata } from '@/libs/document';
@@ -29,6 +30,7 @@ interface BookDetailViewProps {
   onDownload?: () => void;
   onUpload?: () => void;
   onDownloadLocal?: () => void;
+  onXray?: () => void;
 }
 
 const BookDetailView: React.FC<BookDetailViewProps> = ({
@@ -40,6 +42,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onDownload,
   onUpload,
   onDownloadLocal,
+  onXray,
 }) => {
   const _ = useTranslation();
 
@@ -82,6 +85,11 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
             {onDownloadLocal && (
               <button onClick={onDownloadLocal} title={_('Download ebook')}>
                 <MdOutlineFileDownload className='fill-base-content hover:fill-green-500' />
+              </button>
+            )}
+            {onXray && (
+              <button onClick={onXray} title={_('X-ray: View epub structure')}>
+                <GiBoxUnpacking className='fill-base-content hover:fill-purple-500' />
               </button>
             )}
           </div>
