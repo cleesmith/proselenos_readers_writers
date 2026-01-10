@@ -107,10 +107,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   sectionWordCount,
   onContentChange,
   onTitleChange,
-  onPrevSection,
-  onNextSection,
-  hasPrevSection,
-  hasNextSection,
   selectedCategory,
   selectedTool,
   toolsInCategory,
@@ -383,42 +379,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {/* Up/Down navigation arrows */}
-          <button
-            onClick={onPrevSection}
-            disabled={!hasPrevSection || toolExecuting}
-            title="Previous section"
-            style={{
-              background: 'none',
-              border: `1px solid ${borderColor}`,
-              borderRadius: '3px',
-              padding: '2px 6px',
-              cursor: (hasPrevSection && !toolExecuting) ? 'pointer' : 'not-allowed',
-              opacity: (hasPrevSection && !toolExecuting) ? 1 : 0.4,
-              color: theme.text,
-              fontSize: '12px',
-            }}
-          >
-            ⬆
-          </button>
-          <button
-            onClick={onNextSection}
-            disabled={!hasNextSection || toolExecuting}
-            title="Next section"
-            style={{
-              background: 'none',
-              border: `1px solid ${borderColor}`,
-              borderRadius: '3px',
-              padding: '2px 6px',
-              cursor: (hasNextSection && !toolExecuting) ? 'pointer' : 'not-allowed',
-              opacity: (hasNextSection && !toolExecuting) ? 1 : 0.4,
-              color: theme.text,
-              fontSize: '12px',
-            }}
-          >
-            ⬇
-          </button>
-
           {isEditingTitle ? (
             <input
               ref={titleInputRef}

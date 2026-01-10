@@ -90,7 +90,7 @@ export const ELEMENT_GROUPS: ElementGroup[] = [
   {
     name: 'Other',
     elements: [
-      { type: 'uncategorized', displayName: 'Uncategorized', defaultTitle: 'Untitled', description: 'Generic section' },
+      { type: 'uncategorized', displayName: 'Uncategorized', defaultTitle: 'Uncategorized', description: 'Generic section' },
     ],
   },
 ];

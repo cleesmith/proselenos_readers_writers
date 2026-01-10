@@ -2,7 +2,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { PiMinus, PiCaretUp, PiCaretDown, PiArrowsDownUp } from 'react-icons/pi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { showConfirm } from '../shared/alerts';
@@ -36,8 +37,10 @@ interface ChapterSidebarProps {
   onAddElement?: (elementType: ElementType) => void;
   onMoveUp?: (sectionId: string) => void;
   onMoveDown?: (sectionId: string) => void;
+  onMoveToArea?: (sectionId: string, area: number) => void; // Move section to different area
   toolExecuting?: boolean; // When true, disable all interactive elements
   existingTypes?: ElementType[]; // Types already in manuscript (for add element filtering)
+  isLastChapter?: boolean; // True if selected section is the last chapter
   // Search props
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
@@ -62,8 +65,10 @@ export default function ChapterSidebar({
   onAddElement,
   onMoveUp,
   onMoveDown,
+  onMoveToArea,
   toolExecuting = false,
   existingTypes = [],
+  isLastChapter = false,
   searchQuery = '',
   onSearchChange,
   onSearchSubmit,
@@ -75,6 +80,22 @@ export default function ChapterSidebar({
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const selectedBg = isDarkMode ? '#3a3a5c' : '#e8e8f4';
   const mutedText = isDarkMode ? '#888' : '#666';
+  const [moveDropdownOpen, setMoveDropdownOpen] = useState(false);
+  const moveDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close Move dropdown when clicking outside
+  useEffect(() => {
+    if (!moveDropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moveDropdownRef.current && !moveDropdownRef.current.contains(e.target as Node)) {
+        setMoveDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [moveDropdownOpen]);
 
   // Create object URL for cover image
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -419,6 +440,92 @@ export default function ChapterSidebar({
       {/* Add/Move/Remove Element buttons */}
       <div style={{ padding: '4px 8px' }}>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          {/* Move to Area dropdown - first so dropdown has room to expand right */}
+          <div ref={moveDropdownRef} style={{ position: 'relative' }}>
+            <StyledSmallButton
+              theme={theme}
+              onClick={() => setMoveDropdownOpen(!moveDropdownOpen)}
+              disabled={toolExecuting || isProtectedSection || !selectedSectionId}
+              title={isProtectedSection ? "Cannot move protected section" : "Move to area"}
+            >
+              <PiArrowsDownUp size={11} />
+            </StyledSmallButton>
+            {moveDropdownOpen && !isProtectedSection && selectedSectionId && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  marginBottom: '4px',
+                  backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  zIndex: 100,
+                  minWidth: '140px',
+                }}
+              >
+                {/* Dropdown header label */}
+                <div
+                  style={{
+                    padding: '6px 12px 4px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    color: '#a78bfa',
+                    letterSpacing: '0.5px',
+                    borderBottom: `1px solid ${borderColor}`,
+                    marginBottom: '4px',
+                  }}
+                >
+                  Move to:
+                </div>
+                {[
+                  { area: 2, name: 'Front Matter' },
+                  { area: 3, name: 'Introductory' },
+                  { area: 4, name: 'Chapters' },
+                  { area: 5, name: 'Back Matter' },
+                ].map(({ area, name }) => {
+                  // Disable moving last chapter out of Chapters
+                  const isDisabled = isLastChapter && area !== 4;
+                  return (
+                    <button
+                      key={area}
+                      onClick={() => {
+                        if (!isDisabled && onMoveToArea && selectedSectionId) {
+                          onMoveToArea(selectedSectionId, area);
+                        }
+                        setMoveDropdownOpen(false);
+                      }}
+                      disabled={isDisabled}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '6px 12px',
+                        background: 'none',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        color: isDisabled ? mutedText : theme.text,
+                        fontSize: '12px',
+                        opacity: isDisabled ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isDisabled) {
+                          e.currentTarget.style.backgroundColor = isDarkMode ? '#3a3a3a' : '#f0f0f0';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      title={isDisabled ? "Cannot move last chapter" : `Move to ${name}`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <ElementPickerDropdown
             theme={theme}
             isDarkMode={isDarkMode}
@@ -432,7 +539,7 @@ export default function ChapterSidebar({
             disabled={toolExecuting || !canMoveUp}
             title="Move Element up"
           >
-            ▲
+            <PiCaretUp size={11} />
           </StyledSmallButton>
           <StyledSmallButton
             theme={theme}
@@ -440,7 +547,7 @@ export default function ChapterSidebar({
             disabled={toolExecuting || !canMoveDown}
             title="Move Element down"
           >
-            ▼
+            <PiCaretDown size={11} />
           </StyledSmallButton>
           <StyledSmallButton
             theme={theme}
@@ -448,7 +555,7 @@ export default function ChapterSidebar({
             disabled={toolExecuting || isProtectedSection}
             title={isProtectedSection ? "Cannot remove protected section" : "Remove Element"}
           >
-            -
+            <PiMinus size={11} />
           </StyledSmallButton>
         </div>
       </div>

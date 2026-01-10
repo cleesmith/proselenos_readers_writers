@@ -3,6 +3,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { PiPlus } from 'react-icons/pi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { ELEMENT_GROUPS, ElementType, HIDDEN_TYPES, isSingletonType } from './elementTypes';
@@ -59,7 +60,6 @@ export default function ElementPickerDropdown({
   const dropdownBg = isDarkMode ? '#2a2a2a' : '#ffffff';
   const hoverBg = isDarkMode ? '#3a3a5c' : '#f0f0f4';
   const separatorColor = isDarkMode ? '#404040' : '#e5e5e5';
-  const groupLabelColor = isDarkMode ? '#888' : '#666';
 
   return (
     <div ref={dropdownRef} style={{ position: 'relative' }}>
@@ -69,7 +69,7 @@ export default function ElementPickerDropdown({
         disabled={disabled}
         title="Add Element"
       >
-        + <span style={{ fontSize: '8px', marginLeft: '2px' }}>&#9660;</span>
+        <PiPlus size={11} />
       </StyledSmallButton>
 
       {isOpen && (
@@ -89,6 +89,20 @@ export default function ElementPickerDropdown({
             overflowY: 'auto',
           }}
         >
+          {/* Dropdown header label */}
+          <div
+            style={{
+              padding: '6px 12px 4px',
+              fontSize: '10px',
+              fontWeight: 600,
+              color: '#a78bfa',
+              letterSpacing: '0.5px',
+              borderBottom: `1px solid ${separatorColor}`,
+              marginBottom: '4px',
+            }}
+          >
+            Add to:
+          </div>
           {filteredGroups.map((group, groupIndex) => (
             <div key={group.name || 'main'}>
               {/* Group separator (not before first group) */}
@@ -109,8 +123,7 @@ export default function ElementPickerDropdown({
                     padding: '4px 12px 2px',
                     fontSize: '10px',
                     fontWeight: 600,
-                    color: groupLabelColor,
-                    textTransform: 'uppercase',
+                    color: '#a78bfa',
                     letterSpacing: '0.5px',
                   }}
                 >
