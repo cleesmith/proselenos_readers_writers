@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 import { Book } from '@/types/book';
 import { BookMetadata, EXTS } from '@/libs/document';
@@ -17,6 +16,7 @@ import Dialog from '@/components/Dialog';
 import Spinner from '@/components/Spinner';
 import BookDetailView from './BookDetailView';
 import BookDetailEdit from './BookDetailEdit';
+import { XrayModal } from '@/components/xray';
 
 interface BookDetailModalProps {
   book: Book;
@@ -42,13 +42,13 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   handleBookMetadataUpdate,
 }) => {
   const _ = useTranslation();
-  const router = useRouter();
   const { safeAreaInsets } = useThemeStore();
   const [loading, setLoading] = useState(false);
   const [activeDeleteAction, setActiveDeleteAction] = useState<DeleteAction | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [bookMeta, setBookMeta] = useState<BookMetadata | null>(null);
   const [fileSize, setFileSize] = useState<number | null>(null);
+  const [showXray, setShowXray] = useState(false);
   const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
 
@@ -109,6 +109,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     setBookMeta(null);
     setEditMode(false);
     setActiveDeleteAction(null);
+    setShowXray(false);
     onClose();
   };
 
@@ -173,8 +174,11 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   };
 
   const handleXray = () => {
-    handleClose();
-    router.push(`/library/xray?book=${encodeURIComponent(book.hash)}`);
+    setShowXray(true);
+  };
+
+  const handleCloseXray = () => {
+    setShowXray(false);
   };
 
   const currentDeleteConfig = activeDeleteAction ? deleteConfigs[activeDeleteAction] : null;
@@ -249,6 +253,12 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
           </div>
         )}
       </div>
+
+      <XrayModal
+        book={book}
+        isOpen={showXray}
+        onClose={handleCloseXray}
+      />
     </>
   );
 };

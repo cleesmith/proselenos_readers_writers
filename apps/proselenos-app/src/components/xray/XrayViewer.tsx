@@ -9,9 +9,10 @@ import XrayContentViewer from './XrayContentViewer';
 interface XrayViewerProps {
   bookTitle: string;
   epubFile: File;
+  onClose?: () => void;
 }
 
-const XrayViewer: React.FC<XrayViewerProps> = ({ bookTitle, epubFile }) => {
+const XrayViewer: React.FC<XrayViewerProps> = ({ bookTitle, epubFile, onClose }) => {
   const router = useRouter();
   const [tree, setTree] = useState<XrayTreeNode | null>(null);
   const [zip, setZip] = useState<JSZip | null>(null);
@@ -63,8 +64,12 @@ const XrayViewer: React.FC<XrayViewerProps> = ({ bookTitle, epubFile }) => {
   }, [zip]);
 
   const handleClose = useCallback(() => {
-    router.push('/library');
-  }, [router]);
+    if (onClose) {
+      onClose();
+    } else {
+      router.push('/library');
+    }
+  }, [onClose, router]);
 
   // Extract just the filename from the path for display
   const selectedFileName = selectedPath?.split('/').pop() || null;
