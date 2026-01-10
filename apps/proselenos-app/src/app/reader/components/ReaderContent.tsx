@@ -27,7 +27,7 @@ import SideBar from './sidebar/SideBar';
 import Notebook from './notebook/Notebook';
 import BooksGrid from './BooksGrid';
 
-const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ ids, settings }) => {
+const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings; onClose?: () => void }> = ({ ids, settings, onClose }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { envConfig, appService } = useEnv();
@@ -141,7 +141,10 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
 
   const handleCloseBooksToLibrary = () => {
     handleCloseBooks();
-    if (isDesktopAppPlatform()) {
+    if (onClose) {
+      // Modal mode: call the callback
+      onClose();
+    } else if (isDesktopAppPlatform()) {
       const currentWindow = getCurrentWindow();
       if (currentWindow.label === 'main') {
         navigateToLibrary(router);
@@ -160,6 +163,11 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
     }
     dismissBook(bookKey);
     if (bookKeys.filter((key) => key !== bookKey).length == 0) {
+      // Modal mode: just close via callback
+      if (onClose) {
+        onClose();
+        return;
+      }
       const openWithFiles = (await parseOpenWithFiles()) || [];
       if (appService?.hasWindow) {
         if (openWithFiles.length > 0) {

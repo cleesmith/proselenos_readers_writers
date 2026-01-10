@@ -35,6 +35,7 @@ interface BookshelfProps {
   handleBookDelete: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleSetSelectMode: (selectMode: boolean) => void;
   handleShowDetailsBook: (book: Book) => void;
+  onOpenReader?: (bookHash: string) => void;
 }
 
 const Bookshelf: React.FC<BookshelfProps> = ({
@@ -47,6 +48,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   handleBookDelete,
   handleSetSelectMode,
   handleShowDetailsBook,
+  onOpenReader,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -318,6 +320,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
             handleSetSelectMode={handleSetSelectMode}
             handleShowDetailsBook={handleShowDetailsBook}
             transferProgress={null}
+            onOpenReader={onOpenReader}
           />
         ))}
         {viewMode === 'grid' && !navBooksGroup && allBookshelfItems.length > 0 && (

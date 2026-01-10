@@ -41,6 +41,7 @@ import { getTheme } from '@/app/shared/theme';
 import Spinner from '@/components/Spinner';
 import LibraryHeader from './components/LibraryHeader';
 import Bookshelf from './components/Bookshelf';
+import ReaderModal from './components/ReaderModal';
 import useShortcuts from '@/hooks/useShortcuts';
 import DropIndicator from '@/components/DropIndicator';
 import SettingsDialog from '@/components/settings/SettingsDialog';
@@ -80,6 +81,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const [downloadPageUrl, setDownloadPageUrl] = useState('');
   const [isImportingFromDownloadPage, setIsImportingFromDownloadPage] = useState(false);
   const [pendingNavigationBookIds, setPendingNavigationBookIds] = useState<string[] | null>(null);
+  const [readerBookHash, setReaderBookHash] = useState<string | null>(null);
   const isInitiating = useRef(false);
 
   const viewSettings = settings.globalViewSettings;
@@ -606,6 +608,16 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setShowDetailsBook(book);
   };
 
+  const handleOpenReader = useCallback((bookHash: string) => {
+    setReaderBookHash(bookHash);
+  }, []);
+
+  const handleCloseReader = useCallback(() => {
+    setReaderBookHash(null);
+    // Refresh library in case book progress changed
+    handleRefreshLibrary();
+  }, [handleRefreshLibrary]);
+
   if (!appService || !insets) {
     return <div className={clsx('h-[100vh]', !appService?.isLinuxApp && 'bg-base-200')} />;
   }
@@ -687,6 +699,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
                 handleBookDelete={handleBookDelete('local')}
                 handleSetSelectMode={handleSetSelectMode}
                 handleShowDetailsBook={handleShowDetailsBook}
+                onOpenReader={handleOpenReader}
               />
             </div>
           </OverlayScrollbarsComponent>
@@ -838,6 +851,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         />
       )}
       <Toast />
+      <ReaderModal
+        bookHash={readerBookHash}
+        onClose={handleCloseReader}
+      />
     </div>
   );
 };

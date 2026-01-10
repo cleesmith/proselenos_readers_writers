@@ -62,6 +62,7 @@ interface BookshelfItemProps {
   handleBookDelete: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleSetSelectMode: (selectMode: boolean) => void;
   handleShowDetailsBook: (book: Book) => void;
+  onOpenReader?: (bookHash: string) => void;
 }
 
 const BookshelfItem: React.FC<BookshelfItemProps> = ({
@@ -76,6 +77,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   handleBookDownload,
   handleSetSelectMode,
   handleShowDetailsBook,
+  onOpenReader,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -124,6 +126,9 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         if (!available) return;
         if (appService?.hasWindow && settings.openBookInNewWindow) {
           showReaderWindow(appService, [book.hash]);
+        } else if (onOpenReader) {
+          // Modal mode: open reader in modal
+          onOpenReader(book.hash);
         } else {
           setTimeout(() => {
             navigateToReader(router, [book.hash]);
@@ -132,7 +137,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isSelectMode, settings.openBookInNewWindow, appService],
+    [isSelectMode, settings.openBookInNewWindow, appService, onOpenReader],
   );
 
   const handleGroupClick = useCallback(

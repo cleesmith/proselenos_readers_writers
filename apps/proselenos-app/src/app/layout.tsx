@@ -49,6 +49,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <link rel='apple-touch-icon' sizes='180x180' href='/icon_180x180.png' />
         <link rel='icon' href='/favicon.ico' />
+        <link rel="preload" href="/fonts/EBGaramond-Regular.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/EBGaramond-Bold.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <meta name='description' content={description} />
         <meta property='og:url' content={url} />
         <meta property='og:type' content='website' />
