@@ -72,6 +72,13 @@ const XrayPageContent = () => {
     loadBook();
   }, [bookHash, envConfig, libraryBooks, setLibrary]);
 
+  // Prefetch other routes for offline support
+  useEffect(() => {
+    router.prefetch('/library');
+    router.prefetch('/reader');
+    router.prefetch('/authors');
+  }, [router]);
+
   // Loading state
   if (loading) {
     return (

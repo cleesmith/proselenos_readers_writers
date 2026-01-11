@@ -3,6 +3,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getTheme } from '../shared/theme';
 import AuthorsLayout from './AuthorsLayout';
 import AboutModal from '@/components/AboutModal';
@@ -91,6 +92,14 @@ export default function AuthorsClient() {
   const [pendingSectionId, setPendingSectionId] = useState<string | null>(null);
 
   const theme = getTheme(isDarkMode);
+  const router = useRouter();
+
+  // Prefetch other routes for offline support
+  useEffect(() => {
+    router.prefetch('/library');
+    router.prefetch('/reader');
+    router.prefetch('/library/xray');
+  }, [router]);
 
   // Open file in editor (for AI Tools results or prompt editing)
   const handleLoadFileIntoEditor = (_content: string, fileName: string, _filePath?: string) => {
