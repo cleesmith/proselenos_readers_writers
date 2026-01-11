@@ -12,6 +12,7 @@ import SupportLinks from './SupportLinks';
 import LegalLinks from './LegalLinks';
 import Dialog from './Dialog';
 import Link from './Link';
+import { RELEASE_HASH } from '@/generated/release';
 
 export const setAboutDialogVisible = (visible: boolean) => {
   const dialog = document.getElementById('about_window');
@@ -131,6 +132,9 @@ export const AboutWindow = () => {
             <LegalLinks />
           </div>
           <SupportLinks />
+          <p className='text-neutral-content text-xs mt-4' style={{ opacity: 0.5 }}>
+            Release: {RELEASE_HASH}
+          </p>
         </div>
       )}
     </Dialog>

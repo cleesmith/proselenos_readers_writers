@@ -52,3 +52,6 @@ next-env.d.ts
 /public/fallback-*.js
 /public/swe-worker-*.js
 
+# Auto Generated build-time files
+/src/generated/
+

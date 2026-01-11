@@ -68,16 +68,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation requests (HTML pages) - network-first
+  // Never cache the service worker script itself (defensive)
+  if (url.pathname === '/sw.js') {
+    return;
+  }
+
+  // Navigation requests (HTML pages) - cache-first
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
-        })
-        .catch(() => caches.match(request))
+        });
+      })
     );
     return;
   }
@@ -115,3 +121,12 @@ self.addEventListener('fetch', (event) => {
 const swPath = path.join(__dirname, '../public/sw.js');
 fs.writeFileSync(swPath, swContent);
 console.log('Generated sw.js with version:', gitHash);
+
+// Also generate release.ts for About pages
+const releaseContent = `// Auto-generated at build time - do not edit manually
+export const RELEASE_HASH = '${gitHash}';
+`;
+const releasePath = path.join(__dirname, '../src/generated/release.ts');
+fs.mkdirSync(path.dirname(releasePath), { recursive: true });
+fs.writeFileSync(releasePath, releaseContent);
+console.log('Generated release.ts with hash:', gitHash);

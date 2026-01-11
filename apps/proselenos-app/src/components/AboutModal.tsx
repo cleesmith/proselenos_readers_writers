@@ -8,6 +8,7 @@
 
 import { ThemeConfig } from '../app/shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
+import { RELEASE_HASH } from '@/generated/release';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -334,6 +335,15 @@ export default function AboutModal({
             />
             Don&apos;t show me this again
           </label>
+
+          <p style={{
+            fontSize: '11px',
+            color: isDarkMode ? '#666' : '#999',
+            marginTop: '16px',
+            textAlign: 'center'
+          }}>
+            Release: {RELEASE_HASH}
+          </p>
 
         </div>
       </div>
