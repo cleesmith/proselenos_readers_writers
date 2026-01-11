@@ -1280,6 +1280,11 @@ export default function AuthorsLayout({
         await saveWorkingCopyMeta(meta);
         await appService.saveLibraryBooks(books);
 
+        // Tell Library tab to reload (if open)
+        const channel = new BroadcastChannel('everythingebooks-library');
+        channel.postMessage('reload');
+        channel.close();
+
         await Swal.fire({
           title: 'Saved!',
           html: `"${meta.title}" saved to Library.<br>You can read it in the Library.`,

@@ -139,6 +139,15 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [envConfig, appService]);
 
+  // Listen for Authors tab sending a new ebook
+  useEffect(() => {
+    const channel = new BroadcastChannel('everythingebooks-library');
+    channel.onmessage = () => {
+      handleRefreshLibrary();
+    };
+    return () => channel.close();
+  }, [handleRefreshLibrary]);
+
   useEffect(() => {
     if (appService?.hasWindow) {
       const currentWebview = getCurrentWebview();
