@@ -312,13 +312,13 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           </div>
         </div>
 
-        <div className='bg-base-100 z-20 ml-auto flex h-full items-center space-x-4 ps-2'>
-          <SettingsToggler />
-          <NotebookToggler bookKey={bookKey} />
+        <div className='bg-base-100 z-20 ml-auto flex h-full items-center space-x-2 sm:space-x-4 ps-2'>
+          <div className='hidden sm:block'><SettingsToggler /></div>
+          <div className='hidden sm:block'><NotebookToggler bookKey={bookKey} /></div>
 
           {/* TTS Controls */}
           <button
-            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            className='btn btn-ghost h-6 min-h-6 w-6 sm:h-8 sm:min-h-8 sm:w-8 p-0'
             onClick={handlePlay}
             aria-label={isPaused ? _('Resume') : _('Play')}
             title={isPaused ? _('Resume reading') : _('Read aloud')}
@@ -326,7 +326,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             <PiPlayFill size={iconSize16} />
           </button>
           <button
-            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            className='btn btn-ghost h-6 min-h-6 w-6 sm:h-8 sm:min-h-8 sm:w-8 p-0'
             onClick={pause}
             disabled={!isSpeaking || isPaused}
             aria-label={_('Pause')}
@@ -335,7 +335,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             <PiPauseFill size={iconSize16} />
           </button>
           <button
-            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            className='btn btn-ghost h-6 min-h-6 w-6 sm:h-8 sm:min-h-8 sm:w-8 p-0'
             onClick={handleStop}
             disabled={!isSpeaking && !isPaused}
             aria-label={_('Stop')}
@@ -344,34 +344,36 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             <PiStopFill size={iconSize16} />
           </button>
           {voices.length > 1 && (
-            <select
-              value={selectedVoice?.name || ''}
-              onChange={(e) => {
-                const voice = voices.find((v) => v.name === e.target.value);
-                if (voice) setSelectedVoice(voice);
-              }}
-              title={_('Select voice')}
-              className='select select-ghost select-xs h-8 max-w-24 text-xs'
-            >
-              {voices.map((voice) => (
-                <option key={voice.name} value={voice.name}>
-                  {voice.name.replace('Microsoft ', '').replace(' Online', '')}
-                </option>
-              ))}
-            </select>
+            <div className='hidden sm:block'>
+              <select
+                value={selectedVoice?.name || ''}
+                onChange={(e) => {
+                  const voice = voices.find((v) => v.name === e.target.value);
+                  if (voice) setSelectedVoice(voice);
+                }}
+                title={_('Select voice')}
+                className='select select-ghost select-xs h-8 max-w-24 text-xs'
+              >
+                {voices.map((voice) => (
+                  <option key={voice.name} value={voice.name}>
+                    {voice.name.replace('Microsoft ', '').replace(' Online', '')}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
           <Dropdown
             label={_('View Options')}
             className='exclude-title-bar-mousedown dropdown-bottom dropdown-end'
-            buttonClassName='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            buttonClassName='btn btn-ghost h-6 min-h-6 w-6 sm:h-8 sm:min-h-8 sm:w-8 p-0'
             toggleButton={<PiDotsThreeVerticalBold size={iconSize16} />}
             onToggle={handleToggleDropdown}
           >
             <ViewMenu bookKey={bookKey} />
           </Dropdown>
           <button
-            className='btn btn-ghost h-8 min-h-8 w-8 p-0'
+            className='btn btn-ghost h-6 min-h-6 w-6 sm:h-8 sm:min-h-8 sm:w-8 p-0'
             onClick={() => onCloseBook(bookKey)}
             aria-label={_('Close book')}
             title={_('Close book')}
