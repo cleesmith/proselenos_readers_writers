@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { EnvProvider } from '@/context/EnvContext';
 import Providers from '@/components/Providers';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 
 import '../styles/globals.css';
 
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <EnvProvider>
           <Providers>{children}</Providers>
         </EnvProvider>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

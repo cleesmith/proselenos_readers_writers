@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.web -- next dev",
-    "build": "dotenv -e .env.web -- next build",
+    "build": "node scripts/generate-sw.js && dotenv -e .env.web -- next build",
     "start": "dotenv -e .env.web -- next start",
     "i18n:extract": "i18next-scanner",
     "lint": "eslint .",
