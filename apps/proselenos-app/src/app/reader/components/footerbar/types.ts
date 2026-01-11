@@ -8,6 +8,7 @@ export interface FooterBarProps {
   pageinfo?: PageInfo;
   isHoveredAnim: boolean;
   gridInsets: Insets;
+  onCloseBook: (bookKey: string) => void;
 }
 
 export interface NavigationHandlers {
@@ -28,4 +29,5 @@ export interface FooterBarChildProps {
   gridInsets: Insets;
   actionTab: string;
   onSetActionTab: (tab: string) => void;
+  onCloseBook: (bookKey: string) => void;
 }

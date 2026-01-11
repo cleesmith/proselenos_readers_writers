@@ -207,6 +207,7 @@ const BooksGrid: React.FC<BooksGridProps> = ({ bookKeys, onCloseBook }) => {
               pageinfo={pageinfo}
               isHoveredAnim={false}
               gridInsets={gridInsets}
+              onCloseBook={onCloseBook}
             />
             <FloatingBarToggle bookKey={bookKey} gridInsets={gridInsets} />
             {isSettingsDialogOpen && <SettingsDialog bookKey={bookKey} />}

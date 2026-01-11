@@ -14,6 +14,7 @@ const MobileFooterBar: React.FC<FooterBarChildProps> = ({
   progressFraction,
   navigationHandlers,
   onSetActionTab,
+  onCloseBook,
 }) => {
   const isMobile = window.innerWidth < 640 || window.innerHeight < 640;
   const sliderHeight = useResponsiveSize(28);
@@ -39,9 +40,11 @@ const MobileFooterBar: React.FC<FooterBarChildProps> = ({
         marginIconSize={marginIconSize}
       />
       <NavigationBar
+        bookKey={bookKey}
         actionTab={actionTab}
         navPadding={navPadding}
         onSetActionTab={onSetActionTab!}
+        onCloseBook={onCloseBook}
       />
     </>
   );

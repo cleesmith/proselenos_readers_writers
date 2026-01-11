@@ -18,6 +18,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
   pageinfo,
   isHoveredAnim,
   gridInsets,
+  onCloseBook,
 }) => {
   const _ = useTranslation();
   const { appService } = useEnv();
@@ -137,6 +138,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
     progressFraction,
     navigationHandlers,
     onSetActionTab: handleSetActionTab,
+    onCloseBook,
   };
 
   const containerClasses = clsx(

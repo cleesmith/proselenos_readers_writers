@@ -286,11 +286,19 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           }
         }}
       >
-        <div className='bg-base-100 sidebar-bookmark-toggler z-20 flex h-full items-center gap-x-4 pe-2'>
+        <div className='bg-base-100 sidebar-bookmark-toggler z-20 flex h-full items-center gap-x-2 sm:gap-x-4 pe-2'>
           <div className='hidden sm:flex'>
             <SidebarToggler bookKey={bookKey} />
           </div>
           <BookmarkToggler bookKey={bookKey} />
+          <button
+            className='btn btn-ghost h-6 min-h-6 w-6 sm:h-8 sm:min-h-8 sm:w-8 p-0'
+            onClick={() => onCloseBook(bookKey)}
+            aria-label={_('Close book')}
+            title={_('Close book')}
+          >
+            <PiXBold size={iconSize16} />
+          </button>
         </div>
 
         <div
@@ -344,23 +352,21 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             <PiStopFill size={iconSize16} />
           </button>
           {voices.length > 1 && (
-            <div className='hidden sm:block'>
-              <select
-                value={selectedVoice?.name || ''}
-                onChange={(e) => {
-                  const voice = voices.find((v) => v.name === e.target.value);
-                  if (voice) setSelectedVoice(voice);
-                }}
-                title={_('Select voice')}
-                className='select select-ghost select-xs h-8 max-w-24 text-xs'
-              >
-                {voices.map((voice) => (
-                  <option key={voice.name} value={voice.name}>
-                    {voice.name.replace('Microsoft ', '').replace(' Online', '')}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedVoice?.name || ''}
+              onChange={(e) => {
+                const voice = voices.find((v) => v.name === e.target.value);
+                if (voice) setSelectedVoice(voice);
+              }}
+              title={_('Select voice')}
+              className='select select-ghost select-xs h-6 sm:h-8 max-w-20 sm:max-w-24 text-xs'
+            >
+              {voices.map((voice) => (
+                <option key={voice.name} value={voice.name}>
+                  {voice.name.replace('Microsoft ', '').replace(' Online', '')}
+                </option>
+              ))}
+            </select>
           )}
 
           <Dropdown
@@ -372,14 +378,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           >
             <ViewMenu bookKey={bookKey} />
           </Dropdown>
-          <button
-            className='btn btn-ghost h-6 min-h-6 w-6 sm:h-8 sm:min-h-8 sm:w-8 p-0'
-            onClick={() => onCloseBook(bookKey)}
-            aria-label={_('Close book')}
-            title={_('Close book')}
-          >
-            <PiXBold size={iconSize16} />
-          </button>
         </div>
       </div>
     </div>
