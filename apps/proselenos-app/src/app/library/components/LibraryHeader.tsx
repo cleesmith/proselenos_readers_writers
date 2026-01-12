@@ -23,6 +23,8 @@ import ViewMenu from './ViewMenu';
 interface LibraryHeaderProps {
   isSelectMode: boolean;
   isSelectAll: boolean;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
   onImportBooks: () => void;
   onToggleSelectMode: () => void;
   onSelectAll: () => void;
@@ -32,6 +34,8 @@ interface LibraryHeaderProps {
 const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   isSelectMode,
   isSelectAll,
+  searchQuery,
+  onSearchChange,
   onImportBooks,
   onToggleSelectMode,
   onSelectAll,
@@ -50,7 +54,8 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
     setTrafficLightVisibility,
     cleanupTrafficLightListeners,
   } = useTrafficLightStore();
-  const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') ?? '');
+  // Local state for input value, synced with parent via onSearchChange
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const iconSize18 = useResponsiveSize(18);
@@ -61,24 +66,23 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
     onToggleSelectMode,
   });
 
+  // Sync local state when parent searchQuery changes
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedUpdateQueryParam = useCallback(
+  const debouncedOnSearchChange = useCallback(
     debounce((value: string) => {
-      const params = new URLSearchParams(searchParams?.toString());
-      if (value) {
-        params.set('q', value);
-      } else {
-        params.delete('q');
-      }
-      router.push(`?${params.toString()}`);
+      onSearchChange(value);
     }, 500),
-    [searchParams],
+    [onSearchChange],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
-    setSearchQuery(newQuery);
-    debouncedUpdateQueryParam(newQuery);
+    setLocalSearchQuery(newQuery);
+    debouncedOnSearchChange(newQuery);
   };
 
   const switchToAuthorsMode = () => {
@@ -174,7 +178,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
             </span>
             <input
               type='text'
-              value={searchQuery}
+              value={localSearchQuery}
               placeholder={
                 currentBooksCount > 1
                   ? _('Search ebook metadata...', {
@@ -192,12 +196,12 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
               )}
             />
           </div>
-          {searchQuery && (
+          {localSearchQuery && (
             <button
               type='button'
               onClick={() => {
-                setSearchQuery('');
-                debouncedUpdateQueryParam('');
+                setLocalSearchQuery('');
+                onSearchChange('');
               }}
               className='ml-2 text-gray-400 hover:text-gray-600'
               aria-label={_('Clear Search')}

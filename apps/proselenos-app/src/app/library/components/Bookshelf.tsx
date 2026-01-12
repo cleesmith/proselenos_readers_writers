@@ -30,6 +30,7 @@ interface BookshelfProps {
   isSelectMode: boolean;
   isSelectAll: boolean;
   isSelectNone: boolean;
+  searchQuery: string;
   handleImportBooks: () => void;
   handleBookDownload: (book: Book) => Promise<boolean>;
   handleBookDelete: (book: Book, syncBooks?: boolean) => Promise<boolean>;
@@ -43,6 +44,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   isSelectMode,
   isSelectAll,
   isSelectNone,
+  searchQuery,
   handleImportBooks,
   handleBookDownload,
   handleBookDelete,
@@ -61,7 +63,6 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const [bookIdsToDelete, setBookIdsToDelete] = useState<string[]>([]);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [showGroupingModal, setShowGroupingModal] = useState(false);
-  const [queryTerm, setQueryTerm] = useState<string | null>(null);
   const [navBooksGroup, setNavBooksGroup] = useState<BooksGroup | null>(null);
   const [importBookUrl] = useState(searchParams?.get('url') || '');
 
@@ -75,13 +76,13 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const { setCurrentBookshelf, setLibrary } = useLibraryStore();
   const { setSelectedBooks, getSelectedBooks, toggleSelectedBook } = useLibraryStore();
 
-  const bookFilter = useMemo(() => createBookFilter(queryTerm), [queryTerm]);
+  const bookFilter = useMemo(() => createBookFilter(searchQuery || null), [searchQuery]);
   const uiLanguage = localStorage?.getItem('i18nextLng') || '';
   const bookSorter = useMemo(() => createBookSorter(sortBy, uiLanguage), [sortBy, uiLanguage]);
 
   const filteredBooks = useMemo(() => {
-    return queryTerm ? libraryBooks.filter((book) => bookFilter(book)) : libraryBooks;
-  }, [libraryBooks, queryTerm, bookFilter]);
+    return searchQuery ? libraryBooks.filter((book) => bookFilter(book)) : libraryBooks;
+  }, [libraryBooks, searchQuery, bookFilter]);
 
   const allBookshelfItems = useMemo(() => {
     return generateBookshelfItems(filteredBooks);
@@ -116,15 +117,10 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     }
   }, [allBookshelfItems, navBooksGroup, setCurrentBookshelf]);
 
-  // Handle URL params for query and group only (view/sort settings are from IndexedDB)
+  // Handle URL params for group navigation only (search is via prop, view/sort from IndexedDB)
   useEffect(() => {
     const group = searchParams?.get('group') || '';
-    const query = searchParams?.get('q') || '';
 
-    // Sync query param to local state
-    setQueryTerm(query || null);
-
-    // Handle group navigation
     if (group) {
       const booksGroup = allBookshelfItems.find(
         (item) => 'name' in item && item.id === group,

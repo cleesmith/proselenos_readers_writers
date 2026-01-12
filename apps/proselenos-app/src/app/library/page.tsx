@@ -82,6 +82,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const [isImportingFromDownloadPage, setIsImportingFromDownloadPage] = useState(false);
   const [pendingNavigationBookIds, setPendingNavigationBookIds] = useState<string[] | null>(null);
   const [readerBookHash, setReaderBookHash] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const isInitiating = useRef(false);
 
   const viewSettings = settings.globalViewSettings;
@@ -659,6 +660,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         <LibraryHeader
           isSelectMode={isSelectMode}
           isSelectAll={isSelectAll}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           onImportBooks={handleImportBooks}
           onToggleSelectMode={() => handleSetSelectMode(!isSelectMode)}
           onSelectAll={handleSelectAll}
@@ -710,6 +713,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
                 isSelectMode={isSelectMode}
                 isSelectAll={isSelectAll}
                 isSelectNone={isSelectNone}
+                searchQuery={searchQuery}
                 handleImportBooks={handleImportBooks}
                 handleBookDownload={handleBookDownload}
                 handleBookDelete={handleBookDelete('local')}
