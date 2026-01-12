@@ -253,16 +253,20 @@ export default function AuthorsClient() {
         }
       }
 
+      // Filter out table-of-contents - it gets auto-generated on "send Ebook"
       await saveFullWorkingCopy({
         title: parsed.title,
         author: parsed.author,
         language: parsed.language,
         coverImage: parsed.coverImage,
-        sections: parsed.sections.map((s) => ({
-          id: s.id,
-          title: s.title,
-          content: s.content,
-        })),
+        sections: parsed.sections
+          .filter((s) => s.type !== 'table-of-contents')
+          .map((s) => ({
+            id: s.id,
+            title: s.title,
+            content: s.content,
+            type: s.type,
+          })),
       });
 
       // Update metadata with imageIds
