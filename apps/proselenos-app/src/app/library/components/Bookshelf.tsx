@@ -64,12 +64,12 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const [queryTerm, setQueryTerm] = useState<string | null>(null);
   const [navBooksGroup, setNavBooksGroup] = useState<BooksGroup | null>(null);
   const [importBookUrl] = useState(searchParams?.get('url') || '');
-  const [viewMode, setViewMode] = useState(searchParams?.get('view') || settings.libraryViewMode);
-  const [sortBy, setSortBy] = useState(searchParams?.get('sort') || settings.librarySortBy);
-  const [sortOrder, setSortOrder] = useState(
-    searchParams?.get('order') || (settings.librarySortAscending ? 'asc' : 'desc'),
-  );
-  const [coverFit, setCoverFit] = useState(searchParams?.get('cover') || settings.libraryCoverFit);
+
+  // Use settings directly instead of URL params (works offline)
+  const viewMode = settings.libraryViewMode;
+  const sortBy = settings.librarySortBy;
+  const sortOrder = settings.librarySortAscending ? 'asc' : 'desc';
+  const coverFit = settings.libraryCoverFit;
   const isImportingBook = useRef(false);
 
   const { setCurrentBookshelf, setLibrary } = useLibraryStore();
@@ -116,65 +116,30 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     }
   }, [allBookshelfItems, navBooksGroup, setCurrentBookshelf]);
 
+  // Handle URL params for query and group only (view/sort settings are from IndexedDB)
   useEffect(() => {
     const group = searchParams?.get('group') || '';
     const query = searchParams?.get('q') || '';
-    const view = searchParams?.get('view') || settings.libraryViewMode;
-    const sort = searchParams?.get('sort') || settings.librarySortBy;
-    const order = searchParams?.get('order') || (settings.librarySortAscending ? 'asc' : 'desc');
-    const cover = searchParams?.get('cover') || settings.libraryCoverFit;
-    const params = new URLSearchParams(searchParams?.toString());
-    if (query) {
-      params.set('q', query);
-      setQueryTerm(query);
-    } else {
-      params.delete('q');
-      setQueryTerm(null);
-    }
-    if (sort) {
-      params.set('sort', sort);
-      setSortBy(sort);
-    } else {
-      params.delete('sort');
-    }
-    if (order) {
-      params.set('order', order);
-      setSortOrder(order);
-    } else {
-      params.delete('order');
-    }
-    if (view) {
-      params.set('view', view);
-      setViewMode(view);
-    } else {
-      params.delete('view');
-    }
-    setCoverFit(cover);
-    if (cover === 'crop') {
-      params.delete('cover');
-    }
-    if (sort === 'updated' && order === 'desc' && view === 'grid') {
-      params.delete('sort');
-      params.delete('order');
-      params.delete('view');
-    }
+
+    // Sync query param to local state
+    setQueryTerm(query || null);
+
+    // Handle group navigation
     if (group) {
       const booksGroup = allBookshelfItems.find(
         (item) => 'name' in item && item.id === group,
       ) as BooksGroup;
       if (booksGroup) {
         setNavBooksGroup(booksGroup);
-        params.set('group', group);
       } else {
-        params.delete('group');
-        navigateToLibrary(router, `${params.toString()}`);
+        // Group not found, navigate back to library
+        setNavBooksGroup(null);
+        navigateToLibrary(router);
       }
     } else {
       setNavBooksGroup(null);
-      params.delete('group');
-      navigateToLibrary(router, `${params.toString()}`);
     }
-  }, [router, settings, searchParams, allBookshelfItems, showGroupingModal]);
+  }, [router, searchParams, allBookshelfItems]);
 
   const toggleSelection = useCallback(
     (id: string) => {

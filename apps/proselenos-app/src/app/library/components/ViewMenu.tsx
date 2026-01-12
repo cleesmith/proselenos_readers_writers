@@ -1,11 +1,9 @@
 import React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LibraryCoverFitType, LibrarySortByType, LibraryViewModeType } from '@/types/settings';
 import { saveSysSettings } from '@/helpers/settings';
-import { navigateToLibrary } from '@/utils/nav';
 import MenuItem from '@/components/MenuItem';
 import Menu from '@/components/Menu';
 
@@ -15,8 +13,6 @@ interface ViewMenuProps {
 
 const ViewMenu: React.FC<ViewMenuProps> = ({ setIsDropdownOpen }) => {
   const _ = useTranslation();
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
 
@@ -51,37 +47,21 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ setIsDropdownOpen }) => {
   const handleSetViewMode = (value: LibraryViewModeType) => {
     saveSysSettings(envConfig, 'libraryViewMode', value);
     setIsDropdownOpen?.(false);
-
-    const params = new URLSearchParams(searchParams?.toString());
-    params.set('view', value);
-    navigateToLibrary(router, `${params.toString()}`);
   };
 
   const handleToggleCropCovers = (value: LibraryCoverFitType) => {
     saveSysSettings(envConfig, 'libraryCoverFit', value);
     setIsDropdownOpen?.(false);
-
-    const params = new URLSearchParams(searchParams?.toString());
-    params.set('cover', value);
-    navigateToLibrary(router, `${params.toString()}`);
   };
 
   const handleSetSortBy = (value: LibrarySortByType) => {
     saveSysSettings(envConfig, 'librarySortBy', value);
     setIsDropdownOpen?.(false);
-
-    const params = new URLSearchParams(searchParams?.toString());
-    params.set('sort', value);
-    navigateToLibrary(router, `${params.toString()}`);
   };
 
   const handleSetSortAscending = (value: boolean) => {
     saveSysSettings(envConfig, 'librarySortAscending', value);
     setIsDropdownOpen?.(false);
-
-    const params = new URLSearchParams(searchParams?.toString());
-    params.set('order', value ? 'asc' : 'desc');
-    navigateToLibrary(router, `${params.toString()}`);
   };
 
   return (
