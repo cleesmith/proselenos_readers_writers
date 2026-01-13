@@ -312,7 +312,7 @@ export default function ChapterSidebar({
             />
           );
 
-          // Render "No X" placeholder (CamelCase, not uppercase)
+          // Render section name placeholder when empty
           const renderEmptyPlaceholder = (sectionNum: number) => (
             <div
               key={`empty-${sectionNum}`}
@@ -324,7 +324,7 @@ export default function ChapterSidebar({
                 letterSpacing: '0.5px',
               }}
             >
-              No {SECTION_NAMES[sectionNum]}
+              {SECTION_NAMES[sectionNum]}
             </div>
           );
 
