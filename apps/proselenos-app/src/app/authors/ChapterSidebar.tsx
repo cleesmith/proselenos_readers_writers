@@ -311,16 +311,41 @@ export default function ChapterSidebar({
             );
           };
 
-          // Render divider
-          const renderDivider = (key: string) => (
+          // Section tooltips
+          const sectionTooltips: Record<number, string> = {
+            2: 'Front Matter: Blurbs, Half-Title, Dedication, Epigraph',
+            3: 'Introductory: Foreword, Introduction, Preface, Prologue',
+            4: 'Chapters: Main story content',
+            5: 'Back Matter: Epilogue, Afterword, Endnotes, Bibliography, Acknowledgments, About the Author, Also By',
+            6: 'No Matter: Non-linear content excluded from reading flow (linear="no" in EPUB)',
+          };
+
+          // Render divider with optional info icon
+          const renderDivider = (key: string, sectionNum?: number) => (
             <div
               key={key}
               style={{
-                height: '2px',
-                backgroundColor: borderColor,
+                display: 'flex',
+                alignItems: 'center',
                 margin: '6px 8px',
+                gap: '4px',
               }}
-            />
+            >
+              <div style={{ flex: 1, height: '2px', backgroundColor: borderColor }} />
+              {sectionNum && sectionTooltips[sectionNum] && (
+                <span
+                  title={sectionTooltips[sectionNum]}
+                  style={{
+                    fontSize: '10px',
+                    color: isDarkMode ? '#666' : '#999',
+                    cursor: 'help',
+                    userSelect: 'none',
+                  }}
+                >
+                  ⓘ
+                </span>
+              )}
+            </div>
           );
 
           // Render section name placeholder when empty
@@ -345,8 +370,8 @@ export default function ChapterSidebar({
           const requiredSections = sectionGroups.get(1) || [];
           requiredSections.forEach(s => elements.push(renderSectionItem(s, 1)));
 
-          // Divider after Required
-          elements.push(renderDivider('divider-1'));
+          // Divider after Required (before Front Matter)
+          elements.push(renderDivider('divider-1', 2));
 
           // Section 2: Front Matter
           const frontMatter = sectionGroups.get(2) || [];
@@ -356,8 +381,8 @@ export default function ChapterSidebar({
             elements.push(renderEmptyPlaceholder(2));
           }
 
-          // Divider after Front Matter
-          elements.push(renderDivider('divider-2'));
+          // Divider after Front Matter (before Introductory)
+          elements.push(renderDivider('divider-2', 3));
 
           // Section 3: Introductory
           const introductory = sectionGroups.get(3) || [];
@@ -367,15 +392,15 @@ export default function ChapterSidebar({
             elements.push(renderEmptyPlaceholder(3));
           }
 
-          // Divider after Introductory
-          elements.push(renderDivider('divider-3'));
+          // Divider after Introductory (before Chapters)
+          elements.push(renderDivider('divider-3', 4));
 
           // Section 4: Chapters (always has at least one)
           const chapters = sectionGroups.get(4) || [];
           chapters.forEach(s => elements.push(renderSectionItem(s, 4)));
 
-          // Divider after Chapters
-          elements.push(renderDivider('divider-4'));
+          // Divider after Chapters (before Back Matter)
+          elements.push(renderDivider('divider-4', 5));
 
           // Section 5: Back Matter
           const backMatter = sectionGroups.get(5) || [];
@@ -385,8 +410,8 @@ export default function ChapterSidebar({
             elements.push(renderEmptyPlaceholder(5));
           }
 
-          // Divider after Back Matter
-          elements.push(renderDivider('divider-5'));
+          // Divider after Back Matter (before No Matter)
+          elements.push(renderDivider('divider-5', 6));
 
           // Section 6: No Matter (optional, non-linear in spine)
           const noMatter = sectionGroups.get(6) || [];
