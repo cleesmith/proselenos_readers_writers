@@ -89,7 +89,9 @@ export async function generateEpubFromWorkingCopy(
   }
 
   // Convert sections to Chapter format, skipping Cover, Title Page and Copyright (we generate those separately)
+  // Also separate no-matter sections (they get linear="no" in spine)
   const chapters: Chapter[] = [];
+  const noMatterSections: Chapter[] = [];
   let chapterNum = 0;
 
   for (const section of sections) {
@@ -104,20 +106,28 @@ export async function generateEpubFromWorkingCopy(
       continue;
     }
 
-    chapterNum++;
     // Split content into paragraphs (double newline = paragraph break)
     const paragraphs = section.content
       .split(/\n\s*\n/)
       .map(p => p.replace(/\n/g, ' ').trim())
       .filter(p => p.length > 0);
 
-    chapters.push({
+    const chapterData: Chapter = {
       id: section.id,
-      number: chapterNum,
+      number: 0, // Will be set below for regular chapters
       title: section.title,
       content: paragraphs,
       paragraphs: paragraphs,
-    });
+    };
+
+    // No Matter sections go to separate array
+    if (section.type === 'no-matter') {
+      noMatterSections.push(chapterData);
+    } else {
+      chapterNum++;
+      chapterData.number = chapterNum;
+      chapters.push(chapterData);
+    }
   }
 
   // Build metadata object from WorkingCopyMeta
@@ -160,7 +170,7 @@ export async function generateEpubFromWorkingCopy(
     }
   }
 
-  return generateEPUB(chapters, metadata, coverImageData, inlineImages);
+  return generateEPUB(chapters, metadata, coverImageData, inlineImages, noMatterSections);
 }
 
 /**
@@ -170,7 +180,8 @@ async function generateEPUB(
   chapters: Chapter[],
   metadata: any,
   coverImageData?: Uint8Array,
-  inlineImages?: Array<{filename: string, data: Uint8Array}>
+  inlineImages?: Array<{filename: string, data: Uint8Array}>,
+  noMatterSections?: Chapter[]
 ): Promise<Uint8Array> {
   const zip = new JSZip();
 
@@ -221,6 +232,14 @@ async function generateEPUB(
     zip.file(`OEBPS/${chapter.id}.xhtml`, chapterHTML);
   });
 
+  // 7b. Create No Matter files in nomatter/ folder (if any)
+  if (noMatterSections && noMatterSections.length > 0) {
+    noMatterSections.forEach(section => {
+      const sectionHTML = createChapterHTML(section, metadata);
+      zip.file(`OEBPS/nomatter/${section.id}.xhtml`, sectionHTML);
+    });
+  }
+
   // 8. Create about author page (only if metadata exists)
   if (metadata.aboutAuthor && metadata.aboutAuthor.trim()) {
     const aboutAuthorHTML = createAboutAuthorPage(metadata);
@@ -228,7 +247,7 @@ async function generateEPUB(
   }
 
   // 9. Create content.opf (EPUB 3.0 format) with all new items
-  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages);
+  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections);
   zip.file('OEBPS/content.opf', contentOPF);
 
   // 10. Create nav.xhtml (EPUB 3.0 navigation)
@@ -680,7 +699,8 @@ function createEpub3ContentOPF(
   chapters: Chapter[],
   metadata: any,
   coverImageId: string | null = null,
-  inlineImages?: Array<{filename: string, data: Uint8Array}>
+  inlineImages?: Array<{filename: string, data: Uint8Array}>,
+  noMatterSections?: Chapter[]
 ): string {
   const uuid = generateUUID();
   const date = new Date().toISOString().split('T')[0];
@@ -713,14 +733,25 @@ function createEpub3ContentOPF(
     .map(ch => `    <item id="${ch.id}" href="${ch.id}.xhtml" media-type="application/xhtml+xml"/>`)
     .join('\n');
 
+  // No Matter manifest entries (in nomatter/ folder)
+  let noMatterManifest = '';
+  if (noMatterSections && noMatterSections.length > 0) {
+    noMatterManifest = noMatterSections
+      .map(s => `    <item id="${s.id}" href="nomatter/${s.id}.xhtml" media-type="application/xhtml+xml"/>`)
+      .join('\n');
+  }
+
   // Build spine items - cover page is always first
+  // No Matter sections come last with linear="no"
   const spineItems = [
     '    <itemref idref="cover-page"/>',
     '    <itemref idref="title-page"/>',
     '    <itemref idref="copyright"/>',
     '    <itemref idref="contents"/>',
     ...chapters.map(ch => `    <itemref idref="${ch.id}"/>`),
-    ...(metadata.aboutAuthor && metadata.aboutAuthor.trim() ? ['    <itemref idref="about-author"/>'] : [])
+    ...(metadata.aboutAuthor && metadata.aboutAuthor.trim() ? ['    <itemref idref="about-author"/>'] : []),
+    // No Matter sections with linear="no" (excluded from linear reading flow)
+    ...(noMatterSections ? noMatterSections.map(s => `    <itemref idref="${s.id}" linear="no"/>`) : [])
   ].join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -748,6 +779,7 @@ ${coverPageManifest}
 ${coverManifest}
 ${inlineImagesManifest}
 ${manifest}
+${noMatterManifest}
   </manifest>
   <spine toc="toc">
 ${spineItems}

@@ -30,6 +30,8 @@ export type ElementType =
   | 'acknowledgments'
   | 'about-the-author'
   | 'also-by'
+  // No Matter (linear="no" in spine)
+  | 'no-matter'
   // Other
   | 'uncategorized'
   // Legacy support
@@ -88,6 +90,12 @@ export const ELEMENT_GROUPS: ElementGroup[] = [
     ],
   },
   {
+    name: 'No Matter',
+    elements: [
+      { type: 'no-matter', displayName: 'No Matter', defaultTitle: 'no matter', description: 'Non-linear content (excluded from reading flow)' },
+    ],
+  },
+  {
     name: 'Other',
     elements: [
       { type: 'uncategorized', displayName: 'Uncategorized', defaultTitle: 'Uncategorized', description: 'Generic section' },
@@ -113,7 +121,7 @@ export const PROTECTED_SECTION_IDS = ['cover', 'title-page', 'copyright'] as con
 export const PROTECTED_SECTION_COUNT = PROTECTED_SECTION_IDS.length;
 
 // Types that can have multiple instances (all others are singletons)
-export const MULTI_INSTANCE_TYPES: ElementType[] = ['chapter', 'uncategorized'];
+export const MULTI_INSTANCE_TYPES: ElementType[] = ['chapter', 'uncategorized', 'no-matter'];
 
 // Types hidden from "Add Section" UI (protected sections that always exist, or generated during publish)
 export const HIDDEN_TYPES: ElementType[] = ['table-of-contents', 'cover', 'title-page', 'copyright'];
@@ -155,16 +163,20 @@ export const CHAPTER_TYPES: ElementType[] = ['chapter'];
 // Section 5: Back Matter (optional, reorder within only)
 export const BACK_MATTER_TYPES: ElementType[] = ['epilogue', 'afterword', 'endnotes', 'bibliography', 'acknowledgments', 'about-the-author', 'also-by'];
 
+// Section 6: No Matter (optional, non-linear in spine, reorder within only)
+export const NO_MATTER_TYPES: ElementType[] = ['no-matter'];
+
 // Floating types: can exist anywhere after Required, can move freely (except into Required)
 export const FLOATING_TYPES: ElementType[] = ['uncategorized', 'section'];
 
-// Get section number for a type (1-5 for section-specific, 0 for floating)
+// Get section number for a type (1-6 for section-specific, 0 for floating)
 export function getSectionNumber(type: ElementType): number {
   if (REQUIRED_TYPES.includes(type)) return 1;
   if (FRONT_MATTER_TYPES.includes(type)) return 2;
   if (INTRODUCTORY_TYPES.includes(type)) return 3;
   if (CHAPTER_TYPES.includes(type)) return 4;
   if (BACK_MATTER_TYPES.includes(type)) return 5;
+  if (NO_MATTER_TYPES.includes(type)) return 6;
   return 0; // floating
 }
 
@@ -180,4 +192,5 @@ export const SECTION_NAMES: Record<number, string> = {
   3: 'Introductory',
   4: 'Chapters',
   5: 'Back Matter',
+  6: 'No Matter',
 };

@@ -137,12 +137,18 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
       sectionTitle = extractHtmlTitle(html) || `Section ${sections.length + 1}`;
     }
 
+    // If linear="no", this is No Matter content (non-linear in reading flow)
+    // Otherwise, infer type from title
+    const sectionType: ElementType = spineItem.linear === false
+      ? 'no-matter'
+      : inferSectionType(sectionTitle);
+
     sections.push({
       id: spineItem.idref,
       title: sectionTitle,
       href: href,
       content: content,
-      type: inferSectionType(sectionTitle),
+      type: sectionType,
     });
   }
 

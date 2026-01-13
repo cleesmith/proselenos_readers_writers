@@ -33,13 +33,14 @@ function reorderSectionsByVisualGroup<T extends { type?: ElementType }>(sections
     groups.get(num)!.push(s);
   }
 
-  // Return in visual order: Required, Front Matter (2), Introductory (3), Chapters (4), Back Matter (5)
+  // Return in visual order: Required, Front Matter (2), Introductory (3), Chapters (4), Back Matter (5), No Matter (6)
   return [
     ...required,
     ...(groups.get(2) || []),
     ...(groups.get(3) || []),
     ...(groups.get(4) || []),
     ...(groups.get(5) || []),
+    ...(groups.get(6) || []),
   ];
 }
 import TitlePagePanel, { BookMetadata } from './TitlePagePanel';
@@ -963,6 +964,7 @@ export default function AuthorsLayout({
         3: 'introduction',  // Introductory
         4: 'chapter',       // Chapters
         5: 'afterword',     // Back Matter
+        6: 'no-matter',     // No Matter
       };
       actualType = areaTypeMap[currentArea] || 'chapter';
     } else {
@@ -1116,6 +1118,7 @@ export default function AuthorsLayout({
       3: 'introduction',  // Introductory
       4: 'chapter',       // Chapters
       5: 'afterword',     // Back Matter
+      6: 'no-matter',     // No Matter
     };
 
     const newType = areaTypeMap[area];

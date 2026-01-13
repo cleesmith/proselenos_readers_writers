@@ -245,7 +245,7 @@ export default function ChapterSidebar({
           // Group sections by section number
           // Key insight: First 3 items by INDEX are ALWAYS Required (PROTECTED_SECTION_COUNT = 3)
           const sectionGroups: Map<number, Section[]> = new Map();
-          for (let i = 1; i <= 5; i++) sectionGroups.set(i, []);
+          for (let i = 1; i <= 6; i++) sectionGroups.set(i, []);
 
           sections.forEach((section, index) => {
             // Skip table-of-contents (hidden like in Vellum)
@@ -374,6 +374,17 @@ export default function ChapterSidebar({
             elements.push(renderEmptyPlaceholder(5));
           }
 
+          // Divider after Back Matter
+          elements.push(renderDivider('divider-5'));
+
+          // Section 6: No Matter (optional, non-linear in spine)
+          const noMatter = sectionGroups.get(6) || [];
+          if (noMatter.length > 0) {
+            noMatter.forEach(s => elements.push(renderSectionItem(s)));
+          } else {
+            elements.push(renderEmptyPlaceholder(6));
+          }
+
           return elements;
         })()}
       </nav>
@@ -484,6 +495,7 @@ export default function ChapterSidebar({
                   { area: 3, name: 'Introductory' },
                   { area: 4, name: 'Chapters' },
                   { area: 5, name: 'Back Matter' },
+                  { area: 6, name: 'No Matter' },
                 ].map(({ area, name }) => {
                   // Disable moving last chapter out of Chapters
                   const isDisabled = isLastChapter && area !== 4;
