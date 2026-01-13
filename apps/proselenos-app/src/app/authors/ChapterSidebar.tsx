@@ -267,10 +267,21 @@ export default function ChapterSidebar({
             sectionGroups.get(targetSection)?.push(section);
           });
 
+          // Section background colors (dull/muted)
+          const sectionColors: Record<number, string> = {
+            1: isDarkMode ? '#3a2a2a' : '#f5e8e8', // Required - dull red
+            2: isDarkMode ? '#3a3020' : '#f5efe5', // Front Matter - dull orange
+            3: isDarkMode ? '#2a3a2a' : '#e8f5e8', // Introductory - dull green
+            4: isDarkMode ? '#2a2a3a' : '#e8e8f5', // Chapters - dull blue
+            5: isDarkMode ? '#352a3a' : '#f0e8f5', // Back Matter - dull purple
+            6: isDarkMode ? '#303030' : '#f0f0f0', // No Matter - dull gray
+          };
+
           // Render helper for section items
-          const renderSectionItem = (section: Section) => {
+          const renderSectionItem = (section: Section, sectionNum: number) => {
             const isSelected = section.id === selectedSectionId;
             const hasMatch = sectionsWithMatches?.has(section.id);
+            const bgColor = isSelected ? selectedBg : (hasMatch ? (isDarkMode ? '#3d2a0a' : '#fef3c7') : sectionColors[sectionNum]);
             return (
               <div
                 key={section.id}
@@ -278,7 +289,7 @@ export default function ChapterSidebar({
                 style={{
                   padding: '4px 8px',
                   cursor: toolExecuting ? 'not-allowed' : 'pointer',
-                  backgroundColor: isSelected ? selectedBg : (hasMatch ? (isDarkMode ? '#3d2a0a' : '#fef3c7') : 'transparent'),
+                  backgroundColor: bgColor,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
@@ -332,7 +343,7 @@ export default function ChapterSidebar({
 
           // Section 1: Required (always present)
           const requiredSections = sectionGroups.get(1) || [];
-          requiredSections.forEach(s => elements.push(renderSectionItem(s)));
+          requiredSections.forEach(s => elements.push(renderSectionItem(s, 1)));
 
           // Divider after Required
           elements.push(renderDivider('divider-1'));
@@ -340,7 +351,7 @@ export default function ChapterSidebar({
           // Section 2: Front Matter
           const frontMatter = sectionGroups.get(2) || [];
           if (frontMatter.length > 0) {
-            frontMatter.forEach(s => elements.push(renderSectionItem(s)));
+            frontMatter.forEach(s => elements.push(renderSectionItem(s, 2)));
           } else {
             elements.push(renderEmptyPlaceholder(2));
           }
@@ -351,7 +362,7 @@ export default function ChapterSidebar({
           // Section 3: Introductory
           const introductory = sectionGroups.get(3) || [];
           if (introductory.length > 0) {
-            introductory.forEach(s => elements.push(renderSectionItem(s)));
+            introductory.forEach(s => elements.push(renderSectionItem(s, 3)));
           } else {
             elements.push(renderEmptyPlaceholder(3));
           }
@@ -361,7 +372,7 @@ export default function ChapterSidebar({
 
           // Section 4: Chapters (always has at least one)
           const chapters = sectionGroups.get(4) || [];
-          chapters.forEach(s => elements.push(renderSectionItem(s)));
+          chapters.forEach(s => elements.push(renderSectionItem(s, 4)));
 
           // Divider after Chapters
           elements.push(renderDivider('divider-4'));
@@ -369,7 +380,7 @@ export default function ChapterSidebar({
           // Section 5: Back Matter
           const backMatter = sectionGroups.get(5) || [];
           if (backMatter.length > 0) {
-            backMatter.forEach(s => elements.push(renderSectionItem(s)));
+            backMatter.forEach(s => elements.push(renderSectionItem(s, 5)));
           } else {
             elements.push(renderEmptyPlaceholder(5));
           }
@@ -380,7 +391,7 @@ export default function ChapterSidebar({
           // Section 6: No Matter (optional, non-linear in spine)
           const noMatter = sectionGroups.get(6) || [];
           if (noMatter.length > 0) {
-            noMatter.forEach(s => elements.push(renderSectionItem(s)));
+            noMatter.forEach(s => elements.push(renderSectionItem(s, 6)));
           } else {
             elements.push(renderEmptyPlaceholder(6));
           }
