@@ -230,7 +230,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
 export async function exportAndDownload(): Promise<void> {
   const blob = await exportAllData();
   const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  downloadBlob(blob, `proselenos_backup_${date}.zip`);
+  downloadBlob(blob, `everythingebooks_backup_${date}.zip`);
 }
 
 // ============================================
