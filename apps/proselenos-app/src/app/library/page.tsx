@@ -25,12 +25,10 @@ import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTheme } from '@/hooks/useTheme';
 import { useUICSS } from '@/hooks/useUICSS';
-import { useDemoBooks } from './hooks/useDemoBooks';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
 
 import { BookMetadata } from '@/libs/document';
-import { parseMetaRefreshAction } from '@/app/actions/download-page-parser';
 import { AboutWindow } from '@/components/AboutWindow';
 import { StorageWindow } from '@/components/StorageWindow';
 import { BookDetailModal } from '@/components/metadata';
@@ -76,17 +74,12 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const [isSelectNone, setIsSelectNone] = useState(false);
   const [showDetailsBook, setShowDetailsBook] = useState<Book | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [importUrlValue, setImportUrlValue] = useState('');
-  const [isImportingFromUrl, setIsImportingFromUrl] = useState(false);
-  const [downloadPageUrl, setDownloadPageUrl] = useState('');
-  const [isImportingFromDownloadPage, setIsImportingFromDownloadPage] = useState(false);
   const [pendingNavigationBookIds, setPendingNavigationBookIds] = useState<string[] | null>(null);
   const [readerBookHash, setReaderBookHash] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const isInitiating = useRef(false);
 
   const viewSettings = settings.globalViewSettings;
-  const demoBooks = useDemoBooks();
 
   // Theme for WelcomeModal
   const isDarkMode = themeMode === 'dark' || (themeMode === 'auto' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -293,23 +286,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  useEffect(() => {
-    if (demoBooks.length > 0 && libraryLoaded) {
-      const newLibrary = [...libraryBooks];
-      for (const book of demoBooks) {
-        const idx = newLibrary.findIndex((b) => b.hash === book.hash);
-        if (idx === -1) {
-          newLibrary.push(book);
-        } else {
-          newLibrary[idx] = book;
-        }
-      }
-      setLibrary(newLibrary);
-      appService?.saveLibraryBooks(newLibrary);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demoBooks, libraryLoaded]);
-
   const importBooks = async (files: SelectedFile[], groupId?: string) => {
     setLoading(true);
     const { library } = useLibraryStore.getState();
@@ -478,132 +454,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     });
   };
 
-  const handleImportFromUrl = async () => {
-    const url = importUrlValue.trim();
-    if (!url) {
-      eventDispatcher.dispatch('toast', {
-        type: 'error',
-        message: _('Please enter a URL'),
-      });
-      return;
-    }
-
-    // Basic URL validation
-    try {
-      new URL(url);
-    } catch {
-      eventDispatcher.dispatch('toast', {
-        type: 'error',
-        message: _('Invalid URL format'),
-      });
-      return;
-    }
-
-    setIsImportingFromUrl(true);
-
-    try {
-      // Fetch the EPUB from URL
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const blob = await response.blob();
-      const filename = url.split('/').pop() || 'book.epub';
-
-      // Create File object from blob
-      const file = new File([blob], filename, { type: 'application/epub+zip' });
-
-      // Close modal and import
-      setShowImportModal(false);
-      setImportUrlValue('');
-
-      const groupId = searchParams?.get('group') || '';
-      await importBooks([{ file, importSource: url }], groupId);
-
-      eventDispatcher.dispatch('toast', {
-        type: 'info',
-        message: _('Book downloaded and imported successfully'),
-      });
-    } catch (error) {
-      console.error('Failed to download from URL:', error);
-      eventDispatcher.dispatch('toast', {
-        type: 'error',
-        message: _('Failed to download book: {{error}}', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }),
-      });
-    } finally {
-      setIsImportingFromUrl(false);
-    }
-  };
-
-  const handleImportFromDownloadPage = async () => {
-    const url = downloadPageUrl.trim();
-    if (!url) {
-      eventDispatcher.dispatch('toast', {
-        type: 'error',
-        message: _('Please enter a download page URL'),
-      });
-      return;
-    }
-
-    // Basic URL validation
-    try {
-      new URL(url);
-    } catch {
-      eventDispatcher.dispatch('toast', {
-        type: 'error',
-        message: _('Invalid URL format'),
-      });
-      return;
-    }
-
-    setIsImportingFromDownloadPage(true);
-
-    try {
-      // Call the server action to parse meta-refresh and download
-      const result = await parseMetaRefreshAction(url);
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || 'Failed to extract EPUB from download page');
-      }
-
-      // Convert base64 to blob
-      const binaryString = atob(result.data.base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: 'application/epub+zip' });
-
-      // Create File object from blob
-      const file = new File([blob], result.data.filename, { type: 'application/epub+zip' });
-
-      // Close modal and import
-      setShowImportModal(false);
-      setDownloadPageUrl('');
-
-      const groupId = searchParams?.get('group') || '';
-      await importBooks([{ file, importSource: url }], groupId);
-
-      eventDispatcher.dispatch('toast', {
-        type: 'info',
-        message: _('Book extracted and imported successfully'),
-      });
-    } catch (error) {
-      console.error('Failed to import from download page:', error);
-      eventDispatcher.dispatch('toast', {
-        type: 'error',
-        message: _('Failed to extract book: {{error}}', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }),
-      });
-    } finally {
-      setIsImportingFromDownloadPage(false);
-    }
-  };
-
   const handleSetSelectMode = (selectMode: boolean) => {
     // No Desktop - haptic feedback removed
     setIsSelectMode(selectMode);
@@ -755,17 +605,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       {isSettingsDialogOpen && <SettingsDialog bookKey={''} />}
       <Dialog
         isOpen={showImportModal}
-        onClose={() => {
-          setShowImportModal(false);
-          setImportUrlValue('');
-          setDownloadPageUrl('');
-        }}
+        onClose={() => setShowImportModal(false)}
         title={_('Import Ebook')}
-        boxClassName='sm:!h-auto sm:!max-h-[85%] sm:!w-auto sm:!max-w-md'
+        boxClassName='sm:!h-auto sm:!w-auto sm:!max-w-sm'
       >
-
         <div className='flex flex-col gap-4 p-4'>
-          {/* Local File Import */}
           <div className='flex flex-col gap-1'>
             <h3 className='text-base font-semibold'>{_('from Local .epub file')}</h3>
             <p className='text-sm text-base-content/70'>
@@ -774,87 +618,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
             <button
               className='btn btn-xs btn-primary'
               onClick={handleImportFromLocalFile}
-              disabled={isImportingFromUrl}
             >
               {_('Choose File')}
-            </button>
-          </div>
-
-
-          {/* Divider */}
-          <div className='divider my-2 text-base-content/40 text-sm italic before:bg-base-content/20 after:bg-base-content/20'>or</div>
-
-          {/* URL Import */}
-          <div className='flex flex-col gap-1'>
-            <h3 className='text-base font-semibold'>{_('from URL')}</h3>
-            <p className='text-sm text-base-content/70'>
-              {_('Download an EPUB from a website')}
-            </p>
-            <input
-              type='url'
-              placeholder='https://example.com/book.epub'
-              className='input input-bordered w-full'
-              value={importUrlValue}
-              onChange={(e) => setImportUrlValue(e.target.value)}
-              disabled={isImportingFromUrl}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isImportingFromUrl) {
-                  handleImportFromUrl();
-                }
-              }}
-            />
-            <button
-              className='btn btn-xs btn-primary mt-2'
-              onClick={handleImportFromUrl}
-              disabled={isImportingFromUrl || !importUrlValue.trim()}
-            >
-              {isImportingFromUrl ? (
-                <>
-                  <span className='loading loading-spinner'></span>
-                  {_('Downloading...')}
-                </>
-              ) : (
-                _('Download and Import')
-              )}
-            </button>
-          </div>
-
-
-          {/* Divider */}
-          <div className='divider my-2 text-base-content/40 text-sm italic before:bg-base-content/20 after:bg-base-content/20'>or</div>
-
-          {/* Download Page Parser Import */}
-          <div className='flex flex-col gap-1'>
-            <h3 className='text-base font-semibold'>{_('from StandardEbooks download page')}</h3>
-            <p className='text-sm text-base-content/70'>
-              {_('Extract EPUB from StandardEbooks.org download page')}
-            </p>
-            <input
-              type='url'
-              placeholder='https://standardebooks.org/ebooks/.../downloads/...'
-              className='input input-bordered w-full'
-              value={downloadPageUrl}
-              onChange={(e) => setDownloadPageUrl(e.target.value)}
-              disabled={isImportingFromDownloadPage}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isImportingFromDownloadPage) {
-                  handleImportFromDownloadPage();
-                }
-              }}
-            />
-            <button
-              className='btn btn-xs btn-primary mt-2'
-              onClick={handleImportFromDownloadPage}
-              disabled={isImportingFromDownloadPage || !downloadPageUrl.trim()}
-            >
-              {isImportingFromDownloadPage ? (
-                <>
-                  <span className='loading loading-spinner'></span>
-                  {_('Extracting...')}
-                </>
-              ) : (
-                _('Extract and Import')
-              )}
             </button>
           </div>
         </div>

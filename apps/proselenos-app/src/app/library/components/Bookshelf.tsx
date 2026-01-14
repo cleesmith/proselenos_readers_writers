@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MdDelete, MdOpenInNew, MdOutlineCancel, MdInfoOutline } from 'react-icons/md';
 import { LuFolderPlus } from 'react-icons/lu';
 import { PiPlus } from 'react-icons/pi';
@@ -64,16 +64,13 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [showGroupingModal, setShowGroupingModal] = useState(false);
   const [navBooksGroup, setNavBooksGroup] = useState<BooksGroup | null>(null);
-  const [importBookUrl] = useState(searchParams?.get('url') || '');
-
   // Use settings directly instead of URL params (works offline)
   const viewMode = settings.libraryViewMode;
   const sortBy = settings.librarySortBy;
   const sortOrder = settings.librarySortAscending ? 'asc' : 'desc';
   const coverFit = settings.libraryCoverFit;
-  const isImportingBook = useRef(false);
 
-  const { setCurrentBookshelf, setLibrary } = useLibraryStore();
+  const { setCurrentBookshelf } = useLibraryStore();
   const { setSelectedBooks, getSelectedBooks, toggleSelectedBook } = useLibraryStore();
 
   const bookFilter = useMemo(() => createBookFilter(searchQuery || null), [searchQuery]);
@@ -89,25 +86,6 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   }, [filteredBooks]);
 
   const autofocusRef = useAutoFocus<HTMLDivElement>();
-
-  useEffect(() => {
-    if (isImportingBook.current) return;
-    isImportingBook.current = true;
-
-    if (importBookUrl && appService) {
-      const importBook = async () => {
-        console.log('Importing book from URL:', importBookUrl);
-        const book = await appService.importBook(importBookUrl, libraryBooks);
-        if (book) {
-          setLibrary(libraryBooks);
-          appService.saveLibraryBooks(libraryBooks);
-          navigateToReader(router, [book.hash]);
-        }
-      };
-      importBook();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importBookUrl, appService]);
 
   useEffect(() => {
     if (navBooksGroup) {
