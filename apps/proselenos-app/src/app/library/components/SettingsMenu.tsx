@@ -130,9 +130,9 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
     const isDark = themeMode === 'dark' || (themeMode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const confirmed = await showConfirm(
-      'This will permanently delete ALL ebooks from your local library. This cannot be undone!',
+      'This will permanently delete ALL ebooks from your Library AND all Authors data (manuscripts, settings). This cannot be undone!',
       isDark,
-      'Reset Library?',
+      'Reset Library & Authors?',
       'Yes, Delete Everything',
       'Cancel'
     );
@@ -163,8 +163,9 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
         };
       });
 
-      // Delete the ebook storage database
+      // Delete the ebook storage database and Authors database
       await deleteDB('AppFileSystem');
+      await deleteDB('ProselenosLocal');
 
       // 3. Reload the page
       window.location.reload();
@@ -303,8 +304,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
       <hr aria-hidden='true' className='border-base-200 my-1' />
       <MenuItem label={_('Storage')} Icon={PiDatabase} onClick={showStorageInfo} />
       <MenuItem
-        label={_('Reset Library')}
-        description={_('clear local library')}
+        label={_('Reset Library & Authors')}
+        description={_('clear all local data')}
         Icon={PiTrash}
         buttonClass='bg-red-900/20 hover:!bg-red-900/30'
         onClick={handleResetLibrary}

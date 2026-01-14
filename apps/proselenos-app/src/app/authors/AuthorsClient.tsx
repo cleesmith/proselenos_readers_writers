@@ -33,9 +33,9 @@ export default function AuthorsClient() {
   // Theme state
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined' && localStorage) {
-      return localStorage.getItem('authorsDarkMode') === 'true';
+      return localStorage.getItem('authorsDarkMode') !== 'false';
     }
-    return false;
+    return true;
   });
 
   // About modal state
