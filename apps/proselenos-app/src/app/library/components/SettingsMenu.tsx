@@ -130,7 +130,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
     const isDark = themeMode === 'dark' || (themeMode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const confirmed = await showConfirm(
-      'This will permanently delete ALL ebooks from your Library AND all Authors data (manuscripts, settings). This cannot be undone!',
+      'This will permanently delete ALL ebooks from your Library AND clear your current ebook writing in Authors. This cannot be undone!',
       isDark,
       'Reset Library & Authors?',
       'Yes, Delete Everything',
