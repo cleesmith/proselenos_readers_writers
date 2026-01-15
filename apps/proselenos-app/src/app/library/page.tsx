@@ -606,13 +606,13 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         title={_('Import Ebook')}
-        boxClassName='sm:!h-auto sm:!w-auto sm:!max-w-sm'
+        boxClassName='sm:!h-auto sm:!w-auto sm:!min-w-80'
       >
-        <div className='flex flex-col gap-4 p-4'>
-          <div className='flex flex-col gap-1'>
-            <h3 className='text-base font-semibold'>{_('from .epub file')}</h3>
+        <div className='flex flex-col gap-4 p-6'>
+          <div className='flex flex-col gap-3'>
+            <h3 className='text-lg font-semibold'>{_('from .epub file')}</h3>
             <button
-              className='btn btn-xs btn-primary'
+              className='btn btn-sm btn-primary'
               onClick={handleImportFromLocalFile}
             >
               {_('Choose File')}
