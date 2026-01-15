@@ -98,7 +98,6 @@ export default function AuthorsClient() {
   useEffect(() => {
     router.prefetch('/library');
     router.prefetch('/reader');
-    router.prefetch('/library/xray');
   }, [router]);
 
   // Open file in editor (for AI Tools results or prompt editing)

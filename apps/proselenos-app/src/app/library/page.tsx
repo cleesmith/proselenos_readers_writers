@@ -145,7 +145,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   // Prefetch other routes for offline support
   useEffect(() => {
     router.prefetch('/reader');
-    router.prefetch('/library/xray');
     router.prefetch('/authors');
   }, [router]);
 

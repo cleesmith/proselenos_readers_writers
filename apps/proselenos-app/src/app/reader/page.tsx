@@ -18,7 +18,6 @@ export default function Page() {
   // Prefetch other routes for offline support
   useEffect(() => {
     router.prefetch('/library');
-    router.prefetch('/library/xray');
     router.prefetch('/authors');
   }, [router]);
 
