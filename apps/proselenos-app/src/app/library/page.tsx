@@ -610,10 +610,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       >
         <div className='flex flex-col gap-4 p-4'>
           <div className='flex flex-col gap-1'>
-            <h3 className='text-base font-semibold'>{_('from Local .epub file')}</h3>
-            <p className='text-sm text-base-content/70'>
-              {_('Select an EPUB file from your device')}
-            </p>
+            <h3 className='text-base font-semibold'>{_('from .epub file')}</h3>
             <button
               className='btn btn-xs btn-primary'
               onClick={handleImportFromLocalFile}
