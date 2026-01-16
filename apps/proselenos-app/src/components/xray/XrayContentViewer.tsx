@@ -16,6 +16,19 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
   error,
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'source' | 'preview'>('source');
+
+  // Check if file is HTML/XHTML (can be previewed)
+  const isHtmlFile = useMemo(() => {
+    if (!fileName) return false;
+    const lower = fileName.toLowerCase();
+    return lower.endsWith('.xhtml') || lower.endsWith('.html') || lower.endsWith('.htm');
+  }, [fileName]);
+
+  // Reset view mode to source when file changes
+  useEffect(() => {
+    setViewMode('source');
+  }, [fileName]);
 
   // Create object URL for images
   useEffect(() => {
@@ -113,35 +126,74 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
     const lineNumberWidth = String(textLines.length).length;
 
     return (
-      <div className="h-full overflow-auto">
+      <div className="h-full flex flex-col overflow-hidden">
         {/* File header */}
-        <div className="sticky top-0 bg-base-200 border-b border-base-300 px-4 py-2 text-sm flex justify-between items-center">
+        <div className="flex-shrink-0 bg-base-200 border-b border-base-300 px-4 py-2 text-sm flex justify-between items-center">
           <span className="font-mono text-base-content/70">{fileName}</span>
-          <span className="text-xs text-base-content/50">
-            {textLines.length} lines • {formatFileSize(content.size)}
-          </span>
+          <div className="flex items-center gap-3">
+            {/* Source/Preview toggle for HTML files */}
+            {isHtmlFile && (
+              <div className="flex rounded overflow-hidden border border-base-300">
+                <button
+                  onClick={() => setViewMode('source')}
+                  className={`px-2 py-0.5 text-xs transition-colors ${
+                    viewMode === 'source'
+                      ? 'bg-primary text-primary-content'
+                      : 'bg-base-100 hover:bg-base-300'
+                  }`}
+                >
+                  Source
+                </button>
+                <button
+                  onClick={() => setViewMode('preview')}
+                  className={`px-2 py-0.5 text-xs transition-colors ${
+                    viewMode === 'preview'
+                      ? 'bg-primary text-primary-content'
+                      : 'bg-base-100 hover:bg-base-300'
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+            )}
+            <span className="text-xs text-base-content/50">
+              {textLines.length} lines • {formatFileSize(content.size)}
+            </span>
+          </div>
         </div>
 
-        {/* Content with line numbers */}
-        <div className="font-mono text-sm">
-          <table className="w-full border-collapse">
-            <tbody>
-              {textLines.map((line, index) => (
-                <tr key={index} className="hover:bg-base-200/50">
-                  <td
-                    className="select-none text-right pr-4 pl-2 text-base-content/40 border-r border-base-300 align-top"
-                    style={{ width: `${lineNumberWidth + 2}ch` }}
-                  >
-                    {index + 1}
-                  </td>
-                  <td className="pl-4 pr-2 whitespace-pre-wrap break-all">
-                    {line || '\u00A0'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Preview mode - render HTML in iframe */}
+        {isHtmlFile && viewMode === 'preview' ? (
+          <div className="flex-1 overflow-hidden bg-white">
+            <iframe
+              srcDoc={typeof content.content === 'string' ? content.content : ''}
+              sandbox=""
+              className="w-full h-full border-0"
+              title={`Preview of ${fileName}`}
+            />
+          </div>
+        ) : (
+          /* Source mode - content with line numbers */
+          <div className="flex-1 overflow-auto font-mono text-sm">
+            <table className="w-full border-collapse">
+              <tbody>
+                {textLines.map((line, index) => (
+                  <tr key={index} className="hover:bg-base-200/50">
+                    <td
+                      className="select-none text-right pr-4 pl-2 text-base-content/40 border-r border-base-300 align-top"
+                      style={{ width: `${lineNumberWidth + 2}ch` }}
+                    >
+                      {index + 1}
+                    </td>
+                    <td className="pl-4 pr-2 whitespace-pre-wrap break-all">
+                      {line || '\u00A0'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     );
   }
