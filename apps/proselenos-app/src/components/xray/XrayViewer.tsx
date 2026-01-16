@@ -121,6 +121,8 @@ const XrayViewer: React.FC<XrayViewerProps> = ({ bookTitle, epubFile, onClose })
           <XrayContentViewer
             content={content}
             fileName={selectedFileName}
+            filePath={selectedPath}
+            zip={zip}
             isLoading={isLoadingContent}
             error={contentError}
           />

@@ -1,10 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { MdInsertDriveFile } from 'react-icons/md';
-import { ContentResult, formatFileSize } from '@/services/xrayService';
+import JSZip from 'jszip';
+import { ContentResult, formatFileSize, getFileContent } from '@/services/xrayService';
 
 interface XrayContentViewerProps {
   content: ContentResult | null;
   fileName: string | null;
+  filePath: string | null;
+  zip: JSZip | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -12,11 +15,57 @@ interface XrayContentViewerProps {
 const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
   content,
   fileName,
+  filePath,
+  zip,
   isLoading,
   error,
 }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'source' | 'preview'>('source');
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Resolve relative paths (handles ../ and ./)
+  const resolvePath = useCallback((baseDir: string, relativePath: string): string => {
+    const parts = (baseDir + relativePath).split('/');
+    const resolved: string[] = [];
+    for (const part of parts) {
+      if (part === '..') resolved.pop();
+      else if (part !== '.' && part !== '') resolved.push(part);
+    }
+    return resolved.join('/');
+  }, []);
+
+  // Inline CSS stylesheets into HTML
+  const inlineStylesheets = useCallback(async (html: string, zipFile: JSZip, basePath: string): Promise<string> => {
+    // Get directory of current file (e.g., "OEBPS/text/" from "OEBPS/text/chapter1.xhtml")
+    const baseDir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+
+    // Find all <link rel="stylesheet" href="..."> tags
+    const linkRegex = /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*\/?>/gi;
+
+    let result = html;
+    const matches: { fullMatch: string; href: string }[] = [];
+    let match;
+    while ((match = linkRegex.exec(html)) !== null) {
+      if (match[1]) {
+        matches.push({ fullMatch: match[0], href: match[1] });
+      }
+    }
+
+    for (const { fullMatch, href } of matches) {
+      const cssPath = resolvePath(baseDir, href);
+      try {
+        const cssContent = await getFileContent(zipFile, cssPath);
+        if (cssContent.type === 'text' && typeof cssContent.content === 'string') {
+          result = result.replace(fullMatch, `<style>${cssContent.content}</style>`);
+        }
+      } catch {
+        // CSS file not found, leave link as-is
+      }
+    }
+    return result;
+  }, [resolvePath]);
 
   // Check if file is HTML/XHTML (can be previewed)
   const isHtmlFile = useMemo(() => {
@@ -28,7 +77,22 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
   // Reset view mode to source when file changes
   useEffect(() => {
     setViewMode('source');
+    setPreviewHtml(null);
   }, [fileName]);
+
+  // Process HTML to inline CSS when switching to preview mode
+  useEffect(() => {
+    if (viewMode !== 'preview' || !isHtmlFile || !zip || !filePath) {
+      setPreviewHtml(null);
+      return;
+    }
+    if (content?.type !== 'text' || typeof content.content !== 'string') return;
+
+    setIsProcessing(true);
+    inlineStylesheets(content.content, zip, filePath)
+      .then(setPreviewHtml)
+      .finally(() => setIsProcessing(false));
+  }, [viewMode, content, zip, filePath, isHtmlFile, inlineStylesheets]);
 
   // Create object URL for images
   useEffect(() => {
@@ -162,15 +226,21 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
           </div>
         </div>
 
-        {/* Preview mode - render HTML in iframe */}
+        {/* Preview mode - render HTML in iframe with inlined CSS */}
         {isHtmlFile && viewMode === 'preview' ? (
           <div className="flex-1 overflow-hidden bg-white">
-            <iframe
-              srcDoc={typeof content.content === 'string' ? content.content : ''}
-              sandbox=""
-              className="w-full h-full border-0"
-              title={`Preview of ${fileName}`}
-            />
+            {isProcessing ? (
+              <div className="flex items-center justify-center h-full">
+                <span className="loading loading-spinner loading-sm"></span>
+              </div>
+            ) : (
+              <iframe
+                srcDoc={previewHtml || ''}
+                sandbox=""
+                className="w-full h-full border-0"
+                title={`Preview of ${fileName}`}
+              />
+            )}
           </div>
         ) : (
           /* Source mode - content with line numbers */
