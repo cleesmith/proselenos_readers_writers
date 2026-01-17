@@ -96,6 +96,7 @@ interface AuthorsLayoutProps {
   onExecuteTool: (currentText: string) => void;
   onReport: () => void;
   isLoadingPrompt: boolean;
+  onResetTools?: () => Promise<void>;
   // Working Copy refresh props (for Chapter Writer)
   refreshKey?: number;
   pendingSectionId?: string | null;
@@ -138,6 +139,7 @@ export default function AuthorsLayout({
   onExecuteTool,
   onReport,
   isLoadingPrompt,
+  onResetTools,
   // Working Copy refresh props
   refreshKey,
   pendingSectionId,
@@ -741,6 +743,8 @@ export default function AuthorsLayout({
           if (meta) {
             setBookMeta(meta);
           }
+          // Reset AI Editing state
+          await onResetTools?.();
         } catch (error) {
           console.error('Error parsing epub:', error);
           alert('Error parsing epub file. Please try a different file.');
@@ -801,6 +805,8 @@ export default function AuthorsLayout({
           if (meta) {
             setBookMeta(meta);
           }
+          // Reset AI Editing state
+          await onResetTools?.();
           showAlert(`Loaded "${parsed.title}" with ${parsed.sections.length} sections`, 'success', undefined, isDarkMode);
         } catch (error) {
           console.error('Error parsing docx:', error);
@@ -901,6 +907,8 @@ export default function AuthorsLayout({
     if (meta) {
       setBookMeta(meta);
     }
+    // Reset AI Editing state
+    await onResetTools?.();
   };
 
   // Helper to find the correct insertion index for a section type

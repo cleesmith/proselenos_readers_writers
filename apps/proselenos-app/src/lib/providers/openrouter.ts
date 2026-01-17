@@ -54,6 +54,7 @@ export class AiApiService {
   constructor(config: AIConfig = {}) {
     const apiKey = config.apiKey;
     const baseURL = "https://openrouter.ai/api/v1";
+    // const baseURL = "http://localhost:1234/v1";
     const headers = config.headers ?? {
         'HTTP-Referer': 'https://everythingebooks.org',
         'X-Title': 'EverythingEbooks'

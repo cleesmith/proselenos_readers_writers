@@ -61,6 +61,7 @@ interface ToolsManagerActions {
     currentEditorText?: string
   ) => Promise<void>;
   clearTool: () => void;
+  resetAllTools: () => Promise<void>;
 
   // Results
   setToolResult: (result: string) => void;
@@ -288,6 +289,30 @@ ${toolPrompt}
     setElapsedTime(0);
   }, [timerInterval]);
 
+  // Reset all tools state (for New/Load operations)
+  const resetAllTools = useCallback(async () => {
+    // Delete IndexedDB artifacts
+    await deleteManuscript();
+    await deleteReport();
+    await deleteChatFile('ai_request.txt');
+
+    // Reset all state including selection
+    setSelectedCategory('');
+    setSelectedTool('');
+    setToolsInCategory([]);
+    setToolResult('');
+    setManuscriptContent('');
+    setToolJustFinished(false);
+    setSavedReportFileName(null);
+    // Reset timer
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+    setStartTime(null);
+    setElapsedTime(0);
+  }, [timerInterval]);
+
   const state: ToolsManagerState = {
     selectedCategory,
     selectedTool,
@@ -314,11 +339,13 @@ ${toolPrompt}
     loadAvailableTools,
     executeAITool,
     clearTool,
+    resetAllTools,
     setToolResult
   }), [
     loadAvailableTools,
     executeAITool,
-    clearTool
+    clearTool,
+    resetAllTools
   ]);
 
   return [state, actions];

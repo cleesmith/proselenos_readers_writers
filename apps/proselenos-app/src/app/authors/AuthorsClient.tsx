@@ -276,6 +276,9 @@ export default function AuthorsClient() {
         }
       }
 
+      // Reset AI Editing state
+      await toolsActions.resetAllTools();
+
       // Trigger AuthorsLayout to reload from Working Copy
       setRefreshKey(prev => prev + 1);
 
@@ -436,6 +439,7 @@ export default function AuthorsClient() {
         onExecuteTool={handleExecuteTool}
         onReport={handleReport}
         isLoadingPrompt={isLoadingPrompt}
+        onResetTools={toolsActions.resetAllTools}
         // Working Copy refresh props
         refreshKey={refreshKey}
         pendingSectionId={pendingSectionId}
