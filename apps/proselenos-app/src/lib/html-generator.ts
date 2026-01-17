@@ -171,17 +171,17 @@ ${tocEntries.map(entry => `          <li><a href="#section-${entry.index}">${esc
     }
 
     .chapter-container {
-      max-width: 700px;
+      max-width: 900px;
       margin: 0 auto 30px auto;
       padding: 20px 25px;
-      border: 2px solid #707070;
+      border: 1px solid #d0d0d0;
       border-radius: 6px;
       background: #fff;
     }
 
     body.dark-mode .chapter-container {
       background: #1e1e1e;
-      border-color: #707070;
+      border-color: #333333;
     }
 
     .chapter-title {
