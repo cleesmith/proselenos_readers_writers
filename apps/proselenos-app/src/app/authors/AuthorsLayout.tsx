@@ -1400,6 +1400,7 @@ export default function AuthorsLayout({
       setShowUnsavedDialog(true);
     } else {
       onResetTools?.();
+      handleOneByOneClose();
       setSelectedSectionId(sectionId);
     }
   };
@@ -1466,6 +1467,7 @@ export default function AuthorsLayout({
     setShowUnsavedDialog(false);
     if (pendingSectionSwitch) {
       onResetTools?.();
+      handleOneByOneClose();
       setSelectedSectionId(pendingSectionSwitch);
       setPendingSectionSwitch(null);
     }
@@ -1479,6 +1481,7 @@ export default function AuthorsLayout({
     setShowUnsavedDialog(false);
     if (pendingSectionSwitch) {
       onResetTools?.();
+      handleOneByOneClose();
       setSelectedSectionId(pendingSectionSwitch);
       setPendingSectionSwitch(null);
     }
