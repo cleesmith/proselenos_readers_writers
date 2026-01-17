@@ -23,8 +23,6 @@ import {
   getWritingAssistantPrompt,
   saveWritingAssistantPrompt
 } from '@/services/manuscriptStorage';
-import { useReadAloud } from '@/hooks/useReadAloud';
-import { PiPlayFill, PiPauseFill, PiStopFill } from 'react-icons/pi';
 
 // Helper to strip Markdown formatting from a string
 function stripMarkdown(md: string, options: any = {}): string {
@@ -124,26 +122,6 @@ export default function EditorModal({
   const [showFileSelector, setShowFileSelector] = useState(false);
   const [availableFiles, setAvailableFiles] = useState<FileInfo[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-
-  // Read Aloud (TTS)
-  const {
-    play,
-    pause,
-    resume,
-    stop,
-    voices,
-    selectedVoice,
-    setSelectedVoice,
-    isSpeaking,
-    isPaused,
-  } = useReadAloud();
-
-  // Stop TTS when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      stop();
-    }
-  }, [isOpen, stop]);
 
   // Load file when modal opens
   useEffect(() => {
@@ -415,62 +393,6 @@ export default function EditorModal({
             >
               Clean
             </StyledSmallButton>
-          )}
-
-          {/* TTS Controls */}
-          <StyledSmallButton
-            onClick={() => isPaused ? resume() : play(editorContent)}
-            disabled={!editorContent || !editorContent.trim() || isLoading}
-            title={isPaused ? "Resume reading" : "Read aloud"}
-            theme={theme}
-          >
-            <PiPlayFill size={14} />
-          </StyledSmallButton>
-
-          <StyledSmallButton
-            onClick={pause}
-            disabled={!isSpeaking || isPaused}
-            title="Pause reading"
-            theme={theme}
-          >
-            <PiPauseFill size={14} />
-          </StyledSmallButton>
-
-          <StyledSmallButton
-            onClick={stop}
-            disabled={!isSpeaking && !isPaused}
-            title="Stop reading"
-            theme={theme}
-          >
-            <PiStopFill size={14} />
-          </StyledSmallButton>
-
-          {/* Voice dropdown - only show if multiple voices available */}
-          {voices.length > 1 && (
-            <select
-              value={selectedVoice?.name || ''}
-              onChange={(e) => {
-                const voice = voices.find((v) => v.name === e.target.value);
-                if (voice) setSelectedVoice(voice);
-              }}
-              title="Select voice"
-              style={{
-                padding: '4px 8px',
-                fontSize: '12px',
-                borderRadius: '4px',
-                border: `1px solid ${theme.border}`,
-                backgroundColor: isDarkMode ? '#343a40' : '#f8f9fa',
-                color: theme.text,
-                cursor: 'pointer',
-                maxWidth: '150px',
-              }}
-            >
-              {voices.map((voice) => (
-                <option key={voice.name} value={voice.name}>
-                  {voice.name.replace('Microsoft ', '').replace(' Online', '')}
-                </option>
-              ))}
-            </select>
           )}
 
           <StyledSmallButton
