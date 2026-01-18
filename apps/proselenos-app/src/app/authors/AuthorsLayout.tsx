@@ -1355,28 +1355,17 @@ export default function AuthorsLayout({
         imagesMap.set(img.filename, dataUrl);
       }
 
-      // Also load cover image (stored separately with different key pattern)
-      if (meta?.coverImageId) {
-        const coverBlob = await loadCoverImage();
-        if (coverBlob) {
-          const coverDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(coverBlob);
-          });
-          imagesMap.set(meta.coverImageId, coverDataUrl);
-        }
-      }
-
-      // 5. Generate HTML with embedded images
+      // 5. Generate HTML with embedded images (cover image excluded)
       const html = generateHtmlFromSections({
         title: workingCopy.title || 'Untitled',
         author: workingCopy.author || meta?.author || 'Unknown Author',
         year: new Date().getFullYear().toString(),
-        sections: workingCopy.sections.map(s => ({
-          title: s.title,
-          content: s.content,
-        })),
+        sections: workingCopy.sections
+          .filter(s => s.title.toLowerCase().trim() !== 'cover')
+          .map(s => ({
+            title: s.title,
+            content: s.content,
+          })),
         images: imagesMap,
       });
 
