@@ -258,8 +258,25 @@ ${toolPrompt}
         setIsUploadingReport(false);
       }
     } catch (error) {
-      setToolResult(`❌ Execution Error: ${error instanceof Error ? error.message : String(error)}`);
+      const rawMessage = error instanceof Error ? error.message : String(error);
       console.error('Tool execution error:', error);
+
+      // Make error messages user-friendly for authors
+      let userMessage: string;
+      if (rawMessage.includes('maximum context length') || rawMessage.includes('too many tokens')) {
+        userMessage = 'Your manuscript is too long for this AI model. Please try a different model.';
+      } else if (rawMessage.includes('API key') || rawMessage.includes('401') || rawMessage.includes('Unauthorized')) {
+        userMessage = 'API key issue. Please check your OpenRouter API key in Settings.';
+      } else if (rawMessage.includes('rate limit') || rawMessage.includes('429')) {
+        userMessage = 'Too many requests. Please wait a moment and try again.';
+      } else if (rawMessage.includes('timeout') || rawMessage.includes('ETIMEDOUT')) {
+        userMessage = 'The request timed out. Please try again.';
+      } else {
+        userMessage = 'Something went wrong with the AI service. Please try again.';
+      }
+
+      setToolResult(`❌ ${userMessage}`);
+      showAlert(userMessage, 'error', undefined, isDarkMode);
     } finally {
       // Always clean up timer and execution state
       setToolExecuting(false);
