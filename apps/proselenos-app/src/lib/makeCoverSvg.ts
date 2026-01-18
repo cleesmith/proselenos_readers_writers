@@ -42,9 +42,39 @@ async function fitFontSize(
   return size;
 }
 
+function wrapText(
+  text: string,
+  fontWeight: string,
+  fontSize: number,
+  maxWidth: number
+): string[] {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  ctx.font = `${fontWeight} ${fontSize}px "EBGaramondEmbed"`;
+
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (ctx.measureText(testLine).width <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+
+  return lines;
+}
+
 export async function makeCoverSvg({
   title,
+  subtitle,
   author,
+  publisher,
   bg = "#3366AA",
   fontColor = "#FFFFFF",
   logoUrl,
@@ -52,7 +82,9 @@ export async function makeCoverSvg({
   bgImageDataUrl,
 }: {
   title: string;
+  subtitle?: string;
   author: string;
+  publisher?: string;
   bg?: string;
   fontColor?: string;
   logoUrl?: string;
@@ -105,7 +137,7 @@ export async function makeCoverSvg({
     const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
     if (fitted < titleSize) titleSize = fitted;
   }
-  const authorSize = await fitFontSize(author, "400", MAX_TEXT_W, 80);
+  const authorSize = 80;
 
   // Calculate Y positions for title lines (closer to top)
   const lineHeight = Math.round(titleSize * 1.25);
@@ -117,6 +149,56 @@ export async function makeCoverSvg({
     return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
         font-family="EBGaramondEmbed" font-weight="700"
         font-size="${titleSize}" fill="${fontColor}">
+    ${esc(line)}
+  </text>`;
+  }).join("\n  ");
+
+  // Generate subtitle text (if provided) with wrapping
+  const titleBottomY = titleStartY + (titleLines.length - 1) * lineHeight;
+  const subtitleStartY = titleBottomY + 160;
+  const subtitleSize = 60;
+  const subtitleLineHeight = Math.round(subtitleSize * 1.3);
+  const subtitleLines = subtitle ? wrapText(subtitle, "400", subtitleSize, MAX_TEXT_W) : [];
+  const subtitleText = subtitleLines.map((line, i) => {
+    const y = subtitleStartY + i * subtitleLineHeight;
+    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
+        font-family="EBGaramondEmbed" font-weight="400" font-style="italic"
+        font-size="${subtitleSize}" fill="${fontColor}" opacity="0.8">
+    ${esc(line)}
+  </text>`;
+  }).join("\n  ");
+
+  // Calculate subtitle bottom for author positioning
+  const subtitleBottomY = subtitle
+    ? subtitleStartY + (subtitleLines.length - 1) * subtitleLineHeight
+    : titleBottomY;
+
+  // Generate author text with wrapping
+  const authorStartY = subtitleBottomY + 200;
+  const authorLineHeight = Math.round(authorSize * 1.3);
+  const authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+  const authorText = authorLines.map((line, i) => {
+    const y = authorStartY + i * authorLineHeight;
+    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
+        font-family="EBGaramondEmbed" font-weight="400"
+        font-size="${authorSize}" fill="${fontColor}" opacity="0.85" letter-spacing="2">
+    ${esc(line)}
+  </text>`;
+  }).join("\n  ");
+
+  // Calculate author bottom for publisher positioning
+  const authorBottomY = authorStartY + (authorLines.length - 1) * authorLineHeight;
+
+  // Generate publisher text (if provided) with wrapping
+  const publisherStartY = authorBottomY + 120;
+  const publisherSize = 50;
+  const publisherLineHeight = Math.round(publisherSize * 1.3);
+  const publisherLines = publisher ? wrapText(publisher, "400", publisherSize, MAX_TEXT_W) : [];
+  const publisherText = publisherLines.map((line, i) => {
+    const y = publisherStartY + i * publisherLineHeight;
+    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
+        font-family="EBGaramondEmbed" font-weight="400"
+        font-size="${publisherSize}" fill="${fontColor}" opacity="0.7">
     ${esc(line)}
   </text>`;
   }).join("\n  ");
@@ -162,15 +244,15 @@ export async function makeCoverSvg({
 
   ${titleTexts}
 
-  <text x="${WIDTH / 2}" y="1600" text-anchor="middle"
-        font-family="EBGaramondEmbed" font-weight="400"
-        font-size="${authorSize}" fill="${fontColor}" opacity="0.85" letter-spacing="2">
-    ${esc(author)}
-  </text>
+  ${subtitleText}
+
+  ${authorText}
+
+  ${publisherText}
 
   <!-- Branding: icon then text, right-justified -->
   ${logoElement}
-  
+
   <text x="${brandTextX}" y="${brandTextY}" text-anchor="end"
         font-family="EBGaramondEmbed" font-weight="400" font-style="italic"
         font-size="50" fill="${fontColor}" opacity="0.7">
@@ -223,11 +305,15 @@ export async function svgToPngBlob(
 // For authors to overlay onto their own cover artwork
 export async function makeTypographySvg({
   title,
+  subtitle,
   author,
+  publisher,
   fontColor = "#FFFFFF",
 }: {
   title: string;
+  subtitle?: string;
   author: string;
+  publisher?: string;
   fontColor?: string;
 }): Promise<string> {
   // Fetch fonts from /public/fonts/
@@ -260,7 +346,7 @@ export async function makeTypographySvg({
     const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
     if (fitted < titleSize) titleSize = fitted;
   }
-  const authorSize = await fitFontSize(author, "400", MAX_TEXT_W, 80);
+  const authorSize = 80;
 
   // Calculate Y positions for title lines (closer to top)
   const lineHeight = Math.round(titleSize * 1.25);
@@ -276,7 +362,57 @@ export async function makeTypographySvg({
   </text>`;
   }).join("\n  ");
 
-  // No background, no logo, no branding - just title and author
+  // Generate subtitle text (if provided) with wrapping
+  const titleBottomY = titleStartY + (titleLines.length - 1) * lineHeight;
+  const subtitleStartY = titleBottomY + 160;
+  const subtitleSize = 60;
+  const subtitleLineHeight = Math.round(subtitleSize * 1.3);
+  const subtitleLines = subtitle ? wrapText(subtitle, "400", subtitleSize, MAX_TEXT_W) : [];
+  const subtitleText = subtitleLines.map((line, i) => {
+    const y = subtitleStartY + i * subtitleLineHeight;
+    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
+        font-family="EBGaramondEmbed" font-weight="400" font-style="italic"
+        font-size="${subtitleSize}" fill="${fontColor}" opacity="0.8">
+    ${esc(line)}
+  </text>`;
+  }).join("\n  ");
+
+  // Calculate subtitle bottom for author positioning
+  const subtitleBottomY = subtitle
+    ? subtitleStartY + (subtitleLines.length - 1) * subtitleLineHeight
+    : titleBottomY;
+
+  // Generate author text with wrapping
+  const authorStartY = subtitleBottomY + 200;
+  const authorLineHeight = Math.round(authorSize * 1.3);
+  const authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+  const authorText = authorLines.map((line, i) => {
+    const y = authorStartY + i * authorLineHeight;
+    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
+        font-family="EBGaramondEmbed" font-weight="400"
+        font-size="${authorSize}" fill="${fontColor}" opacity="0.85" letter-spacing="2">
+    ${esc(line)}
+  </text>`;
+  }).join("\n  ");
+
+  // Calculate author bottom for publisher positioning
+  const authorBottomY = authorStartY + (authorLines.length - 1) * authorLineHeight;
+
+  // Generate publisher text (if provided) with wrapping
+  const publisherStartY = authorBottomY + 120;
+  const publisherSize = 50;
+  const publisherLineHeight = Math.round(publisherSize * 1.3);
+  const publisherLines = publisher ? wrapText(publisher, "400", publisherSize, MAX_TEXT_W) : [];
+  const publisherText = publisherLines.map((line, i) => {
+    const y = publisherStartY + i * publisherLineHeight;
+    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
+        font-family="EBGaramondEmbed" font-weight="400"
+        font-size="${publisherSize}" fill="${fontColor}" opacity="0.7">
+    ${esc(line)}
+  </text>`;
+  }).join("\n  ");
+
+  // No background, no logo, no branding - just title, subtitle, author, publisher
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <style>
@@ -296,18 +432,20 @@ export async function makeTypographySvg({
 
   ${titleTexts}
 
-  <text x="${WIDTH / 2}" y="1600" text-anchor="middle"
-        font-family="EBGaramondEmbed" font-weight="400"
-        font-size="${authorSize}" fill="${fontColor}" opacity="0.85" letter-spacing="2">
-    ${esc(author)}
-  </text>
+  ${subtitleText}
+
+  ${authorText}
+
+  ${publisherText}
 </svg>`;
 }
 
 // Convenience: get PNG as File (for EPUB packaging)
 export async function makeCoverPngFile({
   title,
+  subtitle,
   author,
+  publisher,
   bg = "#3366AA",
   fontColor = "#FFFFFF",
   logoUrl,
@@ -316,7 +454,9 @@ export async function makeCoverPngFile({
   filename = "cover.png",
 }: {
   title: string;
+  subtitle?: string;
   author: string;
+  publisher?: string;
   bg?: string;
   fontColor?: string;
   logoUrl?: string;
@@ -324,7 +464,7 @@ export async function makeCoverPngFile({
   bgImageDataUrl?: string;
   filename?: string;
 }): Promise<File> {
-  const svg = await makeCoverSvg({ title, author, bg, fontColor, logoUrl, logoSize, bgImageDataUrl });
+  const svg = await makeCoverSvg({ title, subtitle, author, publisher, bg, fontColor, logoUrl, logoSize, bgImageDataUrl });
   const pngBlob = await svgToPngBlob(svg);
   return new File([pngBlob], filename, { type: "image/png" });
 }

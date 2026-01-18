@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import { showAlert } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
@@ -21,6 +21,8 @@ interface CoverModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   title: string;
+  subtitle?: string;
+  publisher?: string;
   author: string;
   onClose: () => void;
   onCoverSaved: () => void;  // Callback to refresh cover display in sidebar
@@ -35,6 +37,8 @@ export default function CoverModal({
   isOpen,
   theme,
   title,
+  subtitle,
+  publisher,
   author,
   onClose,
   onCoverSaved,
@@ -47,6 +51,7 @@ export default function CoverModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved settings when modal opens
   useEffect(() => {
@@ -122,7 +127,9 @@ export default function CoverModal({
       // Generate full cover
       const coverSvg = await makeCoverSvg({
         title,
+        subtitle,
         author,
+        publisher,
         bg: settings.bgColor,
         fontColor: settings.fontColor,
         logoUrl: '/icon.png',
@@ -134,7 +141,9 @@ export default function CoverModal({
       // Generate typography overlay (transparent, no logo/branding)
       const typographySvg = await makeTypographySvg({
         title,
+        subtitle,
         author,
+        publisher,
         fontColor: settings.fontColor,
       });
       const typographyBlob = await svgToPngBlob(typographySvg);
@@ -242,74 +251,47 @@ export default function CoverModal({
         {/* Left Panel - Settings */}
         <div
           style={{
-            flex: '0 0 320px',
+            flex: '0 0 160px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
+            gap: '8px',
           }}
         >
-          {/* Title (read-only) */}
-          <div>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: theme.text,
-              }}
-            >
-              Title
-            </label>
-            <div
-              style={{
-                padding: '8px',
-                backgroundColor: theme.inputBg,
-                color: theme.textMuted,
-                border: `1px solid ${theme.border}`,
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
-            >
-              {title || '(No title set)'}
+          {/* Book metadata - plain text display */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div>
+              <span style={{ fontSize: '12px', color: theme.textMuted }}>Title: </span>
+              <span style={{ fontSize: '13px', color: theme.text }}>{title || '(No title set)'}</span>
             </div>
+            {subtitle && (
+              <div>
+                <span style={{ fontSize: '12px', color: theme.textMuted }}>Subtitle: </span>
+                <span style={{ fontSize: '13px', color: theme.text }}>{subtitle}</span>
+              </div>
+            )}
+            <div>
+              <span style={{ fontSize: '12px', color: theme.textMuted }}>Author: </span>
+              <span style={{ fontSize: '13px', color: theme.text }}>{author || '(No author set)'}</span>
+            </div>
+            {publisher && (
+              <div>
+                <span style={{ fontSize: '12px', color: theme.textMuted }}>Publisher: </span>
+                <span style={{ fontSize: '13px', color: theme.text }}>{publisher}</span>
+              </div>
+            )}
           </div>
 
-          {/* Author (read-only) */}
-          <div>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: theme.text,
-              }}
-            >
-              Author
-            </label>
-            <div
-              style={{
-                padding: '8px',
-                backgroundColor: theme.inputBg,
-                color: theme.textMuted,
-                border: `1px solid ${theme.border}`,
-                borderRadius: '4px',
-                fontSize: '14px',
-              }}
-            >
-              {author || '(No author set)'}
-            </div>
-          </div>
+          {/* Divider after metadata */}
+          <div style={{ borderBottom: `1px solid ${theme.border}`, margin: '8px 0' }} />
 
           {/* Color pickers */}
-          <div style={{ display: 'flex', gap: '20px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <div>
               <label
                 style={{
                   display: 'block',
-                  marginBottom: '4px',
-                  fontSize: '14px',
+                  marginBottom: '2px',
+                  fontSize: '12px',
                   fontWeight: '600',
                   color: theme.text,
                 }}
@@ -322,8 +304,8 @@ export default function CoverModal({
                 onChange={(e) => setSettings((prev) => ({ ...prev, bgColor: e.target.value }))}
                 disabled={loading || saving}
                 style={{
-                  width: 60,
-                  height: 40,
+                  width: 40,
+                  height: 30,
                   cursor: loading || saving ? 'not-allowed' : 'pointer',
                   border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
@@ -334,8 +316,8 @@ export default function CoverModal({
               <label
                 style={{
                   display: 'block',
-                  marginBottom: '4px',
-                  fontSize: '14px',
+                  marginBottom: '2px',
+                  fontSize: '12px',
                   fontWeight: '600',
                   color: theme.text,
                 }}
@@ -348,8 +330,8 @@ export default function CoverModal({
                 onChange={(e) => setSettings((prev) => ({ ...prev, fontColor: e.target.value }))}
                 disabled={loading || saving}
                 style={{
-                  width: 60,
-                  height: 40,
+                  width: 40,
+                  height: 30,
                   cursor: loading || saving ? 'not-allowed' : 'pointer',
                   border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
@@ -360,28 +342,41 @@ export default function CoverModal({
 
           {/* Background image upload */}
           <div>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '4px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: theme.text,
-              }}
-            >
-              Background Image (optional, under 2MB)
-            </label>
+            <div style={{ marginBottom: '4px' }}>
+              <div
+                style={{
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: theme.text,
+                }}
+              >
+                Background Image
+              </div>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: theme.textMuted,
+                }}
+              >
+                (optional, under 2MB)
+              </div>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/png,image/jpeg"
                 onChange={handleBgImageUpload}
                 disabled={loading || saving}
-                style={{
-                  fontSize: '13px',
-                  color: theme.text,
-                }}
+                style={{ display: 'none' }}
               />
+              <StyledSmallButton
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading || saving}
+                theme={theme}
+              >
+                Choose File
+              </StyledSmallButton>
               {settings.bgImageDataUrl && (
                 <StyledSmallButton
                   onClick={handleRemoveBgImage}
@@ -399,14 +394,17 @@ export default function CoverModal({
             )}
           </div>
 
+          {/* Divider before Generate button */}
+          <div style={{ borderBottom: `1px solid ${theme.border}`, margin: '8px 0' }} />
+
           {/* Generate button */}
-          <div style={{ marginTop: '8px' }}>
+          <div style={{ marginTop: '4px' }}>
             <button
               onClick={handleGenerate}
               disabled={loading || saving}
               style={{
-                padding: '12px 24px',
-                fontSize: 16,
+                padding: '8px 16px',
+                fontSize: 14,
                 fontWeight: 'bold',
                 color: '#fff',
                 backgroundColor: loading ? '#999' : '#2563eb',
@@ -414,10 +412,9 @@ export default function CoverModal({
                 borderRadius: 6,
                 cursor: loading || saving ? 'not-allowed' : 'pointer',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                width: '100%',
               }}
             >
-              {loading ? 'Generating...' : 'Generate Cover'}
+              {loading ? 'Generating...' : 'Generate'}
             </button>
           </div>
         </div>
@@ -597,7 +594,7 @@ export default function CoverModal({
                   padding: '40px',
                 }}
               >
-                Click &quot;Generate Cover&quot; to preview your cover
+                Click &quot;Generate&quot; to preview your cover
               </div>
             )}
           </div>
