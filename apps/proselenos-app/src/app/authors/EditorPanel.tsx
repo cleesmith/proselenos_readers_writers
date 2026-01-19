@@ -290,17 +290,35 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
     const end = start + passage.length;
 
-    // Focus and select the passage
+    // Create a hidden measurement div to calculate actual scroll position
+    // This handles wrapped lines accurately
+    const measureDiv = document.createElement('div');
+    measureDiv.style.cssText = `
+      position: absolute;
+      visibility: hidden;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: Georgia, serif;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 0.5rem;
+      width: ${textarea.clientWidth}px;
+      box-sizing: border-box;
+    `;
+    measureDiv.textContent = localContent.slice(0, start);
+    document.body.appendChild(measureDiv);
+    const scrollTarget = measureDiv.offsetHeight;
+    document.body.removeChild(measureDiv);
+
+    // Focus and select first, then scroll after a frame
     textarea.focus();
     textarea.setSelectionRange(start, end);
 
-    // Calculate scroll position based on character position
-    // Approximate: count newlines before the passage to estimate line number
-    const textBefore = localContent.slice(0, start);
-    const linesBefore = (textBefore.match(/\n/g) || []).length;
-    const lineHeight = 22.4; // 14px * 1.6 line-height
-    const targetScroll = Math.max(0, linesBefore * lineHeight - 100);
-    textarea.scrollTop = targetScroll;
+    // Scroll after selection is set
+    requestAnimationFrame(() => {
+      const viewportHeight = textarea.clientHeight;
+      textarea.scrollTop = Math.max(0, scrollTarget - viewportHeight / 3);
+    });
   }, [localContent]);
 
   // Update content programmatically (for One-by-one Accept)
@@ -675,8 +693,8 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         {/* Custom selection color for search highlighting */}
         <style>{`
           .editor-textarea::selection {
-            background-color: ${isDarkMode ? '#5a4a00' : '#fff59d'};
-            color: ${isDarkMode ? '#fff' : '#000'};
+            background-color: ${isDarkMode ? '#ffc107' : '#fff59d'};
+            color: ${isDarkMode ? '#000' : '#000'};
           }
         `}</style>
         <textarea
