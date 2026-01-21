@@ -21,6 +21,28 @@ const config: Config = {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
+        // Popups/Dropdowns
+        popover: 'oklch(var(--b1) / <alpha-value>)',
+        'popover-foreground': 'oklch(var(--bc) / <alpha-value>)',
+        // Muted elements
+        muted: 'oklch(var(--b2) / <alpha-value>)',
+        'muted-foreground': 'oklch(var(--bc) / 0.7)',
+        // Accent (selected)
+        accent: 'oklch(var(--a) / <alpha-value>)',
+        'accent-foreground': 'oklch(var(--ac) / <alpha-value>)',
+        // Primary
+        primary: 'oklch(var(--p) / <alpha-value>)',
+        'primary-foreground': 'oklch(var(--pc) / <alpha-value>)',
+        // Borders
+        border: 'oklch(var(--b3) / <alpha-value>)',
+        input: 'oklch(var(--b3) / <alpha-value>)',
+        ring: 'oklch(var(--p) / <alpha-value>)',
+        // Destructive
+        destructive: 'oklch(var(--er) / <alpha-value>)',
+        'destructive-foreground': 'oklch(var(--erc, var(--b1)) / <alpha-value>)',
+        // Cards
+        card: 'oklch(var(--b1) / <alpha-value>)',
+        'card-foreground': 'oklch(var(--bc) / <alpha-value>)',
       },
     },
   },

@@ -1,8 +1,15 @@
 // src/services/manuscriptStorage.ts
 // Client-side only - IndexedDB for Authors mode (ProselenosLocal database)
 // SEPARATE from E-Reader's Proselenosebooks database
+//
+// XHTML-Native Storage:
+// - Single source of truth: XHTML files
+// - meta.json contains section order + metadata
+// - section-XXX.xhtml contains raw XHTML body content
+// - Conversions happen only at editor boundaries
 
 import { ElementType } from '@/app/authors/elementTypes';
+import { plateToXhtml, xhtmlToPlainText } from '@/lib/plateXhtml';
 
 export interface ManuscriptSettings {
   title: string;
@@ -320,26 +327,51 @@ function isFrontBackMatter(title: string): boolean {
  * Assemble chapters from working copy into manuscript text.
  * Excludes front/back matter (Title Page, Copyright, etc.).
  * Format: 2 blank lines before EVERY chapter (including first), 1 blank line between paragraphs.
+ * NOW extracts plain text from XHTML.
  */
 export async function assembleManuscriptFromWorkingCopy(): Promise<string> {
-  const meta = await loadWorkingCopyMeta();
-  if (!meta) return '';
+  // Try new meta.json format first
+  const newMeta = await loadManuscriptMeta();
+  if (newMeta) {
+    const parts: string[] = [];
+
+    for (const sectionMeta of newMeta.sections) {
+      // Skip front/back matter
+      if (isFrontBackMatter(sectionMeta.title)) continue;
+
+      const xhtml = await loadSectionXhtml(sectionMeta.id);
+      if (!xhtml) continue;
+
+      // Convert XHTML to plain text
+      const plainText = xhtmlToPlainText(xhtml);
+
+      // Add chapter with 2 blank lines before it
+      parts.push(`\n\n${sectionMeta.title}\n\n${plainText}`);
+    }
+
+    return parts.join('');
+  }
+
+  // Fall back to old format
+  const oldMeta = await loadWorkingCopyMeta();
+  if (!oldMeta) return '';
 
   const parts: string[] = [];
 
-  for (const id of meta.sectionIds) {
+  for (const id of oldMeta.sectionIds) {
     const section = await loadSection(id);
     if (!section) continue;
 
     // Skip front/back matter
     if (isFrontBackMatter(section.title)) continue;
 
+    // XHTML is now the source of truth - convert to plain text
+    const plainText = xhtmlToPlainText(section.xhtml);
+
     // Add chapter with 2 blank lines before it
-    // Format: \n\n + Title + \n\n + Content
-    parts.push(`\n\n${section.title}\n\n${section.content}`);
+    parts.push(`\n\n${section.title}\n\n${plainText}`);
   }
 
-  // Join all parts and ensure it starts with the 2 blank lines
   return parts.join('');
 }
 
@@ -771,10 +803,44 @@ export interface WorkingCopyMeta {
   libraryBookHash?: string;  // Hash of book in e-reader library (for updates)
 }
 
+// NEW: XHTML-Native section - single source of truth
 export interface WorkingCopySection {
   id: string;
   title: string;
-  content: string;
+  xhtml: string;        // XHTML body content (single source of truth)
+  type: ElementType;
+}
+
+// For backward compatibility during migration - OLD format
+interface LegacyWorkingCopySection {
+  id: string;
+  title: string;
+  content: string;           // Plain text (deprecated)
+  plateValue?: any[];        // PlateJS Slate Value (deprecated)
+  type: ElementType;
+}
+
+// NEW: ManuscriptMeta structure for meta.json
+export interface ManuscriptMeta {
+  title: string;
+  author: string;
+  language: string;
+  subtitle?: string;
+  publisher?: string;
+  rights?: string;
+  description?: string;
+  publicationDate?: string;
+  isbn?: string;
+  coverImageId: string | null;
+  imageIds?: string[];
+  sections: SectionMeta[];
+  libraryBookHash?: string;  // Hash of book in e-reader library (for updates)
+}
+
+// NEW: SectionMeta - metadata only, content is in separate .xhtml file
+export interface SectionMeta {
+  id: string;
+  title: string;
   type: ElementType;
 }
 
@@ -806,29 +872,165 @@ function inferSectionType(title: string): ElementType {
   return 'chapter';
 }
 
-// Section functions
-export async function loadSection(id: string): Promise<WorkingCopySection | null> {
-  const section = await getValue<WorkingCopySection>(STORES.MANUSCRIPT, `${id}.json`);
-  // Apply type inference if type is missing or generic
-  if (section && (!section.type || section.type === 'section')) {
-    section.type = inferSectionType(section.title);
-  }
-  return section;
+// ============================================
+// NEW: XHTML-Native Storage Functions
+// ============================================
+
+/**
+ * Save ManuscriptMeta (section order + book metadata)
+ */
+export async function saveManuscriptMeta(meta: ManuscriptMeta): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, 'meta.json', meta);
 }
 
+/**
+ * Load ManuscriptMeta
+ */
+export async function loadManuscriptMeta(): Promise<ManuscriptMeta | null> {
+  return getValue<ManuscriptMeta>(STORES.MANUSCRIPT, 'meta.json');
+}
+
+/**
+ * Save section XHTML content
+ */
+export async function saveSectionXhtml(id: string, xhtml: string): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, `${id}.xhtml`, xhtml);
+}
+
+/**
+ * Load section XHTML content
+ */
+export async function loadSectionXhtml(id: string): Promise<string | null> {
+  return getValue<string>(STORES.MANUSCRIPT, `${id}.xhtml`);
+}
+
+/**
+ * Delete section XHTML content
+ */
+export async function deleteSectionXhtml(id: string): Promise<void> {
+  await deleteValue(STORES.MANUSCRIPT, `${id}.xhtml`);
+}
+
+/**
+ * Get plain text from XHTML (for word count, search, AI tools)
+ */
+export function getPlainTextFromXhtml(xhtml: string): string {
+  return xhtmlToPlainText(xhtml);
+}
+
+// ============================================
+// Legacy Section Functions (for backward compatibility)
+// Will be migrated to XHTML-native on first access
+// ============================================
+
+// Section functions - now load from XHTML with migration
+export async function loadSection(id: string): Promise<WorkingCopySection | null> {
+  // Try new XHTML format first
+  const xhtml = await loadSectionXhtml(id);
+  if (xhtml !== null) {
+    // Load metadata from meta.json
+    const meta = await loadManuscriptMeta();
+    const sectionMeta = meta?.sections.find(s => s.id === id);
+    if (sectionMeta) {
+      return {
+        id,
+        title: sectionMeta.title,
+        xhtml,
+        type: sectionMeta.type || inferSectionType(sectionMeta.title),
+      };
+    }
+  }
+
+  // Fall back to old JSON format (migration path)
+  const legacySection = await getValue<LegacyWorkingCopySection>(STORES.MANUSCRIPT, `${id}.json`);
+  if (legacySection) {
+    // Convert to new format
+    let xhtmlContent: string;
+    if (legacySection.plateValue && Array.isArray(legacySection.plateValue) && legacySection.plateValue.length > 0) {
+      xhtmlContent = plateToXhtml(legacySection.plateValue);
+    } else if (legacySection.content) {
+      // Convert plain text to XHTML paragraphs
+      xhtmlContent = legacySection.content
+        .split(/\n\s*\n/)
+        .filter(p => p.trim())
+        .map(p => `<p>${escapeHtmlForStorage(p.replace(/\n/g, ' ').trim())}</p>`)
+        .join('\n');
+    } else {
+      xhtmlContent = '<p></p>';
+    }
+
+    const section: WorkingCopySection = {
+      id,
+      title: legacySection.title,
+      xhtml: xhtmlContent,
+      type: legacySection.type || inferSectionType(legacySection.title),
+    };
+
+    return section;
+  }
+
+  return null;
+}
+
+// Helper to escape HTML for storage
+function escapeHtmlForStorage(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// Save section - saves to XHTML format and updates meta
 export async function saveSection(section: WorkingCopySection): Promise<void> {
-  await setValue(STORES.MANUSCRIPT, `${section.id}.json`, section);
+  // Save XHTML content
+  await saveSectionXhtml(section.id, section.xhtml);
+
+  // Update meta with section info
+  let meta = await loadManuscriptMeta();
+  if (meta) {
+    const existingIdx = meta.sections.findIndex(s => s.id === section.id);
+    const sectionMeta: SectionMeta = {
+      id: section.id,
+      title: section.title,
+      type: section.type,
+    };
+
+    if (existingIdx >= 0) {
+      meta.sections[existingIdx] = sectionMeta;
+    } else {
+      meta.sections.push(sectionMeta);
+    }
+    await saveManuscriptMeta(meta);
+  }
 }
 
 export async function deleteSection(id: string): Promise<void> {
+  // Delete XHTML file
+  await deleteSectionXhtml(id);
+
+  // Also delete legacy JSON if exists
   await deleteValue(STORES.MANUSCRIPT, `${id}.json`);
+
+  // Update meta
+  const meta = await loadManuscriptMeta();
+  if (meta) {
+    meta.sections = meta.sections.filter(s => s.id !== id);
+    await saveManuscriptMeta(meta);
+  }
 }
 
 // Cover image functions
 export async function loadCoverImage(): Promise<Blob | null> {
-  const meta = await loadWorkingCopyMeta();
-  if (!meta?.coverImageId) return null;
-  return getValue<Blob>(STORES.MANUSCRIPT, meta.coverImageId);
+  // Try new meta.json first
+  const newMeta = await loadManuscriptMeta();
+  if (newMeta?.coverImageId) {
+    return getValue<Blob>(STORES.MANUSCRIPT, newMeta.coverImageId);
+  }
+
+  // Fall back to old format
+  const oldMeta = await loadWorkingCopyMeta();
+  if (!oldMeta?.coverImageId) return null;
+  return getValue<Blob>(STORES.MANUSCRIPT, oldMeta.coverImageId);
 }
 
 export async function saveCoverImage(blob: Blob, filename: string): Promise<void> {
@@ -836,9 +1038,17 @@ export async function saveCoverImage(blob: Blob, filename: string): Promise<void
 }
 
 export async function deleteCoverImage(): Promise<void> {
-  const meta = await loadWorkingCopyMeta();
-  if (meta?.coverImageId) {
-    await deleteValue(STORES.MANUSCRIPT, meta.coverImageId);
+  // Try new meta.json first
+  const newMeta = await loadManuscriptMeta();
+  if (newMeta?.coverImageId) {
+    await deleteValue(STORES.MANUSCRIPT, newMeta.coverImageId);
+    return;
+  }
+
+  // Fall back to old format
+  const oldMeta = await loadWorkingCopyMeta();
+  if (oldMeta?.coverImageId) {
+    await deleteValue(STORES.MANUSCRIPT, oldMeta.coverImageId);
   }
 }
 
@@ -930,21 +1140,55 @@ export async function clearManuscriptImages(): Promise<void> {
 }
 
 // Full working copy functions (for convenience)
+// NOW uses XHTML as single source of truth
 export interface FullWorkingCopy {
   title: string;
   author: string;
   language: string;
   coverImage: Blob | null;
-  sections: WorkingCopySection[];
+  sections: WorkingCopySection[];  // XHTML is the single source of truth
 }
 
 export async function loadFullWorkingCopy(): Promise<FullWorkingCopy | null> {
-  const meta = await loadWorkingCopyMeta();
-  if (!meta) return null;
+  // Try new meta.json format first
+  const newMeta = await loadManuscriptMeta();
+  if (newMeta) {
+    // Load all sections in order
+    const sections: WorkingCopySection[] = [];
+    for (const sectionMeta of newMeta.sections) {
+      const xhtml = await loadSectionXhtml(sectionMeta.id);
+      if (xhtml !== null) {
+        sections.push({
+          id: sectionMeta.id,
+          title: sectionMeta.title,
+          xhtml,
+          type: sectionMeta.type || inferSectionType(sectionMeta.title),
+        });
+      }
+    }
 
-  // Load all sections in order
+    // Load cover image
+    let coverImage: Blob | null = null;
+    if (newMeta.coverImageId) {
+      coverImage = await getValue<Blob>(STORES.MANUSCRIPT, newMeta.coverImageId);
+    }
+
+    return {
+      title: newMeta.title,
+      author: newMeta.author,
+      language: newMeta.language,
+      coverImage,
+      sections,
+    };
+  }
+
+  // Fall back to old working_copy_meta.json format (migration path)
+  const oldMeta = await loadWorkingCopyMeta();
+  if (!oldMeta) return null;
+
+  // Load all sections in order (will auto-migrate via loadSection)
   const sections: WorkingCopySection[] = [];
-  for (const id of meta.sectionIds) {
+  for (const id of oldMeta.sectionIds) {
     const section = await loadSection(id);
     if (section) {
       sections.push(section);
@@ -953,14 +1197,14 @@ export async function loadFullWorkingCopy(): Promise<FullWorkingCopy | null> {
 
   // Load cover image
   let coverImage: Blob | null = null;
-  if (meta.coverImageId) {
-    coverImage = await getValue<Blob>(STORES.MANUSCRIPT, meta.coverImageId);
+  if (oldMeta.coverImageId) {
+    coverImage = await getValue<Blob>(STORES.MANUSCRIPT, oldMeta.coverImageId);
   }
 
   return {
-    title: meta.title,
-    author: meta.author,
-    language: meta.language,
+    title: oldMeta.title,
+    author: oldMeta.author,
+    language: oldMeta.language,
     coverImage,
     sections,
   };
@@ -969,74 +1213,137 @@ export async function loadFullWorkingCopy(): Promise<FullWorkingCopy | null> {
 /**
  * Save full working copy with normalization.
  * Normalizes section IDs to section-001, section-002, etc.
+ * NOW saves as XHTML files (single source of truth)
+ *
+ * Accepts both old format (content/plateValue) and new format (xhtml) for compatibility
  */
 export async function saveFullWorkingCopy(epub: {
   title: string;
   author: string;
   language: string;
   coverImage: Blob | null;
-  sections: { id: string; title: string; content: string; type?: ElementType }[];
+  sections: Array<{
+    id: string;
+    title: string;
+    // NEW: XHTML format
+    xhtml?: string;
+    // OLD: content/plateValue format (for backward compatibility during import)
+    content?: string;
+    plateValue?: any[];
+    type?: ElementType;
+  }>;
 }): Promise<void> {
-  // Normalize section IDs
-  const normalizedSections: WorkingCopySection[] = [];
-  const sectionIds: string[] = [];
+  // Normalize section IDs and convert to XHTML
+  const sectionMetas: SectionMeta[] = [];
 
-  epub.sections.forEach((section, i) => {
+  for (let i = 0; i < epub.sections.length; i++) {
+    const section = epub.sections[i];
+    if (!section) continue;
+
     const normalizedId = `section-${String(i + 1).padStart(3, '0')}`;
-    sectionIds.push(normalizedId);
-    normalizedSections.push({
+    const sectionType = section.type || 'section';
+
+    // Determine XHTML content
+    let xhtmlContent: string;
+    if (section.xhtml) {
+      // Already have XHTML (new format)
+      xhtmlContent = section.xhtml;
+    } else if (section.plateValue && Array.isArray(section.plateValue) && section.plateValue.length > 0) {
+      // Convert from PlateJS JSON
+      xhtmlContent = plateToXhtml(section.plateValue);
+    } else if (section.content) {
+      // Convert plain text to XHTML paragraphs
+      xhtmlContent = section.content
+        .split(/\n\s*\n/)
+        .filter(p => p.trim())
+        .map(p => `<p>${escapeHtmlForStorage(p.replace(/\n/g, ' ').trim())}</p>`)
+        .join('\n');
+      if (!xhtmlContent) xhtmlContent = '<p></p>';
+    } else {
+      xhtmlContent = '<p></p>';
+    }
+
+    // Save XHTML file
+    await saveSectionXhtml(normalizedId, xhtmlContent);
+
+    // Build section meta
+    sectionMetas.push({
       id: normalizedId,
       title: section.title,
-      content: section.content,
-      type: section.type || 'section', // Default to 'section' for backward compatibility
+      type: sectionType as ElementType,
     });
-  });
+  }
 
   // Save cover image if present
   let coverImageId: string | null = null;
   if (epub.coverImage) {
-    // Determine filename based on blob type
     const ext = epub.coverImage.type === 'image/png' ? 'png' : 'jpg';
     coverImageId = `cover.${ext}`;
     await saveCoverImage(epub.coverImage, coverImageId);
   }
 
-  // Save meta
-  const meta: WorkingCopyMeta = {
+  // Save new ManuscriptMeta
+  const meta: ManuscriptMeta = {
     title: epub.title,
     author: epub.author,
     language: epub.language,
-    sectionIds,
+    coverImageId,
+    sections: sectionMetas,
+  };
+  await saveManuscriptMeta(meta);
+
+  // Also save old format meta for backward compatibility
+  const oldMeta: WorkingCopyMeta = {
+    title: epub.title,
+    author: epub.author,
+    language: epub.language,
+    sectionIds: sectionMetas.map(s => s.id),
     coverImageId,
   };
-  await saveWorkingCopyMeta(meta);
-
-  // Save all sections
-  for (const section of normalizedSections) {
-    await saveSection(section);
-  }
+  await saveWorkingCopyMeta(oldMeta);
 }
 
 /**
  * Clear all working copy data from IndexedDB
  */
 export async function clearWorkingCopy(): Promise<void> {
-  const meta = await loadWorkingCopyMeta();
-  if (!meta) return;
+  // Try new meta.json format first
+  const newMeta = await loadManuscriptMeta();
+  if (newMeta) {
+    // Delete all sections (XHTML files)
+    for (const section of newMeta.sections) {
+      await deleteSectionXhtml(section.id);
+      // Also delete legacy JSON if exists
+      await deleteValue(STORES.MANUSCRIPT, `${section.id}.json`);
+    }
 
-  // Delete all sections
-  for (const id of meta.sectionIds) {
-    await deleteSection(id);
+    // Delete cover image
+    if (newMeta.coverImageId) {
+      await deleteValue(STORES.MANUSCRIPT, newMeta.coverImageId);
+    }
+
+    // Delete meta.json
+    await deleteValue(STORES.MANUSCRIPT, 'meta.json');
   }
 
-  // Delete cover image
-  if (meta.coverImageId) {
-    await deleteValue(STORES.MANUSCRIPT, meta.coverImageId);
+  // Also try old format for backward compatibility
+  const oldMeta = await loadWorkingCopyMeta();
+  if (oldMeta) {
+    // Delete all sections
+    for (const id of oldMeta.sectionIds) {
+      await deleteSectionXhtml(id);
+      await deleteValue(STORES.MANUSCRIPT, `${id}.json`);
+    }
+
+    // Delete cover image (if not already deleted)
+    if (oldMeta.coverImageId) {
+      await deleteValue(STORES.MANUSCRIPT, oldMeta.coverImageId);
+    }
+
+    // Delete old meta
+    await deleteValue(STORES.MANUSCRIPT, 'working_copy_meta.json');
   }
 
   // Delete all inline images
   await clearManuscriptImages();
-
-  // Delete meta
-  await deleteValue(STORES.MANUSCRIPT, 'working_copy_meta.json');
 }

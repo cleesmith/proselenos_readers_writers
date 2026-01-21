@@ -1,15 +1,18 @@
 // services/epubService.ts
 // Client-side epub parsing service
+//
+// XHTML-Native: Returns raw XHTML from EPUB, no conversion during import.
+// PlateJS conversion happens only when editor loads a section.
 
 import JSZip from 'jszip';
-import { extractMarkdownFromHtml } from './htmlExtractor';
 import { ElementType } from '@/app/authors/elementTypes';
 
+// XHTML-Native: Section now stores raw XHTML as single source of truth
 export interface ParsedSection {
   id: string;
   title: string;
   href: string;
-  content: string;
+  xhtml: string;             // Raw XHTML from EPUB (single source of truth)
   type?: ElementType;
 }
 
@@ -113,7 +116,8 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
   // Look for TOC.xhtml, nav.xhtml, or toc.ncx
   const tocTitles = await parseToc(zip, baseDir, manifest);
 
-  // Step 5: For each spine item, read the HTML and extract text
+  // Step 5: For each spine item, read the HTML and extract XHTML body
+  // XHTML-Native: Keep raw XHTML, no conversion during import
   const sections: ParsedSection[] = [];
 
   for (const spineItem of spine) {
@@ -127,8 +131,8 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     const html = await zip.file(fullPath)?.async('string');
     if (!html) continue;
 
-    // Extract text with markdown formatting preserved
-    const content = extractMarkdownFromHtml(html);
+    // XHTML-Native: Extract body content, keep as raw XHTML
+    const xhtml = extractXhtmlBody(html);
 
     // Get title from TOC, or fall back to HTML <title> or generate one
     let sectionTitle = tocTitles.get(href) || '';
@@ -147,7 +151,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
       id: spineItem.idref,
       title: sectionTitle,
       href: href,
-      content: content,
+      xhtml: xhtml,  // Raw XHTML (single source of truth)
       type: sectionType,
     });
   }
@@ -171,11 +175,12 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
   );
 
   // Create Cover section (use existing or create new)
+  // XHTML-Native: Use xhtml field
   const coverSection: ParsedSection = existingCover || {
     id: 'cover',
     title: 'Cover',
     href: 'cover.xhtml',
-    content: 'Use Format > Image to add your cover image',
+    xhtml: '<p>Use Format &gt; Image to add your cover image</p>',
     type: 'cover',
   };
   if (!coverSection.type) coverSection.type = 'cover';
@@ -185,7 +190,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     id: 'title-page',
     title: 'Title Page',
     href: 'title-page.xhtml',
-    content: `${title || 'Untitled'}\n\nby ${author || 'Anonymous'}`,
+    xhtml: `<h1>${escapeHtmlForParsedSection(title || 'Untitled')}</h1>\n<p>by ${escapeHtmlForParsedSection(author || 'Anonymous')}</p>`,
     type: 'title-page',
   };
   if (!titlePageSection.type) titlePageSection.type = 'title-page';
@@ -195,7 +200,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     id: 'copyright',
     title: 'Copyright',
     href: 'copyright.xhtml',
-    content: `Copyright © ${year} by ${author || 'Anonymous'}\n\nAll rights reserved.\n\nNo part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.`,
+    xhtml: `<p>Copyright © ${year} by ${escapeHtmlForParsedSection(author || 'Anonymous')}</p>\n<p>All rights reserved.</p>\n<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>`,
     type: 'copyright',
   };
   if (!copyrightSection.type) copyrightSection.type = 'copyright';
@@ -406,4 +411,37 @@ function extractHtmlTitle(html: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   return doc.querySelector('title')?.textContent?.trim() || '';
+}
+
+/**
+ * Extract the body content from an XHTML document.
+ * Returns the inner HTML of the body element, or empty paragraph if not found.
+ */
+function extractXhtmlBody(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const body = doc.body;
+
+  if (!body) {
+    return '<p></p>';
+  }
+
+  // Get the inner HTML of the body
+  // This preserves all the formatting tags like <p>, <em>, <strong>, etc.
+  const innerHTML = body.innerHTML;
+
+  // Clean up: remove excessive whitespace between tags while preserving content
+  return innerHTML
+    .replace(/>\s+</g, '>\n<')  // Normalize whitespace between tags
+    .trim();
+}
+
+/**
+ * Escape HTML for use in ParsedSection XHTML
+ */
+function escapeHtmlForParsedSection(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }

@@ -17,6 +17,7 @@ import {
   saveSection,
   loadSection
 } from '@/services/manuscriptStorage';
+import { xhtmlToPlainText } from '@/lib/plateXhtml';
 
 // Output filenames for each workflow step
 const OUTPUT_FILES: Record<WorkflowStepId, string> = {
@@ -288,13 +289,15 @@ export function useWritingAssistant(
         const worldContent = await loadWorkflowFile('world.txt');
 
         // Build manuscript content from Working Copy chapters
+        // XHTML-Native: Convert xhtml to plain text for AI
         const meta = await loadWorkingCopyMeta();
         let manuscriptContent = '';
         if (meta) {
           for (const id of meta.sectionIds) {
             const section = await loadSection(id);
             if (section && section.type === 'chapter') {
-              manuscriptContent += `\n\n${section.title}\n\n${section.content}`;
+              const plainText = xhtmlToPlainText(section.xhtml);
+              manuscriptContent += `\n\n${section.title}\n\n${plainText}`;
             }
           }
         }
@@ -361,11 +364,17 @@ export function useWritingAssistant(
         const nextNum = Math.max(0, ...numbers) + 1;
         newChapterId = `section-${String(nextNum).padStart(3, '0')}`;
 
+        // Convert AI result (plain text) to XHTML
+        const xhtml = result.split('\n\n')
+          .map((p: string) => `<p>${escapeHtml(p.trim())}</p>`)
+          .filter((p: string) => p !== '<p></p>')
+          .join('\n') || '<p></p>';
+
         // Save new chapter section
         await saveSection({
           id: newChapterId,
           title: chapterTitle,
-          content: result,
+          xhtml: xhtml,
           type: 'chapter',
         });
 
@@ -440,13 +449,15 @@ export function useWritingAssistant(
 
       if (stepId === 'chapters') {
         // Build manuscript view from Working Copy chapters
+        // XHTML-Native: Convert xhtml to plain text for display
         const meta = await loadWorkingCopyMeta();
         if (meta) {
           let manuscriptContent = '';
           for (const id of meta.sectionIds) {
             const section = await loadSection(id);
             if (section?.type === 'chapter') {
-              manuscriptContent += `\n\n${section.title}\n\n${section.content}`;
+              const plainText = xhtmlToPlainText(section.xhtml);
+              manuscriptContent += `\n\n${section.title}\n\n${plainText}`;
             }
           }
           content = manuscriptContent.trim();
@@ -581,4 +592,12 @@ function findNextChapter(outline: string | undefined, manuscript: string | undef
   // If no chapters found in outline, default to next sequential
   const maxManuscript = manuscriptChapters.length > 0 ? Math.max(...manuscriptChapters) : 0;
   return `Chapter ${maxManuscript + 1}`;
+}
+
+// Helper: Escape HTML special characters
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }

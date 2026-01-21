@@ -13,7 +13,7 @@
   "files": [],
   "references": [
     {
-      "path": "./apps/proselenosebooks-app"
+      "path": "./apps/proselenos-app"
     },
   ]
 }

@@ -1,17 +1,23 @@
 // src/lib/epub-generator.ts
 // Client-side EPUB generation - extracted from publish-actions.ts
 // Only 2 changes: nodebuffer → uint8array, Buffer → Uint8Array via atob
+//
+// XHTML-Native: Sections now contain XHTML directly as single source of truth.
+// No PlateJS conversion needed - XHTML is ready to embed in EPUB.
 
 import JSZip from 'jszip';
 import { ManuscriptSettings, WorkingCopyMeta, WorkingCopySection } from '@/services/manuscriptStorage';
+import { xhtmlToPlainText } from './plateXhtml';
 
 // TypeScript Interfaces
+// XHTML-Native: Chapter now stores xhtml directly
 export interface Chapter {
   id: string;
   number: number;
   title: string;
-  content: string[];
-  paragraphs: string[];
+  content: string[];     // Plain text paragraphs (for fallback/legacy)
+  paragraphs: string[];  // Same as content (legacy)
+  xhtml?: string;        // XHTML content (single source of truth)
 }
 
 /**
@@ -61,6 +67,8 @@ export interface ManuscriptImage {
 /**
  * Generate EPUB from structured working copy data (for Authors Mode "Save" button)
  * Unlike generateEpubFromManuscript which parses raw text, this takes structured sections directly.
+ *
+ * XHTML-Native: Sections now contain XHTML directly - no conversion needed.
  */
 export async function generateEpubFromWorkingCopy(
   meta: WorkingCopyMeta,
@@ -72,24 +80,34 @@ export async function generateEpubFromWorkingCopy(
   const copyrightSection = sections.find(s =>
     s.id === 'copyright' || s.title.toLowerCase() === 'copyright'
   );
-  const copyrightContent = copyrightSection?.content || '';
+  // XHTML-Native: Extract plain text from XHTML for copyright content
+  const copyrightContent = copyrightSection?.xhtml
+    ? xhtmlToPlainText(copyrightSection.xhtml)
+    : '';
 
   // Find Cover section to extract cover image (if user added one via Format > Image)
   const coverSection = sections.find(s =>
     s.id === 'cover' || s.title.toLowerCase() === 'cover'
   );
 
-  // Extract inline image from Cover section content (e.g., "![alt](filename.png)")
+  // Extract inline image from Cover section XHTML (e.g., <img src="images/filename.png">)
   let coverImageFromSection: string | null = null;
-  if (coverSection) {
-    const imageMatch = coverSection.content.match(/!\[[^\]]*\]\(([^)]+)\)/);
+  if (coverSection?.xhtml) {
+    // Look for image in XHTML
+    const imageMatch = coverSection.xhtml.match(/src="images\/([^"]+)"/);
     if (imageMatch && imageMatch[1]) {
       coverImageFromSection = imageMatch[1]; // e.g., "ny2026.png"
+    }
+    // Also check for markdown format (legacy)
+    const mdMatch = coverSection.xhtml.match(/!\[[^\]]*\]\(([^)]+)\)/);
+    if (mdMatch && mdMatch[1]) {
+      coverImageFromSection = mdMatch[1];
     }
   }
 
   // Convert sections to Chapter format, skipping Cover, Title Page and Copyright (we generate those separately)
   // Also separate no-matter sections (they get linear="no" in spine)
+  // XHTML-Native: Use xhtml field directly
   const chapters: Chapter[] = [];
   const noMatterSections: Chapter[] = [];
   let chapterNum = 0;
@@ -106,8 +124,9 @@ export async function generateEpubFromWorkingCopy(
       continue;
     }
 
-    // Split content into paragraphs (double newline = paragraph break)
-    const paragraphs = section.content
+    // XHTML-Native: Get plain text for fallback, but keep XHTML as source of truth
+    const plainText = xhtmlToPlainText(section.xhtml);
+    const paragraphs = plainText
       .split(/\n\s*\n/)
       .map(p => p.replace(/\n/g, ' ').trim())
       .filter(p => p.length > 0);
@@ -116,8 +135,9 @@ export async function generateEpubFromWorkingCopy(
       id: section.id,
       number: 0, // Will be set below for regular chapters
       title: section.title,
-      content: paragraphs,
-      paragraphs: paragraphs,
+      content: paragraphs,     // Plain text fallback
+      paragraphs: paragraphs,  // Legacy
+      xhtml: section.xhtml,    // XHTML source of truth
     };
 
     // No Matter sections go to separate array
@@ -574,11 +594,21 @@ ${chapterItems}${aboutAuthorItem}
 
 /**
  * Create HTML for a chapter
+ * XHTML-Native: Uses xhtml directly if available (no conversion needed),
+ * otherwise falls back to processMarkdown for backwards compatibility.
  */
 function createChapterHTML(chapter: Chapter, _metadata: any): string {
-  const paragraphs = chapter.content
-    .map(p => `    <p>${processMarkdown(escapeHtml(p))}</p>`)
-    .join('\n');
+  let bodyContent: string;
+
+  if (chapter.xhtml) {
+    // XHTML-Native: Use XHTML directly - no conversion needed!
+    bodyContent = chapter.xhtml;
+  } else {
+    // Fallback: Use plain text paragraphs with markdown processing
+    bodyContent = chapter.content
+      .map(p => `<p>${processMarkdown(escapeHtml(p))}</p>`)
+      .join('\n');
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -590,7 +620,7 @@ function createChapterHTML(chapter: Chapter, _metadata: any): string {
 <body>
   <section class="chapter" epub:type="chapter">
     <h1>${escapeHtml(chapter.title)}</h1>
-${paragraphs}
+${bodyContent}
   </section>
 </body>
 </html>`;

@@ -47,12 +47,36 @@ import TitlePagePanel, { BookMetadata } from './TitlePagePanel';
 import { parseEpub, ParsedEpub } from '@/services/epubService';
 import { parseDocx } from '@/services/docxService';
 import { countWords } from '@/services/htmlExtractor';
-import { loadFullWorkingCopy, saveFullWorkingCopy, deleteSection, saveWorkingCopyMeta, loadWorkingCopyMeta, clearWorkingCopy, saveSection, saveCoverImage, deleteCoverImage, loadCoverImage, WorkingCopyMeta, saveManuscriptImage, deleteManuscriptImage, getAllManuscriptImages } from '@/services/manuscriptStorage';
+import {
+  loadFullWorkingCopy,
+  saveFullWorkingCopy,
+  deleteSection,
+  saveWorkingCopyMeta,
+  loadWorkingCopyMeta,
+  clearWorkingCopy,
+  saveSection,
+  saveCoverImage,
+  deleteCoverImage,
+  loadCoverImage,
+  WorkingCopyMeta,
+  saveManuscriptImage,
+  deleteManuscriptImage,
+  getAllManuscriptImages,
+} from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
 import { generateHtmlFromSections, openHtmlInNewTab } from '@/lib/html-generator';
+import { xhtmlToPlainText } from '@/lib/plateXhtml';
 import environmentConfig from '@/services/environment';
 import { parseToolReport } from '@/utils/parseToolReport';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
+
+// Helper to escape HTML for XHTML storage
+function escapeHtmlForLayout(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 interface Tool {
   id: string;
@@ -151,8 +175,9 @@ export default function AuthorsLayout({
   const [bookMeta, setBookMeta] = useState<WorkingCopyMeta | null>(null);
 
   // Unsaved changes tracking
+  // XHTML-Native: Now tracks pendingXhtml instead of content/plateValue
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [pendingContent, setPendingContent] = useState<string>('');
+  const [pendingXhtml, setPendingXhtml] = useState<string>('');
   const [pendingTitle, setPendingTitle] = useState<string>('');
   const [pendingSectionSwitch, setPendingSectionSwitch] = useState<string | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
@@ -175,9 +200,13 @@ export default function AuthorsLayout({
   const [imageUrls, setImageUrls] = useState<Array<{filename: string, url: string}>>([]);
 
   // Computed values
+  // XHTML-Native: Extract plain text from XHTML for word counts
   const selectedSection = epub?.sections.find((s) => s.id === selectedSectionId);
-  const totalWordCount = epub?.sections.reduce((sum, s) => sum + countWords(s.content), 0) ?? 0;
-  const sectionWordCount = countWords(selectedSection?.content ?? '');
+  const totalWordCount = epub?.sections.reduce((sum, s) => {
+    const plainText = xhtmlToPlainText(s.xhtml || '');
+    return sum + countWords(plainText);
+  }, 0) ?? 0;
+  const sectionWordCount = countWords(xhtmlToPlainText(selectedSection?.xhtml ?? ''));
 
   // Navigation computed values
   const currentSectionIndex = epub?.sections.findIndex((s) => s.id === selectedSectionId) ?? -1;
@@ -208,11 +237,12 @@ export default function AuthorsLayout({
   }, [toolResult, isDarkMode]);
 
   // One-by-one: Accept current suggestion
+  // XHTML-Native: Works on plain text, but saves back as XHTML
   const handleOneByOneAccept = useCallback(async () => {
     const currentIssue = oneByOneIssues[oneByOneIndex];
     if (!currentIssue || !editorPanelRef.current || !selectedSectionId) return;
 
-    // Get current editor content
+    // Get current editor content (plain text from XHTML)
     const content = editorPanelRef.current.getContent();
 
     // Check if passage exists
@@ -231,17 +261,24 @@ export default function AuthorsLayout({
     setOneByOneIssues(updatedIssues);
 
     // Save to IndexedDB
+    // XHTML-Native: Convert plain text to XHTML paragraphs
     if (selectedSection) {
+      const newXhtml = newContent
+        .split(/\n\s*\n/)
+        .filter((p: string) => p.trim())
+        .map((p: string) => `<p>${escapeHtmlForLayout(p.replace(/\n/g, ' ').trim())}</p>`)
+        .join('\n') || '<p></p>';
+
       await saveSection({
         id: selectedSectionId,
         title: selectedSection.title,
-        content: newContent,
+        xhtml: newXhtml,
         type: selectedSection.type || 'section',
       });
       // Update in-memory epub
       if (epub) {
         const updatedSections = epub.sections.map((s) =>
-          s.id === selectedSectionId ? { ...s, content: newContent } : s
+          s.id === selectedSectionId ? { ...s, xhtml: newXhtml } : s
         );
         setEpub({ ...epub, sections: updatedSections });
       }
@@ -262,11 +299,12 @@ export default function AuthorsLayout({
   }, [oneByOneIssues, oneByOneIndex, selectedSectionId, selectedSection, epub, isDarkMode]);
 
   // One-by-one: Apply custom replacement
+  // XHTML-Native: Works on plain text, but saves back as XHTML
   const handleOneByOneCustom = useCallback(async (customText: string) => {
     const currentIssue = oneByOneIssues[oneByOneIndex];
     if (!currentIssue || !editorPanelRef.current || !selectedSectionId) return;
 
-    // Get current editor content
+    // Get current editor content (plain text from XHTML)
     const content = editorPanelRef.current.getContent();
 
     // Check if passage exists
@@ -285,17 +323,24 @@ export default function AuthorsLayout({
     setOneByOneIssues(updatedIssues);
 
     // Save to IndexedDB
+    // XHTML-Native: Convert plain text to XHTML paragraphs
     if (selectedSection) {
+      const newXhtml = newContent
+        .split(/\n\s*\n/)
+        .filter((p: string) => p.trim())
+        .map((p: string) => `<p>${escapeHtmlForLayout(p.replace(/\n/g, ' ').trim())}</p>`)
+        .join('\n') || '<p></p>';
+
       await saveSection({
         id: selectedSectionId,
         title: selectedSection.title,
-        content: newContent,
+        xhtml: newXhtml,
         type: selectedSection.type || 'section',
       });
       // Update in-memory epub
       if (epub) {
         const updatedSections = epub.sections.map((s) =>
-          s.id === selectedSectionId ? { ...s, content: newContent } : s
+          s.id === selectedSectionId ? { ...s, xhtml: newXhtml } : s
         );
         setEpub({ ...epub, sections: updatedSections });
       }
@@ -368,6 +413,7 @@ export default function AuthorsLayout({
   }, [oneByOneIndex, oneByOneIssues]);
 
   // Full-text search: perform search across all sections
+  // XHTML-Native: Search in plain text extracted from XHTML
   const performSearch = useCallback((query: string) => {
     if (!epub || !query.trim()) {
       setSearchResults([]);
@@ -398,20 +444,21 @@ export default function AuthorsLayout({
         titleIndex = titleLower.indexOf(lowerQuery, titleIndex + 1);
       }
 
-      // Search in content
-      const contentLower = section.content.toLowerCase();
+      // XHTML-Native: Search in plain text extracted from XHTML
+      const plainContent = xhtmlToPlainText(section.xhtml || '');
+      const contentLower = plainContent.toLowerCase();
       let contentIndex = contentLower.indexOf(lowerQuery);
       while (contentIndex !== -1 && results.length < maxResults) {
         matchingSections.add(section.id);
         const contextStart = Math.max(0, contentIndex - 50);
-        const contextEnd = Math.min(section.content.length, contentIndex + query.length + 50);
+        const contextEnd = Math.min(plainContent.length, contentIndex + query.length + 50);
         results.push({
           sectionId: section.id,
           sectionTitle: section.title,
           matchIndex: contentIndex,
-          matchText: section.content.substring(contentIndex, contentIndex + query.length),
-          contextBefore: section.content.substring(contextStart, contentIndex).replace(/\n/g, ' '),
-          contextAfter: section.content.substring(contentIndex + query.length, contextEnd).replace(/\n/g, ' '),
+          matchText: plainContent.substring(contentIndex, contentIndex + query.length),
+          contextBefore: plainContent.substring(contextStart, contentIndex).replace(/\n/g, ' '),
+          contextAfter: plainContent.substring(contentIndex + query.length, contextEnd).replace(/\n/g, ' '),
         });
         contentIndex = contentLower.indexOf(lowerQuery, contentIndex + 1);
       }
@@ -477,11 +524,13 @@ export default function AuthorsLayout({
   }, [searchActive, searchResults, currentSearchIndex]);
 
   // Auto-load working copy from IndexedDB on mount
+  // XHTML-Native: Sections now contain xhtml instead of content/plateValue
   useEffect(() => {
     const loadData = async () => {
       const saved = await loadFullWorkingCopy();
       if (saved) {
         // Convert FullWorkingCopy to ParsedEpub format for UI
+        // XHTML-Native: Use xhtml field directly
         const epub: ParsedEpub = {
           title: saved.title,
           author: saved.author,
@@ -490,8 +539,8 @@ export default function AuthorsLayout({
           sections: saved.sections.map((s) => ({
             id: s.id,
             title: s.title,
-            href: `${s.id}.xhtml`, // Generate href for UI consistency
-            content: s.content,
+            href: `${s.id}.xhtml`,
+            xhtml: s.xhtml,
             type: s.type,
           })),
         };
@@ -502,16 +551,17 @@ export default function AuthorsLayout({
         // First 3 sections (Cover, Title Page, Copyright) are protected - cannot be deleted or moved
         await clearWorkingCopy();
         const year = new Date().getFullYear();
+        // XHTML-Native: Use xhtml for content
         const blank = {
           title: 'Untitled',
           author: 'Anonymous',
           language: 'en',
           coverImage: null,
           sections: [
-            { id: 'cover', title: 'Cover', content: 'Use Format > Image to add your cover image', type: 'cover' as const },
-            { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'title-page' as const },
-            { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} by Anonymous\n\nAll rights reserved.\n\nNo part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.`, type: 'copyright' as const },
-            { id: 'chapter-1', title: 'Chapter 1', content: '', type: 'chapter' as const },
+            { id: 'cover', title: 'Cover', xhtml: '<p>Use Format &gt; Image to add your cover image</p>', type: 'cover' as const },
+            { id: 'title-page', title: 'Title Page', xhtml: '<h1>Untitled</h1>\n<p>by Anonymous</p>', type: 'title-page' as const },
+            { id: 'copyright', title: 'Copyright', xhtml: `<p>Copyright © ${year} by Anonymous</p>\n<p>All rights reserved.</p>\n<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>`, type: 'copyright' as const },
+            { id: 'chapter-1', title: 'Chapter 1', xhtml: '<p></p>', type: 'chapter' as const },
           ],
         };
         await saveFullWorkingCopy(blank);
@@ -527,7 +577,7 @@ export default function AuthorsLayout({
               id: s.id,
               title: s.title,
               href: `${s.id}.xhtml`,
-              content: s.content,
+              xhtml: s.xhtml,
               type: s.type,
             })),
           };
@@ -550,6 +600,7 @@ export default function AuthorsLayout({
   }, []);
 
   // Reload Working Copy when refreshKey changes (e.g., after Chapter Writer adds a chapter)
+  // XHTML-Native: Use xhtml field
   useEffect(() => {
     if (refreshKey === undefined || refreshKey === 0) return;
 
@@ -565,7 +616,7 @@ export default function AuthorsLayout({
             id: s.id,
             title: s.title,
             href: `${s.id}.xhtml`,
-            content: s.content,
+            xhtml: s.xhtml,
             type: s.type,
           })),
         };
@@ -674,6 +725,7 @@ export default function AuthorsLayout({
   }, [bookMeta, imageUrls]);
 
   // Handle opening an epub file
+  // XHTML-Native: Uses xhtml field from parsed sections
   const handleOpenEpub = async () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -697,6 +749,7 @@ export default function AuthorsLayout({
 
           // Save to IndexedDB with normalization (section-001, section-002, etc.)
           // Filter out table-of-contents - it gets auto-generated on "send Ebook"
+          // XHTML-Native: Use xhtml field directly from parsed sections
           await saveFullWorkingCopy({
             title: parsed.title,
             author: parsed.author,
@@ -707,7 +760,7 @@ export default function AuthorsLayout({
               .map((s) => ({
                 id: s.id,
                 title: s.title,
-                content: s.content,
+                xhtml: s.xhtml,
                 type: s.type,
               })),
           });
@@ -730,7 +783,7 @@ export default function AuthorsLayout({
                 id: s.id,
                 title: s.title,
                 href: `${s.id}.xhtml`,
-                content: s.content,
+                xhtml: s.xhtml,
                 type: s.type,
               })),
               images: parsed.images, // Pass through for immediate access
@@ -755,6 +808,7 @@ export default function AuthorsLayout({
   };
 
   // Handle opening a docx file
+  // XHTML-Native: DOCX content is plain text, convert to XHTML paragraphs
   const handleOpenDocx = async () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -768,6 +822,7 @@ export default function AuthorsLayout({
           await clearWorkingCopy();
           // Save to IndexedDB
           // Filter out table-of-contents - it gets auto-generated on "send Ebook"
+          // XHTML-Native: Convert plain text content to XHTML paragraphs
           await saveFullWorkingCopy({
             title: parsed.title,
             author: parsed.author,
@@ -778,7 +833,12 @@ export default function AuthorsLayout({
               .map((s) => ({
                 id: s.id,
                 title: s.title,
-                content: s.content,
+                // Convert plain text to XHTML paragraphs
+                xhtml: s.content
+                  .split(/\n\s*\n/)
+                  .filter((p: string) => p.trim())
+                  .map((p: string) => `<p>${escapeHtmlForLayout(p.replace(/\n/g, ' ').trim())}</p>`)
+                  .join('\n') || '<p></p>',
               })),
           });
           // Reload from IndexedDB to get normalized IDs
@@ -793,7 +853,7 @@ export default function AuthorsLayout({
                 id: s.id,
                 title: s.title,
                 href: `${s.id}.xhtml`,
-                content: s.content,
+                xhtml: s.xhtml,
                 type: s.type,
               })),
             };
@@ -864,22 +924,24 @@ export default function AuthorsLayout({
   };
 
   // Handle creating a new blank manuscript
+  // XHTML-Native: Use xhtml for content
   const handleNew = async () => {
     // Clear existing working copy
     await clearWorkingCopy();
     const year = new Date().getFullYear();
     // Create blank manuscript with typed sections
     // First 3 sections (Cover, Title Page, Copyright) are protected - cannot be deleted or moved
+    // XHTML-Native: Use xhtml for content
     const blank = {
       title: 'Untitled',
       author: 'Anonymous',
       language: 'en',
       coverImage: null,
       sections: [
-        { id: 'cover', title: 'Cover', content: 'Use Format > Image to add your cover image', type: 'cover' as const },
-        { id: 'title-page', title: 'Title Page', content: 'Untitled\n\nby Anonymous', type: 'title-page' as const },
-        { id: 'copyright', title: 'Copyright', content: `Copyright © ${year} by Anonymous\n\nAll rights reserved.\n\nNo part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.`, type: 'copyright' as const },
-        { id: 'chapter-1', title: 'Chapter 1', content: '', type: 'chapter' as const },
+        { id: 'cover', title: 'Cover', xhtml: '<p>Use Format &gt; Image to add your cover image</p>', type: 'cover' as const },
+        { id: 'title-page', title: 'Title Page', xhtml: '<h1>Untitled</h1>\n<p>by Anonymous</p>', type: 'title-page' as const },
+        { id: 'copyright', title: 'Copyright', xhtml: `<p>Copyright © ${year} by Anonymous</p>\n<p>All rights reserved.</p>\n<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>`, type: 'copyright' as const },
+        { id: 'chapter-1', title: 'Chapter 1', xhtml: '<p></p>', type: 'chapter' as const },
       ],
     };
     await saveFullWorkingCopy(blank);
@@ -895,7 +957,7 @@ export default function AuthorsLayout({
           id: s.id,
           title: s.title,
           href: `${s.id}.xhtml`,
-          content: s.content,
+          xhtml: s.xhtml,
           type: s.type,
         })),
       };
@@ -981,16 +1043,18 @@ export default function AuthorsLayout({
     }
 
     // Create new element with appropriate defaults
+    // XHTML-Native: Use xhtml for content
     const newSection = {
       id: newId,
       title: defaultTitle,
       href: `${newId}.xhtml`,
-      content: '',
+      xhtml: '<p></p>',
       type: actualType,
     };
 
     // Save to IndexedDB
-    await saveSection({ id: newId, title: newSection.title, content: '', type: actualType });
+    // XHTML-Native: Use xhtml for content
+    await saveSection({ id: newId, title: newSection.title, xhtml: '<p></p>', type: actualType });
 
     // Insert into sectionIds at correct position
     meta.sectionIds.splice(insertIndex, 0, newId);
@@ -1011,7 +1075,7 @@ export default function AuthorsLayout({
     });
     setSelectedSectionId(newId);
     setHasUnsavedChanges(false);
-    setPendingContent('');
+    setPendingXhtml('');
   };
 
   // Handle moving a section up (swap with previous)
@@ -1143,11 +1207,11 @@ export default function AuthorsLayout({
     const reorderedSections = reorderSectionsByVisualGroup(newSections);
     setEpub({ ...epub, sections: reorderedSections });
 
-    // Persist section type to IndexedDB
+    // Persist section type to IndexedDB (preserve xhtml)
     await saveSection({
       id: sectionId,
       title: updatedSection.title,
-      content: updatedSection.content || '',
+      xhtml: updatedSection.xhtml || '<p></p>',
       type: newType,
     });
 
@@ -1195,9 +1259,10 @@ export default function AuthorsLayout({
   };
 
   // Handle content changes from EditorPanel
-  const handleContentChange = (hasChanges: boolean, content: string) => {
+  // XHTML-Native: Now receives XHTML directly
+  const handleContentChange = (hasChanges: boolean, xhtml: string) => {
     setHasUnsavedChanges(hasChanges);
-    setPendingContent(content);
+    setPendingXhtml(xhtml);
   };
 
   // Handle title changes from EditorPanel
@@ -1261,12 +1326,15 @@ export default function AuthorsLayout({
     const orderedSections = reorderSectionsByVisualGroup(workingCopy.sections);
 
     try {
-      // 6. Generate EPUB (include inline images)
+      // 6. Fetch images fresh from IndexedDB to ensure we have any newly uploaded images
+      const freshImages = await getAllManuscriptImages();
+
+      // 7. Generate EPUB (include inline images)
       const epubData = await generateEpubFromWorkingCopy(
         meta,
         orderedSections,
         coverBlob,
-        manuscriptImages
+        freshImages
       );
 
       // 6. Create File object
@@ -1356,6 +1424,7 @@ export default function AuthorsLayout({
       }
 
       // 5. Generate HTML with embedded images (cover image excluded)
+      // XHTML-Native: Pass xhtml as content (html-generator handles it)
       const html = generateHtmlFromSections({
         title: workingCopy.title || 'Untitled',
         author: workingCopy.author || meta?.author || 'Unknown Author',
@@ -1364,7 +1433,7 @@ export default function AuthorsLayout({
           .filter(s => s.title.toLowerCase().trim() !== 'cover')
           .map(s => ({
             title: s.title,
-            content: s.content,
+            content: s.xhtml,  // XHTML is valid HTML content
           })),
         images: imagesMap,
       });
@@ -1409,37 +1478,41 @@ export default function AuthorsLayout({
   };
 
   // Save current section to IndexedDB
+  // XHTML-Native: Now saves xhtml directly
   const saveCurrentSection = async () => {
     if (!selectedSection || !selectedSectionId) return;
 
     // Use pending title if changed, otherwise original
     const titleToSave = pendingTitle || selectedSection.title;
-    // Use pending content if set, otherwise original
-    const contentToSave = pendingContent || selectedSection.content;
+    // XHTML-Native: Use pending xhtml if set, otherwise original
+    const xhtmlToSave = pendingXhtml || selectedSection.xhtml;
 
-    // Save to IndexedDB
+    // Save to IndexedDB (XHTML is single source of truth)
     await saveSection({
       id: selectedSectionId,
       title: titleToSave,
-      content: contentToSave,
+      xhtml: xhtmlToSave,
       type: selectedSection.type || 'section',
     });
 
     // Update in-memory epub state so sidebar and subsequent comparisons work
     if (epub) {
       const updatedSections = epub.sections.map((s) =>
-        s.id === selectedSectionId ? { ...s, title: titleToSave, content: contentToSave } : s
+        s.id === selectedSectionId
+          ? { ...s, title: titleToSave, xhtml: xhtmlToSave }
+          : s
       );
       setEpub({ ...epub, sections: updatedSections });
     }
 
     // Reset unsaved state
     setHasUnsavedChanges(false);
-    setPendingContent('');
+    setPendingXhtml('');
     setPendingTitle('');
   };
 
   // Debounced auto-save: saves 2 seconds after user stops typing
+  // XHTML-Native: Track pendingXhtml instead of pendingContent/pendingPlateValue
   useEffect(() => {
     if (!hasUnsavedChanges || !selectedSectionId) return;
 
@@ -1448,7 +1521,7 @@ export default function AuthorsLayout({
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [pendingContent, pendingTitle, hasUnsavedChanges, selectedSectionId, saveCurrentSection]);
+  }, [pendingXhtml, pendingTitle, hasUnsavedChanges, selectedSectionId, saveCurrentSection]);
 
   // Dialog action: Save changes and switch
   const handleDialogSave = async () => {
@@ -1465,7 +1538,7 @@ export default function AuthorsLayout({
   // Dialog action: Discard changes and switch
   const handleDialogDiscard = () => {
     setHasUnsavedChanges(false);
-    setPendingContent('');
+    setPendingXhtml('');
     setPendingTitle('');
     setShowUnsavedDialog(false);
     if (pendingSectionSwitch) {
@@ -1593,7 +1666,7 @@ export default function AuthorsLayout({
             hasApiKey={hasApiKey}
             currentModel={currentModel}
             sectionTitle={selectedSection?.title ?? ''}
-            sectionContent={selectedSection?.content ?? ''}
+            sectionXhtml={selectedSection?.xhtml ?? '<p></p>'}
             sectionType={selectedSection?.type}
             sectionWordCount={sectionWordCount}
             onContentChange={handleContentChange}
@@ -1616,8 +1689,9 @@ export default function AuthorsLayout({
             onClearTool={onClearTool}
             onPromptEdit={onPromptEdit}
             onExecuteTool={() => {
-              // Get current editor text (pending edits or original)
-              const currentText = pendingContent || selectedSection?.content || '';
+              // XHTML-Native: Get plain text from XHTML for AI tools
+              const currentXhtml = pendingXhtml || selectedSection?.xhtml || '';
+              const currentText = xhtmlToPlainText(currentXhtml);
               onExecuteTool(currentText);
             }}
             onReport={onReport}

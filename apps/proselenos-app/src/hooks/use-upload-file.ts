@@ -1,0 +1,104 @@
+/**
+ * Image upload hook that stores directly to IndexedDB.
+ * No external service required - images persist locally.
+ *
+ * Storage convention: images/{timestamp}-{filename}
+ * This matches EPUB3 structure: OEBPS/images/
+ */
+import * as React from 'react';
+import { toast } from 'sonner';
+
+import { saveManuscriptImage } from '@/services/manuscriptStorage';
+
+export interface UploadedFile {
+  key: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;  // Format: "images/{filename}" - relative path for EPUB compatibility
+}
+
+interface UseUploadFileProps {
+  onUploadComplete?: (file: UploadedFile) => void;
+  onUploadError?: (error: unknown) => void;
+}
+
+export function useUploadFile({
+  onUploadComplete,
+  onUploadError,
+}: UseUploadFileProps = {}) {
+  const [uploadedFile, setUploadedFile] = React.useState<UploadedFile>();
+  const [uploadingFile, setUploadingFile] = React.useState<File>();
+  const [progress, setProgress] = React.useState<number>(0);
+  const [isUploading, setIsUploading] = React.useState(false);
+
+  async function uploadFile(file: File): Promise<UploadedFile | undefined> {
+    setIsUploading(true);
+    setUploadingFile(file);
+    setProgress(0);
+
+    try {
+      // Generate unique filename with timestamp
+      const timestamp = Date.now();
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const uniqueFilename = `${timestamp}-${sanitizedName}`;
+
+      // Simulate progress for UX (actual IndexedDB write is fast)
+      setProgress(30);
+
+      // Save to IndexedDB using existing manuscriptStorage function
+      // This stores at key: "images/{uniqueFilename}"
+      await saveManuscriptImage(uniqueFilename, file);
+
+      setProgress(100);
+
+      // Return URL in EPUB-compatible format: "images/{filename}"
+      // This format works for:
+      // 1. plateXhtml.ts serialization (img src="images/...")
+      // 2. EPUB export (OEBPS/images/...)
+      // 3. Resolution via useResolvedImageUrl hook
+      const result: UploadedFile = {
+        key: uniqueFilename,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: `images/${uniqueFilename}`,
+      };
+
+      setUploadedFile(result);
+      onUploadComplete?.(result);
+
+      return result;
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      const message = error instanceof Error ? error.message : 'Failed to save image';
+      toast.error(message);
+      onUploadError?.(error);
+      return undefined;
+    } finally {
+      setProgress(0);
+      setIsUploading(false);
+      setUploadingFile(undefined);
+    }
+  }
+
+  return {
+    isUploading,
+    progress,
+    uploadedFile,
+    uploadFile,
+    uploadingFile,
+  };
+}
+
+export function getErrorMessage(err: unknown) {
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return 'Something went wrong, please try again later.';
+}
+
+export function showErrorToast(err: unknown) {
+  const errorMessage = getErrorMessage(err);
+  return toast.error(errorMessage);
+}

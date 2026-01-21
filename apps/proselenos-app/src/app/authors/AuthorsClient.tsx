@@ -265,7 +265,7 @@ export default function AuthorsClient() {
           .map((s) => ({
             id: s.id,
             title: s.title,
-            content: s.content,
+            xhtml: s.xhtml,
             type: s.type,
           })),
       });

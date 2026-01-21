@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import ToolProgressIndicator from '../ai-tools/ToolProgressIndicator';
@@ -12,6 +12,14 @@ import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { showUrlInput } from '../shared/alerts';
+
+// PlateJS imports
+import { Plate, usePlateEditor } from 'platejs/react';
+import { EditorKit } from '@/components/plate-editor/editor-kit';
+import { EditorContainer, Editor } from '@/components/plate-ui/editor';
+import { createEmptyValue, plateToPlainText, xhtmlToPlate, plateToXhtml } from '@/lib/plateXhtml';
+import type { Value } from 'platejs';
+import { cn } from '@/lib/utils';
 
 interface ImageInfo {
   filename: string;
@@ -31,13 +39,13 @@ interface EditorPanelProps {
   onAIWritingClick: () => void;
   hasApiKey: boolean;
   currentModel: string;
-  // Section content
+  // Section content - XHTML-Native: Single source of truth
   sectionTitle: string;
-  sectionContent: string;
+  sectionXhtml: string;             // XHTML content (single source of truth)
   sectionType?: string;
   sectionWordCount: number;
-  // Unsaved changes tracking
-  onContentChange?: (hasChanges: boolean, content: string) => void;
+  // XHTML-Native: Passes XHTML directly
+  onContentChange?: (hasChanges: boolean, xhtml: string) => void;
   onTitleChange?: (newTitle: string) => void;
   // Section navigation
   onPrevSection?: () => void;
@@ -87,7 +95,7 @@ interface EditorPanelProps {
   onImageDelete?: (filename: string) => void;
 }
 
-// Ref handle for parent to control textarea
+// Ref handle for parent to control editor
 export interface EditorPanelRef {
   scrollToPassage: (passage: string, startIndex?: number) => void;
   updateContent: (content: string) => void;
@@ -102,7 +110,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   hasApiKey,
   currentModel,
   sectionTitle,
-  sectionContent,
+  sectionXhtml,
   sectionType: _sectionType,
   sectionWordCount,
   onContentChange,
@@ -159,21 +167,18 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
 
-  // Editable content state (local for now - will persist later)
-  const [localContent, setLocalContent] = useState(sectionContent);
+  // XHTML-Native: Track the original XHTML for comparison (to detect changes)
+  const [originalXhtml, setOriginalXhtml] = useState(sectionXhtml);
+
+  // Track if editor is initialized
+  const [isEditorReady, setIsEditorReady] = useState(false);
 
   // Update local title when section changes
   useEffect(() => {
     setChapterTitle(sectionTitle);
   }, [sectionTitle]);
 
-  // Update local content when section changes
-  useEffect(() => {
-    setLocalContent(sectionContent);
-  }, [sectionContent]);
-
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formatDropdownRef = useRef<HTMLDivElement>(null);
 
   // Formatting dropdown state
@@ -181,6 +186,56 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Image picker state
   const [showImagePicker, setShowImagePicker] = useState(false);
+
+  // Create initial value - use plateValue if available, otherwise create empty
+  const initialValue = useMemo(() => {
+    return createEmptyValue();
+  }, []);
+
+  // Create the Plate editor
+  const editor = usePlateEditor({
+    plugins: EditorKit,
+    value: initialValue,
+  });
+
+  // XHTML-Native: Update editor content when section changes
+  // Convert XHTML to PlateJS on load
+  useEffect(() => {
+    if (!editor) return;
+
+    // Convert XHTML to PlateJS value
+    let value: Value;
+    if (sectionXhtml && sectionXhtml.trim()) {
+      value = xhtmlToPlate(sectionXhtml);
+    } else {
+      value = createEmptyValue();
+    }
+
+    // Reset editor with new value
+    editor.tf.reset();
+    editor.tf.setValue(value);
+
+    setOriginalXhtml(sectionXhtml);
+    setIsEditorReady(true);
+  }, [sectionXhtml, editor]);
+
+  // XHTML-Native: Handle editor changes
+  // Convert PlateJS to XHTML on change
+  const handleEditorChange = useCallback(() => {
+    if (!editor || !isEditorReady) return;
+
+    // Get the current PlateJS value
+    const plateValue = editor.children as Value;
+
+    // Convert to XHTML (single source of truth)
+    const xhtml = plateToXhtml(plateValue);
+
+    // Check if content has changed by comparing XHTML
+    const hasChanged = xhtml !== originalXhtml;
+
+    // Notify parent with XHTML
+    onContentChange?.(hasChanged, xhtml);
+  }, [editor, isEditorReady, originalXhtml, onContentChange]);
 
   // Close format dropdown when clicking outside
   useEffect(() => {
@@ -196,139 +251,112 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFormatDropdown]);
 
-  // Wrap selected text with markdown formatting
-  const wrapSelection = useCallback((prefix: string, suffix: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = localContent.substring(start, end);
-
-    // If no text selected, just insert the markers
-    const textToWrap = selectedText || 'text';
-    const newContent =
-      localContent.substring(0, start) +
-      prefix + textToWrap + suffix +
-      localContent.substring(end);
-
-    setLocalContent(newContent);
-    onContentChange?.(newContent !== sectionContent, newContent);
-
-    // Restore focus and cursor position after the wrapped text
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + prefix.length + textToWrap.length + suffix.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-
+  // Apply formatting using Plate transforms
+  const applyFormat = useCallback((mark: string) => {
+    if (!editor) return;
+    // Use the editor's transform API to toggle marks
+    try {
+      const toggleMark = editor.tf['toggle'];
+      if (toggleMark && typeof toggleMark === 'object' && 'mark' in toggleMark) {
+        (toggleMark as { mark: (opts: { key: string }) => void }).mark({ key: mark });
+      }
+    } catch (e) {
+      console.warn('Could not apply format:', mark, e);
+    }
     setShowFormatDropdown(false);
-  }, [localContent, sectionContent, onContentChange]);
+  }, [editor]);
 
-  // Handle Web Link formatting (needs URL prompt)
+  // Handle Web Link formatting
   const handleWebLink = useCallback(async () => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = localContent.substring(start, end) || 'link text';
+    if (!editor) return;
 
     setShowFormatDropdown(false);
 
     const url = await showUrlInput('Enter URL', 'https://', isDarkMode);
-    if (!url) {
-      return;
+    if (!url) return;
+
+    // Get current selection text
+    const selection = editor.selection;
+    if (!selection) return;
+
+    // Insert link using the link plugin's transform
+    try {
+      const insertLink = editor.tf['insertLink'];
+      if (insertLink && typeof insertLink === 'function') {
+        (insertLink as (opts: { url: string }) => void)({ url });
+      }
+    } catch (e) {
+      console.warn('Could not insert link:', e);
     }
-
-    const newContent =
-      localContent.substring(0, start) +
-      `[${selectedText}](${url})` +
-      localContent.substring(end);
-
-    setLocalContent(newContent);
-    onContentChange?.(newContent !== sectionContent, newContent);
-
-    setTimeout(() => {
-      textarea.focus();
-    }, 0);
-  }, [localContent, sectionContent, onContentChange, isDarkMode]);
+  }, [editor, isDarkMode]);
 
   // Handle image insertion from picker
+  // XHTML-Native: Inserts as XHTML image element
   const handleImageInsert = useCallback((filename: string, altText: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (!editor) return;
 
-    const { selectionStart } = textarea;
-    const markdown = `![${altText}](${filename})`;
+    // Insert image node directly into the editor
+    // TODO: When media plugin is properly configured, use proper image insertion
+    // For now, insert as text that will be converted to image on export
+    const imageText = `![${altText}](${filename})`;
+    editor.tf.insertText(imageText);
 
-    // Insert at cursor position
-    const newContent =
-      localContent.slice(0, selectionStart) +
-      markdown +
-      localContent.slice(selectionStart);
-
-    setLocalContent(newContent);
-    onContentChange?.(newContent !== sectionContent, newContent);
     setShowImagePicker(false);
 
-    // Restore focus
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = selectionStart + markdown.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  }, [localContent, sectionContent, onContentChange]);
+    // Update parent with new XHTML
+    const plateValue = editor.children as Value;
+    const xhtml = plateToXhtml(plateValue);
+    onContentChange?.(xhtml !== originalXhtml, xhtml);
+  }, [editor, originalXhtml, onContentChange]);
 
-  // Scroll to and select a passage in the textarea
-  const scrollToPassage = useCallback((passage: string, startIndex?: number) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  // Scroll to and highlight a passage in the editor
+  const scrollToPassage = useCallback((passage: string, _startIndex?: number) => {
+    if (!editor) return;
 
-    const start = startIndex ?? localContent.indexOf(passage);
-    if (start === -1) return;
+    // For rich text editor, we need to search through text nodes
+    // Get plain text from editor to search
+    const plateValue = editor.children as Value;
+    const text = plateToPlainText(plateValue);
+    const index = text.indexOf(passage);
 
-    const end = start + passage.length;
+    if (index === -1) return;
 
-    // Create a hidden measurement div to calculate actual scroll position
-    // This handles wrapped lines accurately
-    const measureDiv = document.createElement('div');
-    measureDiv.style.cssText = `
-      position: absolute;
-      visibility: hidden;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      font-family: Georgia, serif;
-      font-size: 14px;
-      line-height: 1.6;
-      padding: 0.5rem;
-      width: ${textarea.clientWidth}px;
-      box-sizing: border-box;
-    `;
-    measureDiv.textContent = localContent.slice(0, start);
-    document.body.appendChild(measureDiv);
-    const scrollTarget = measureDiv.offsetHeight;
-    document.body.removeChild(measureDiv);
+    // Focus the editor
+    editor.tf.focus();
 
-    // Focus and select first, then scroll after a frame
-    textarea.focus();
-    textarea.setSelectionRange(start, end);
-
-    // Scroll after selection is set
-    requestAnimationFrame(() => {
-      const viewportHeight = textarea.clientHeight;
-      textarea.scrollTop = Math.max(0, scrollTarget - viewportHeight / 3);
-    });
-  }, [localContent]);
+    // TODO: Implement proper text node search and selection in Plate
+    // For now, just focus the editor
+    console.log('scrollToPassage: found passage at index', index);
+  }, [editor]);
 
   // Update content programmatically (for One-by-one Accept)
+  // XHTML-Native: Takes plain text and converts to XHTML paragraphs
   const updateContent = useCallback((content: string) => {
-    setLocalContent(content);
-    onContentChange?.(content !== sectionContent, content);
-  }, [sectionContent, onContentChange]);
+    if (!editor) return;
 
-  // Get current content (for One-by-one Accept)
-  const getContent = useCallback(() => localContent, [localContent]);
+    // Convert plain text to paragraphs
+    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
+    const value: Value = paragraphs.length > 0
+      ? paragraphs.map(p => ({
+          type: 'p',
+          children: [{ text: p.replace(/\n/g, ' ').trim() }],
+        }))
+      : createEmptyValue();
+
+    editor.tf.reset();
+    editor.tf.setValue(value);
+
+    // Convert to XHTML and notify parent
+    const xhtml = plateToXhtml(value);
+    onContentChange?.(xhtml !== originalXhtml, xhtml);
+  }, [editor, originalXhtml, onContentChange]);
+
+  // Get current content as plain text (for compatibility with One-by-one, search, etc.)
+  const getContent = useCallback(() => {
+    if (!editor) return plateToPlainText(xhtmlToPlate(sectionXhtml));
+    const plateValue = editor.children as Value;
+    return plateToPlainText(plateValue);
+  }, [editor, sectionXhtml]);
 
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
@@ -495,7 +523,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
               }}
             >
               <button
-                onClick={() => wrapSelection('**', '**')}
+                onClick={() => applyFormat('bold')}
                 style={{
                   display: 'block',
                   width: '100%',
@@ -513,7 +541,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
                 <strong>Bold</strong>
               </button>
               <button
-                onClick={() => wrapSelection('__', '__')}
+                onClick={() => applyFormat('italic')}
                 style={{
                   display: 'block',
                   width: '100%',
@@ -682,7 +710,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         </div>
       </div>
 
-      {/* Editor content area - fills space edge-to-edge */}
+      {/* Editor content area - PlateJS editor */}
       <div
         style={{
           flex: 1,
@@ -690,40 +718,32 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           padding: '4px',
         }}
       >
-        {/* Custom selection color for search highlighting */}
-        <style>{`
-          .editor-textarea::selection {
-            background-color: ${isDarkMode ? '#ffc107' : '#fff59d'};
-            color: ${isDarkMode ? '#000' : '#000'};
-          }
-        `}</style>
-        <textarea
-          ref={textareaRef}
-          className="editor-textarea"
-          value={localContent}
-          onChange={(e) => {
-            const newContent = e.target.value;
-            setLocalContent(newContent);
-            // Notify parent of content change status (compare against original from IndexedDB)
-            onContentChange?.(newContent !== sectionContent, newContent);
-          }}
-          placeholder="Type here..."
-          style={{
-            width: '100%',
-            height: '100%',
-            fontSize: '14px',
-            lineHeight: '1.6',
-            fontFamily: 'Georgia, serif',
-            padding: '0.5rem',
-            border: `1px solid ${theme.border}`,
-            borderRadius: '4px',
-            backgroundColor: isDarkMode ? '#343a40' : '#f8f9fa',
-            color: theme.text,
-            resize: 'none',
-            boxSizing: 'border-box',
-            whiteSpace: 'pre-wrap',
-          }}
-        />
+        <Plate
+          editor={editor}
+          onChange={handleEditorChange}
+        >
+          <EditorContainer
+            className={cn(
+              'h-full rounded border',
+              isDarkMode ? 'bg-[#343a40] border-gray-600' : 'bg-[#f8f9fa] border-gray-300'
+            )}
+            style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: '14px',
+              lineHeight: '1.6',
+              color: theme.text,
+            }}
+          >
+            <Editor
+              variant="default"
+              placeholder="Type here..."
+              className={cn(
+                'min-h-full',
+                isDarkMode && 'placeholder:text-gray-500'
+              )}
+            />
+          </EditorContainer>
+        </Plate>
       </div>
 
       {/* One-by-one inline panel */}

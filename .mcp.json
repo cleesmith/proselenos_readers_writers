@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "plate": {
+      "description": "Plate editors, plugins and components",
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
+    }
+  }
+}
