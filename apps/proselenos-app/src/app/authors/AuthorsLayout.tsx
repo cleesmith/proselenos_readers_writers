@@ -179,8 +179,7 @@ export default function AuthorsLayout({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [pendingXhtml, setPendingXhtml] = useState<string>('');
   const [pendingTitle, setPendingTitle] = useState<string>('');
-  const [pendingSectionSwitch, setPendingSectionSwitch] = useState<string | null>(null);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  // Removed: pendingSectionSwitch and showUnsavedDialog - now auto-saves on section switch
 
   // One-by-one inline editing state
   const editorPanelRef = useRef<EditorPanelRef>(null);
@@ -1448,19 +1447,17 @@ export default function AuthorsLayout({
     }
   };
 
-  // Handle section selection with unsaved changes check
+  // Handle section selection - just switch (user saves manually via Save/send Ebook/Library)
   const handleSelectSection = (sectionId: string) => {
     if (sectionId === selectedSectionId) return; // Same section, no action needed
 
-    if (hasUnsavedChanges) {
-      // Show dialog instead of switching immediately
-      setPendingSectionSwitch(sectionId);
-      setShowUnsavedDialog(true);
-    } else {
-      onResetTools?.();
-      handleOneByOneClose();
-      setSelectedSectionId(sectionId);
-    }
+    // Reset unsaved state when switching (changes are discarded)
+    setHasUnsavedChanges(false);
+    setPendingXhtml('');
+    setPendingTitle('');
+    onResetTools?.();
+    handleOneByOneClose();
+    setSelectedSectionId(sectionId);
   };
 
   // Navigate to previous section (reuses handleSelectSection for unsaved changes check)
@@ -1509,50 +1506,6 @@ export default function AuthorsLayout({
     setHasUnsavedChanges(false);
     setPendingXhtml('');
     setPendingTitle('');
-  };
-
-  // Debounced auto-save: saves 2 seconds after user stops typing
-  // XHTML-Native: Track pendingXhtml instead of pendingContent/pendingPlateValue
-  useEffect(() => {
-    if (!hasUnsavedChanges || !selectedSectionId) return;
-
-    const timer = setTimeout(async () => {
-      await saveCurrentSection();
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [pendingXhtml, pendingTitle, hasUnsavedChanges, selectedSectionId, saveCurrentSection]);
-
-  // Dialog action: Save changes and switch
-  const handleDialogSave = async () => {
-    await saveCurrentSection();
-    setShowUnsavedDialog(false);
-    if (pendingSectionSwitch) {
-      onResetTools?.();
-      handleOneByOneClose();
-      setSelectedSectionId(pendingSectionSwitch);
-      setPendingSectionSwitch(null);
-    }
-  };
-
-  // Dialog action: Discard changes and switch
-  const handleDialogDiscard = () => {
-    setHasUnsavedChanges(false);
-    setPendingXhtml('');
-    setPendingTitle('');
-    setShowUnsavedDialog(false);
-    if (pendingSectionSwitch) {
-      onResetTools?.();
-      handleOneByOneClose();
-      setSelectedSectionId(pendingSectionSwitch);
-      setPendingSectionSwitch(null);
-    }
-  };
-
-  // Dialog action: Cancel (stay on current section)
-  const handleDialogCancel = () => {
-    setShowUnsavedDialog(false);
-    setPendingSectionSwitch(null);
   };
 
   return (
@@ -1662,6 +1615,7 @@ export default function AuthorsLayout({
             theme={theme}
             isDarkMode={isDarkMode}
             onToggleSidebar={onToggleSidebar}
+            onSave={saveCurrentSection}
             onAIWritingClick={onAIWritingClick}
             hasApiKey={hasApiKey}
             currentModel={currentModel}
@@ -1723,89 +1677,6 @@ export default function AuthorsLayout({
           />
         )}
       </div>
-
-      {/* Unsaved Changes Dialog */}
-      {showUnsavedDialog && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-          }}
-          onClick={handleDialogCancel}
-        >
-          <div
-            style={{
-              backgroundColor: theme.bg,
-              border: `1px solid ${theme.border}`,
-              borderRadius: '8px',
-              padding: '20px',
-              minWidth: '300px',
-              maxWidth: '400px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 12px 0', color: theme.text, fontSize: '16px' }}>
-              Unsaved Changes
-            </h3>
-            <p style={{ margin: '0 0 20px 0', color: theme.textMuted, fontSize: '14px' }}>
-              You have unsaved changes.
-            </p>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={handleDialogCancel}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  color: theme.text,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDialogDiscard}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#dc3545',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-              >
-                Discard
-              </button>
-              <button
-                onClick={handleDialogSave}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

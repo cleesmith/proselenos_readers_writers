@@ -90,11 +90,31 @@ function serializeNode(node: PlateElement | PlateText): string {
 
     case 'img':
     case 'image':
-      const src = (element.url || '') as string;
-      const alt = (element.alt || '') as string;
-      // For EPUB, images should reference the images/ folder
-      const filename = src.split('/').pop() || src;
-      return `<div class="image-container"><img src="images/${escapeAttr(filename)}" alt="${escapeAttr(alt)}"/></div>\n`;
+      const imgSrc = (element.url || '') as string;
+      const imgAlt = (element.alt || '') as string;
+      const imgFilename = imgSrc.split('/').pop() || imgSrc;
+      const imgWidth = element.width as string | number | undefined;
+      // Caption is stored as array of text nodes: [{ text: 'caption' }]
+      const imgCaption = (element.caption as Array<{text: string}> | undefined)?.[0]?.text || '';
+
+      // Ensure width has CSS units - PlateJS stores numbers for pixel values
+      let widthValue: string | undefined;
+      if (typeof imgWidth === 'number') {
+        widthValue = `${imgWidth}px`;
+      } else if (typeof imgWidth === 'string' && imgWidth) {
+        // Already has units (e.g., "50%", "200px") or add px if just a number string
+        widthValue = /^\d+$/.test(imgWidth) ? `${imgWidth}px` : imgWidth;
+      } else {
+        widthValue = undefined;
+      }
+      const widthStyle = widthValue ? ` style="width:${widthValue}"` : '';
+      let figureHtml = `<figure${widthStyle}>\n`;
+      figureHtml += `  <img src="images/${escapeAttr(imgFilename)}" alt="${escapeAttr(imgAlt)}"/>\n`;
+      if (imgCaption) {
+        figureHtml += `  <figcaption>${escapeHtml(imgCaption)}</figcaption>\n`;
+      }
+      figureHtml += `</figure>\n`;
+      return figureHtml;
 
     case 'ul':
       return `<ul>\n${children}</ul>\n`;
@@ -168,7 +188,7 @@ export function xhtmlToPlate(xhtml: string): Value {
   }
 
   // Get all block-level elements
-  const blockElements = body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol, div, hr');
+  const blockElements = body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol, div, hr, figure');
 
   if (blockElements.length === 0) {
     // No block elements - treat entire body as a paragraph
@@ -258,6 +278,9 @@ function parseElement(el: Element): PlateElement | null {
     case 'img':
       return parseImageElement(el);
 
+    case 'figure':
+      return parseFigureElement(el);
+
     default:
       // Unknown element - treat as paragraph
       return { type: 'p', children: validChildren };
@@ -305,6 +328,65 @@ function parseImageElement(el: Element): PlateElement {
     alt: alt,
     children: [{ text: '' }]
   };
+}
+
+/**
+ * Parse a figure element (image with optional caption and width)
+ * Matches PlateJS serializeHtml output format
+ */
+function parseFigureElement(el: Element): PlateElement {
+  const img = el.querySelector('img');
+  const figcaption = el.querySelector('figcaption');
+
+  if (!img) {
+    // No image inside figure - treat as paragraph
+    return { type: 'p', children: [{ text: el.textContent || '' }] };
+  }
+
+  const src = img.getAttribute('src') || '';
+  const alt = img.getAttribute('alt') || '';
+
+  // Normalize URL to images/{filename} format
+  let url = src;
+  if (src && !src.startsWith('images/') && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
+    const filename = src.split('/').pop() || src;
+    url = `images/${filename}`;
+  }
+
+  // Parse width from figure's style attribute
+  const style = el.getAttribute('style') || '';
+  const widthMatch = style.match(/width:\s*([^;]+)/);
+  let width: string | number | undefined;
+  if (widthMatch && widthMatch[1]) {
+    const rawWidth = widthMatch[1].trim();
+    // If it's a pixel value, convert to number (PlateJS expects number for pixels)
+    const pxMatch = rawWidth.match(/^(\d+(?:\.\d+)?)px$/);
+    if (pxMatch && pxMatch[1]) {
+      width = parseFloat(pxMatch[1]);
+    } else {
+      // Keep as string for percentages or other units
+      width = rawWidth;
+    }
+  }
+
+  // Parse caption text
+  const captionText = figcaption?.textContent || '';
+
+  const node: PlateElement = {
+    type: 'img',
+    url: url,
+    alt: alt,
+    children: [{ text: '' }]
+  };
+
+  if (width !== undefined) {
+    (node as any).width = width;
+  }
+  if (captionText) {
+    (node as any).caption = [{ text: captionText }];
+  }
+
+  return node;
 }
 
 /**

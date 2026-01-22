@@ -136,7 +136,7 @@ export default function AuthorsClient() {
     setShowEditor(true);
   };
 
-  // Check if API key exists
+  // Check if API key exists and load it
   const checkApiKey = useCallback(async () => {
     try {
       const key = await loadApiKey();

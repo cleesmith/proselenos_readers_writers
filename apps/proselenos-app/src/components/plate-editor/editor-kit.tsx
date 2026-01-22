@@ -4,13 +4,12 @@
 import { TrailingBlockPlugin, type Value } from 'platejs';
 import { type TPlateEditor, useEditorRef } from 'platejs/react';
 
-import { AIKit } from '@/components/plate-editor/plugins/ai-kit';
+
 import { AlignKit } from '@/components/plate-editor/plugins/align-kit';
 import { AutoformatKit } from '@/components/plate-editor/plugins/autoformat-kit';
 import { BasicBlocksKit } from '@/components/plate-editor/plugins/basic-blocks-kit';
 import { BasicMarksKit } from '@/components/plate-editor/plugins/basic-marks-kit';
 import { BlockMenuKit } from '@/components/plate-editor/plugins/block-menu-kit';
-import { BlockPlaceholderKit } from '@/components/plate-editor/plugins/block-placeholder-kit';
 import { CalloutKit } from '@/components/plate-editor/plugins/callout-kit';
 import { CodeBlockKit } from '@/components/plate-editor/plugins/code-block-kit';
 import { ColumnKit } from '@/components/plate-editor/plugins/column-kit';
@@ -23,7 +22,6 @@ import { DocxKit } from '@/components/plate-editor/plugins/docx-kit';
 import { EmojiKit } from '@/components/plate-editor/plugins/emoji-kit';
 import { ExitBreakKit } from '@/components/plate-editor/plugins/exit-break-kit';
 import { FixedToolbarKit } from '@/components/plate-editor/plugins/fixed-toolbar-kit';
-import { FloatingToolbarKit } from '@/components/plate-editor/plugins/floating-toolbar-kit';
 import { FontKit } from '@/components/plate-editor/plugins/font-kit';
 import { LineHeightKit } from '@/components/plate-editor/plugins/line-height-kit';
 import { LinkKit } from '@/components/plate-editor/plugins/link-kit';
@@ -43,8 +41,6 @@ import { DisableShortcutsKit } from '@/components/plate-editor/plugins/disable-s
 export const EditorKit: any[] = [
   // MUST be first to intercept keyboard events before other plugins
   ...DisableShortcutsKit,
-  ...AIKit,
-
   // Elements
   ...BasicBlocksKit,
   ...CodeBlockKit,
@@ -88,9 +84,7 @@ export const EditorKit: any[] = [
   ...MarkdownKit,
 
   // UI
-  ...BlockPlaceholderKit,
   ...FixedToolbarKit,
-  ...FloatingToolbarKit,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

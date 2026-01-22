@@ -2,7 +2,6 @@
 
 import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
 import {
-  KeyboardIcon,
   MoreHorizontalIcon,
   SubscriptIcon,
   SuperscriptIcon,
@@ -40,17 +39,6 @@ export function MoreToolbarButton(props: DropdownMenuProps) {
         <DropdownMenuGroup>
           <DropdownMenuItem
             onSelect={() => {
-              editor.tf.toggleMark(KEYS.kbd);
-              editor.tf.collapse({ edge: 'end' });
-              editor.tf.focus();
-            }}
-          >
-            <KeyboardIcon />
-            Keyboard input
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onSelect={() => {
               editor.tf.toggleMark(KEYS.sup, {
                 remove: KEYS.sub,
               });
@@ -59,7 +47,6 @@ export function MoreToolbarButton(props: DropdownMenuProps) {
           >
             <SuperscriptIcon />
             Superscript
-            {/* (⌘+,) */}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {
@@ -71,7 +58,6 @@ export function MoreToolbarButton(props: DropdownMenuProps) {
           >
             <SubscriptIcon />
             Subscript
-            {/* (⌘+.) */}
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

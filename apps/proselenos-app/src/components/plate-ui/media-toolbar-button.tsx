@@ -8,6 +8,7 @@ import {
   AudioLinesIcon,
   FileUpIcon,
   FilmIcon,
+  FolderOpenIcon,
   ImageIcon,
   LinkIcon,
 } from 'lucide-react';
@@ -16,6 +17,7 @@ import { useEditorRef } from 'platejs/react';
 import * as React from 'react';
 import { toast } from 'sonner';
 import { useFilePicker } from 'use-file-picker';
+import { useImageLibrary } from '@/contexts/ImageLibraryContext';
 
 import {
   AlertDialog,
@@ -86,6 +88,7 @@ export function MediaToolbarButton({
   const editor = useEditorRef();
   const [open, setOpen] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const imageLibrary = useImageLibrary();
 
   const { openFilePicker } = useFilePicker({
     accept: currentConfig.accept,
@@ -138,6 +141,12 @@ export function MediaToolbarButton({
                 <LinkIcon />
                 Insert via URL
               </DropdownMenuItem>
+              {nodeType === KEYS.img && imageLibrary && (
+                <DropdownMenuItem onSelect={() => imageLibrary.openImageLibrary()}>
+                  <FolderOpenIcon className="size-4" />
+                  Image Library
+                </DropdownMenuItem>
+              )}
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

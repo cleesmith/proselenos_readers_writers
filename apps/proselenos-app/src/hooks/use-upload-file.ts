@@ -2,7 +2,7 @@
  * Image upload hook that stores directly to IndexedDB.
  * No external service required - images persist locally.
  *
- * Storage convention: images/{timestamp}-{filename}
+ * Storage convention: images/{filename}
  * This matches EPUB3 structure: OEBPS/images/
  */
 import * as React from 'react';
@@ -38,10 +38,9 @@ export function useUploadFile({
     setProgress(0);
 
     try {
-      // Generate unique filename with timestamp
-      const timestamp = Date.now();
+      // Use sanitized original filename (no timestamp prefix)
       const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const uniqueFilename = `${timestamp}-${sanitizedName}`;
+      const uniqueFilename = sanitizedName;
 
       // Simulate progress for UX (actual IndexedDB write is fast)
       setProgress(30);

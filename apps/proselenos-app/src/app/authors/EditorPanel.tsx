@@ -11,7 +11,8 @@ import OneByOnePanel from './OneByOnePanel';
 import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
-import { showUrlInput } from '../shared/alerts';
+import { ImageLibraryProvider } from '@/contexts/ImageLibraryContext';
+
 
 // PlateJS imports
 import { Plate, usePlateEditor } from 'platejs/react';
@@ -36,6 +37,7 @@ interface EditorPanelProps {
   theme: ThemeConfig;
   isDarkMode: boolean;
   onToggleSidebar: () => void;
+  onSave?: () => Promise<void>;
   onAIWritingClick: () => void;
   hasApiKey: boolean;
   currentModel: string;
@@ -106,6 +108,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   theme,
   isDarkMode,
   onToggleSidebar,
+  onSave,
   onAIWritingClick,
   hasApiKey,
   currentModel,
@@ -179,13 +182,24 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   }, [sectionTitle]);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const formatDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Formatting dropdown state
-  const [showFormatDropdown, setShowFormatDropdown] = useState(false);
 
   // Image picker state
   const [showImagePicker, setShowImagePicker] = useState(false);
+
+  // Save button state
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Handle manual save with visual feedback
+  const handleSaveClick = useCallback(async () => {
+    if (!onSave || isSaving) return;
+    setIsSaving(true);
+    try {
+      await onSave();
+    } finally {
+      // Brief delay to show "Saved" state
+      setTimeout(() => setIsSaving(false), 500);
+    }
+  }, [onSave, isSaving]);
 
   // Create initial value - use plateValue if available, otherwise create empty
   const initialValue = useMemo(() => {
@@ -237,69 +251,18 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     onContentChange?.(hasChanged, xhtml);
   }, [editor, isEditorReady, originalXhtml, onContentChange]);
 
-  // Close format dropdown when clicking outside
-  useEffect(() => {
-    if (!showFormatDropdown) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (formatDropdownRef.current && !formatDropdownRef.current.contains(e.target as Node)) {
-        setShowFormatDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showFormatDropdown]);
-
-  // Apply formatting using Plate transforms
-  const applyFormat = useCallback((mark: string) => {
-    if (!editor) return;
-    // Use the editor's transform API to toggle marks
-    try {
-      const toggleMark = editor.tf['toggle'];
-      if (toggleMark && typeof toggleMark === 'object' && 'mark' in toggleMark) {
-        (toggleMark as { mark: (opts: { key: string }) => void }).mark({ key: mark });
-      }
-    } catch (e) {
-      console.warn('Could not apply format:', mark, e);
-    }
-    setShowFormatDropdown(false);
-  }, [editor]);
-
-  // Handle Web Link formatting
-  const handleWebLink = useCallback(async () => {
-    if (!editor) return;
-
-    setShowFormatDropdown(false);
-
-    const url = await showUrlInput('Enter URL', 'https://', isDarkMode);
-    if (!url) return;
-
-    // Get current selection text
-    const selection = editor.selection;
-    if (!selection) return;
-
-    // Insert link using the link plugin's transform
-    try {
-      const insertLink = editor.tf['insertLink'];
-      if (insertLink && typeof insertLink === 'function') {
-        (insertLink as (opts: { url: string }) => void)({ url });
-      }
-    } catch (e) {
-      console.warn('Could not insert link:', e);
-    }
-  }, [editor, isDarkMode]);
-
   // Handle image insertion from picker
-  // XHTML-Native: Inserts as XHTML image element
+  // XHTML-Native: Inserts as proper Plate image element node
   const handleImageInsert = useCallback((filename: string, altText: string) => {
     if (!editor) return;
 
-    // Insert image node directly into the editor
-    // TODO: When media plugin is properly configured, use proper image insertion
-    // For now, insert as text that will be converted to image on export
-    const imageText = `![${altText}](${filename})`;
-    editor.tf.insertText(imageText);
+    // Insert proper Plate image element node
+    editor.tf.insertNodes({
+      type: 'img',
+      url: filename,
+      alt: altText,
+      children: [{ text: '' }],
+    });
 
     setShowImagePicker(false);
 
@@ -405,6 +368,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   };
 
   return (
+    <ImageLibraryProvider value={{ openImageLibrary: () => setShowImagePicker(true) }}>
     <main
       style={{
         flex: 1,
@@ -497,106 +461,19 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           </svg>
         </StyledSmallButton>
 
-        {/* Formatting dropdown */}
-        <div ref={formatDropdownRef} style={{ position: 'relative' }}>
-          <StyledSmallButton
-            theme={theme}
-            onClick={() => setShowFormatDropdown(!showFormatDropdown)}
-            title="Text formatting"
-            disabled={toolExecuting}
-          >
-            Format ▾
-          </StyledSmallButton>
-          {showFormatDropdown && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                marginTop: '4px',
-                backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
-                border: `1px solid ${theme.border}`,
-                borderRadius: '4px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                zIndex: 100,
-                minWidth: '120px',
-              }}
-            >
-              <button
-                onClick={() => applyFormat('bold')}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'none',
-                  color: theme.text,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#3a3a3a' : '#f0f0f0'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <strong>Bold</strong>
-              </button>
-              <button
-                onClick={() => applyFormat('italic')}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'none',
-                  color: theme.text,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#3a3a3a' : '#f0f0f0'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <em>Italic</em>
-              </button>
-              <button
-                onClick={handleWebLink}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'none',
-                  color: theme.text,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#3a3a3a' : '#f0f0f0'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                Web Link
-              </button>
-              <button
-                onClick={() => { setShowFormatDropdown(false); setShowImagePicker(true); }}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'none',
-                  color: theme.text,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#3a3a3a' : '#f0f0f0'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                Image
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Manual Save button */}
+        <StyledSmallButton
+          theme={theme}
+          onClick={handleSaveClick}
+          title="Save current section (Ctrl+S)"
+          disabled={toolExecuting || isSaving}
+          styleOverrides={{
+            backgroundColor: isSaving ? '#28a745' : undefined,
+            color: isSaving ? 'white' : undefined,
+          }}
+        >
+          {isSaving ? 'Saved' : 'Save'}
+        </StyledSmallButton>
 
         {/* AI Section with green background */}
         <div
@@ -789,6 +666,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         onClose={() => setShowImagePicker(false)}
       />
     </main>
+    </ImageLibraryProvider>
   );
 });
 
