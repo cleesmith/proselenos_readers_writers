@@ -80,9 +80,11 @@ export async function generateEpubFromWorkingCopy(
   const copyrightSection = sections.find(s =>
     s.id === 'copyright' || s.title.toLowerCase() === 'copyright'
   );
-  // XHTML-Native: Extract plain text from XHTML for copyright content
-  const copyrightContent = copyrightSection?.xhtml
-    ? xhtmlToPlainText(copyrightSection.xhtml)
+  // XHTML-Native: Use raw XHTML directly to preserve paragraph structure
+  const copyrightXhtml = copyrightSection?.xhtml || '';
+  // Fallback plain text (for legacy data without XHTML)
+  const copyrightContent = copyrightXhtml
+    ? xhtmlToPlainText(copyrightXhtml)
     : '';
 
   // Find Cover section to extract cover image (if user added one via Format > Image)
@@ -161,7 +163,8 @@ export async function generateEpubFromWorkingCopy(
     language: meta.language || 'en',
     description: meta.description || 'Created with EverythingEbooks',
     rights: meta.rights || '',
-    copyrightContent: copyrightContent, // Custom copyright text from working copy
+    copyrightXhtml: copyrightXhtml, // Raw XHTML for direct use (preserves formatting)
+    copyrightContent: copyrightContent, // Plain text fallback
   };
 
   // Convert inline images to Uint8Array format (do this first so we can check for cover image)
@@ -525,9 +528,11 @@ function createTitlePage(metadata: any): string {
 function createCopyrightPage(metadata: any): string {
   let copyrightContent: string;
 
-  // Use custom copyright content from working copy if provided
-  if (metadata.copyrightContent && metadata.copyrightContent.trim()) {
-    // Convert plain text paragraphs to HTML
+  if (metadata.copyrightXhtml && metadata.copyrightXhtml.trim()) {
+    // XHTML-Native: Use XHTML directly (preserves paragraphs, spacing, formatting)
+    copyrightContent = metadata.copyrightXhtml;
+  } else if (metadata.copyrightContent && metadata.copyrightContent.trim()) {
+    // Fallback: plain text → paragraph splitting
     copyrightContent = metadata.copyrightContent
       .split(/\n\s*\n/)
       .map((p: string) => `    <p>${escapeHtml(p.replace(/\n/g, ' ').trim())}</p>`)

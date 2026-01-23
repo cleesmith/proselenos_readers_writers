@@ -96,11 +96,18 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
 
   // Process HTML to inline CSS when switching to preview mode
   useEffect(() => {
-    if (viewMode !== 'preview' || !isHtmlFile || !zip || !filePath) {
+    if (viewMode !== 'preview' || !isHtmlFile || !filePath) {
       setPreviewHtml(null);
       return;
     }
     if (content?.type !== 'text' || typeof content.content !== 'string') return;
+
+    if (!zip) {
+      // No zip available (manuscript xray) - wrap XHTML body content in basic HTML shell
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:serif;padding:1em;line-height:1.6;}</style></head><body>${content.content}</body></html>`;
+      setPreviewHtml(html);
+      return;
+    }
 
     setIsProcessing(true);
     inlineStylesheets(content.content, zip, filePath)

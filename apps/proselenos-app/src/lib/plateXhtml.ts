@@ -16,6 +16,8 @@ interface PlateText {
   italic?: boolean;
   underline?: boolean;
   strikethrough?: boolean;
+  superscript?: boolean;
+  subscript?: boolean;
 }
 
 interface PlateElement {
@@ -39,8 +41,44 @@ export function plateToXhtml(value: Value): string {
     return '';
   }
 
-  const html = value.map(node => serializeNode(node as PlateElement | PlateText)).join('');
+  const html = serializeNodes(value as (PlateElement | PlateText)[]);
   return html;
+}
+
+/**
+ * Serialize nodes, grouping consecutive indent-based list paragraphs into ul/ol
+ */
+function serializeNodes(nodes: (PlateElement | PlateText)[]): string {
+  const parts: string[] = [];
+  let i = 0;
+
+  while (i < nodes.length) {
+    const node = nodes[i]!;
+    if ('type' in node && node.type === 'p' && (node as any).listStyleType) {
+      // Collect consecutive list items with same listStyleType
+      const listStyleType = (node as any).listStyleType;
+      const isOrdered = listStyleType === 'decimal';
+      const listTag = isOrdered ? 'ol' : 'ul';
+      const items: string[] = [];
+
+      while (i < nodes.length) {
+        const current = nodes[i]!;
+        if (!('type' in current) || current.type !== 'p' || (current as any).listStyleType !== listStyleType) break;
+        const children = (current as PlateElement).children
+          .map(child => serializeNode(child as PlateElement | PlateText))
+          .join('');
+        items.push(`<li>${children}</li>\n`);
+        i++;
+      }
+
+      parts.push(`<${listTag}>\n${items.join('')}</${listTag}>\n`);
+    } else {
+      parts.push(serializeNode(node as PlateElement | PlateText));
+      i++;
+    }
+  }
+
+  return parts.join('');
 }
 
 /**
@@ -60,6 +98,10 @@ function serializeNode(node: PlateElement | PlateText): string {
 
   switch (element.type) {
     case 'p':
+      const pAlign = (element as any).align;
+      if (pAlign && pAlign !== 'left') {
+        return `<p style="text-align: ${pAlign}">${children}</p>\n`;
+      }
       return `<p>${children}</p>\n`;
 
     case 'h1':
@@ -144,6 +186,12 @@ function serializeText(node: PlateText): string {
   let text = escapeHtml(node.text);
 
   // Apply marks in reverse order (innermost first)
+  if (node.subscript) {
+    text = `<sub>${text}</sub>`;
+  }
+  if (node.superscript) {
+    text = `<sup>${text}</sup>`;
+  }
   if (node.strikethrough) {
     text = `<del>${text}</del>`;
   }
@@ -175,51 +223,232 @@ export function xhtmlToPlate(xhtml: string): Value {
     return createEmptyValue();
   }
 
-  // Parse XHTML
   const parser = new DOMParser();
   const doc = parser.parseFromString(xhtml, 'text/html');
-
-  const blocks: (PlateElement | PlateText)[] = [];
-
-  // Process body children
   const body = doc.body;
-  if (!body) {
-    return createEmptyValue();
-  }
+  if (!body) return createEmptyValue();
 
-  // Get all block-level elements
-  const blockElements = body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol, div, hr, figure');
+  const blocks = processBlockChildren(body);
 
-  if (blockElements.length === 0) {
-    // No block elements - treat entire body as a paragraph
-    const content = parseChildren(body);
-    if (content.length > 0) {
-      blocks.push({ type: 'p', children: content });
-    }
-  } else {
-    blockElements.forEach(el => {
-      // Skip if this element is nested inside another block we'll process
-      const parent = el.parentElement;
-      if (parent && parent !== body && parent.tagName !== 'LI') {
-        const parentTag = parent.tagName.toLowerCase();
-        if (['div', 'blockquote', 'ul', 'ol'].includes(parentTag)) {
-          return;
-        }
-      }
-
-      const node = parseElement(el);
-      if (node) {
-        blocks.push(node);
-      }
-    });
-  }
-
-  // Ensure we have at least one block
   if (blocks.length === 0) {
     return createEmptyValue();
   }
-
   return blocks as Value;
+}
+
+/**
+ * Recursively walk direct children of a container element,
+ * descending into wrapper divs to find actual block content.
+ */
+function processBlockChildren(container: Element): (PlateElement | PlateText)[] {
+  const blocks: (PlateElement | PlateText)[] = [];
+
+  container.childNodes.forEach(node => {
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const el = node as Element;
+    const tag = el.tagName.toLowerCase();
+
+    switch (tag) {
+      case 'p': {
+        // Vellum scene breaks: <p class="implicit-break scene-break"></p>
+        if (el.classList.contains('scene-break') || el.classList.contains('implicit-break')) {
+          // Only treat as scene break if the paragraph is empty
+          const textContent = el.textContent?.trim() || '';
+          if (textContent === '') {
+            blocks.push({ type: 'p', children: [{ text: '' }] });
+            break;
+          }
+        }
+        const parsed = parseElement(el);
+        if (parsed) blocks.push(parsed);
+        break;
+      }
+
+      case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
+      case 'hr':
+      case 'figure': {
+        const parsed = parseElement(el);
+        if (parsed) blocks.push(parsed);
+        break;
+      }
+
+      case 'blockquote': {
+        const parsed = parseElement(el);
+        if (parsed) blocks.push(parsed);
+        break;
+      }
+
+      case 'ul': case 'ol': {
+        const listItems = parseListToFlatParagraphs(el);
+        blocks.push(...listItems);
+        break;
+      }
+
+      case 'div': {
+        handleDiv(el, blocks);
+        break;
+      }
+
+      case 'section': {
+        // Sections are structural wrappers in many non-Vellum epubs — recurse into children
+        const innerBlocks = processBlockChildren(el);
+        blocks.push(...innerBlocks);
+        break;
+      }
+
+      default:
+        // Unknown block element - try to extract as paragraph
+        const content = parseChildren(el);
+        if (content.length > 0) {
+          blocks.push({ type: 'p', children: content });
+        }
+        break;
+    }
+  });
+
+  return blocks;
+}
+
+/**
+ * Classify Vellum wrapper divs and extract content appropriately.
+ * Vellum uses specific div classes for structural elements.
+ */
+function handleDiv(el: Element, blocks: (PlateElement | PlateText)[]): void {
+  const id = el.id || '';
+
+  // Vellum ornamental-break: decorative scene separator with image
+  if (el.classList.contains('ornamental-break')) {
+    blocks.push({ type: 'hr', children: [{ text: '' }] });
+    return;
+  }
+
+  // Vellum page-break: explicit page break marker
+  if (el.classList.contains('page-break')) {
+    blocks.push({ type: 'hr', children: [{ text: '' }] });
+    return;
+  }
+
+  // Vellum inline-image: image with optional caption
+  if (el.classList.contains('inline-image')) {
+    const img = el.querySelector('img');
+    if (img) {
+      const imgNode = parseImageElement(img);
+
+      // Extract size from Vellum class names (inline-image-size-*)
+      if (el.classList.contains('inline-image-size-small')) {
+        (imgNode as any).width = '30%';
+      } else if (el.classList.contains('inline-image-size-medium')) {
+        (imgNode as any).width = '50%';
+      } else if (el.classList.contains('inline-image-size-large')) {
+        (imgNode as any).width = '75%';
+      }
+
+      // Extract alignment from Vellum class names (inline-image-flow-*)
+      if (el.classList.contains('inline-image-flow-left')) {
+        (imgNode as any).align = 'left';
+      } else if (el.classList.contains('inline-image-flow-right')) {
+        (imgNode as any).align = 'right';
+      } else if (el.classList.contains('inline-image-flow-center')) {
+        (imgNode as any).align = 'center';
+      }
+
+      // Extract caption (Vellum uses p.inline-image-caption)
+      const captionEl = el.querySelector('figcaption, .caption, p.caption-text, p.inline-image-caption');
+      const captionText = captionEl?.textContent?.trim() || '';
+      if (captionText) {
+        (imgNode as any).caption = [{ text: captionText }];
+      }
+
+      blocks.push(imgNode);
+    }
+    return;
+  }
+
+  // Vellum blockquote-container: wraps a blockquote element
+  if (el.classList.contains('blockquote-container') || el.classList.contains('blockquote')) {
+    const bq = el.querySelector('blockquote');
+    if (bq) {
+      // Parse the blockquote's content as child paragraphs
+      const bqChildren = processBlockChildren(bq);
+      const validChildren = bqChildren.length > 0 ? bqChildren : [{ text: '' } as PlateText];
+      blocks.push({ type: 'blockquote', children: validChildren });
+    } else {
+      // No actual blockquote inside - recurse
+      const innerBlocks = processBlockChildren(el);
+      blocks.push(...innerBlocks);
+    }
+    return;
+  }
+
+  // Vellum list-text-feature: wraps a ul or ol
+  if (el.classList.contains('list-text-feature') || el.classList.contains('list-text')) {
+    const list = el.querySelector('ul, ol');
+    if (list) {
+      const listItems = parseListToFlatParagraphs(list);
+      blocks.push(...listItems);
+    } else {
+      // No list found - recurse into children
+      const innerBlocks = processBlockChildren(el);
+      blocks.push(...innerBlocks);
+    }
+    return;
+  }
+
+  // Vellum alignment-block: contains a text-block with aligned paragraphs
+  if (el.classList.contains('alignment-block') || el.classList.contains('text-block')) {
+    // Detect alignment from class (e.g., alignment-block-align-right)
+    let align: string | undefined;
+    if (el.classList.contains('alignment-block-align-right')) align = 'right';
+    else if (el.classList.contains('alignment-block-align-center')) align = 'center';
+    else if (el.classList.contains('alignment-block-align-left')) align = 'left';
+
+    const innerBlocks = processBlockChildren(el);
+    if (align) {
+      innerBlocks.forEach(block => {
+        if ('type' in block) (block as any).align = align;
+      });
+    }
+    blocks.push(...innerBlocks);
+    return;
+  }
+
+  // Vellum heading div: contains chapter heading (h1/h2)
+  // Skip if chapter title is already displayed in sidebar
+  if (el.classList.contains('heading') && !el.classList.contains('subheading')) {
+    const heading = el.querySelector('h1, h2, h3');
+    if (heading) {
+      const parsed = parseElement(heading);
+      if (parsed) blocks.push(parsed);
+    }
+    return;
+  }
+
+  // Vellum text container: id like "chapter-X-text" - the actual content wrapper
+  if (id && /^chapter-\d+-text$/.test(id)) {
+    const innerBlocks = processBlockChildren(el);
+    blocks.push(...innerBlocks);
+    return;
+  }
+
+  // Vellum "text" class div: another content wrapper pattern
+  if (el.classList.contains('text')) {
+    const innerBlocks = processBlockChildren(el);
+    blocks.push(...innerBlocks);
+    return;
+  }
+
+  // Generic div with an image inside (non-Vellum pattern)
+  const img = el.querySelector('img');
+  if (img && !el.querySelector('p, h1, h2, h3, h4, h5, h6, div')) {
+    blocks.push(parseImageElement(img));
+    return;
+  }
+
+  // Default: recurse into the div's children (generic wrapper)
+  const innerBlocks = processBlockChildren(el);
+  if (innerBlocks.length > 0) {
+    blocks.push(...innerBlocks);
+  }
 }
 
 /**
@@ -258,10 +487,10 @@ function parseElement(el: Element): PlateElement | null {
       return { type: 'blockquote', children: validChildren };
 
     case 'ul':
-      return { type: 'ul', children: parseListItems(el) };
-
     case 'ol':
-      return { type: 'ol', children: parseListItems(el) };
+      // Lists are handled by parseListToFlatParagraphs in processBlockChildren.
+      // This fallback returns a simple paragraph if parseElement is called directly.
+      return { type: 'p', children: validChildren };
 
     case 'hr':
       return { type: 'hr', children: [{ text: '' }] };
@@ -288,21 +517,30 @@ function parseElement(el: Element): PlateElement | null {
 }
 
 /**
- * Parse list items
+ * Parse list (ul/ol) into flat paragraphs with indent-based list properties.
+ * PlateJS uses indent model: each list item is a paragraph with listStyleType/indent.
  */
-function parseListItems(el: Element): PlateElement[] {
+function parseListToFlatParagraphs(el: Element): PlateElement[] {
   const items: PlateElement[] = [];
+  const isOrdered = el.tagName.toLowerCase() === 'ol';
+  const listStyleType = isOrdered ? 'decimal' : 'disc';
   const lis = el.querySelectorAll(':scope > li');
 
-  lis.forEach(li => {
+  lis.forEach((li, index) => {
     const children = parseChildren(li);
-    items.push({
-      type: 'li',
+    const node: PlateElement = {
+      type: 'p',
+      indent: 1,
+      listStyleType,
       children: children.length > 0 ? children : [{ text: '' }]
-    });
+    };
+    if (index > 0) {
+      (node as any).listStart = index + 1;
+    }
+    items.push(node);
   });
 
-  return items.length > 0 ? items : [{ type: 'li', children: [{ text: '' }] }];
+  return items.length > 0 ? items : [{ type: 'p', indent: 1, listStyleType, children: [{ text: '' }] }];
 }
 
 /**
@@ -439,6 +677,24 @@ function parseChildren(el: Element): (PlateElement | PlateText)[] {
         innerChildren.forEach(child => {
           if ('text' in child) {
             children.push({ ...child, strikethrough: true });
+          } else {
+            children.push(child);
+          }
+        });
+      } else if (tag === 'sup') {
+        const innerChildren = parseChildren(childEl);
+        innerChildren.forEach(child => {
+          if ('text' in child) {
+            children.push({ ...child, superscript: true });
+          } else {
+            children.push(child);
+          }
+        });
+      } else if (tag === 'sub') {
+        const innerChildren = parseChildren(childEl);
+        innerChildren.forEach(child => {
+          if ('text' in child) {
+            children.push({ ...child, subscript: true });
           } else {
             children.push(child);
           }

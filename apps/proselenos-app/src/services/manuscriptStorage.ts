@@ -1113,6 +1113,38 @@ export async function getAllManuscriptImages(): Promise<Array<{filename: string,
   }
 }
 
+// ============================================
+// X-Ray entries (for ManuscriptXrayModal)
+// ============================================
+
+export interface ManuscriptXrayEntry {
+  key: string;       // e.g. 'section-001.xhtml'
+  title: string;     // from meta.json or fallback to key
+  type: string;      // ElementType from meta
+  content: string;   // raw XHTML string
+  size: number;      // byte length
+}
+
+export async function loadManuscriptXrayEntries(): Promise<ManuscriptXrayEntry[]> {
+  const meta = await loadManuscriptMeta();
+  if (!meta || meta.sections.length === 0) return [];
+
+  const entries: ManuscriptXrayEntry[] = [];
+  for (const sectionMeta of meta.sections) {
+    const xhtml = await loadSectionXhtml(sectionMeta.id);
+    if (xhtml === null) continue;
+    const key = `${sectionMeta.id}.xhtml`;
+    entries.push({
+      key,
+      title: sectionMeta.title,
+      type: sectionMeta.type || 'chapter',
+      content: xhtml,
+      size: new TextEncoder().encode(xhtml).length,
+    });
+  }
+  return entries;
+}
+
 /**
  * Clear all inline images from IndexedDB
  * Called when creating a new manuscript

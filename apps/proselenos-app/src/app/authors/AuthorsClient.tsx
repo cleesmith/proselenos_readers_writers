@@ -17,6 +17,7 @@ import SimpleChatModal from '@/components/SimpleChatModal';
 import BookInfoModal from './BookInfoModal';
 import LibraryBooksModal from './LibraryBooksModal';
 import CoverModal from './CoverModal';
+import ManuscriptXrayModal from '@/components/xray/ManuscriptXrayModal';
 import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
 import { parseEpub } from '@/services/epubService';
 import { Book } from '@/types/book';
@@ -78,6 +79,8 @@ export default function AuthorsClient() {
 
   // Cover modal state
   const [showCoverModal, setShowCoverModal] = useState(false);
+  // X-Ray modal state
+  const [showXrayModal, setShowXrayModal] = useState(false);
   const [coverTitle, setCoverTitle] = useState('');
   const [coverSubtitle, setCoverSubtitle] = useState('');
   const [coverPublisher, setCoverPublisher] = useState('');
@@ -422,6 +425,7 @@ export default function AuthorsClient() {
         onAIWritingClick={() => setShowAIWriting(true)}
         onChatClick={() => setShowChat(true)}
         onCoverClick={handleOpenCoverModal}
+        onXrayClick={() => setShowXrayModal(true)}
         onLoadFromLibraryClick={() => setShowLibraryModal(true)}
         hasApiKey={hasApiKey}
         currentModel={currentModel}
@@ -566,6 +570,13 @@ export default function AuthorsClient() {
         publisher={coverPublisher}
         author={coverAuthor}
         onCoverSaved={handleCoverSaved}
+      />
+
+      {/* Manuscript X-Ray Modal */}
+      <ManuscriptXrayModal
+        isOpen={showXrayModal}
+        onClose={() => setShowXrayModal(false)}
+        bookTitle={coverTitle || undefined}
       />
 
       {/* Dual Panel Editor (View-Edit for AI tool results) */}

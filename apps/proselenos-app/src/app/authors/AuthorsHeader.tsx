@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiImage, PiArrowRight } from 'react-icons/pi';
+import { GiBoxUnpacking } from 'react-icons/gi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
@@ -31,6 +32,7 @@ interface AuthorsHeaderProps {
   onSearchClose?: () => void;
   onCoverClick?: () => void;
   onHtmlExportClick?: () => void;
+  onXrayClick?: () => void;
 }
 
 export default function AuthorsHeader({
@@ -56,6 +58,7 @@ export default function AuthorsHeader({
   onSearchClose,
   onCoverClick,
   onHtmlExportClick,
+  onXrayClick,
 }: AuthorsHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -439,6 +442,25 @@ export default function AuthorsHeader({
             >
               <PiFileHtml size={16} />
               HTML
+            </button>
+            <button
+              onClick={() => { onXrayClick?.(); setMenuOpen(false); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '8px 12px',
+                background: 'rgba(147, 51, 234, 0.15)',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                color: '#9333ea',
+                fontSize: '13px',
+              }}
+            >
+              <GiBoxUnpacking size={16} />
+              X-Ray
             </button>
             <button
               onClick={() => { onStorageClick(); setMenuOpen(false); }}

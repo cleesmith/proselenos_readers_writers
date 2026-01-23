@@ -58,6 +58,8 @@ import {
   saveCoverImage,
   deleteCoverImage,
   loadCoverImage,
+  loadManuscriptMeta,
+  saveManuscriptMeta,
   WorkingCopyMeta,
   saveManuscriptImage,
   deleteManuscriptImage,
@@ -99,6 +101,7 @@ interface AuthorsLayoutProps {
   onAIWritingClick: () => void;
   onChatClick: () => void;
   onCoverClick: () => void;
+  onXrayClick?: () => void;
   onLoadFromLibraryClick: () => void;
   hasApiKey: boolean;
   currentModel: string;
@@ -142,6 +145,7 @@ export default function AuthorsLayout({
   onAIWritingClick,
   onChatClick,
   onCoverClick,
+  onXrayClick,
   onLoadFromLibraryClick,
   hasApiKey,
   currentModel,
@@ -1244,6 +1248,12 @@ export default function AuthorsLayout({
             meta.coverImageId = coverFilename;
             await saveWorkingCopyMeta(meta);
           }
+          // Also update meta.json so loadCoverImage() finds the correct file
+          const newMeta = await loadManuscriptMeta();
+          if (newMeta) {
+            newMeta.coverImageId = coverFilename;
+            await saveManuscriptMeta(newMeta);
+          }
           // Update in-memory epub state
           if (epub) {
             setEpub({ ...epub, coverImage: file });
@@ -1543,6 +1553,7 @@ export default function AuthorsLayout({
         onSearchClose={handleSearchClose}
         onCoverClick={onCoverClick}
         onHtmlExportClick={handleHtmlExport}
+        onXrayClick={onXrayClick}
       />
 
       {/* Main content: 2-panel layout */}
