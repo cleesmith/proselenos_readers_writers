@@ -24,6 +24,7 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
   const [viewMode, setViewMode] = useState<'source' | 'preview'>('source');
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Resolve relative paths (handles ../ and ./)
   const resolvePath = useCallback((baseDir: string, relativePath: string): string => {
@@ -78,7 +79,20 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
   useEffect(() => {
     setViewMode('source');
     setPreviewHtml(null);
+    setCopied(false);
   }, [fileName]);
+
+  // Copy text content to clipboard
+  const handleCopy = useCallback(async () => {
+    if (content?.type !== 'text' || typeof content.content !== 'string') return;
+    try {
+      await navigator.clipboard.writeText(content.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard write failed silently
+    }
+  }, [content]);
 
   // Process HTML to inline CSS when switching to preview mode
   useEffect(() => {
@@ -220,6 +234,12 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
                 </button>
               </div>
             )}
+            <button
+              onClick={handleCopy}
+              className="px-2 py-0.5 text-xs border border-base-300 rounded bg-base-100 hover:bg-base-300 transition-colors"
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
             <span className="text-xs text-base-content/50">
               {textLines.length} lines • {formatFileSize(content.size)}
             </span>
