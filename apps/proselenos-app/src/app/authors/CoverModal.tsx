@@ -13,8 +13,11 @@ import {
   saveCoverSettings,
   CoverSettings,
   saveCoverImage,
+  deleteCoverImage,
   loadWorkingCopyMeta,
   saveWorkingCopyMeta,
+  loadManuscriptMeta,
+  saveManuscriptMeta,
 } from '@/services/manuscriptStorage';
 
 interface CoverModalProps {
@@ -172,15 +175,29 @@ export default function CoverModal({
 
     setSaving(true);
     try {
-      // Save the cover image
       const filename = 'cover.png';
+
+      // Delete old cover blob if it has a different filename
+      const oldMeta = await loadManuscriptMeta();
+      if (oldMeta?.coverImageId && oldMeta.coverImageId !== filename) {
+        await deleteCoverImage();
+      }
+
+      // Save the new cover image
       await saveCoverImage(pngBlob, filename);
 
-      // Update working copy meta to reference the cover
-      const meta = await loadWorkingCopyMeta();
-      if (meta) {
-        meta.coverImageId = filename;
-        await saveWorkingCopyMeta(meta);
+      // Update working copy meta (old format)
+      const wcMeta = await loadWorkingCopyMeta();
+      if (wcMeta) {
+        wcMeta.coverImageId = filename;
+        await saveWorkingCopyMeta(wcMeta);
+      }
+
+      // Update manuscript meta (new format) so sidebar refresh picks it up
+      const manuscriptMeta = await loadManuscriptMeta();
+      if (manuscriptMeta) {
+        manuscriptMeta.coverImageId = filename;
+        await saveManuscriptMeta(manuscriptMeta);
       }
 
       // Save settings for next time

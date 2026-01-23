@@ -20,6 +20,7 @@ import { EditorKit } from '@/components/plate-editor/editor-kit';
 import { EditorContainer, Editor } from '@/components/plate-ui/editor';
 import { createEmptyValue, plateToPlainText, xhtmlToPlate, plateToXhtml } from '@/lib/plateXhtml';
 import type { Value } from 'platejs';
+import { FindReplacePlugin } from '@platejs/find-replace';
 import { cn } from '@/lib/utils';
 
 interface ImageInfo {
@@ -233,6 +234,16 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     setIsEditorReady(true);
   }, [sectionXhtml, editor]);
 
+  // Set/clear find-replace highlighting based on active search
+  useEffect(() => {
+    if (!editor) return;
+    if (searchActive && searchQuery) {
+      editor.setOptions(FindReplacePlugin, { search: searchQuery });
+    } else {
+      editor.setOptions(FindReplacePlugin, { search: '' });
+    }
+  }, [editor, searchActive, searchQuery]);
+
   // XHTML-Native: Handle editor changes
   // Convert PlateJS to XHTML on change
   const handleEditorChange = useCallback(() => {
@@ -273,23 +284,74 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   }, [editor, originalXhtml, onContentChange]);
 
   // Scroll to and highlight a passage in the editor
-  const scrollToPassage = useCallback((passage: string, _startIndex?: number) => {
+  // FindReplacePlugin handles highlighting all matches automatically
+  const scrollToPassage = useCallback((passage: string, startIndex?: number) => {
     if (!editor) return;
-
-    // For rich text editor, we need to search through text nodes
-    // Get plain text from editor to search
-    const plateValue = editor.children as Value;
-    const text = plateToPlainText(plateValue);
-    const index = text.indexOf(passage);
-
-    if (index === -1) return;
-
-    // Focus the editor
     editor.tf.focus();
 
-    // TODO: Implement proper text node search and selection in Plate
-    // For now, just focus the editor
-    console.log('scrollToPassage: found passage at index', index);
+    // Find the editor position by walking text nodes
+    // plateToPlainText joins blocks with '\n\n', so account for that
+    let charCount = 0;
+    const blocks = editor.children;
+
+    for (let blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
+      if (blockIdx > 0) charCount += 2; // '\n\n' separator between blocks
+
+      const block = blocks[blockIdx] as { children?: { text?: string }[] };
+      if (!block.children) continue;
+
+      for (let textIdx = 0; textIdx < block.children.length; textIdx++) {
+        const textNode = block.children[textIdx];
+        if (!textNode || typeof textNode.text !== 'string') continue;
+
+        const textLength = textNode.text.length;
+
+        if (startIndex !== undefined) {
+          // Use character position if provided
+          if (charCount + textLength > startIndex) {
+            const offset = startIndex - charCount;
+            editor.tf.select({ path: [blockIdx, textIdx], offset });
+            break;
+          }
+        } else {
+          // Fall back to text match
+          const matchPos = textNode.text.indexOf(passage);
+          if (matchPos !== -1) {
+            editor.tf.select({ path: [blockIdx, textIdx], offset: matchPos });
+            break;
+          }
+        }
+
+        charCount += textLength;
+      }
+
+      // Check if we already placed the selection
+      if (editor.selection) {
+        const sel = editor.selection;
+        if (sel.anchor && sel.anchor.path[0] === blockIdx) break;
+      }
+    }
+
+    // Scroll the selection into view via the DOM
+    setTimeout(() => {
+      const domSelection = window.getSelection();
+      if (!domSelection || domSelection.rangeCount === 0) return;
+
+      const range = domSelection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      if (!rect || (rect.top === 0 && rect.left === 0)) return;
+
+      const editorEl = document.querySelector('[data-plate-editor]');
+      if (!editorEl) return;
+
+      const editorRect = editorEl.getBoundingClientRect();
+      const offsetTop = rect.top - editorRect.top;
+
+      // Only scroll if the match is outside the visible area
+      if (offsetTop < 0 || offsetTop > editorEl.clientHeight) {
+        editorEl.scrollTop += offsetTop - editorEl.clientHeight / 3;
+      }
+    }, 0);
   }, [editor]);
 
   // Update content programmatically (for One-by-one Accept)

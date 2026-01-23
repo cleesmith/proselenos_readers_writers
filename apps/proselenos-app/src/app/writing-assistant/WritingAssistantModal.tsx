@@ -8,7 +8,7 @@ import { WritingAssistantModalProps } from './types';
 import { useWritingAssistant } from './useWritingAssistant';
 import WorkflowStep from './WorkflowStep';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { deleteWorkflowFile } from '@/services/manuscriptStorage';
+import { deleteSection, loadManuscriptMeta } from '@/services/manuscriptStorage';
 
 export default function WritingAssistantModal({
   isOpen,
@@ -41,11 +41,11 @@ export default function WritingAssistantModal({
     }
   }, [isOpen, state.isModalOpen, actions.openModal]);
 
-  // Handle Start Over - delete all workflow files
+  // Handle Start Over - delete brainstorm, outline, world sections
   const handleStartOver = async () => {
     const result = await Swal.fire({
       title: 'Start Over?',
-      text: 'This will delete brainstorm.txt, outline.txt, and world.txt',
+      text: 'This will delete the Brainstorm, Outline, and World sections',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes, Start Over',
@@ -57,11 +57,20 @@ export default function WritingAssistantModal({
     });
 
     if (result.isConfirmed) {
-      await deleteWorkflowFile('brainstorm.txt');
-      await deleteWorkflowFile('outline.txt');
-      await deleteWorkflowFile('world.txt');
-      // Refresh modal to show reset state
+      // Find sections by title (case-insensitive) since IDs may vary
+      const meta = await loadManuscriptMeta();
+      const sections = meta?.sections || [];
+      const brainstormId = sections.find(s => s.title.toLowerCase().trim() === 'brainstorm')?.id;
+      const outlineId = sections.find(s => s.title.toLowerCase().trim() === 'outline')?.id;
+      const worldId = sections.find(s => s.title.toLowerCase().trim() === 'world')?.id;
+      if (brainstormId) await deleteSection(brainstormId);
+      if (outlineId) await deleteSection(outlineId);
+      if (worldId) await deleteSection(worldId);
+      // Refresh modal to show reset state and notify sidebar
       actions.openModal();
+      if (onChapterAdded) {
+        onChapterAdded('');
+      }
     }
   };
 

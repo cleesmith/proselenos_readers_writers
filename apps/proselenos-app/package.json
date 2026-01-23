@@ -33,6 +33,7 @@
     "@platejs/docx": "^52.0.1",
     "@platejs/emoji": "^52.0.2",
     "@platejs/excalidraw": "^52.0.1",
+    "@platejs/find-replace": "^52.0.1",
     "@platejs/floating": "^52.0.1",
     "@platejs/indent": "^52.0.1",
     "@platejs/juice": "^52.0.1",

@@ -21,6 +21,7 @@ import { DndKit } from '@/components/plate-editor/plugins/dnd-kit';
 import { DocxKit } from '@/components/plate-editor/plugins/docx-kit';
 import { EmojiKit } from '@/components/plate-editor/plugins/emoji-kit';
 import { ExitBreakKit } from '@/components/plate-editor/plugins/exit-break-kit';
+import { FindReplaceKit } from '@/components/plate-editor/plugins/find-replace-kit';
 import { FixedToolbarKit } from '@/components/plate-editor/plugins/fixed-toolbar-kit';
 import { FontKit } from '@/components/plate-editor/plugins/font-kit';
 import { LineHeightKit } from '@/components/plate-editor/plugins/line-height-kit';
@@ -68,6 +69,9 @@ export const EditorKit: any[] = [
   ...DiscussionKit,
   ...CommentKit,
   ...SuggestionKit,
+
+  // Find
+  ...FindReplaceKit,
 
   // Editing
   ...SlashKit,

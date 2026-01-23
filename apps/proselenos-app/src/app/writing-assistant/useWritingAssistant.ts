@@ -6,25 +6,23 @@ import { WorkflowState, WorkflowStep, WorkflowStepId } from './types';
 import { INITIAL_WORKFLOW_STEPS } from './constants';
 import { showAlert } from '../shared/alerts';
 import {
-  loadWorkflowFile,
-  saveWorkflowFile,
-  workflowFileExists,
   loadApiKey,
   loadAppSettings,
   getWritingAssistantPrompt,
   loadWorkingCopyMeta,
   saveWorkingCopyMeta,
+  loadManuscriptMeta,
+  loadSectionXhtml,
   saveSection,
   loadSection
 } from '@/services/manuscriptStorage';
 import { xhtmlToPlainText } from '@/lib/plateXhtml';
 
-// Output filenames for each workflow step
-const OUTPUT_FILES: Record<WorkflowStepId, string> = {
-  brainstorm: 'brainstorm.txt',
-  outline: 'outline.txt',
-  world: 'world.txt',
-  chapters: 'manuscript.txt'
+// Map workflow step IDs to manuscript section IDs and titles
+const SECTION_MAP: Record<'brainstorm' | 'outline' | 'world', { id: string; title: string }> = {
+  brainstorm: { id: 'brainstorm', title: 'Brainstorm' },
+  outline: { id: 'outline', title: 'Outline' },
+  world: { id: 'world', title: 'World' },
 };
 
 export function useWritingAssistant(
@@ -33,7 +31,7 @@ export function useWritingAssistant(
   _session: any,
   isDarkMode: boolean,
   onLoadFileIntoEditor?: (content: string, fileName: string, fileId?: string) => void,
-  onModalCloseReopen?: () => void,
+  _onModalCloseReopen?: () => void,
   onOpenChat?: () => void,
   onChapterAdded?: (chapterId: string) => void
 ) {
@@ -47,31 +45,20 @@ export function useWritingAssistant(
 
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
 
-  // Check which files exist in IndexedDB
+  // Check which sections exist in manuscript (find by title, case-insensitive)
   const detectExistingFiles = useCallback(async () => {
-    const [hasBrainstorm, hasOutline, hasWorld] = await Promise.all([
-      workflowFileExists('brainstorm.txt'),
-      workflowFileExists('outline.txt'),
-      workflowFileExists('world.txt'),
-    ]);
+    const meta = await loadManuscriptMeta();
+    const sections = meta?.sections || [];
 
-    // Check if Working Copy has any chapters
-    const meta = await loadWorkingCopyMeta();
-    let hasChapters = false;
-    if (meta) {
-      for (const id of meta.sectionIds) {
-        const section = await loadSection(id);
-        if (section?.type === 'chapter') {
-          hasChapters = true;
-          break;
-        }
-      }
-    }
+    const brainstormSection = sections.find(s => s.title.toLowerCase().trim() === 'brainstorm');
+    const outlineSection = sections.find(s => s.title.toLowerCase().trim() === 'outline');
+    const worldSection = sections.find(s => s.title.toLowerCase().trim() === 'world');
+    const hasChapters = sections.some(s => s.type === 'chapter');
 
     return {
-      brainstorm: hasBrainstorm ? { id: 'brainstorm.txt', name: 'brainstorm.txt', path: 'brainstorm.txt' } : undefined,
-      outline: hasOutline ? { id: 'outline.txt', name: 'outline.txt', path: 'outline.txt' } : undefined,
-      world: hasWorld ? { id: 'world.txt', name: 'world.txt', path: 'world.txt' } : undefined,
+      brainstorm: brainstormSection ? { id: brainstormSection.id, name: 'Brainstorm', path: brainstormSection.id } : undefined,
+      outline: outlineSection ? { id: outlineSection.id, name: 'Outline', path: outlineSection.id } : undefined,
+      world: worldSection ? { id: worldSection.id, name: 'World', path: worldSection.id } : undefined,
       manuscript: hasChapters ? { id: 'working-copy', name: 'chapters', path: 'working-copy' } : undefined,
       chapters: []
     };
@@ -114,10 +101,12 @@ export function useWritingAssistant(
       onClose();
     }
 
-    // Load brainstorm content for context
+    // Load brainstorm content from manuscript section for context
     let brainstormContext: string | null = null;
     try {
-      brainstormContext = await loadWorkflowFile('brainstorm.txt');
+      const brainstormId = state.projectFiles.brainstorm?.id || SECTION_MAP.brainstorm.id;
+      const xhtml = await loadSectionXhtml(brainstormId);
+      brainstormContext = xhtml ? xhtmlToPlainText(xhtml) : null;
     } catch (error) {
       console.error('Failed to load brainstorm for chat context:', error);
     }
@@ -167,11 +156,11 @@ export function useWritingAssistant(
   // Check if step can run based on file existence
   const canRunStep = useCallback((stepId: WorkflowStepId, files: any): { canRun: boolean; errorMessage?: string } => {
     if (stepId === 'brainstorm') {
-      // Brainstorm needs the file to exist first (user creates it via Chat or Editor)
+      // Brainstorm needs the section to exist first (user creates it via Chat or Editor)
       if (!files.brainstorm) {
         return {
           canRun: false,
-          errorMessage: 'Error: brainstorm.txt must exist.\nClick Chat or Editor to create story ideas in brainstorm.txt first.'
+          errorMessage: 'Error: Brainstorm section must exist.\nClick Chat or Editor to create story ideas first.'
         };
       }
       return { canRun: true };
@@ -181,7 +170,7 @@ export function useWritingAssistant(
       if (!files.brainstorm) {
         return {
           canRun: false,
-          errorMessage: 'Error: brainstorm.txt must exist before creating an outline.'
+          errorMessage: 'Error: Brainstorm section must exist before creating an outline.'
         };
       }
       return { canRun: true };
@@ -191,7 +180,7 @@ export function useWritingAssistant(
       if (!files.outline) {
         return {
           canRun: false,
-          errorMessage: 'Error: outline.txt must exist before building the world.'
+          errorMessage: 'Error: Outline section must exist before building the world.'
         };
       }
       return { canRun: true };
@@ -201,13 +190,13 @@ export function useWritingAssistant(
       if (!files.outline) {
         return {
           canRun: false,
-          errorMessage: 'Error: outline.txt must exist before writing chapters.'
+          errorMessage: 'Error: Outline section must exist before writing chapters.'
         };
       }
       if (!files.world) {
         return {
           canRun: false,
-          errorMessage: 'Error: world.txt must exist before writing chapters.'
+          errorMessage: 'Error: World section must exist before writing chapters.'
         };
       }
       return { canRun: true };
@@ -273,20 +262,29 @@ export function useWritingAssistant(
 
       if (stepId === 'brainstorm') {
         // Brainstorm uses its own content as input
-        const brainstormContent = await loadWorkflowFile('brainstorm.txt');
-        context = brainstormContent || '';
+        const bId = currentFiles.brainstorm?.id || SECTION_MAP.brainstorm.id;
+        const brainstormXhtml = await loadSectionXhtml(bId);
+        context = brainstormXhtml ? xhtmlToPlainText(brainstormXhtml) : '';
       } else if (stepId === 'outline') {
         // Outline uses brainstorm as input
-        const brainstormContent = await loadWorkflowFile('brainstorm.txt');
-        context = `=== BRAINSTORM ===\n${brainstormContent || ''}\n=== END BRAINSTORM ===`;
+        const bId = currentFiles.brainstorm?.id || SECTION_MAP.brainstorm.id;
+        const brainstormXhtml = await loadSectionXhtml(bId);
+        const brainstormContent = brainstormXhtml ? xhtmlToPlainText(brainstormXhtml) : '';
+        context = `=== BRAINSTORM ===\n${brainstormContent}\n=== END BRAINSTORM ===`;
       } else if (stepId === 'world') {
         // World uses outline as input
-        const outlineContent = await loadWorkflowFile('outline.txt');
-        context = `=== OUTLINE ===\n${outlineContent || ''}\n=== END OUTLINE ===`;
+        const oId = currentFiles.outline?.id || SECTION_MAP.outline.id;
+        const outlineXhtml = await loadSectionXhtml(oId);
+        const outlineContent = outlineXhtml ? xhtmlToPlainText(outlineXhtml) : '';
+        context = `=== OUTLINE ===\n${outlineContent}\n=== END OUTLINE ===`;
       } else if (stepId === 'chapters') {
         // Chapters uses outline + world + existing chapters from Working Copy
-        const outlineContent = await loadWorkflowFile('outline.txt');
-        const worldContent = await loadWorkflowFile('world.txt');
+        const oId = currentFiles.outline?.id || SECTION_MAP.outline.id;
+        const outlineXhtml = await loadSectionXhtml(oId);
+        const outlineContent = outlineXhtml ? xhtmlToPlainText(outlineXhtml) : '';
+        const wId = currentFiles.world?.id || SECTION_MAP.world.id;
+        const worldXhtml = await loadSectionXhtml(wId);
+        const worldContent = worldXhtml ? xhtmlToPlainText(worldXhtml) : '';
 
         // Build manuscript content from Working Copy chapters
         // XHTML-Native: Convert xhtml to plain text for AI
@@ -341,9 +339,8 @@ export function useWritingAssistant(
         throw new Error('No response from AI');
       }
 
-      // Save result to appropriate file
-      const outputFile = OUTPUT_FILES[stepId];
-      let newChapterId: string | null = null;
+      // Save result as a manuscript section
+      let savedSectionId: string | null = null;
 
       if (stepId === 'chapters') {
         // Create new chapter in Working Copy structure
@@ -354,15 +351,17 @@ export function useWritingAssistant(
 
         // Extract chapter title from AI result (first line typically "Chapter X: Title")
         const firstLine = result.split('\n')[0]?.trim() || '';
+        const outForTitleId = currentFiles.outline?.id || SECTION_MAP.outline.id;
+        const outlineForTitle = await loadSectionXhtml(outForTitleId);
         const chapterTitle = firstLine.startsWith('Chapter') ? firstLine : findNextChapter(
-          await loadWorkflowFile('outline.txt') || '',
+          outlineForTitle ? xhtmlToPlainText(outlineForTitle) : '',
           ''
         );
 
         // Generate next section ID
         const numbers = meta.sectionIds.map(id => parseInt(id.split('-')[1] || '0') || 0);
         const nextNum = Math.max(0, ...numbers) + 1;
-        newChapterId = `section-${String(nextNum).padStart(3, '0')}`;
+        savedSectionId = `section-${String(nextNum).padStart(3, '0')}`;
 
         // Convert AI result (plain text) to XHTML
         const xhtml = result.split('\n\n')
@@ -372,17 +371,33 @@ export function useWritingAssistant(
 
         // Save new chapter section
         await saveSection({
-          id: newChapterId,
+          id: savedSectionId,
           title: chapterTitle,
           xhtml: xhtml,
           type: 'chapter',
         });
 
         // Append to sectionIds and save meta
-        meta.sectionIds.push(newChapterId);
+        meta.sectionIds.push(savedSectionId);
         await saveWorkingCopyMeta(meta);
       } else {
-        await saveWorkflowFile(outputFile, result);
+        // brainstorm, outline, or world - save as no-matter section
+        const info = SECTION_MAP[stepId as 'brainstorm' | 'outline' | 'world'];
+        const existingId = currentFiles[stepId as 'brainstorm' | 'outline' | 'world']?.id;
+        savedSectionId = existingId || info.id;
+
+        // Convert plain text AI result to XHTML paragraphs
+        const xhtml = result.split('\n\n')
+          .map((p: string) => `<p>${escapeHtml(p.trim())}</p>`)
+          .filter((p: string) => p !== '<p></p>')
+          .join('\n') || '<p></p>';
+
+        await saveSection({
+          id: savedSectionId,
+          title: info.title,
+          xhtml,
+          type: 'no-matter',
+        });
       }
 
       // Clear timer and update state
@@ -398,8 +413,8 @@ export function useWritingAssistant(
             return {
               ...step,
               status: 'completed',
-              fileName: outputFile,
-              fileId: outputFile,
+              fileName: savedSectionId || stepId,
+              fileId: savedSectionId || stepId,
               createdAt: new Date().toISOString(),
               timerInterval: undefined
             };
@@ -409,12 +424,9 @@ export function useWritingAssistant(
         projectFiles: refreshedFiles
       }));
 
-      // For chapters, call onChapterAdded to refresh sidebar (modal stays open)
-      // For other steps, trigger modal refresh
-      if (stepId === 'chapters' && newChapterId && onChapterAdded) {
-        setTimeout(() => onChapterAdded(newChapterId), 100);
-      } else if (onModalCloseReopen) {
-        setTimeout(() => onModalCloseReopen(), 100);
+      // Call onChapterAdded to refresh sidebar and select the new section
+      if (savedSectionId && onChapterAdded) {
+        setTimeout(() => onChapterAdded(savedSectionId!), 100);
       }
 
     } catch (error) {
@@ -438,45 +450,41 @@ export function useWritingAssistant(
 
       showAlert(errorMsg, 'error', undefined, isDarkMode);
     }
-  }, [detectExistingFiles, canRunStep, isDarkMode, onModalCloseReopen]);
+  }, [detectExistingFiles, canRunStep, isDarkMode, onChapterAdded]);
 
-  // View file content
+  // View section content - select it in the sidebar/editor
   const viewFile = useCallback(async (stepId: WorkflowStepId) => {
-    const fileName = OUTPUT_FILES[stepId];
+    if (stepId === 'brainstorm' || stepId === 'outline' || stepId === 'world') {
+      const sectionId = state.projectFiles[stepId]?.id || SECTION_MAP[stepId].id;
+      // Check if section exists
+      const meta = await loadManuscriptMeta();
+      const exists = meta?.sections.some(s => s.id === sectionId) ?? false;
 
-    try {
-      let content: string | null = null;
-
-      if (stepId === 'chapters') {
-        // Build manuscript view from Working Copy chapters
-        // XHTML-Native: Convert xhtml to plain text for display
-        const meta = await loadWorkingCopyMeta();
-        if (meta) {
-          let manuscriptContent = '';
-          for (const id of meta.sectionIds) {
-            const section = await loadSection(id);
-            if (section?.type === 'chapter') {
-              const plainText = xhtmlToPlainText(section.xhtml);
-              manuscriptContent += `\n\n${section.title}\n\n${plainText}`;
-            }
-          }
-          content = manuscriptContent.trim();
-        }
-      } else {
-        content = await loadWorkflowFile(fileName);
-      }
-
-      if (content && onLoadFileIntoEditor) {
-        onLoadFileIntoEditor(content, fileName, fileName);
-      } else if (!content && stepId === 'brainstorm' && onLoadFileIntoEditor) {
-        // For brainstorm, open editor with default content if file doesn't exist
+      if (exists && onChapterAdded) {
+        // Select the section in the sidebar/editor
+        onChapterAdded(sectionId);
+      } else if (!exists && stepId === 'brainstorm' && onLoadFileIntoEditor) {
+        // For brainstorm, open editor with default content if section doesn't exist
         const defaultContent = 'Type some of your ideas in here, so the AI can extend and enhance ...';
-        onLoadFileIntoEditor(defaultContent, fileName);
+        onLoadFileIntoEditor(defaultContent, 'Brainstorm', SECTION_MAP.brainstorm.id);
       }
-    } catch (error) {
-      console.error('Failed to load file content:', error);
+    } else if (stepId === 'chapters' && onChapterAdded) {
+      // Find the last chapter and select it
+      const meta = await loadWorkingCopyMeta();
+      if (meta) {
+        // Find the last chapter section
+        for (let i = meta.sectionIds.length - 1; i >= 0; i--) {
+          const sId = meta.sectionIds[i];
+          if (!sId) continue;
+          const section = await loadSection(sId);
+          if (section?.type === 'chapter') {
+            onChapterAdded(section.id);
+            break;
+          }
+        }
+      }
     }
-  }, [onLoadFileIntoEditor]);
+  }, [onLoadFileIntoEditor, onChapterAdded, state.projectFiles]);
 
   // Redo step
   const redoStep = useCallback(async (stepId: WorkflowStepId) => {

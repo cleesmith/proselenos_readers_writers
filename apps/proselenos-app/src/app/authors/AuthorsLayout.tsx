@@ -539,13 +539,15 @@ export default function AuthorsLayout({
           author: saved.author,
           language: saved.language,
           coverImage: saved.coverImage,
-          sections: saved.sections.map((s) => ({
-            id: s.id,
-            title: s.title,
-            href: `${s.id}.xhtml`,
-            xhtml: s.xhtml,
-            type: s.type,
-          })),
+          sections: reorderSectionsByVisualGroup(
+            saved.sections.map((s) => ({
+              id: s.id,
+              title: s.title,
+              href: `${s.id}.xhtml`,
+              xhtml: s.xhtml,
+              type: s.type,
+            }))
+          ),
         };
         setEpub(epub);
         setSelectedSectionId(epub.sections[0]?.id ?? null);
@@ -615,13 +617,15 @@ export default function AuthorsLayout({
           author: saved.author,
           language: saved.language,
           coverImage: saved.coverImage,
-          sections: saved.sections.map((s) => ({
-            id: s.id,
-            title: s.title,
-            href: `${s.id}.xhtml`,
-            xhtml: s.xhtml,
-            type: s.type,
-          })),
+          sections: reorderSectionsByVisualGroup(
+            saved.sections.map((s) => ({
+              id: s.id,
+              title: s.title,
+              href: `${s.id}.xhtml`,
+              xhtml: s.xhtml,
+              type: s.type,
+            }))
+          ),
         };
         setEpub(newEpub);
 
@@ -1072,6 +1076,17 @@ export default function AuthorsLayout({
     meta.sectionIds = reorderedSections.map(s => s.id);
     await saveWorkingCopyMeta(meta);
 
+    // Sync ManuscriptMeta.sections order to persist across reloads
+    const manuscriptMeta = await loadManuscriptMeta();
+    if (manuscriptMeta) {
+      manuscriptMeta.sections = reorderedSections.map(s => ({
+        id: s.id,
+        title: s.title,
+        type: (s.type || 'chapter') as ElementType,
+      }));
+      await saveManuscriptMeta(manuscriptMeta);
+    }
+
     setEpub({
       ...epub,
       sections: reorderedSections,
@@ -1223,6 +1238,17 @@ export default function AuthorsLayout({
     if (meta) {
       meta.sectionIds = reorderedSections.map(s => s.id);
       await saveWorkingCopyMeta(meta);
+    }
+
+    // Sync ManuscriptMeta.sections order to persist across reloads
+    const manuscriptMeta = await loadManuscriptMeta();
+    if (manuscriptMeta) {
+      manuscriptMeta.sections = reorderedSections.map(s => ({
+        id: s.id,
+        title: s.title,
+        type: (s.type || 'chapter') as ElementType,
+      }));
+      await saveManuscriptMeta(manuscriptMeta);
     }
   };
 

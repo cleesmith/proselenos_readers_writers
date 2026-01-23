@@ -31,13 +31,6 @@ export const INITIAL_WORKFLOW_STEPS: WorkflowStep[] = [
   }
 ];
 
-export const WORKFLOW_FILE_NAMES = {
-  brainstorm: 'brainstorm.txt',
-  outline: 'outline.txt',
-  world: 'world.txt',
-  chapters: 'manuscript.txt' // For chapter writer, create main manuscript
-} as const;
-
 export const MODAL_CONFIG = {
   maxWidth: '800px',
   maxHeight: '80vh',
