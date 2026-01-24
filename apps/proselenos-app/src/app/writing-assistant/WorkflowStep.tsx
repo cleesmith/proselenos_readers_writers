@@ -113,6 +113,17 @@ export default function WorkflowStep({
           >
             {isLoadingPrompt ? '...' : 'Prompt'}
           </StyledSmallButton>
+          {/* Create button - Brainstorm only, shown when no file exists */}
+          {step.id === 'brainstorm' && !step.fileName && (
+            <StyledSmallButton
+              onClick={() => onExecute(step.id)}
+              disabled={isExecuting || isAnyStepExecuting}
+              theme={theme}
+              styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
+            >
+              {isExecuting ? '...' : 'Create'}
+            </StyledSmallButton>
+          )}
           {/* Chat button - Brainstorm only */}
           {step.id === 'brainstorm' && onOpenChatForBrainstorm && (
             <StyledSmallButton
@@ -124,15 +135,17 @@ export default function WorkflowStep({
               Chat
             </StyledSmallButton>
           )}
-          {/* Run button */}
-          <StyledSmallButton
-            onClick={() => onExecute(step.id)}
-            disabled={isExecuting || isAnyStepExecuting}
-            theme={theme}
-            styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
-          >
-            {isExecuting ? '...' : 'Run'}
-          </StyledSmallButton>
+          {/* Run button - hidden for brainstorm when no file exists */}
+          {!(step.id === 'brainstorm' && !step.fileName) && (
+            <StyledSmallButton
+              onClick={() => onExecute(step.id)}
+              disabled={isExecuting || isAnyStepExecuting}
+              theme={theme}
+              styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
+            >
+              {isExecuting ? '...' : 'Run'}
+            </StyledSmallButton>
+          )}
           {/* Chapter completion indicator (plain text, not a button) */}
           {step.id === 'chapters' && step.status === 'completed' && step.fileName && (
             <span style={{ fontSize: '9px', color: theme.textSecondary, fontStyle: 'italic' }}>
@@ -149,6 +162,11 @@ export default function WorkflowStep({
         >
           {step.description}
         </div>
+        {step.id === 'brainstorm' && !step.fileName && (
+          <div style={{ fontSize: '11px', color: theme.textSecondary, fontStyle: 'italic', marginTop: '2px' }}>
+            Click Create to add a Brainstorm section, then use Chat to develop your ideas
+          </div>
+        )}
         {step.error && (
           <div
             style={{
