@@ -324,7 +324,10 @@ export function useWritingAssistant(
             const section = await loadSection(id);
             if (section && section.type === 'chapter') {
               const plainText = xhtmlToPlainText(section.xhtml);
-              manuscriptContent += `\n\n${section.title}\n\n${plainText}`;
+              // Only count chapters with actual content as "written"
+              if (plainText.trim()) {
+                manuscriptContent += `\n\n${section.title}\n\n${plainText}`;
+              }
             }
           }
         }
@@ -392,10 +395,18 @@ export function useWritingAssistant(
         const chMatch = chapterTitle.match(/^(Chapter\s+\d+)/i);
         chapterLabel = chMatch ? chMatch[1].toLowerCase() : chapterTitle;
 
-        // Generate next section ID
-        const numbers = meta.sectionIds.map(id => parseInt(id.split('-')[1] || '0') || 0);
-        const nextNum = Math.max(0, ...numbers) + 1;
-        savedSectionId = `section-${String(nextNum).padStart(3, '0')}`;
+        // Check if there's an existing empty chapter to overwrite
+        let existingEmptyId: string | null = null;
+        for (const id of meta.sectionIds) {
+          const section = await loadSection(id);
+          if (section && section.type === 'chapter') {
+            const plainText = xhtmlToPlainText(section.xhtml);
+            if (!plainText.trim()) {
+              existingEmptyId = id;
+              break;
+            }
+          }
+        }
 
         // Convert AI result (plain text) to XHTML
         const xhtml = result.split('\n\n')
@@ -403,17 +414,32 @@ export function useWritingAssistant(
           .filter((p: string) => p !== '<p></p>')
           .join('\n') || '<p></p>';
 
-        // Save new chapter section
-        await saveSection({
-          id: savedSectionId,
-          title: chapterTitle,
-          xhtml: xhtml,
-          type: 'chapter',
-        });
+        if (existingEmptyId) {
+          // Overwrite the existing empty chapter
+          savedSectionId = existingEmptyId;
+          await saveSection({
+            id: savedSectionId,
+            title: chapterTitle,
+            xhtml: xhtml,
+            type: 'chapter',
+          });
+        } else {
+          // Generate next section ID and create new chapter
+          const numbers = meta.sectionIds.map(id => parseInt(id.split('-')[1] || '0') || 0);
+          const nextNum = Math.max(0, ...numbers) + 1;
+          savedSectionId = `section-${String(nextNum).padStart(3, '0')}`;
 
-        // Append to sectionIds and save meta
-        meta.sectionIds.push(savedSectionId);
-        await saveWorkingCopyMeta(meta);
+          await saveSection({
+            id: savedSectionId,
+            title: chapterTitle,
+            xhtml: xhtml,
+            type: 'chapter',
+          });
+
+          // Only append to sectionIds for truly new sections
+          meta.sectionIds.push(savedSectionId);
+          await saveWorkingCopyMeta(meta);
+        }
       } else {
         // brainstorm, outline, or world - save as no-matter section
         const info = SECTION_MAP[stepId as 'brainstorm' | 'outline' | 'world'];
