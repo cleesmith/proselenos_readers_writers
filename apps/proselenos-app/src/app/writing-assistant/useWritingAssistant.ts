@@ -370,6 +370,7 @@ export function useWritingAssistant(
 
       // Save result as a manuscript section
       let savedSectionId: string | null = null;
+      let chapterLabel = '';
 
       if (stepId === 'chapters') {
         // Create new chapter in Working Copy structure
@@ -386,6 +387,10 @@ export function useWritingAssistant(
           outlineForTitle ? xhtmlToPlainText(outlineForTitle) : '',
           ''
         );
+
+        // Build a short label for display (e.g., "chapter 2")
+        const chMatch = chapterTitle.match(/^(Chapter\s+\d+)/i);
+        chapterLabel = chMatch ? chMatch[1].toLowerCase() : chapterTitle;
 
         // Generate next section ID
         const numbers = meta.sectionIds.map(id => parseInt(id.split('-')[1] || '0') || 0);
@@ -442,7 +447,7 @@ export function useWritingAssistant(
             return {
               ...step,
               status: 'completed',
-              fileName: savedSectionId || stepId,
+              fileName: stepId === 'chapters' ? chapterLabel : (savedSectionId || stepId),
               fileId: savedSectionId || stepId,
               createdAt: new Date().toISOString(),
               timerInterval: undefined

@@ -9,7 +9,7 @@ export default function WorkflowStep({
   step,
   isActive: _isActive,
   onExecute,
-  onView,
+  onView: _onView,
   onRedo: _onRedo,
   onEditPrompt,
   isExecuting,
@@ -133,16 +133,11 @@ export default function WorkflowStep({
           >
             {isExecuting ? '...' : 'Run'}
           </StyledSmallButton>
-          {/* File button for completed steps (not for chapters - they're in sidebar) */}
-          {step.status === 'completed' && step.fileName && step.id !== 'chapters' && (
-            <StyledSmallButton
-              onClick={() => onView(step.id)}
-              disabled={isAnyStepExecuting}
-              theme={theme}
-              styleOverrides={{ padding: '2px 4px', fontSize: '8px' }}
-            >
-              {step.fileName}
-            </StyledSmallButton>
+          {/* Chapter completion indicator (plain text, not a button) */}
+          {step.id === 'chapters' && step.status === 'completed' && step.fileName && (
+            <span style={{ fontSize: '9px', color: theme.textSecondary, fontStyle: 'italic' }}>
+              {step.fileName} done
+            </span>
           )}
         </div>
         <div
