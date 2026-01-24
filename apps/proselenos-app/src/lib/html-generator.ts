@@ -7,6 +7,7 @@ export interface HtmlGeneratorOptions {
   year?: string;
   sections: Array<{ title: string; content: string }>;
   images?: Map<string, string>; // filename -> base64 data URL
+  isDarkMode?: boolean;
 }
 
 /**
@@ -95,7 +96,7 @@ function processContent(text: string): string {
  * Generate a complete single-page HTML file from manuscript sections
  */
 export function generateHtmlFromSections(options: HtmlGeneratorOptions): string {
-  const { title, author, year = new Date().getFullYear().toString(), sections, images } = options;
+  const { title, author, year = new Date().getFullYear().toString(), sections, images, isDarkMode = true } = options;
 
   // Generate chapter HTML with anchor IDs
   const chaptersHtml = sections
@@ -348,7 +349,7 @@ ${tocEntries.map(entry => `          <li><a href="#section-${entry.index}">${esc
     }
   </style>
 </head>
-<body class="dark-mode">
+<body${isDarkMode ? ' class="dark-mode"' : ''}>
 ${finalChaptersHtml}
 
   <div class="footer">
@@ -361,7 +362,7 @@ ${finalChaptersHtml}
       <button class="download-btn" id="downloadBtn" title="Download HTML file">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
       </button>
-      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">🌙</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '🌙' : '☀️'}</button>
     </div>
   </div>
 
@@ -370,11 +371,14 @@ ${finalChaptersHtml}
     const themeToggle = document.getElementById('themeToggle');
     const body = document.body;
 
-    // Check for saved preference - default is dark (set in body class)
+    // Check for saved preference - override initial mode if user previously toggled
     const savedTheme = localStorage.getItem('html-ebook-theme');
-    if (savedTheme === 'light') {
+    if (savedTheme === 'light' && body.classList.contains('dark-mode')) {
       body.classList.remove('dark-mode');
       themeToggle.textContent = '☀️';
+    } else if (savedTheme === 'dark' && !body.classList.contains('dark-mode')) {
+      body.classList.add('dark-mode');
+      themeToggle.textContent = '🌙';
     }
 
     themeToggle.addEventListener('click', () => {

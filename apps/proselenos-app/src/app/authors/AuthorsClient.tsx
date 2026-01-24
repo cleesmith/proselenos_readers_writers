@@ -577,6 +577,7 @@ export default function AuthorsClient() {
         isOpen={showXrayModal}
         onClose={() => setShowXrayModal(false)}
         bookTitle={coverTitle || undefined}
+        isDarkMode={isDarkMode}
       />
 
       {/* Dual Panel Editor (View-Edit for AI tool results) */}

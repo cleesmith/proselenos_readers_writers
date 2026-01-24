@@ -9,12 +9,14 @@ interface ManuscriptXrayModalProps {
   isOpen: boolean;
   onClose: () => void;
   bookTitle?: string;
+  isDarkMode?: boolean;
 }
 
 const ManuscriptXrayModal: React.FC<ManuscriptXrayModalProps> = ({
   isOpen,
   onClose,
   bookTitle,
+  isDarkMode = true,
 }) => {
   const [entries, setEntries] = useState<ManuscriptXrayEntry[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -69,7 +71,7 @@ const ManuscriptXrayModal: React.FC<ManuscriptXrayModalProps> = ({
   const displayTitle = bookTitle || 'Manuscript';
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-base-100">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-base-100" data-theme={isDarkMode ? 'dark' : 'light'}>
       {/* Header */}
       <header className="flex items-center justify-between px-3 py-2 bg-base-200 border-b border-base-300 flex-shrink-0">
         <div className="flex items-center gap-2">

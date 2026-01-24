@@ -1492,6 +1492,7 @@ export default function AuthorsLayout({
             content: s.xhtml,  // XHTML is valid HTML content
           })),
         images: imagesMap,
+        isDarkMode,
       });
 
       // 6. Open in new tab
