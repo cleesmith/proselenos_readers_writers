@@ -615,8 +615,12 @@ export function useWritingAssistant(
 // Helper: Update steps based on file existence
 function updateStepsWithFiles(steps: WorkflowStep[], existingFiles: any): WorkflowStep[] {
   return steps.map(step => {
-    // Map chapters step to manuscript file
-    const fileKey = step.id === 'chapters' ? 'manuscript' : step.id;
+    // Chapters step should never be pre-marked as completed on modal open;
+    // it only gets completed after a successful AI chapter write in processChapters()
+    if (step.id === 'chapters') {
+      return { ...step, status: 'ready' };
+    }
+    const fileKey = step.id;
     const fileExists = existingFiles[fileKey];
     if (fileExists) {
       return {
