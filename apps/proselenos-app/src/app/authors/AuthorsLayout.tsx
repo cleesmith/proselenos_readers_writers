@@ -1680,7 +1680,7 @@ export default function AuthorsLayout({
             isDarkMode={isDarkMode}
             onToggleSidebar={onToggleSidebar}
             onSave={saveCurrentSection}
-            onAIWritingClick={onAIWritingClick}
+            onAIWritingClick={async () => { await saveCurrentSection(); onAIWritingClick(); }}
             hasApiKey={hasApiKey}
             currentModel={currentModel}
             sectionTitle={selectedSection?.title ?? ''}
