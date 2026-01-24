@@ -1483,11 +1483,16 @@ export default function AuthorsLayout({
     }
   };
 
-  // Handle section selection - just switch (user saves manually via Save/send Ebook/Library)
-  const handleSelectSection = (sectionId: string) => {
+  // Handle section selection - auto-save current section before switching
+  const handleSelectSection = async (sectionId: string) => {
     if (sectionId === selectedSectionId) return; // Same section, no action needed
 
-    // Reset unsaved state when switching (changes are discarded)
+    // Auto-save current section if there are pending changes
+    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
+      await saveCurrentSection();
+    }
+
+    // Reset state for new section
     setHasUnsavedChanges(false);
     setPendingXhtml('');
     setPendingTitle('');
@@ -1580,6 +1585,7 @@ export default function AuthorsLayout({
         onCoverClick={onCoverClick}
         onHtmlExportClick={handleHtmlExport}
         onXrayClick={onXrayClick}
+        onSaveWorkspace={saveCurrentSection}
       />
 
       {/* Main content: 2-panel layout */}

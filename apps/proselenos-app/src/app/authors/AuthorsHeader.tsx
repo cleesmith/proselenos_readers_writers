@@ -33,6 +33,7 @@ interface AuthorsHeaderProps {
   onCoverClick?: () => void;
   onHtmlExportClick?: () => void;
   onXrayClick?: () => void;
+  onSaveWorkspace?: () => Promise<void>;
 }
 
 export default function AuthorsHeader({
@@ -59,6 +60,7 @@ export default function AuthorsHeader({
   onCoverClick,
   onHtmlExportClick,
   onXrayClick,
+  onSaveWorkspace,
 }: AuthorsHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -83,7 +85,8 @@ export default function AuthorsHeader({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen, openDropdownOpen]);
 
-  const handleExitClick = () => {
+  const handleExitClick = async () => {
+    await onSaveWorkspace?.();
     if (window.opener && !window.opener.closed) {
       window.close();
     } else {
@@ -156,7 +159,8 @@ export default function AuthorsHeader({
           <div ref={openDropdownRef} style={{ position: 'relative' }}>
             <StyledSmallButton
               theme={theme}
-              onClick={() => {
+              onClick={async () => {
+                await onSaveWorkspace?.();
                 onSearchClose?.();
                 setOpenDropdownOpen(!openDropdownOpen);
               }}
@@ -276,7 +280,7 @@ export default function AuthorsHeader({
         <div ref={menuRef} style={{ position: 'relative' }}>
           {/* Hamburger menu button */}
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={async () => { await onSaveWorkspace?.(); setMenuOpen(!menuOpen); }}
             disabled={toolExecuting}
             title="Menu"
             style={{
