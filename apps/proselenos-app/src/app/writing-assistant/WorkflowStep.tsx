@@ -113,15 +113,6 @@ export default function WorkflowStep({
           >
             {isLoadingPrompt ? '...' : 'Prompt'}
           </StyledSmallButton>
-          {/* Run button */}
-          <StyledSmallButton
-            onClick={() => onExecute(step.id)}
-            disabled={isExecuting || isAnyStepExecuting}
-            theme={theme}
-            styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
-          >
-            {isExecuting ? '...' : 'Run'}
-          </StyledSmallButton>
           {/* Chat button - Brainstorm only */}
           {step.id === 'brainstorm' && onOpenChatForBrainstorm && (
             <StyledSmallButton
@@ -133,6 +124,15 @@ export default function WorkflowStep({
               Chat
             </StyledSmallButton>
           )}
+          {/* Run button */}
+          <StyledSmallButton
+            onClick={() => onExecute(step.id)}
+            disabled={isExecuting || isAnyStepExecuting}
+            theme={theme}
+            styleOverrides={{ padding: '2px 6px', fontSize: '9px' }}
+          >
+            {isExecuting ? '...' : 'Run'}
+          </StyledSmallButton>
           {/* File button for completed steps (not for chapters - they're in sidebar) */}
           {step.status === 'completed' && step.fileName && step.id !== 'chapters' && (
             <StyledSmallButton

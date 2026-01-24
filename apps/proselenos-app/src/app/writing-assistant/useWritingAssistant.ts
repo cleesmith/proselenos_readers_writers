@@ -156,13 +156,6 @@ export function useWritingAssistant(
   // Check if step can run based on file existence
   const canRunStep = useCallback((stepId: WorkflowStepId, files: any): { canRun: boolean; errorMessage?: string } => {
     if (stepId === 'brainstorm') {
-      // Brainstorm needs the section to exist first (user creates it via Chat or Editor)
-      if (!files.brainstorm) {
-        return {
-          canRun: false,
-          errorMessage: 'Error: Brainstorm section must exist.\nClick Chat or Editor to create story ideas first.'
-        };
-      }
       return { canRun: true };
     }
 
@@ -170,7 +163,7 @@ export function useWritingAssistant(
       if (!files.brainstorm) {
         return {
           canRun: false,
-          errorMessage: 'Error: Brainstorm section must exist before creating an outline.'
+          errorMessage: 'Error: Brainstorm section must exist before creating an outline.\nClick Run on Brainstorm first, then use Chat to add ideas.'
         };
       }
       return { canRun: true };
@@ -215,6 +208,42 @@ export function useWritingAssistant(
     if (!canRun) {
       showAlert(errorMessage || 'Cannot run this step', 'error', undefined, isDarkMode);
       return;
+    }
+
+    // For brainstorm: auto-create blank section if it doesn't exist
+    if (stepId === 'brainstorm' && !currentFiles.brainstorm) {
+      const info = SECTION_MAP.brainstorm;
+      await saveSection({
+        id: info.id,
+        title: info.title,
+        xhtml: '<p></p>',
+        type: 'no-matter',
+      });
+      // Refresh file detection and update state
+      const refreshedFiles = await detectExistingFiles();
+      setState(prev => ({
+        ...prev,
+        steps: prev.steps.map(step =>
+          step.id === 'brainstorm'
+            ? { ...step, status: 'completed' as const, fileName: info.id, fileId: info.id }
+            : step
+        ),
+        projectFiles: refreshedFiles
+      }));
+      // Notify parent to refresh sidebar
+      if (onChapterAdded) onChapterAdded(info.id);
+      return; // Don't call AI — user should Chat to fill content first
+    }
+
+    // For outline: verify brainstorm has actual content
+    if (stepId === 'outline') {
+      const bId = currentFiles.brainstorm?.id || SECTION_MAP.brainstorm.id;
+      const brainstormXhtml = await loadSectionXhtml(bId);
+      const brainstormText = brainstormXhtml ? xhtmlToPlainText(brainstormXhtml) : '';
+      if (!brainstormText.trim()) {
+        showAlert('Error: Brainstorm is empty.\nUse Chat to add story ideas before creating an outline.', 'error', undefined, isDarkMode);
+        return;
+      }
     }
 
     // Start timer
