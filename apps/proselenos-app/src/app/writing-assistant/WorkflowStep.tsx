@@ -167,6 +167,11 @@ export default function WorkflowStep({
             Click Create to add a Brainstorm section, then use Chat to develop your ideas
           </div>
         )}
+        {step.id === 'chapters' && (
+          <div style={{ fontSize: '11px', color: theme.textSecondary, fontStyle: 'italic', marginTop: '2px' }}>
+            Click the Close button to read the latest chapter, then the AI Writing button to return here
+          </div>
+        )}
         {step.error && (
           <div
             style={{

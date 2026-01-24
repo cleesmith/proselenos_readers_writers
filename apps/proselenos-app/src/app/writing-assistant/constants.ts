@@ -25,7 +25,7 @@ export const INITIAL_WORKFLOW_STEPS: WorkflowStep[] = [
   {
     id: 'chapters',
     name: 'Chapter Writer',
-    description: 'Write chapters one-by-one using Outline, World, and and existing chapters. Click the Close button to read the latest chapter, then the AI Writing button to return here.',
+    description: 'Write chapters one-by-one using Outline, World, and existing chapters.',
     status: 'ready',
     dependencies: ['outline', 'world']
   }
