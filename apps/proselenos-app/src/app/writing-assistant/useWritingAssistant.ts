@@ -386,14 +386,15 @@ export function useWritingAssistant(
         const firstLine = result.split('\n')[0]?.trim() || '';
         const outForTitleId = currentFiles.outline?.id || SECTION_MAP.outline.id;
         const outlineForTitle = await loadSectionXhtml(outForTitleId);
-        const chapterTitle = firstLine.startsWith('Chapter') ? firstLine : findNextChapter(
+        // Only trust firstLine if it matches "Chapter N" pattern (not just startsWith)
+        const chapterTitle = /^Chapter\s+\d+/i.test(firstLine) ? firstLine : findNextChapter(
           outlineForTitle ? xhtmlToPlainText(outlineForTitle) : '',
           ''
         );
 
         // Build a short label for display (e.g., "chapter 2")
         const chMatch = chapterTitle.match(/^(Chapter\s+\d+)/i);
-        chapterLabel = chMatch ? chMatch[1].toLowerCase() : chapterTitle;
+        chapterLabel = chMatch ? chMatch[1].toLowerCase() : `chapter`;
 
         // Check if there's an existing empty chapter to overwrite
         let existingEmptyId: string | null = null;
