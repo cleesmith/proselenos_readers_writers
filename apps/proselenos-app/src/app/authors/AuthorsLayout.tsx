@@ -61,6 +61,7 @@ import {
   loadManuscriptMeta,
   saveManuscriptMeta,
   WorkingCopyMeta,
+  WorkingCopySection,
   saveManuscriptImage,
   deleteManuscriptImage,
   getAllManuscriptImages,
@@ -894,30 +895,21 @@ export default function AuthorsLayout({
     const sectionToDelete = epub.sections.find(s => s.id === sectionId);
     if (!sectionToDelete) return;
 
-    // Don't allow deletion of the last chapter (includes 'section' and undefined types that behave as chapters)
-    const sectionIdx = epub.sections.findIndex(s => s.id === sectionId);
-    if (getEffectiveSectionNumber(sectionToDelete.type) === 4 && sectionIdx >= PROTECTED_SECTION_COUNT) {
-      // Count all items in the Chapters area (effective section 4)
-      const chapterCount = epub.sections.filter((s, index) =>
-        index >= PROTECTED_SECTION_COUNT && getEffectiveSectionNumber(s.type) === 4
-      ).length;
-      if (chapterCount <= 1) {
-        await showAlert('Cannot delete the last chapter. A book must have at least one chapter.', 'warning', undefined, isDarkMode);
-        return;
-      }
-    }
-
     const idx = epub.sections.findIndex((s) => s.id === sectionId);
     const newSections = epub.sections.filter((s) => s.id !== sectionId);
 
     const updatedEpub = { ...epub, sections: newSections };
     setEpub(updatedEpub);
-    // Select next section, or previous, or null
-    if (newSections.length > 0) {
+    // Select next section, or previous, but never a protected section
+    if (newSections.length > PROTECTED_SECTION_COUNT) {
+      // There are still non-protected sections — select the next one at same index,
+      // or the last non-protected section if we deleted the final one
       const newIdx = Math.min(idx, newSections.length - 1);
-      const nextSection = newSections[newIdx];
+      const clampedIdx = Math.max(newIdx, PROTECTED_SECTION_COUNT);
+      const nextSection = newSections[clampedIdx];
       setSelectedSectionId(nextSection?.id ?? null);
     } else {
+      // Only protected sections remain — select nothing
       setSelectedSectionId(null);
     }
     // Delete section from IndexedDB
@@ -1132,7 +1124,7 @@ export default function AuthorsLayout({
     // Update UI state
     setEpub({ ...epub, sections: newSections });
 
-    // Persist to IndexedDB
+    // Persist to IndexedDB (working_copy_meta.json)
     const meta = await loadWorkingCopyMeta();
     if (meta) {
       const metaIdx = meta.sectionIds.indexOf(sectionId);
@@ -1141,6 +1133,19 @@ export default function AuthorsLayout({
         if (removedId) {
           meta.sectionIds.splice(metaIdx - 1, 0, removedId);
           await saveWorkingCopyMeta(meta);
+        }
+      }
+    }
+
+    // Also sync ManuscriptMeta.sections order (meta.json) so loadFullWorkingCopy() gets correct order
+    const manuscriptMeta = await loadManuscriptMeta();
+    if (manuscriptMeta) {
+      const mIdx = manuscriptMeta.sections.findIndex(s => s.id === sectionId);
+      if (mIdx > 0) {
+        const removedMeta = manuscriptMeta.sections.splice(mIdx, 1)[0];
+        if (removedMeta) {
+          manuscriptMeta.sections.splice(mIdx - 1, 0, removedMeta);
+          await saveManuscriptMeta(manuscriptMeta);
         }
       }
     }
@@ -1179,7 +1184,7 @@ export default function AuthorsLayout({
     // Update UI state
     setEpub({ ...epub, sections: newSections });
 
-    // Persist to IndexedDB
+    // Persist to IndexedDB (working_copy_meta.json)
     const meta = await loadWorkingCopyMeta();
     if (meta) {
       const metaIdx = meta.sectionIds.indexOf(sectionId);
@@ -1188,6 +1193,19 @@ export default function AuthorsLayout({
         if (removedId) {
           meta.sectionIds.splice(metaIdx + 1, 0, removedId);
           await saveWorkingCopyMeta(meta);
+        }
+      }
+    }
+
+    // Also sync ManuscriptMeta.sections order (meta.json) so loadFullWorkingCopy() gets correct order
+    const manuscriptMeta = await loadManuscriptMeta();
+    if (manuscriptMeta) {
+      const mIdx = manuscriptMeta.sections.findIndex(s => s.id === sectionId);
+      if (mIdx >= 0 && mIdx < manuscriptMeta.sections.length - 1) {
+        const removedMeta = manuscriptMeta.sections.splice(mIdx, 1)[0];
+        if (removedMeta) {
+          manuscriptMeta.sections.splice(mIdx + 1, 0, removedMeta);
+          await saveManuscriptMeta(manuscriptMeta);
         }
       }
     }
@@ -1356,9 +1374,12 @@ export default function AuthorsLayout({
     // 4. Load cover image (may be null)
     const coverBlob = await loadCoverImage();
 
-    // 5. Reorder sections to match visual grouping (sidebar order)
-    // This ensures EPUB has same order as what user sees in Authors mode
-    const orderedSections = reorderSectionsByVisualGroup(workingCopy.sections);
+    // 5. Use in-memory epub.sections order (the sidebar order) to reorder loaded sections
+    // This ensures EPUB matches exactly what the user sees, regardless of meta.json order
+    const sectionOrder = epub!.sections.map(s => s.id);
+    const orderedSections = sectionOrder
+      .map(id => workingCopy.sections.find(s => s.id === id))
+      .filter((s): s is WorkingCopySection => s !== undefined);
 
     try {
       // 6. Fetch images fresh from IndexedDB to ensure we have any newly uploaded images
