@@ -317,7 +317,7 @@ export default function ChapterSidebar({
             3: 'Introductory: Foreword, Introduction, Preface, Prologue',
             4: 'Chapters: Main story content',
             5: 'Back Matter: Epilogue, Afterword, Endnotes, Bibliography, Acknowledgments, About the Author, Also By',
-            6: 'No Matter: Optional content like notes, deleted scenes, research - available to readers but not in the main reading flow',
+            6: 'No Matter: Optional content like notes, deleted scenes, research - available to readers but not in the main reading flow; for users to see/read these No Matter sections you must link to them in your text',
           };
 
           // Render divider with optional info icon
