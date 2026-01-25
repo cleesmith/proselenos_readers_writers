@@ -370,7 +370,7 @@ export default function AuthorsHeader({
               }}
             >
               <PiGear size={16} />
-              AI Settings
+              AI Setup
             </button>
             <button
               id="chat-button"

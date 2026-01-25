@@ -132,7 +132,7 @@ export default function AISettingsModal({
         onClick={e => e.stopPropagation()}
       >
         <h2 style={{ margin: '0 0 8px 0', color: theme.text, fontSize: '18px' }}>
-          AI Settings
+          AI Setup
         </h2>
         <p style={{ margin: '0 0 20px 0', color: theme.textSecondary || theme.text, fontSize: '12px' }}>
           Configure your AI provider endpoints. Works with any OpenAI-compatible API.
