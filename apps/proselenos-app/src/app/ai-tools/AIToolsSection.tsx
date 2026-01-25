@@ -291,7 +291,14 @@ https://everythingebooks.org
               onClick={() => setShowWritingAssistant(true)}
               disabled={isSystemInitializing || toolExecuting || !hasApiKey}
               theme={theme}
-              styleOverrides={{ fontSize: '10px', padding: '2px 8px', height: '20px', lineHeight: 1 }}
+              styleOverrides={{
+                fontSize: '10px',
+                padding: '2px 8px',
+                height: '20px',
+                lineHeight: 1,
+                backgroundColor: isDarkMode ? 'rgba(124, 58, 237, 0.5)' : 'rgba(91, 33, 182, 0.35)',
+                borderColor: isDarkMode ? 'rgba(124, 58, 237, 0.65)' : 'rgba(91, 33, 182, 0.5)',
+              }}
             >
               AI Writing
             </StyledSmallButton>

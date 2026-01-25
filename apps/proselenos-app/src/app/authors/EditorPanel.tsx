@@ -552,7 +552,15 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
             paddingRight: '12px',
           }}
         >
-        <StyledSmallButton theme={theme} onClick={onAIWritingClick} disabled={!aiReady || toolExecuting}>
+        <StyledSmallButton
+          theme={theme}
+          onClick={onAIWritingClick}
+          disabled={!aiReady || toolExecuting}
+          styleOverrides={{
+            backgroundColor: isDarkMode ? 'rgba(124, 58, 237, 0.5)' : 'rgba(91, 33, 182, 0.35)',
+            borderColor: isDarkMode ? 'rgba(124, 58, 237, 0.65)' : 'rgba(91, 33, 182, 0.5)',
+          }}
+        >
           AI Writing
         </StyledSmallButton>
 
