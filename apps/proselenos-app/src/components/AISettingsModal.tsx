@@ -175,9 +175,6 @@ export default function AISettingsModal({
                 placeholder="e.g., https://openrouter.ai/api/v1/auth/key"
                 style={inputStyle}
               />
-              <div style={{ fontSize: '11px', color: theme.textSecondary || '#888', marginTop: '4px' }}>
-                Ollama and local providers don't need this — leave empty
-              </div>
             </div>
 
             <div style={fieldContainerStyle}>
