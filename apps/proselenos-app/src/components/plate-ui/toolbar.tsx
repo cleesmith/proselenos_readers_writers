@@ -328,30 +328,10 @@ function withTooltip<T extends React.ElementType>(Component: T) {
   };
 }
 
-function TooltipContent({
-  children,
-  className,
-  // CHANGE
-  sideOffset = 4,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        className={cn(
-          'z-50 w-fit origin-(--radix-tooltip-content-transform-origin) text-balance rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-xs',
-          className
-        )}
-        data-slot="tooltip-content"
-        sideOffset={sideOffset}
-        {...props}
-      >
-        {children}
-        {/* CHANGE */}
-        {/* <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-primary fill-primary" /> */}
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  );
+// Tooltips disabled - return null to hide all toolbar hover text
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function TooltipContent(_props: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  return null;
 }
 
 export function ToolbarMenuGroup({
