@@ -5,15 +5,12 @@ import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
 import { DropdownMenuItemIndicator } from '@radix-ui/react-dropdown-menu';
 import {
   CheckIcon,
-  ChevronRightIcon,
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
   Heading4Icon,
   Heading5Icon,
   Heading6Icon,
-  ListIcon,
-  ListOrderedIcon,
   PilcrowIcon,
   QuoteIcon,
 } from 'lucide-react';
@@ -73,24 +70,6 @@ export const turnIntoItems = [
     keywords: ['subtitle', 'h6'],
     label: 'Heading 6',
     value: 'h6',
-  },
-  {
-    icon: <ListIcon />,
-    keywords: ['unordered', 'ul', '-'],
-    label: 'Bulleted list',
-    value: KEYS.ul,
-  },
-  {
-    icon: <ListOrderedIcon />,
-    keywords: ['ordered', 'ol', '1'],
-    label: 'Numbered list',
-    value: KEYS.ol,
-  },
-  {
-    icon: <ChevronRightIcon />,
-    keywords: ['collapsible', 'expandable'],
-    label: 'Toggle list',
-    value: KEYS.toggle,
   },
   {
     icon: <QuoteIcon />,
