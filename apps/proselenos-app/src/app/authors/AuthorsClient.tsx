@@ -377,7 +377,9 @@ export default function AuthorsClient() {
       const epubData = await generateAIReportEpub(
         toolName,
         toolsState.toolResult,
-        requestContent
+        requestContent,
+        currentProvider,
+        currentModel
       );
 
       // Create File object with timestamp in filename (local time)

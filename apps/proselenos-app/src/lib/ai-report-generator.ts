@@ -11,7 +11,9 @@ import JSZip from 'jszip';
 export async function generateAIReportEpub(
   toolName: string,
   aiResponse: string,
-  requestContent: string
+  requestContent: string,
+  provider: string,
+  model: string
 ): Promise<Uint8Array> {
   const zip = new JSZip();
 
@@ -38,7 +40,7 @@ export async function generateAIReportEpub(
   zip.file('OEBPS/css/style.css', createReportCSS());
 
   // 4. Title page
-  zip.file('OEBPS/title-page.xhtml', createTitlePage(title, author, toolName));
+  zip.file('OEBPS/title-page.xhtml', createTitlePage(title, author, toolName, provider, model));
 
   // 5. Chapter 1: AI Response
   zip.file('OEBPS/chapter1.xhtml', createChapterPage('AI Response', aiResponse, 'chapter1'));
@@ -98,7 +100,7 @@ function toPascalCase(text: string): string {
     .join(' ');
 }
 
-function createTitlePage(title: string, author: string, toolName: string): string {
+function createTitlePage(title: string, author: string, toolName: string, provider: string, model: string): string {
   // Title contains "date\ntime" - split and display on separate lines
   const [dateLine, timeLine] = title.split('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -114,6 +116,8 @@ function createTitlePage(title: string, author: string, toolName: string): strin
     <p class="book-time">${escapeHtml(timeLine || '')}</p>
     <h1 class="book-title">${escapeHtml(author)}</h1>
     <p class="tool-name">Tool: ${escapeHtml(toolName)}</p>
+    <p class="ai-info">Provider: ${escapeHtml(provider)}</p>
+    <p class="ai-info">Model: ${escapeHtml(model)}</p>
   </section>
 </body>
 </html>`;
@@ -252,6 +256,12 @@ body {
   font-size: 0.9em;
   margin-top: 1em;
   font-style: italic;
+}
+
+.ai-info {
+  font-size: 0.85em;
+  margin-top: 0.5em;
+  color: #4285F4;
 }
 
 .timestamp {
