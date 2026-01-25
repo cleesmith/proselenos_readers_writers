@@ -135,7 +135,7 @@ export default function AISettingsModal({
           AI Settings
         </h2>
         <p style={{ margin: '0 0 20px 0', color: theme.textSecondary || theme.text, fontSize: '12px' }}>
-          Configure your AI provider endpoints. Works with OpenRouter, Ollama, LM Studio, or any OpenAI-compatible API.
+          Configure your AI provider endpoints. Works with any OpenAI-compatible API.
         </p>
 
         {loading ? (
@@ -145,18 +145,18 @@ export default function AISettingsModal({
         ) : (
           <>
             <div style={fieldContainerStyle}>
-              <label style={labelStyle}>Provider Name (for display in messages)</label>
+              <label style={labelStyle}>Provider Name (displayed in messages)</label>
               <input
                 type="text"
                 value={config.providerName}
                 onChange={e => updateField('providerName', e.target.value)}
-                placeholder="e.g., OpenRouter, Ollama, LM Studio"
+                placeholder="e.g., OpenRouter, LM Studio, Ollama"
                 style={inputStyle}
               />
             </div>
 
             <div style={fieldContainerStyle}>
-              <label style={labelStyle}>Base URL (reference only)</label>
+              <label style={labelStyle}>Base URL</label>
               <input
                 type="text"
                 value={config.base}
@@ -198,7 +198,7 @@ export default function AISettingsModal({
                 style={inputStyle}
               />
               <div style={{ fontSize: '11px', color: theme.textSecondary || '#888', marginTop: '4px' }}>
-                Used for AI Tools, AI Writing, and Chat
+                Used for AI Writing, AI Editing, and Chat
               </div>
             </div>
 
