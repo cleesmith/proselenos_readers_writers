@@ -19,7 +19,7 @@ import {
 
 import { ToolbarButton } from './toolbar';
 
-type ImportType = 'html' | 'markdown';
+type ImportType = 'html' | 'markdown' | 'text';
 
 export function ImportToolbarButton(props: DropdownMenuProps) {
   const editor = useEditorRef();
@@ -37,6 +37,15 @@ export function ImportToolbarButton(props: DropdownMenuProps) {
 
     if (type === 'markdown') {
       return editor.getApi(MarkdownPlugin).markdown.deserialize(text);
+    }
+
+    if (type === 'text') {
+      // Split text into paragraphs, filter empty lines, convert each to a paragraph node
+      const lines = text.split(/\n/).filter(line => line.trim());
+      return lines.map(line => ({
+        type: 'p',
+        children: [{ text: line }],
+      }));
     }
 
     return [];
@@ -66,6 +75,18 @@ export function ImportToolbarButton(props: DropdownMenuProps) {
     },
   });
 
+  const { openFilePicker: openTxtFilePicker } = useFilePicker({
+    accept: ['.txt', 'text/plain'],
+    multiple: false,
+    onFilesSelected: async ({ plainFiles }) => {
+      const text = await plainFiles[0].text();
+
+      const nodes = getFileNodes(text, 'text');
+
+      editor.tf.insertNodes(nodes);
+    },
+  });
+
   return (
     <DropdownMenu modal={false} onOpenChange={setOpen} open={open} {...props}>
       <DropdownMenuTrigger asChild>
@@ -90,6 +111,14 @@ export function ImportToolbarButton(props: DropdownMenuProps) {
             }}
           >
             Import from Markdown
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onSelect={() => {
+              openTxtFilePicker();
+            }}
+          >
+            Import from .txt
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
