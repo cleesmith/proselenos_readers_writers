@@ -5,8 +5,6 @@ import {
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
-  ImageIcon,
-  Link2Icon,
   MinusIcon,
   PilcrowIcon,
   PlusIcon,
@@ -15,10 +13,7 @@ import {
 import { KEYS } from 'platejs';
 import { type PlateEditor, useEditorRef } from 'platejs/react';
 import * as React from 'react';
-import {
-  insertBlock,
-  insertInlineElement,
-} from '@/components/plate-editor/transforms';
+import { insertBlock } from '@/components/plate-editor/transforms';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,26 +70,12 @@ const groups: Group[] = [
         label: 'Divider',
         value: KEYS.hr,
       },
-      {
-        icon: <ImageIcon />,
-        label: 'Image',
-        value: KEYS.img,
-      },
     ].map((item) => ({
       ...item,
       onSelect: (editor: PlateEditor, value: string) => {
         insertBlock(editor, value);
       },
-    })).concat([
-      {
-        icon: <Link2Icon />,
-        label: 'Link',
-        value: KEYS.link,
-        onSelect: (editor: PlateEditor, value: string) => {
-          insertInlineElement(editor, value);
-        },
-      },
-    ]),
+    })),
   },
 ];
 
