@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  ArrowUpToLineIcon,
   BoldIcon,
   ItalicIcon,
 } from 'lucide-react';
@@ -10,7 +9,6 @@ import { useEditorReadOnly } from 'platejs/react';
 
 
 import { AlignToolbarButton } from './align-toolbar-button';
-import { ExportToolbarButton } from './export-toolbar-button';
 import { FontSizeToolbarButton } from './font-size-toolbar-button';
 import { ImportToolbarButton } from './import-toolbar-button';
 import { EmojiToolbarButton } from './emoji-toolbar-button';
@@ -69,9 +67,6 @@ export function FixedToolbarButtons() {
           <ToolbarGroup>
             <MoreToolbarButton />
             <ImportToolbarButton />
-            <ExportToolbarButton>
-              <ArrowUpToLineIcon />
-            </ExportToolbarButton>
           </ToolbarGroup>
         </>
       )}
