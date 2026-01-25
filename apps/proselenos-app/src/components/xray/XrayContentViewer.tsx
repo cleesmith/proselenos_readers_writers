@@ -256,13 +256,13 @@ const XrayContentViewer: React.FC<XrayContentViewerProps> = ({
         {/* Preview mode - render HTML in iframe with inlined CSS */}
         {isHtmlFile && viewMode === 'preview' ? (
           <div className="flex-1 overflow-hidden bg-white">
-            {isProcessing ? (
+            {isProcessing || !previewHtml ? (
               <div className="flex items-center justify-center h-full">
                 <span className="loading loading-spinner loading-sm"></span>
               </div>
             ) : (
               <iframe
-                srcDoc={previewHtml || ''}
+                srcDoc={previewHtml}
                 sandbox=""
                 className="w-full h-full border-0"
                 title={`Preview of ${fileName}`}
