@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiImage, PiArrowRight } from 'react-icons/pi';
+import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiImage, PiArrowRight, PiGear } from 'react-icons/pi';
 import { GiBoxUnpacking } from 'react-icons/gi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
@@ -18,6 +18,7 @@ interface AuthorsHeaderProps {
   onFilesClick: () => void;
   onKeyClick: () => void;
   onModelsClick: () => void;
+  onAISettingsClick: () => void;
   onEditorClick: () => void;
   onChatClick: () => void;
   onNewClick: () => void;
@@ -45,6 +46,7 @@ export default function AuthorsHeader({
   onFilesClick,
   onKeyClick,
   onModelsClick,
+  onAISettingsClick,
   onEditorClick,
   onChatClick,
   onNewClick,
@@ -350,6 +352,25 @@ export default function AuthorsHeader({
             >
               <PiCpu size={16} />
               Models
+            </button>
+            <button
+              onClick={() => { onAISettingsClick(); setMenuOpen(false); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '8px 12px',
+                background: 'rgba(34, 197, 94, 0.2)',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                color: theme.text,
+                fontSize: '13px',
+              }}
+            >
+              <PiGear size={16} />
+              AI Settings
             </button>
             <button
               id="chat-button"

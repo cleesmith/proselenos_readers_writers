@@ -11,6 +11,7 @@ import StorageModal from '@/components/StorageModal';
 import FilesModal from '@/app/projects/FilesModal';
 import SettingsDialog from '@/components/SettingsDialog';
 import ModelsDropdown from '@/components/ModelsDropdown';
+import AISettingsModal from '@/components/AISettingsModal';
 import EditorModal from '@/app/proselenos/EditorModal';
 import WritingAssistantModal from '@/app/writing-assistant/WritingAssistantModal';
 import SimpleChatModal from '@/components/SimpleChatModal';
@@ -60,6 +61,9 @@ export default function AuthorsClient() {
   // Models dropdown state
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
   const [currentModel, setCurrentModel] = useState('');
+
+  // AI Settings modal state
+  const [showAISettingsModal, setShowAISettingsModal] = useState(false);
 
   // Editor modal state
   const [showEditor, setShowEditor] = useState(false);
@@ -421,6 +425,7 @@ export default function AuthorsClient() {
         onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
         onKeyClick={() => setShowSettingsDialog(true)}
         onModelsClick={() => setShowModelsDropdown(true)}
+        onAISettingsClick={() => setShowAISettingsModal(true)}
         onEditorClick={() => setShowEditor(true)}
         onAIWritingClick={() => setShowAIWriting(true)}
         onChatClick={() => setShowChat(true)}
@@ -498,6 +503,14 @@ export default function AuthorsClient() {
         isDarkMode={isDarkMode}
         theme={theme}
         currentModel={currentModel}
+      />
+
+      {/* AI Settings Modal */}
+      <AISettingsModal
+        isOpen={showAISettingsModal}
+        onClose={() => setShowAISettingsModal(false)}
+        isDarkMode={isDarkMode}
+        theme={theme}
       />
 
       {/* Editor Modal */}

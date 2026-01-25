@@ -3,6 +3,7 @@
 // apps/proselenos-app/src/lib/providers/openrouter.ts
 
 import { OpenAI } from 'openai';
+import { DEFAULT_AI_PROVIDER } from '@/lib/constants/aiApi';
 
 // ---- Public types ---------------------------------------------------------
 export interface AIConfig {
@@ -53,8 +54,7 @@ export class AiApiService {
 
   constructor(config: AIConfig = {}) {
     const apiKey = config.apiKey;
-    const baseURL = "https://openrouter.ai/api/v1";
-    // const baseURL = "http://localhost:1234/v1";
+    const baseURL = config.baseURL ?? DEFAULT_AI_PROVIDER.base;
     const headers = config.headers ?? {
         'HTTP-Referer': 'https://everythingebooks.org',
         'X-Title': 'EverythingEbooks'

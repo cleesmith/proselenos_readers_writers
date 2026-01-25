@@ -1,10 +1,14 @@
 // lib/api-key-validator.ts
-// Internal API key validation utilities - SERVER-SIDE ONLY
+// Internal API key validation utilities
+
+import { loadAIProviderConfig } from '@/services/manuscriptStorage';
+import { DEFAULT_AI_PROVIDER } from '@/lib/constants/aiApi';
 
 export class ApiKeyValidator {
   static async validateOpenRouter(apiKey: string): Promise<boolean> {
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/models', {
+      const aiConfig = await loadAIProviderConfig() ?? DEFAULT_AI_PROVIDER;
+      const response = await fetch(aiConfig.models, {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
         },

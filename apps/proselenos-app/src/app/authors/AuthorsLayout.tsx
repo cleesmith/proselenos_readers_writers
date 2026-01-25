@@ -98,6 +98,7 @@ interface AuthorsLayoutProps {
   onToggleSidebar: () => void;
   onKeyClick: () => void;
   onModelsClick: () => void;
+  onAISettingsClick: () => void;
   onEditorClick: () => void;
   onAIWritingClick: () => void;
   onChatClick: () => void;
@@ -142,6 +143,7 @@ export default function AuthorsLayout({
   onToggleSidebar,
   onKeyClick,
   onModelsClick,
+  onAISettingsClick,
   onEditorClick,
   onAIWritingClick,
   onChatClick,
@@ -1592,6 +1594,7 @@ export default function AuthorsLayout({
         onFilesClick={onFilesClick}
         onKeyClick={onKeyClick}
         onModelsClick={onModelsClick}
+        onAISettingsClick={onAISettingsClick}
         onEditorClick={onEditorClick}
         onChatClick={onChatClick}
         onNewClick={handleNew}

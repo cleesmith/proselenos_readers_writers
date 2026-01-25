@@ -4,7 +4,8 @@
 
 import { useState, useEffect } from 'react';
 import { showAlert } from '@/app/shared/alerts';
-import { loadApiKey, saveApiKey } from '@/services/manuscriptStorage';
+import { loadApiKey, saveApiKey, loadAIProviderConfig } from '@/services/manuscriptStorage';
+import { DEFAULT_AI_PROVIDER } from '@/lib/constants/aiApi';
 import StyledSmallButton from '@/components/StyledSmallButton';
 
 interface SettingsDialogProps {
@@ -56,10 +57,15 @@ export default function SettingsDialog({
     }
   }, [isOpen]);
 
-  // Validate API key client-side (same logic as old server action)
+  // Validate API key client-side (optional - some local providers don't support auth endpoint)
   const validateApiKey = async (key: string): Promise<boolean> => {
     try {
-      const response = await fetch("https://openrouter.ai/api/v1/auth/key", {
+      const aiConfig = await loadAIProviderConfig() ?? DEFAULT_AI_PROVIDER;
+      // Skip validation if authKey URL is empty (local providers like Ollama)
+      if (!aiConfig.authKey || aiConfig.authKey.trim() === '') {
+        return true;
+      }
+      const response = await fetch(aiConfig.authKey, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${key}`
@@ -67,7 +73,9 @@ export default function SettingsDialog({
       });
       return response.ok;
     } catch {
-      return false;
+      // If validation fails (network error, endpoint doesn't exist), allow saving anyway
+      // User can test by fetching models
+      return true;
     }
   };
 

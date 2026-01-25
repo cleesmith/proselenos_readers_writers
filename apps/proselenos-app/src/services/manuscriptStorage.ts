@@ -124,6 +124,23 @@ export async function saveApiKey(apiKey: string): Promise<void> {
   await setValue(STORES.SETTINGS, 'api_key.json', apiKey);
 }
 
+// AI Provider config (ai_provider.json)
+export interface AIProviderConfig {
+  providerName: string;
+  base: string;
+  authKey: string;
+  models: string;
+  completions: string;
+}
+
+export async function loadAIProviderConfig(): Promise<AIProviderConfig | null> {
+  return getValue<AIProviderConfig>(STORES.SETTINGS, 'ai_provider.json');
+}
+
+export async function saveAIProviderConfig(config: AIProviderConfig): Promise<void> {
+  await setValue(STORES.SETTINGS, 'ai_provider.json', config);
+}
+
 // ============================================
 // manuscript/ store
 // ============================================

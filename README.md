@@ -88,3 +88,40 @@ No subscriptions. No hidden fees. No premium tiers.
 
 **Enjoy writing!**
 
+---
+
+# Running Everything Ebooks on Your Computer                                                           
+                                                                                                       
+## What You'll Need                                                                                     
+                                                                                                   
+1. Node.js - Download and install from https://nodejs.org                                            
+2. pnpm - After installing Node.js, 
+	open Terminal (Mac) or Command Prompt (Windows) and type:        
+	npm install -g pnpm                                                                                  
+                                                                                                   
+## Setup (One Time)                                                                                     
+                                                                                                   
+1. Download this project as a ZIP file from GitHub and unzip it                                      
+2. Open Terminal/Command Prompt and navigate to that folder:                                         
+cd path/to/everything-ebooks                                                                         
+3. Run these commands (one at a time):                                                               
+	pnpm install                                                                                         
+	pnpm build (this runs for a few minutes but makes the app much faster)                                                                                 
+                                                                                                   
+## Launch the App                                                                                       
+                                                                                                   
+pnpm start                                                                                           
+                                                                                                   
+Then open your browser to http://localhost:3000                                                      
+                                                                                                   
+Keep the terminal window open while using the app. 
+Press Ctrl+C to quit.                             
+                                                                                                   
+## Important                                                                                            
+                                                                                                   
+- Your data stays on your computer - stored in your browser, never uploaded anywhere                 
+- Back up your work - use Storage to Export/Import all your data                                     
+- AI features are optional - require an https://openrouter.ai API key                                
+                                                                                                   
+---
+

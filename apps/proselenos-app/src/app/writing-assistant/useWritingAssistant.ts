@@ -8,6 +8,7 @@ import { showAlert } from '../shared/alerts';
 import {
   loadApiKey,
   loadAppSettings,
+  loadAIProviderConfig,
   getWritingAssistantPrompt,
   loadWorkingCopyMeta,
   saveWorkingCopyMeta,
@@ -16,6 +17,7 @@ import {
   saveSection,
   loadSection
 } from '@/services/manuscriptStorage';
+import { DEFAULT_AI_PROVIDER } from '@/lib/constants/aiApi';
 import { xhtmlToPlainText } from '@/lib/plateXhtml';
 
 // Map workflow step IDs to manuscript section IDs and titles
@@ -344,8 +346,9 @@ export function useWritingAssistant(
       // Build message
       const combinedContent = `${context}\n\n=== INSTRUCTIONS ===\n${toolPrompt}\n=== END INSTRUCTIONS ===`;
 
-      // Client-side OpenRouter API call
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      // Client-side AI API call (provider configurable via AI Settings)
+      const aiConfig = await loadAIProviderConfig() ?? DEFAULT_AI_PROVIDER;
+      const response = await fetch(aiConfig.completions, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
