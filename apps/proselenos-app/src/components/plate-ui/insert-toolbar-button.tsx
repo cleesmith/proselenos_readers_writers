@@ -2,14 +2,11 @@
 
 import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
 import {
-  ChevronRightIcon,
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
   ImageIcon,
   Link2Icon,
-  ListIcon,
-  ListOrderedIcon,
   MinusIcon,
   PilcrowIcon,
   PlusIcon,
@@ -98,31 +95,6 @@ const groups: Group[] = [
         },
       },
     ]),
-  },
-  {
-    group: 'Lists',
-    items: [
-      {
-        icon: <ListIcon />,
-        label: 'Bulleted list',
-        value: KEYS.ul,
-      },
-      {
-        icon: <ListOrderedIcon />,
-        label: 'Numbered list',
-        value: KEYS.ol,
-      },
-      {
-        icon: <ChevronRightIcon />,
-        label: 'Toggle list',
-        value: KEYS.toggle,
-      },
-    ].map((item) => ({
-      ...item,
-      onSelect: (editor: PlateEditor, value: string) => {
-        insertBlock(editor, value);
-      },
-    })),
   },
 ];
 
