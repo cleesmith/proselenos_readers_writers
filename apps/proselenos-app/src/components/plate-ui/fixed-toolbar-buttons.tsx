@@ -18,10 +18,7 @@ import {
 } from './indent-toolbar-button';
 import { InsertToolbarButton } from './insert-toolbar-button';
 import { LinkToolbarButton } from './link-toolbar-button';
-import {
-  BulletedListToolbarButton,
-  NumberedListToolbarButton,
-} from './list-toolbar-button';
+import { ListToolbarButton } from './list-toolbar-button';
 import { MarkToolbarButton } from './mark-toolbar-button';
 import { MediaToolbarButton } from './media-toolbar-button';
 import { MoreToolbarButton } from './more-toolbar-button';
@@ -54,8 +51,7 @@ export function FixedToolbarButtons() {
 
           <ToolbarGroup>
             <AlignToolbarButton />
-            <NumberedListToolbarButton />
-            <BulletedListToolbarButton />
+            <ListToolbarButton />
           </ToolbarGroup>
 
           <ToolbarGroup>

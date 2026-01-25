@@ -17,14 +17,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/plate-ui/dropdown-menu';
 
-import {
-  ToolbarButton,
-  ToolbarSplitButton,
-  ToolbarSplitButtonPrimary,
-  ToolbarSplitButtonSecondary,
-} from './toolbar';
+import { ToolbarButton } from './toolbar';
 
-export function BulletedListToolbarButton() {
+export function ListToolbarButton() {
   const editor = useEditorRef();
   const [open, setOpen] = React.useState(false);
 
@@ -32,162 +27,52 @@ export function BulletedListToolbarButton() {
     (editor) =>
       someList(editor, [
         ListStyleType.Disc,
-        ListStyleType.Circle,
-        ListStyleType.Square,
-      ]),
-    []
-  );
-
-  return (
-    <ToolbarSplitButton pressed={open} tooltip="Bulleted list">
-      <ToolbarSplitButtonPrimary
-        className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
-        data-state={pressed ? 'on' : 'off'}
-        onClick={() => {
-          toggleList(editor, {
-            listStyleType: ListStyleType.Disc,
-          });
-        }}
-      >
-        <List className="size-4" />
-      </ToolbarSplitButtonPrimary>
-
-      <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
-        <DropdownMenuTrigger asChild>
-          <ToolbarSplitButtonSecondary />
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="start" alignOffset={-32}>
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              onClick={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Disc,
-                })
-              }
-            >
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full border border-current bg-current" />
-                Default
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Circle,
-                })
-              }
-            >
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full border border-current" />
-                Circle
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Square,
-                })
-              }
-            >
-              <div className="flex items-center gap-2">
-                <div className="size-2 border border-current bg-current" />
-                Square
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </ToolbarSplitButton>
-  );
-}
-
-export function NumberedListToolbarButton() {
-  const editor = useEditorRef();
-  const [open, setOpen] = React.useState(false);
-
-  const pressed = useEditorSelector(
-    (editor) =>
-      someList(editor, [
         ListStyleType.Decimal,
-        ListStyleType.LowerAlpha,
-        ListStyleType.UpperAlpha,
-        ListStyleType.LowerRoman,
-        ListStyleType.UpperRoman,
       ]),
     []
   );
 
   return (
-    <ToolbarSplitButton pressed={open} tooltip="Numbered list">
-      <ToolbarSplitButtonPrimary
-        className="data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
-        data-state={pressed ? 'on' : 'off'}
-        onClick={() =>
-          toggleList(editor, {
-            listStyleType: ListStyleType.Decimal,
-          })
-        }
-      >
-        <ListOrdered className="size-4" />
-      </ToolbarSplitButtonPrimary>
+    <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
+      <DropdownMenuTrigger asChild>
+        <ToolbarButton
+          isDropdown
+          pressed={open || pressed}
+          tooltip="List"
+        >
+          <List className="size-4" />
+        </ToolbarButton>
+      </DropdownMenuTrigger>
 
-      <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
-        <DropdownMenuTrigger asChild>
-          <ToolbarSplitButtonSecondary />
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="start" alignOffset={-32}>
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.Decimal,
-                })
-              }
-            >
-              Decimal (1, 2, 3)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.LowerAlpha,
-                })
-              }
-            >
-              Lower Alpha (a, b, c)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.UpperAlpha,
-                })
-              }
-            >
-              Upper Alpha (A, B, C)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.LowerRoman,
-                })
-              }
-            >
-              Lower Roman (i, ii, iii)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() =>
-                toggleList(editor, {
-                  listStyleType: ListStyleType.UpperRoman,
-                })
-              }
-            >
-              Upper Roman (I, II, III)
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </ToolbarSplitButton>
+      <DropdownMenuContent align="start">
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onSelect={() =>
+              toggleList(editor, {
+                listStyleType: ListStyleType.Disc,
+              })
+            }
+          >
+            <div className="flex items-center gap-2">
+              <div className="size-2 rounded-full border border-current bg-current" />
+              List Default
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() =>
+              toggleList(editor, {
+                listStyleType: ListStyleType.Decimal,
+              })
+            }
+          >
+            <div className="flex items-center gap-2">
+              <ListOrdered className="size-4" />
+              List Decimal
+            </div>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
