@@ -461,30 +461,69 @@ function parseElement(el: Element): PlateElement | null {
   // Ensure children has at least empty text
   const validChildren = children.length > 0 ? children : [{ text: '' }];
 
+  // Extract text-align from style attribute for block elements
+  const style = el.getAttribute('style') || '';
+  const alignMatch = style.match(/text-align:\s*(left|center|right|justify|start|end)/);
+  const align = alignMatch?.[1];
+  // Only include align if it's not 'left' (default)
+  const hasAlign = align && align !== 'left';
+
   switch (tag) {
-    case 'p':
+    case 'p': {
+      if (hasAlign) {
+        return { type: 'p', align, children: validChildren };
+      }
       return { type: 'p', children: validChildren };
+    }
 
-    case 'h1':
+    case 'h1': {
+      if (hasAlign) {
+        return { type: 'h1', align, children: validChildren };
+      }
       return { type: 'h1', children: validChildren };
+    }
 
-    case 'h2':
+    case 'h2': {
+      if (hasAlign) {
+        return { type: 'h2', align, children: validChildren };
+      }
       return { type: 'h2', children: validChildren };
+    }
 
-    case 'h3':
+    case 'h3': {
+      if (hasAlign) {
+        return { type: 'h3', align, children: validChildren };
+      }
       return { type: 'h3', children: validChildren };
+    }
 
-    case 'h4':
+    case 'h4': {
+      if (hasAlign) {
+        return { type: 'h4', align, children: validChildren };
+      }
       return { type: 'h4', children: validChildren };
+    }
 
-    case 'h5':
+    case 'h5': {
+      if (hasAlign) {
+        return { type: 'h5', align, children: validChildren };
+      }
       return { type: 'h5', children: validChildren };
+    }
 
-    case 'h6':
+    case 'h6': {
+      if (hasAlign) {
+        return { type: 'h6', align, children: validChildren };
+      }
       return { type: 'h6', children: validChildren };
+    }
 
-    case 'blockquote':
+    case 'blockquote': {
+      if (hasAlign) {
+        return { type: 'blockquote', align, children: validChildren };
+      }
       return { type: 'blockquote', children: validChildren };
+    }
 
     case 'ul':
     case 'ol':
