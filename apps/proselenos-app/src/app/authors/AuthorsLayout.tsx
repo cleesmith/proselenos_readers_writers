@@ -68,6 +68,7 @@ import {
 } from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
 import { generateHtmlFromSections, openHtmlInNewTab } from '@/lib/html-generator';
+import { exportWorkspaceToDocx } from '@/lib/workspace-to-docx';
 import { xhtmlToPlainText } from '@/lib/plateXhtml';
 import environmentConfig from '@/services/environment';
 import { parseToolReport } from '@/utils/parseToolReport';
@@ -1507,6 +1508,30 @@ export default function AuthorsLayout({
     }
   };
 
+  // Handle DOCX export - download manuscript for Vellum/Atticus import
+  const handleDocxExport = async () => {
+    // Save pending changes first
+    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
+      await saveCurrentSection();
+    }
+
+    try {
+      const blob = await exportWorkspaceToDocx();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${epub?.title || 'manuscript'}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showAlert('Downloaded DOCX!', 'success', undefined, isDarkMode);
+    } catch (error) {
+      console.error('DOCX export failed:', error);
+      showAlert('DOCX export failed', 'error', undefined, isDarkMode);
+    }
+  };
+
   // Handle section selection - auto-save current section before switching
   const handleSelectSection = async (sectionId: string) => {
     if (sectionId === selectedSectionId) return; // Same section, no action needed
@@ -1609,6 +1634,7 @@ export default function AuthorsLayout({
         onSearchClose={handleSearchClose}
         onCoverClick={onCoverClick}
         onHtmlExportClick={handleHtmlExport}
+        onDocxExportClick={handleDocxExport}
         onXrayClick={onXrayClick}
         onSaveWorkspace={saveCurrentSection}
       />

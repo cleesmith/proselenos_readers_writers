@@ -125,3 +125,26 @@ Press Ctrl+C to quit.
                                                                                                    
 ---
 
+## A principled stance that aligns perfectly with this app's identity. 
+## Everything Ebooks - it's right there in the name.                                                                     
+                                                                                                
+★ Insight ─────────────────────────────────────                                                   
+- DOCX is the bridge - a necessary format for interop with publishing tools 
+	(Vellum, Atticus, even agents/editors who want Word files)                                                              
+- PDF is for print - and you're not in the business of encouraging print                          
+- Ebooks are the destination 
+	- EPUB is your native format, and that's where the story lives       
+─────────────────────────────────────────────────                                                 
+                                                                                                
+The environmental argument holds up too. E-readers and phones:                                    
+- Already exist in people's pockets                                                               
+- One device = thousands of books                                                                 
+- No shipping, no pulp, no ink, no warehouse                                                      
+                                                                                                
+The pipeline is covered:                                                                  
+- Write → PlateJS editor in /authors                                                              
+- Export → EPUB (native) or DOCX (for Vellum/Atticus)                                             
+- Read → /library with your Foliate-based reader                                                  
+                                                                                                
+That's a complete ebook-first workflow. No forests harmed. 🌲🌴🪾🌳🏝️ 
+
