@@ -115,25 +115,57 @@ export async function makeCoverSvg({
     titleLines.push(words.slice(i, i + 3).join(" "));
   }
 
-  // Fit all title lines to same size (use smallest that fits)
-  // Start with larger size for prominent SE-style titles
+  // === ADAPTIVE LAYOUT ALGORITHM ===
+  // Box constraints (fixed)
+  const boxPadding = 25;
+  const boxTop = TITLE_BOX_Y + boxPadding;
+  const boxBottom = TITLE_BOX_Y + TITLE_BOX_HEIGHT - boxPadding;
+  const availableHeight = boxBottom - boxTop; // ~380px to work with
+
+  // Start with preferred sizes
   let titleSize = 140;
+  let authorSize = 70;
+  let authorGap = 90;
+
+  // Fit title width (smallest size that fits all lines)
   for (const line of titleLines) {
     const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
     if (fitted < titleSize) titleSize = fitted;
   }
-  const authorSize = 70;
 
-  // Calculate vertical positions inside the dark box
-  // Box is at Y=1620 with height 430, so center is around Y=1835
-  const boxCenterY = TITLE_BOX_Y + TITLE_BOX_HEIGHT / 2;
+  // Helper to calculate total content height
+  const calcTotalHeight = (tSize: number, aSize: number, gap: number, aLineCount: number) => {
+    const tLineH = Math.round(tSize * 1.2);
+    const aLineH = Math.round(aSize * 1.3);
+    // Title: first line height is tSize (baseline), subsequent lines add tLineH
+    // Author: first line height is aSize, subsequent lines add aLineH
+    const titleHeight = tSize + (titleLines.length - 1) * tLineH;
+    const authorHeight = aSize + (aLineCount - 1) * aLineH;
+    return titleHeight + gap + authorHeight;
+  };
+
+  // Initial author line wrap with current size
+  let authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+  let totalHeight = calcTotalHeight(titleSize, authorSize, authorGap, authorLines.length);
+
+  // ADAPTIVE: Scale down proportionally if content exceeds available space
+  if (totalHeight > availableHeight) {
+    const scale = availableHeight / totalHeight;
+    titleSize = Math.floor(titleSize * scale);
+    authorSize = Math.floor(authorSize * scale);
+    authorGap = Math.floor(authorGap * scale);
+
+    // Re-wrap author with smaller font (may need fewer lines now)
+    authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+    totalHeight = calcTotalHeight(titleSize, authorSize, authorGap, authorLines.length);
+  }
+
+  // Calculate line heights with final sizes
   const titleLineHeight = Math.round(titleSize * 1.2);
-  const totalTitleHeight = (titleLines.length - 1) * titleLineHeight;
-  const authorGap = 90; // Gap between title and author
-  const totalContentHeight = totalTitleHeight + authorGap + authorSize;
+  const authorLineHeight = Math.round(authorSize * 1.3);
 
-  // Start title so content is vertically centered in box
-  const titleStartY = boxCenterY - totalContentHeight / 2 + titleSize * 0.8;
+  // Position content centered vertically in available space (guaranteed to fit)
+  const titleStartY = boxTop + (availableHeight - totalHeight) / 2 + titleSize;
 
   // Generate title text elements
   const titleTexts = titleLines.map((line, i) => {
@@ -147,11 +179,9 @@ export async function makeCoverSvg({
 
   // Author positioned below title inside the box
   const titleBottomY = titleStartY + (titleLines.length - 1) * titleLineHeight;
-  const authorY = titleBottomY + authorGap + authorSize * 0.3;
+  const authorY = titleBottomY + authorGap + authorSize;
 
-  // Generate author text (single line, wrapped if needed)
-  const authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
-  const authorLineHeight = Math.round(authorSize * 1.3);
+  // Generate author text
   const authorText = authorLines.map((line, i) => {
     const y = authorY + i * authorLineHeight;
     return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
@@ -273,22 +303,57 @@ export async function makeTypographySvg({
     titleLines.push(words.slice(i, i + 3).join(" "));
   }
 
-  // Fit all title lines to same size (use smallest that fits)
-  // Start with larger size for prominent SE-style titles
+  // === ADAPTIVE LAYOUT ALGORITHM ===
+  // Box constraints (fixed)
+  const boxPadding = 25;
+  const boxTop = TITLE_BOX_Y + boxPadding;
+  const boxBottom = TITLE_BOX_Y + TITLE_BOX_HEIGHT - boxPadding;
+  const availableHeight = boxBottom - boxTop; // ~380px to work with
+
+  // Start with preferred sizes
   let titleSize = 140;
+  let authorSize = 70;
+  let authorGap = 90;
+
+  // Fit title width (smallest size that fits all lines)
   for (const line of titleLines) {
     const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
     if (fitted < titleSize) titleSize = fitted;
   }
-  const authorSize = 70;
 
-  // Calculate vertical positions inside the dark box
-  const boxCenterY = TITLE_BOX_Y + TITLE_BOX_HEIGHT / 2;
+  // Helper to calculate total content height
+  const calcTotalHeight = (tSize: number, aSize: number, gap: number, aLineCount: number) => {
+    const tLineH = Math.round(tSize * 1.2);
+    const aLineH = Math.round(aSize * 1.3);
+    // Title: first line height is tSize (baseline), subsequent lines add tLineH
+    // Author: first line height is aSize, subsequent lines add aLineH
+    const titleHeight = tSize + (titleLines.length - 1) * tLineH;
+    const authorHeight = aSize + (aLineCount - 1) * aLineH;
+    return titleHeight + gap + authorHeight;
+  };
+
+  // Initial author line wrap with current size
+  let authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+  let totalHeight = calcTotalHeight(titleSize, authorSize, authorGap, authorLines.length);
+
+  // ADAPTIVE: Scale down proportionally if content exceeds available space
+  if (totalHeight > availableHeight) {
+    const scale = availableHeight / totalHeight;
+    titleSize = Math.floor(titleSize * scale);
+    authorSize = Math.floor(authorSize * scale);
+    authorGap = Math.floor(authorGap * scale);
+
+    // Re-wrap author with smaller font (may need fewer lines now)
+    authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+    totalHeight = calcTotalHeight(titleSize, authorSize, authorGap, authorLines.length);
+  }
+
+  // Calculate line heights with final sizes
   const titleLineHeight = Math.round(titleSize * 1.2);
-  const totalTitleHeight = (titleLines.length - 1) * titleLineHeight;
-  const authorGap = 90;
-  const totalContentHeight = totalTitleHeight + authorGap + authorSize;
-  const titleStartY = boxCenterY - totalContentHeight / 2 + titleSize * 0.8;
+  const authorLineHeight = Math.round(authorSize * 1.3);
+
+  // Position content centered vertically in available space (guaranteed to fit)
+  const titleStartY = boxTop + (availableHeight - totalHeight) / 2 + titleSize;
 
   // Generate title text elements
   const titleTexts = titleLines.map((line, i) => {
@@ -302,11 +367,9 @@ export async function makeTypographySvg({
 
   // Author positioned below title inside the box
   const titleBottomY = titleStartY + (titleLines.length - 1) * titleLineHeight;
-  const authorY = titleBottomY + authorGap + authorSize * 0.3;
+  const authorY = titleBottomY + authorGap + authorSize;
 
   // Generate author text
-  const authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
-  const authorLineHeight = Math.round(authorSize * 1.3);
   const authorText = authorLines.map((line, i) => {
     const y = authorY + i * authorLineHeight;
     return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
