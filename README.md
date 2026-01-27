@@ -122,29 +122,33 @@ Press Ctrl+C to quit.
 - Your data stays on your computer - stored in your browser, never uploaded anywhere                 
 - Back up your work - use Storage to Export/Import all your data                                     
 - AI features are optional - require an https://openrouter.ai API key                                
-                                                                                                   
+
 ---
 
-## A principled stance that aligns perfectly with this app's identity. 
 ## Everything Ebooks - it's right there in the name.                                                                     
-                                                                                                
-★ Insight ─────────────────────────────────────                                                   
-- DOCX is the bridge - a necessary format for interop with publishing tools 
-	(Vellum, Atticus, even agents/editors who want Word files)                                                              
-- PDF is for print - and you're not in the business of encouraging print                          
-- Ebooks are the destination 
-	- EPUB is your native format, and that's where the story lives       
-─────────────────────────────────────────────────                                                 
-                                                                                                
-The environmental argument holds up too. E-readers and phones:                                    
-- Already exist in people's pockets                                                               
-- One device = thousands of books                                                                 
-- No shipping, no pulp, no ink, no warehouse                                                      
-                                                                                                
-The pipeline is covered:                                                                  
-- Write → PlateJS editor in /authors                                                              
-- Export → EPUB (native) or DOCX (for Vellum/Atticus)                                             
-- Read → /library with your Foliate-based reader                                                  
-                                                                                                
-That's a complete ebook-first workflow. No forests harmed. 🌲🌴🪾🌳🏝️ 
 
+## A principled stance that aligns perfectly with this app's identity. 
+                                                                                                
+### ★ Insight                  
+- **DOCX** is one bridge 
+    - a necessary format for interop with existing publishing tools 
+	- (Vellum, Atticus, even agents/editors who want Word files)                                                              
+- **PDF** is for print 
+    - and this app is not in the business of encouraging print                          
+- **Ebooks** are the destination 
+	- **EPUB** is the native format, and that's where the story lives       
+
+#### The environmental argument holds up too. 
+- E-readers and phones:                                    
+    - Already exist in people's pockets
+    - One device to read thousands of books, and with tiny fingers write them too
+    - No shipping, no pulp, no ink, no warehouse, no fossil fuels
+                 
+#### The pipeline is covered:
+- Write → PlateJS editor in **/authors**
+- Export → EPUB (native) or DOCX (for Vellum/Atticus)
+- Read → **/library** with a Foliate-based reader
+
+> That's a complete ebook-first workflow.
+>
+> No forests harmed. 🌲 🌴 🪾 🌳 🏝️ 🌱

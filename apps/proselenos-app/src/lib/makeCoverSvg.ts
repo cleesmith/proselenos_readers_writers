@@ -74,7 +74,6 @@ export async function makeCoverSvg({
   title,
   subtitle,
   author,
-  publisher,
   bg = "#3366AA",
   fontColor = "#FFFFFF",
   logoUrl,
@@ -84,7 +83,6 @@ export async function makeCoverSvg({
   title: string;
   subtitle?: string;
   author: string;
-  publisher?: string;
   bg?: string;
   fontColor?: string;
   logoUrl?: string;
@@ -186,23 +184,6 @@ export async function makeCoverSvg({
   </text>`;
   }).join("\n  ");
 
-  // Calculate author bottom for publisher positioning
-  const authorBottomY = authorStartY + (authorLines.length - 1) * authorLineHeight;
-
-  // Generate publisher text (if provided) with wrapping
-  const publisherStartY = authorBottomY + 120;
-  const publisherSize = 50;
-  const publisherLineHeight = Math.round(publisherSize * 1.3);
-  const publisherLines = publisher ? wrapText(publisher, "400", publisherSize, MAX_TEXT_W) : [];
-  const publisherText = publisherLines.map((line, i) => {
-    const y = publisherStartY + i * publisherLineHeight;
-    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
-        font-family="EBGaramondEmbed" font-weight="400"
-        font-size="${publisherSize}" fill="${fontColor}" opacity="0.7">
-    ${esc(line)}
-  </text>`;
-  }).join("\n  ");
-
   // Branding area (icon left of text, both right-justified together, near bottom)
   const brandingY = HEIGHT - 80;
   const iconSize = logoSize;
@@ -247,8 +228,6 @@ export async function makeCoverSvg({
   ${subtitleText}
 
   ${authorText}
-
-  ${publisherText}
 
   <!-- Branding: icon then text, right-justified -->
   ${logoElement}
@@ -307,13 +286,11 @@ export async function makeTypographySvg({
   title,
   subtitle,
   author,
-  publisher,
   fontColor = "#FFFFFF",
 }: {
   title: string;
   subtitle?: string;
   author: string;
-  publisher?: string;
   fontColor?: string;
 }): Promise<string> {
   // Fetch fonts from /public/fonts/
@@ -395,24 +372,7 @@ export async function makeTypographySvg({
   </text>`;
   }).join("\n  ");
 
-  // Calculate author bottom for publisher positioning
-  const authorBottomY = authorStartY + (authorLines.length - 1) * authorLineHeight;
-
-  // Generate publisher text (if provided) with wrapping
-  const publisherStartY = authorBottomY + 120;
-  const publisherSize = 50;
-  const publisherLineHeight = Math.round(publisherSize * 1.3);
-  const publisherLines = publisher ? wrapText(publisher, "400", publisherSize, MAX_TEXT_W) : [];
-  const publisherText = publisherLines.map((line, i) => {
-    const y = publisherStartY + i * publisherLineHeight;
-    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
-        font-family="EBGaramondEmbed" font-weight="400"
-        font-size="${publisherSize}" fill="${fontColor}" opacity="0.7">
-    ${esc(line)}
-  </text>`;
-  }).join("\n  ");
-
-  // No background, no logo, no branding - just title, subtitle, author, publisher
+  // No background, no logo, no branding - just title, subtitle, author
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <style>
@@ -435,8 +395,6 @@ export async function makeTypographySvg({
   ${subtitleText}
 
   ${authorText}
-
-  ${publisherText}
 </svg>`;
 }
 
@@ -445,7 +403,6 @@ export async function makeCoverPngFile({
   title,
   subtitle,
   author,
-  publisher,
   bg = "#3366AA",
   fontColor = "#FFFFFF",
   logoUrl,
@@ -456,7 +413,6 @@ export async function makeCoverPngFile({
   title: string;
   subtitle?: string;
   author: string;
-  publisher?: string;
   bg?: string;
   fontColor?: string;
   logoUrl?: string;
@@ -464,7 +420,7 @@ export async function makeCoverPngFile({
   bgImageDataUrl?: string;
   filename?: string;
 }): Promise<File> {
-  const svg = await makeCoverSvg({ title, subtitle, author, publisher, bg, fontColor, logoUrl, logoSize, bgImageDataUrl });
+  const svg = await makeCoverSvg({ title, subtitle, author, bg, fontColor, logoUrl, logoSize, bgImageDataUrl });
   const pngBlob = await svgToPngBlob(svg);
   return new File([pngBlob], filename, { type: "image/png" });
 }

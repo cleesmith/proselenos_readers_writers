@@ -25,7 +25,6 @@ interface CoverModalProps {
   theme: ThemeConfig;
   title: string;
   subtitle?: string;
-  publisher?: string;
   author: string;
   onClose: () => void;
   onCoverSaved: () => void;  // Callback to refresh cover display in sidebar
@@ -41,7 +40,6 @@ export default function CoverModal({
   theme,
   title,
   subtitle,
-  publisher,
   author,
   onClose,
   onCoverSaved,
@@ -132,7 +130,6 @@ export default function CoverModal({
         title,
         subtitle,
         author,
-        publisher,
         bg: settings.bgColor,
         fontColor: settings.fontColor,
         logoUrl: '/icon.png',
@@ -146,7 +143,6 @@ export default function CoverModal({
         title,
         subtitle,
         author,
-        publisher,
         fontColor: settings.fontColor,
       });
       const typographyBlob = await svgToPngBlob(typographySvg);
@@ -290,12 +286,6 @@ export default function CoverModal({
               <span style={{ fontSize: '12px', color: theme.textMuted }}>Author: </span>
               <span style={{ fontSize: '13px', color: theme.text }}>{author || '(No author set)'}</span>
             </div>
-            {publisher && (
-              <div>
-                <span style={{ fontSize: '12px', color: theme.textMuted }}>Publisher: </span>
-                <span style={{ fontSize: '13px', color: theme.text }}>{publisher}</span>
-              </div>
-            )}
           </div>
 
           {/* Divider after metadata */}
