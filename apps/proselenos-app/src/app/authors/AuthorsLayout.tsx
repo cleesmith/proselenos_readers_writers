@@ -1351,6 +1351,17 @@ export default function AuthorsLayout({
       await saveWorkingCopyMeta(updatedMeta);
       setBookMeta(updatedMeta);
     }
+
+    // Also update meta.json to keep both files in sync
+    // This prevents stale data when loadFullWorkingCopy() reads from meta.json
+    const manuscriptMeta = await loadManuscriptMeta();
+    if (manuscriptMeta) {
+      manuscriptMeta.title = metadata.title;
+      manuscriptMeta.author = metadata.author;
+      manuscriptMeta.subtitle = metadata.subtitle;
+      manuscriptMeta.publisher = metadata.publisher;
+      await saveManuscriptMeta(manuscriptMeta);
+    }
   };
 
   // Handle Save button - generate EPUB and add to library
