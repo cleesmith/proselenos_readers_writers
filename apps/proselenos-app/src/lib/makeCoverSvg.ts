@@ -108,13 +108,6 @@ export async function makeCoverSvg({
   // Convert title to uppercase for SE style
   const upperTitle = title.toUpperCase();
 
-  // Split title into lines of max 3 words each
-  const words = upperTitle.split(/\s+/);
-  const titleLines: string[] = [];
-  for (let i = 0; i < words.length; i += 3) {
-    titleLines.push(words.slice(i, i + 3).join(" "));
-  }
-
   // === ADAPTIVE LAYOUT ALGORITHM ===
   // Box constraints (fixed)
   const boxPadding = 25;
@@ -127,10 +120,23 @@ export async function makeCoverSvg({
   let authorSize = 70;
   let authorGap = 90;
 
-  // Fit title width (smallest size that fits all lines)
-  for (const line of titleLines) {
-    const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
-    if (fitted < titleSize) titleSize = fitted;
+  // Try entire title on one line first - maximize prominence
+  let titleLines: string[];
+  const singleLineSize = await fitFontSize(upperTitle, "700", MAX_TEXT_W, 140);
+
+  if (singleLineSize >= 50) {
+    // Fits on single line at readable size - use it
+    titleLines = [upperTitle];
+    titleSize = singleLineSize;
+  } else {
+    // Need to wrap - use pixel-based wrapping (not arbitrary word count)
+    titleLines = wrapText(upperTitle, "700", 100, MAX_TEXT_W);
+    // Find size that fits all wrapped lines
+    titleSize = 140;
+    for (const line of titleLines) {
+      const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
+      if (fitted < titleSize) titleSize = fitted;
+    }
   }
 
   // Helper to calculate total content height
@@ -296,13 +302,6 @@ export async function makeTypographySvg({
   // Convert title to uppercase for SE style
   const upperTitle = title.toUpperCase();
 
-  // Split title into lines of max 3 words each
-  const words = upperTitle.split(/\s+/);
-  const titleLines: string[] = [];
-  for (let i = 0; i < words.length; i += 3) {
-    titleLines.push(words.slice(i, i + 3).join(" "));
-  }
-
   // === ADAPTIVE LAYOUT ALGORITHM ===
   // Box constraints (fixed)
   const boxPadding = 25;
@@ -315,10 +314,23 @@ export async function makeTypographySvg({
   let authorSize = 70;
   let authorGap = 90;
 
-  // Fit title width (smallest size that fits all lines)
-  for (const line of titleLines) {
-    const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
-    if (fitted < titleSize) titleSize = fitted;
+  // Try entire title on one line first - maximize prominence
+  let titleLines: string[];
+  const singleLineSize = await fitFontSize(upperTitle, "700", MAX_TEXT_W, 140);
+
+  if (singleLineSize >= 50) {
+    // Fits on single line at readable size - use it
+    titleLines = [upperTitle];
+    titleSize = singleLineSize;
+  } else {
+    // Need to wrap - use pixel-based wrapping (not arbitrary word count)
+    titleLines = wrapText(upperTitle, "700", 100, MAX_TEXT_W);
+    // Find size that fits all wrapped lines
+    titleSize = 140;
+    for (const line of titleLines) {
+      const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
+      if (fitted < titleSize) titleSize = fitted;
+    }
   }
 
   // Helper to calculate total content height
