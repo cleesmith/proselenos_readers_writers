@@ -1,10 +1,15 @@
 // apps/proselenos-app/src/lib/makeCoverSvg.ts
 
 // Uses fonts from /public/fonts/
+// Standard Ebooks-style cover design: dark box near bottom with title + author
 
-const WIDTH = 1600;
-const HEIGHT = 2560;
-const SAFE_MARGIN_X = 140;
+const WIDTH = 1400;                 // SE standard width
+const HEIGHT = 2100;                // SE standard height
+const TITLE_BOX_Y = 1620;           // Y position where dark box starts
+const TITLE_BOX_HEIGHT = 430;       // Height of the dark box
+const BOX_OPACITY = 0.75;           // Dark box opacity
+const BOX_MARGIN_X = 40;            // Horizontal margin for dark box
+const SAFE_MARGIN_X = 100;          // Horizontal padding inside box
 const MAX_TEXT_W = WIDTH - SAFE_MARGIN_X * 2;
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -72,21 +77,15 @@ function wrapText(
 
 export async function makeCoverSvg({
   title,
-  subtitle,
   author,
   bg = "#3366AA",
   fontColor = "#FFFFFF",
-  logoUrl,
-  logoSize = 100,
   bgImageDataUrl,
 }: {
   title: string;
-  subtitle?: string;
   author: string;
   bg?: string;
   fontColor?: string;
-  logoUrl?: string;
-  logoSize?: number;
   bgImageDataUrl?: string;
 }): Promise<string> {
   // Fetch fonts from /public/fonts/
@@ -98,22 +97,6 @@ export async function makeCoverSvg({
   const regB64 = bytesToBase64(new Uint8Array(regBuf));
   const boldB64 = bytesToBase64(new Uint8Array(boldBuf));
 
-  // Load logo if provided
-  let logoB64 = "";
-  let logoMime = "image/png";
-  if (logoUrl) {
-    const logoRes = await fetch(logoUrl);
-    const contentType = logoRes.headers.get("content-type") || "";
-    if (logoRes.ok && contentType.startsWith("image/")) {
-      const logoBuf = await logoRes.arrayBuffer();
-      logoB64 = bytesToBase64(new Uint8Array(logoBuf));
-      if (contentType.includes("png")) logoMime = "image/png";
-      else if (contentType.includes("ico")) logoMime = "image/x-icon";
-      else if (contentType.includes("svg")) logoMime = "image/svg+xml";
-      else if (contentType.includes("jpeg") || contentType.includes("jpg")) logoMime = "image/jpeg";
-    }
-  }
-
   // Load fonts into document for Canvas text measurement
   const ffReg = new FontFace("EBGaramondEmbed", regBuf, { weight: "400", style: "normal" });
   const ffBold = new FontFace("EBGaramondEmbed", boldBuf, { weight: "700", style: "normal" });
@@ -122,28 +105,39 @@ export async function makeCoverSvg({
   document.fonts.add(ffBold);
   await document.fonts.ready;
 
+  // Convert title to uppercase for SE style
+  const upperTitle = title.toUpperCase();
+
   // Split title into lines of max 3 words each
-  const words = title.split(/\s+/);
+  const words = upperTitle.split(/\s+/);
   const titleLines: string[] = [];
   for (let i = 0; i < words.length; i += 3) {
     titleLines.push(words.slice(i, i + 3).join(" "));
   }
 
   // Fit all title lines to same size (use smallest that fits)
-  let titleSize = 170;
+  // Start with larger size for prominent SE-style titles
+  let titleSize = 140;
   for (const line of titleLines) {
     const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
     if (fitted < titleSize) titleSize = fitted;
   }
-  const authorSize = 80;
+  const authorSize = 70;
 
-  // Calculate Y positions for title lines (closer to top)
-  const lineHeight = Math.round(titleSize * 1.25);
-  const titleStartY = 400 + titleSize;
+  // Calculate vertical positions inside the dark box
+  // Box is at Y=1620 with height 430, so center is around Y=1835
+  const boxCenterY = TITLE_BOX_Y + TITLE_BOX_HEIGHT / 2;
+  const titleLineHeight = Math.round(titleSize * 1.2);
+  const totalTitleHeight = (titleLines.length - 1) * titleLineHeight;
+  const authorGap = 90; // Gap between title and author
+  const totalContentHeight = totalTitleHeight + authorGap + authorSize;
+
+  // Start title so content is vertically centered in box
+  const titleStartY = boxCenterY - totalContentHeight / 2 + titleSize * 0.8;
 
   // Generate title text elements
   const titleTexts = titleLines.map((line, i) => {
-    const y = titleStartY + i * lineHeight;
+    const y = titleStartY + i * titleLineHeight;
     return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
         font-family="EBGaramondEmbed" font-weight="700"
         font-size="${titleSize}" fill="${fontColor}">
@@ -151,53 +145,21 @@ export async function makeCoverSvg({
   </text>`;
   }).join("\n  ");
 
-  // Generate subtitle text (if provided) with wrapping
-  const titleBottomY = titleStartY + (titleLines.length - 1) * lineHeight;
-  const subtitleStartY = titleBottomY + 160;
-  const subtitleSize = 60;
-  const subtitleLineHeight = Math.round(subtitleSize * 1.3);
-  const subtitleLines = subtitle ? wrapText(subtitle, "400", subtitleSize, MAX_TEXT_W) : [];
-  const subtitleText = subtitleLines.map((line, i) => {
-    const y = subtitleStartY + i * subtitleLineHeight;
-    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
-        font-family="EBGaramondEmbed" font-weight="400" font-style="italic"
-        font-size="${subtitleSize}" fill="${fontColor}" opacity="0.8">
-    ${esc(line)}
-  </text>`;
-  }).join("\n  ");
+  // Author positioned below title inside the box
+  const titleBottomY = titleStartY + (titleLines.length - 1) * titleLineHeight;
+  const authorY = titleBottomY + authorGap + authorSize * 0.3;
 
-  // Calculate subtitle bottom for author positioning
-  const subtitleBottomY = subtitle
-    ? subtitleStartY + (subtitleLines.length - 1) * subtitleLineHeight
-    : titleBottomY;
-
-  // Generate author text with wrapping
-  const authorStartY = subtitleBottomY + 200;
-  const authorLineHeight = Math.round(authorSize * 1.3);
+  // Generate author text (single line, wrapped if needed)
   const authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+  const authorLineHeight = Math.round(authorSize * 1.3);
   const authorText = authorLines.map((line, i) => {
-    const y = authorStartY + i * authorLineHeight;
+    const y = authorY + i * authorLineHeight;
     return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
         font-family="EBGaramondEmbed" font-weight="400"
-        font-size="${authorSize}" fill="${fontColor}" opacity="0.85" letter-spacing="2">
+        font-size="${authorSize}" fill="${fontColor}" letter-spacing="1">
     ${esc(line)}
   </text>`;
   }).join("\n  ");
-
-  // Branding area (icon left of text, both right-justified together, near bottom)
-  const brandingY = HEIGHT - 80;
-  const iconSize = logoSize;
-  const textWidth = 400; // approximate width of "Everything Ebooks" at size 50
-  const gap = 20;
-  const brandTextX = WIDTH - 100;
-  const brandTextY = brandingY;
-  const iconX = brandTextX - textWidth - gap - iconSize;
-  const iconY = brandingY - iconSize + 15;
-
-  // Logo element (left of text)
-  const logoElement = logoB64
-    ? `<image x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" href="data:${logoMime};base64,${logoB64}"/>`
-    : "";
 
   // Background element - image or solid color
   const bgElement = bgImageDataUrl
@@ -223,27 +185,20 @@ export async function makeCoverSvg({
 
   ${bgElement}
 
+  <!-- Semi-transparent dark box for title/author -->
+  <rect x="${BOX_MARGIN_X}" y="${TITLE_BOX_Y}" width="${WIDTH - BOX_MARGIN_X * 2}" height="${TITLE_BOX_HEIGHT}"
+        fill="#000000" fill-opacity="${BOX_OPACITY}"/>
+
   ${titleTexts}
 
-  ${subtitleText}
-
   ${authorText}
-
-  <!-- Branding: icon then text, right-justified -->
-  ${logoElement}
-
-  <text x="${brandTextX}" y="${brandTextY}" text-anchor="end"
-        font-family="EBGaramondEmbed" font-weight="400" font-style="italic"
-        font-size="50" fill="${fontColor}" opacity="0.7">
-    Everything Ebooks
-  </text>
 </svg>`;
 }
 
 export async function svgToPngBlob(
   svg: string,
-  width = 1600,
-  height = 2560
+  width = 1400,
+  height = 2100
 ): Promise<Blob> {
   const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(svgBlob);
@@ -280,16 +235,14 @@ export async function svgToPngBlob(
   }
 }
 
-// Typography-only SVG (transparent background, no logo/branding)
+// Typography-only SVG (transparent background, includes dark box)
 // For authors to overlay onto their own cover artwork
 export async function makeTypographySvg({
   title,
-  subtitle,
   author,
   fontColor = "#FFFFFF",
 }: {
   title: string;
-  subtitle?: string;
   author: string;
   fontColor?: string;
 }): Promise<string> {
@@ -310,28 +263,36 @@ export async function makeTypographySvg({
   document.fonts.add(ffBold);
   await document.fonts.ready;
 
+  // Convert title to uppercase for SE style
+  const upperTitle = title.toUpperCase();
+
   // Split title into lines of max 3 words each
-  const words = title.split(/\s+/);
+  const words = upperTitle.split(/\s+/);
   const titleLines: string[] = [];
   for (let i = 0; i < words.length; i += 3) {
     titleLines.push(words.slice(i, i + 3).join(" "));
   }
 
   // Fit all title lines to same size (use smallest that fits)
-  let titleSize = 170;
+  // Start with larger size for prominent SE-style titles
+  let titleSize = 140;
   for (const line of titleLines) {
     const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
     if (fitted < titleSize) titleSize = fitted;
   }
-  const authorSize = 80;
+  const authorSize = 70;
 
-  // Calculate Y positions for title lines (closer to top)
-  const lineHeight = Math.round(titleSize * 1.25);
-  const titleStartY = 400 + titleSize;
+  // Calculate vertical positions inside the dark box
+  const boxCenterY = TITLE_BOX_Y + TITLE_BOX_HEIGHT / 2;
+  const titleLineHeight = Math.round(titleSize * 1.2);
+  const totalTitleHeight = (titleLines.length - 1) * titleLineHeight;
+  const authorGap = 90;
+  const totalContentHeight = totalTitleHeight + authorGap + authorSize;
+  const titleStartY = boxCenterY - totalContentHeight / 2 + titleSize * 0.8;
 
   // Generate title text elements
   const titleTexts = titleLines.map((line, i) => {
-    const y = titleStartY + i * lineHeight;
+    const y = titleStartY + i * titleLineHeight;
     return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
         font-family="EBGaramondEmbed" font-weight="700"
         font-size="${titleSize}" fill="${fontColor}">
@@ -339,40 +300,23 @@ export async function makeTypographySvg({
   </text>`;
   }).join("\n  ");
 
-  // Generate subtitle text (if provided) with wrapping
-  const titleBottomY = titleStartY + (titleLines.length - 1) * lineHeight;
-  const subtitleStartY = titleBottomY + 160;
-  const subtitleSize = 60;
-  const subtitleLineHeight = Math.round(subtitleSize * 1.3);
-  const subtitleLines = subtitle ? wrapText(subtitle, "400", subtitleSize, MAX_TEXT_W) : [];
-  const subtitleText = subtitleLines.map((line, i) => {
-    const y = subtitleStartY + i * subtitleLineHeight;
-    return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
-        font-family="EBGaramondEmbed" font-weight="400" font-style="italic"
-        font-size="${subtitleSize}" fill="${fontColor}" opacity="0.8">
-    ${esc(line)}
-  </text>`;
-  }).join("\n  ");
+  // Author positioned below title inside the box
+  const titleBottomY = titleStartY + (titleLines.length - 1) * titleLineHeight;
+  const authorY = titleBottomY + authorGap + authorSize * 0.3;
 
-  // Calculate subtitle bottom for author positioning
-  const subtitleBottomY = subtitle
-    ? subtitleStartY + (subtitleLines.length - 1) * subtitleLineHeight
-    : titleBottomY;
-
-  // Generate author text with wrapping
-  const authorStartY = subtitleBottomY + 200;
-  const authorLineHeight = Math.round(authorSize * 1.3);
+  // Generate author text
   const authorLines = wrapText(author, "400", authorSize, MAX_TEXT_W);
+  const authorLineHeight = Math.round(authorSize * 1.3);
   const authorText = authorLines.map((line, i) => {
-    const y = authorStartY + i * authorLineHeight;
+    const y = authorY + i * authorLineHeight;
     return `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"
         font-family="EBGaramondEmbed" font-weight="400"
-        font-size="${authorSize}" fill="${fontColor}" opacity="0.85" letter-spacing="2">
+        font-size="${authorSize}" fill="${fontColor}" letter-spacing="1">
     ${esc(line)}
   </text>`;
   }).join("\n  ");
 
-  // No background, no logo, no branding - just title, subtitle, author
+  // Transparent background with dark box and text
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <style>
@@ -390,9 +334,11 @@ export async function makeTypographySvg({
     }
   </style>
 
-  ${titleTexts}
+  <!-- Semi-transparent dark box for title/author -->
+  <rect x="${BOX_MARGIN_X}" y="${TITLE_BOX_Y}" width="${WIDTH - BOX_MARGIN_X * 2}" height="${TITLE_BOX_HEIGHT}"
+        fill="#000000" fill-opacity="${BOX_OPACITY}"/>
 
-  ${subtitleText}
+  ${titleTexts}
 
   ${authorText}
 </svg>`;
@@ -401,26 +347,20 @@ export async function makeTypographySvg({
 // Convenience: get PNG as File (for EPUB packaging)
 export async function makeCoverPngFile({
   title,
-  subtitle,
   author,
   bg = "#3366AA",
   fontColor = "#FFFFFF",
-  logoUrl,
-  logoSize = 100,
   bgImageDataUrl,
   filename = "cover.png",
 }: {
   title: string;
-  subtitle?: string;
   author: string;
   bg?: string;
   fontColor?: string;
-  logoUrl?: string;
-  logoSize?: number;
   bgImageDataUrl?: string;
   filename?: string;
 }): Promise<File> {
-  const svg = await makeCoverSvg({ title, subtitle, author, bg, fontColor, logoUrl, logoSize, bgImageDataUrl });
+  const svg = await makeCoverSvg({ title, author, bg, fontColor, bgImageDataUrl });
   const pngBlob = await svgToPngBlob(svg);
   return new File([pngBlob], filename, { type: "image/png" });
 }

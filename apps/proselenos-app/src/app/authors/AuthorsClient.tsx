@@ -86,7 +86,6 @@ export default function AuthorsClient() {
   // X-Ray modal state
   const [showXrayModal, setShowXrayModal] = useState(false);
   const [coverTitle, setCoverTitle] = useState('');
-  const [coverSubtitle, setCoverSubtitle] = useState('');
   const [coverAuthor, setCoverAuthor] = useState('');
 
   // AI Tools state
@@ -306,11 +305,10 @@ export default function AuthorsClient() {
     }
   };
 
-  // Open cover modal (loads title/subtitle/author from working copy)
+  // Open cover modal (loads title/author from working copy)
   const handleOpenCoverModal = async () => {
     const meta = await loadWorkingCopyMeta();
     setCoverTitle(meta?.title ?? '');
-    setCoverSubtitle(meta?.subtitle ?? '');
     setCoverAuthor(meta?.author ?? '');
     setShowCoverModal(true);
   };
@@ -579,7 +577,6 @@ export default function AuthorsClient() {
         onClose={() => setShowCoverModal(false)}
         theme={theme}
         title={coverTitle}
-        subtitle={coverSubtitle}
         author={coverAuthor}
         onCoverSaved={handleCoverSaved}
       />

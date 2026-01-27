@@ -24,7 +24,6 @@ interface CoverModalProps {
   isOpen: boolean;
   theme: ThemeConfig;
   title: string;
-  subtitle?: string;
   author: string;
   onClose: () => void;
   onCoverSaved: () => void;  // Callback to refresh cover display in sidebar
@@ -39,7 +38,6 @@ export default function CoverModal({
   isOpen,
   theme,
   title,
-  subtitle,
   author,
   onClose,
   onCoverSaved,
@@ -125,23 +123,19 @@ export default function CoverModal({
 
     setLoading(true);
     try {
-      // Generate full cover
+      // Generate full cover (SE-style with dark box)
       const coverSvg = await makeCoverSvg({
         title,
-        subtitle,
         author,
         bg: settings.bgColor,
         fontColor: settings.fontColor,
-        logoUrl: '/icon.png',
-        logoSize: 100,
         bgImageDataUrl: settings.bgImageDataUrl,
       });
       const coverBlob = await svgToPngBlob(coverSvg);
 
-      // Generate typography overlay (transparent, no logo/branding)
+      // Generate typography overlay (transparent with dark box)
       const typographySvg = await makeTypographySvg({
         title,
-        subtitle,
         author,
         fontColor: settings.fontColor,
       });
@@ -276,12 +270,6 @@ export default function CoverModal({
               <span style={{ fontSize: '12px', color: theme.textMuted }}>Title: </span>
               <span style={{ fontSize: '13px', color: theme.text }}>{title || '(No title set)'}</span>
             </div>
-            {subtitle && (
-              <div>
-                <span style={{ fontSize: '12px', color: theme.textMuted }}>Subtitle: </span>
-                <span style={{ fontSize: '13px', color: theme.text }}>{subtitle}</span>
-              </div>
-            )}
             <div>
               <span style={{ fontSize: '12px', color: theme.textMuted }}>Author: </span>
               <span style={{ fontSize: '13px', color: theme.text }}>{author || '(No author set)'}</span>
