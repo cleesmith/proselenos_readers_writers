@@ -197,6 +197,31 @@ export async function generateEpubFromWorkingCopy(
 }
 
 /**
+ * Detect image type from binary data by checking magic bytes
+ */
+function detectImageType(data: Uint8Array): { extension: string; mediaType: string } {
+  // Check PNG signature: 89 50 4E 47 0D 0A 1A 0A
+  if (data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4E && data[3] === 0x47) {
+    return { extension: 'png', mediaType: 'image/png' };
+  }
+  // Check JPEG signature: FF D8 FF
+  if (data[0] === 0xFF && data[1] === 0xD8 && data[2] === 0xFF) {
+    return { extension: 'jpg', mediaType: 'image/jpeg' };
+  }
+  // Check GIF signature: 47 49 46 38
+  if (data[0] === 0x47 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x38) {
+    return { extension: 'gif', mediaType: 'image/gif' };
+  }
+  // Check WebP signature: 52 49 46 46 ... 57 45 42 50
+  if (data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46 &&
+      data[8] === 0x57 && data[9] === 0x45 && data[10] === 0x42 && data[11] === 0x50) {
+    return { extension: 'webp', mediaType: 'image/webp' };
+  }
+  // Default to JPEG if unknown
+  return { extension: 'jpg', mediaType: 'image/jpeg' };
+}
+
+/**
  * Generate EPUB file from chapters and metadata
  */
 async function generateEPUB(
@@ -207,6 +232,9 @@ async function generateEPUB(
   noMatterSections?: Chapter[]
 ): Promise<Uint8Array> {
   const zip = new JSZip();
+
+  // Generate a single UUID to be shared between content.opf and toc.ncx
+  const bookUUID = generateUUID();
 
   // 1. Add mimetype (uncompressed)
   zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
@@ -221,13 +249,16 @@ async function generateEPUB(
   zip.file('META-INF/container.xml', containerXML);
 
   // 3. Handle cover - always create cover.xhtml (with image or text fallback)
+  // Detect actual image type from binary data to use correct extension/media-type
+  let coverImageInfo: { extension: string; mediaType: string } | null = null;
   const hasCover = !!coverImageData;
   if (coverImageData) {
-    // Add cover image file
-    zip.file('OEBPS/images/cover.jpg', coverImageData);
+    coverImageInfo = detectImageType(coverImageData);
+    // Add cover image file with correct extension
+    zip.file(`OEBPS/images/cover.${coverImageInfo.extension}`, coverImageData);
   }
   // Always create cover page (with image or text fallback)
-  const coverXHTML = createCoverPage(metadata, hasCover);
+  const coverXHTML = createCoverPage(metadata, hasCover, coverImageInfo?.extension || 'jpg');
   zip.file('OEBPS/cover.xhtml', coverXHTML);
 
   // 3b. Add inline images to OEBPS/images/
@@ -270,7 +301,8 @@ async function generateEPUB(
   }
 
   // 9. Create content.opf (EPUB 3.0 format) with all new items
-  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections);
+  // Pass the shared UUID and cover image info for correct media-type
+  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections, bookUUID, coverImageInfo);
   zip.file('OEBPS/content.opf', contentOPF);
 
   // 10. Create nav.xhtml (EPUB 3.0 navigation)
@@ -278,7 +310,8 @@ async function generateEPUB(
   zip.file('OEBPS/nav.xhtml', navXHTML);
 
   // 11. Create toc.ncx for EPUB 2 compatibility
-  const tocNCX = createTocNCX(chapters, metadata);
+  // Pass the same UUID used in content.opf for consistency
+  const tocNCX = createTocNCX(chapters, metadata, bookUUID);
   zip.file('OEBPS/toc.ncx', tocNCX);
 
   // 12. Create CSS files in css/ subfolder
@@ -670,9 +703,9 @@ ${aboutContent}
  * If hasCoverImage is true, shows the cover image
  * Otherwise, shows a styled text cover with title and author
  */
-function createCoverPage(metadata: { title: string; author: string }, hasCoverImage: boolean): string {
+function createCoverPage(metadata: { title: string; author: string }, hasCoverImage: boolean, coverExtension: string = 'jpg'): string {
   if (hasCoverImage) {
-    // Image-based cover
+    // Image-based cover - use correct extension for the actual image type
     return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
@@ -684,7 +717,7 @@ function createCoverPage(metadata: { title: string; author: string }, hasCoverIm
   </style>
 </head>
 <body epub:type="cover">
-  <img src="images/cover.jpg" alt="Cover"/>
+  <img src="images/cover.${coverExtension}" alt="Cover"/>
 </body>
 </html>`;
   } else {
@@ -735,10 +768,15 @@ function createEpub3ContentOPF(
   metadata: any,
   coverImageId: string | null = null,
   inlineImages?: Array<{filename: string, data: Uint8Array}>,
-  noMatterSections?: Chapter[]
+  noMatterSections?: Chapter[],
+  uuid?: string,
+  coverImageInfo?: { extension: string; mediaType: string } | null
 ): string {
-  const uuid = generateUUID();
+  // Use provided UUID or generate a new one (for backwards compatibility)
+  const bookId = uuid || generateUUID();
   const date = new Date().toISOString().split('T')[0];
+  // dcterms:modified requires format CCYY-MM-DDThh:mm:ssZ (no milliseconds)
+  const modifiedDate = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 
   // Cover metadata and manifest - always include cover page, optionally include cover image
   let coverMeta = '';
@@ -746,7 +784,11 @@ function createEpub3ContentOPF(
   // Cover page is always included (with image or text fallback)
   const coverPageManifest = `    <item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
 
-  if (coverImageId) {
+  if (coverImageId && coverImageInfo) {
+    coverMeta = `    <meta name="cover" content="${coverImageId}"/>`;
+    coverManifest = `    <item id="${coverImageId}" href="images/cover.${coverImageInfo.extension}" media-type="${coverImageInfo.mediaType}" properties="cover-image"/>`;
+  } else if (coverImageId) {
+    // Fallback for backwards compatibility (shouldn't happen with new code)
     coverMeta = `    <meta name="cover" content="${coverImageId}"/>`;
     coverManifest = `    <item id="${coverImageId}" href="images/cover.jpg" media-type="image/jpeg" properties="cover-image"/>`;
   }
@@ -792,14 +834,14 @@ function createEpub3ContentOPF(
   return `<?xml version="1.0" encoding="UTF-8"?>
 <package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" prefix="cc: http://creativecommons.org/ns#">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:identifier id="BookId">${uuid}</dc:identifier>
+    <dc:identifier id="BookId">${bookId}</dc:identifier>
     <dc:title>${escapeHtml(metadata.displayTitle)}</dc:title>
     <dc:creator>${escapeHtml(metadata.author)}</dc:creator>
     <dc:language>${metadata.language}</dc:language>
     <dc:publisher>${escapeHtml(metadata.publisher || 'Independent Publisher')}</dc:publisher>
     <dc:description>${escapeHtml(metadata.description)}</dc:description>
     <dc:date>${date}</dc:date>
-    <meta property="dcterms:modified">${new Date().toISOString()}</meta>
+    <meta property="dcterms:modified">${modifiedDate}</meta>
 ${coverMeta}
   </metadata>
   <manifest>
@@ -825,8 +867,10 @@ ${spineItems}
 /**
  * Create NCX file for EPUB 2 compatibility
  */
-function createTocNCX(chapters: Chapter[], metadata: any): string {
-  const uuid = generateUUID();
+function createTocNCX(chapters: Chapter[], metadata: any, uuid?: string): string {
+  // Use provided UUID or generate a new one (for backwards compatibility)
+  // IMPORTANT: This UUID must match the one in content.opf for EPUBCheck validation
+  const bookId = uuid || generateUUID();
 
   const navPoints = [];
   let playOrder = 1;
@@ -883,7 +927,7 @@ function createTocNCX(chapters: Chapter[], metadata: any): string {
 <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
   <head>
-    <meta name="dtb:uid" content="${uuid}"/>
+    <meta name="dtb:uid" content="${bookId}"/>
     <meta name="dtb:depth" content="1"/>
     <meta name="dtb:totalPageCount" content="0"/>
     <meta name="dtb:maxPageNumber" content="0"/>
