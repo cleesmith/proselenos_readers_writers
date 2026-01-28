@@ -276,8 +276,8 @@ async function generateEPUB(
   const copyrightHTML = createCopyrightPage(metadata);
   zip.file('OEBPS/copyright.xhtml', copyrightHTML);
 
-  // 6. Create contents page
-  const contentsHTML = createContentsPage(chapters, metadata);
+  // 6. Create contents page (includes No Matter sections under "Author's Notes")
+  const contentsHTML = createContentsPage(chapters, metadata, noMatterSections);
   zip.file('OEBPS/contents.xhtml', contentsHTML);
 
   // 7. Create chapter HTML files
@@ -287,9 +287,10 @@ async function generateEPUB(
   });
 
   // 7b. Create No Matter files in nomatter/ folder (if any)
+  // Pass isNoMatter=true so CSS path uses "../css/style.css" (fixes RSC-007)
   if (noMatterSections && noMatterSections.length > 0) {
     noMatterSections.forEach(section => {
-      const sectionHTML = createChapterHTML(section, metadata);
+      const sectionHTML = createChapterHTML(section, metadata, true);
       zip.file(`OEBPS/nomatter/${section.id}.xhtml`, sectionHTML);
     });
   }
@@ -305,8 +306,8 @@ async function generateEPUB(
   const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections, bookUUID, coverImageInfo);
   zip.file('OEBPS/content.opf', contentOPF);
 
-  // 10. Create nav.xhtml (EPUB 3.0 navigation)
-  const navXHTML = createNavXHTML(chapters, metadata);
+  // 10. Create nav.xhtml (EPUB 3.0 navigation, includes No Matter sections)
+  const navXHTML = createNavXHTML(chapters, metadata, noMatterSections);
   zip.file('OEBPS/nav.xhtml', navXHTML);
 
   // 11. Create toc.ncx for EPUB 2 compatibility
@@ -599,8 +600,9 @@ ${copyrightContent}
 
 /**
  * Create contents page HTML (Vellum-style structure for clickable links)
+ * Includes No Matter sections under "Author's Notes" heading (fixes OPF-096)
  */
-function createContentsPage(chapters: Chapter[], metadata: any): string {
+function createContentsPage(chapters: Chapter[], metadata: any, noMatterSections?: Chapter[]): string {
   const chapterItems = chapters
     .map(ch => `      <div class="toc-item">
         <p class="toc-content"><a href="${ch.id}.xhtml"><span class="toc-item-title">${escapeHtml(ch.title)}</span></a></p>
@@ -613,6 +615,19 @@ function createContentsPage(chapters: Chapter[], metadata: any): string {
       </div>`
     : '';
 
+  // No Matter sections appear under "Author's Notes" heading (makes them reachable, fixes OPF-096)
+  let noMatterItems = '';
+  if (noMatterSections && noMatterSections.length > 0) {
+    const noMatterLinks = noMatterSections
+      .map(s => `      <div class="toc-item">
+        <p class="toc-content"><a href="nomatter/${s.id}.xhtml"><span class="toc-item-title">${escapeHtml(s.title)}</span></a></p>
+      </div>`)
+      .join('\n');
+    noMatterItems = `\n      <div class="toc-section-header">
+        <p class="toc-section-title">Author's Notes</p>
+      </div>\n${noMatterLinks}`;
+  }
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en" lang="en">
 <head>
@@ -623,7 +638,7 @@ function createContentsPage(chapters: Chapter[], metadata: any): string {
   <div id="table-of-contents" class="contents-page" role="doc-toc" epub:type="toc">
     <h1 class="toc-title">CONTENTS</h1>
     <div class="toc-contents">
-${chapterItems}${aboutAuthorItem}
+${chapterItems}${aboutAuthorItem}${noMatterItems}
     </div>
   </div>
 </body>
@@ -634,8 +649,10 @@ ${chapterItems}${aboutAuthorItem}
  * Create HTML for a chapter
  * XHTML-Native: Uses xhtml directly if available (no conversion needed),
  * otherwise falls back to processMarkdown for backwards compatibility.
+ *
+ * @param isNoMatter - When true, CSS path uses "../css/style.css" for nomatter/ folder
  */
-function createChapterHTML(chapter: Chapter, _metadata: any): string {
+function createChapterHTML(chapter: Chapter, _metadata: any, isNoMatter: boolean = false): string {
   let bodyContent: string;
 
   if (chapter.xhtml) {
@@ -648,12 +665,15 @@ function createChapterHTML(chapter: Chapter, _metadata: any): string {
       .join('\n');
   }
 
+  // No Matter sections are in nomatter/ folder, so need "../css/style.css"
+  const cssPath = isNoMatter ? '../css/style.css' : 'css/style.css';
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
   <title>${escapeHtml(chapter.title)}</title>
-  <link rel="stylesheet" type="text/css" href="css/style.css"/>
+  <link rel="stylesheet" type="text/css" href="${cssPath}"/>
 </head>
 <body>
   <section class="chapter" epub:type="chapter">
@@ -946,15 +966,29 @@ ${navPoints.join('\n')}
 
 /**
  * Create EPUB 3.0 navigation document
+ * Includes No Matter sections under "Author's Notes" (makes them reachable, fixes OPF-096)
  */
-function createNavXHTML(chapters: Chapter[], metadata: any): string {
+function createNavXHTML(chapters: Chapter[], metadata: any, noMatterSections?: Chapter[]): string {
   const navItems = [
     '      <li><a href="title-page.xhtml">Title Page</a></li>',
     '      <li><a href="copyright.xhtml">Copyright</a></li>',
     '      <li><a href="contents.xhtml">Contents</a></li>',
     ...chapters.map(ch => `      <li><a href="${ch.id}.xhtml">${escapeHtml(ch.title)}</a></li>`),
     ...(metadata.aboutAuthor && metadata.aboutAuthor.trim() ? ['      <li><a href="about-author.xhtml">About the Author</a></li>'] : [])
-  ].join('\n');
+  ];
+
+  // Add No Matter sections under "Author's Notes" heading (nested list)
+  if (noMatterSections && noMatterSections.length > 0) {
+    const noMatterSubItems = noMatterSections
+      .map(s => `          <li><a href="nomatter/${s.id}.xhtml">${escapeHtml(s.title)}</a></li>`)
+      .join('\n');
+    navItems.push(`      <li>
+        <span>Author's Notes</span>
+        <ol>
+${noMatterSubItems}
+        </ol>
+      </li>`);
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
@@ -967,7 +1001,7 @@ function createNavXHTML(chapters: Chapter[], metadata: any): string {
   <nav epub:type="toc" id="toc">
     <h1>Table of Contents</h1>
     <ol>
-${navItems}
+${navItems.join('\n')}
     </ol>
   </nav>
 </body>
@@ -1084,6 +1118,18 @@ body {
 
 .toc-item-title {
   display: inline;
+}
+
+/* TOC section header (e.g., "Author's Notes") */
+.toc-section-header {
+  margin: 2em 0 0.5em 0;
+}
+
+.toc-section-title {
+  font-weight: bold;
+  font-style: italic;
+  margin: 0;
+  text-indent: 0;
 }
 
 /* Chapter styles */
