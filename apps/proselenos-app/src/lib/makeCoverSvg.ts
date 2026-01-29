@@ -3,13 +3,13 @@
 // Uses fonts from /public/fonts/
 // Standard Ebooks-style cover design: dark box near bottom with title + author
 
-const WIDTH = 1400;                 // SE standard width
-const HEIGHT = 2100;                // SE standard height
-const TITLE_BOX_Y = 1620;           // Y position where dark box starts
-const TITLE_BOX_HEIGHT = 430;       // Height of the dark box
+const WIDTH = 1600;                 // KDP standard width
+const HEIGHT = 2560;                // KDP standard height
+const TITLE_BOX_Y = 1975;           // Y position where dark box starts (scaled)
+const TITLE_BOX_HEIGHT = 524;       // Height of the dark box (scaled)
 const BOX_OPACITY = 0.75;           // Dark box opacity
-const BOX_MARGIN_X = 40;            // Horizontal margin for dark box
-const SAFE_MARGIN_X = 100;          // Horizontal padding inside box
+const BOX_MARGIN_X = 46;            // Horizontal margin for dark box (scaled)
+const SAFE_MARGIN_X = 114;          // Horizontal padding inside box (scaled)
 const MAX_TEXT_W = WIDTH - SAFE_MARGIN_X * 2;
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -19,6 +19,48 @@ function bytesToBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
   return btoa(binary);
+}
+
+/**
+ * Inject DPI metadata into JPEG's JFIF APP0 segment.
+ * JFIF structure: FF D8 (SOI) FF E0 (APP0) ... density info at bytes 13-17
+ */
+function setJpegDpi(jpegData: Uint8Array, dpi: number): Uint8Array {
+  // Need at least 18 bytes for JFIF header with density info
+  if (jpegData.length < 18) {
+    console.warn("JPEG too short for JFIF header");
+    return jpegData;
+  }
+
+  // Verify JPEG with JFIF: starts with FF D8 FF E0
+  if (jpegData[0] !== 0xFF || jpegData[1] !== 0xD8 ||
+      jpegData[2] !== 0xFF || jpegData[3] !== 0xE0) {
+    console.warn("Not a JFIF JPEG, cannot set DPI");
+    return jpegData;
+  }
+
+  // Verify "JFIF" identifier at bytes 6-9
+  const jfif = String.fromCharCode(jpegData[6]!, jpegData[7]!, jpegData[8]!, jpegData[9]!);
+  if (jfif !== "JFIF") {
+    console.warn("JFIF identifier not found");
+    return jpegData;
+  }
+
+  // Clone the data to avoid mutating original
+  const result = new Uint8Array(jpegData);
+
+  // Byte 13: density units (0=none, 1=DPI, 2=dots/cm)
+  result[13] = 0x01;
+
+  // Bytes 14-15: X density (big-endian)
+  result[14] = (dpi >> 8) & 0xFF;
+  result[15] = dpi & 0xFF;
+
+  // Bytes 16-17: Y density (big-endian)
+  result[16] = (dpi >> 8) & 0xFF;
+  result[17] = dpi & 0xFF;
+
+  return result;
 }
 
 function esc(s: string): string {
@@ -115,14 +157,14 @@ export async function makeCoverSvg({
   const boxBottom = TITLE_BOX_Y + TITLE_BOX_HEIGHT - boxPadding;
   const availableHeight = boxBottom - boxTop; // ~380px to work with
 
-  // Start with preferred sizes
-  let titleSize = 140;
-  let authorSize = 70;
-  let authorGap = 90;
+  // Start with preferred sizes (scaled for KDP dimensions)
+  let titleSize = 165;
+  let authorSize = 83;
+  let authorGap = 110;
 
   // Try entire title on one line first - maximize prominence
   let titleLines: string[];
-  const singleLineSize = await fitFontSize(upperTitle, "700", MAX_TEXT_W, 140);
+  const singleLineSize = await fitFontSize(upperTitle, "700", MAX_TEXT_W, 165);
 
   if (singleLineSize >= 50) {
     // Fits on single line at readable size - use it
@@ -130,9 +172,9 @@ export async function makeCoverSvg({
     titleSize = singleLineSize;
   } else {
     // Need to wrap - use pixel-based wrapping (not arbitrary word count)
-    titleLines = wrapText(upperTitle, "700", 100, MAX_TEXT_W);
+    titleLines = wrapText(upperTitle, "700", 118, MAX_TEXT_W);
     // Find size that fits all wrapped lines
-    titleSize = 140;
+    titleSize = 165;
     for (const line of titleLines) {
       const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
       if (fitted < titleSize) titleSize = fitted;
@@ -231,10 +273,10 @@ export async function makeCoverSvg({
 </svg>`;
 }
 
-export async function svgToPngBlob(
+export async function svgToJpegBlob(
   svg: string,
-  width = 1400,
-  height = 2100
+  width = 1600,
+  height = 2560
 ): Promise<Blob> {
   const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(svgBlob);
@@ -256,16 +298,24 @@ export async function svgToPngBlob(
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("No 2D canvas context");
 
+    // Fill with white background for JPEG (no transparency)
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, width, height);
+
     ctx.drawImage(img, 0, 0, width, height);
 
-    const pngBlob = await new Promise<Blob>((resolve, reject) => {
+    const jpegBlob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (b) => (b ? resolve(b) : reject(new Error("toBlob returned null"))),
-        "image/png"
+        "image/jpeg",
+        0.92
       );
     });
 
-    return pngBlob;
+    // Inject 300 DPI metadata into JFIF header for KDP compliance
+    const jpegData = new Uint8Array(await jpegBlob.arrayBuffer());
+    const jpegWithDpi = setJpegDpi(jpegData, 300);
+    return new Blob([jpegWithDpi.buffer as ArrayBuffer], { type: "image/jpeg" });
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -309,14 +359,14 @@ export async function makeTypographySvg({
   const boxBottom = TITLE_BOX_Y + TITLE_BOX_HEIGHT - boxPadding;
   const availableHeight = boxBottom - boxTop; // ~380px to work with
 
-  // Start with preferred sizes
-  let titleSize = 140;
-  let authorSize = 70;
-  let authorGap = 90;
+  // Start with preferred sizes (scaled for KDP dimensions)
+  let titleSize = 165;
+  let authorSize = 83;
+  let authorGap = 110;
 
   // Try entire title on one line first - maximize prominence
   let titleLines: string[];
-  const singleLineSize = await fitFontSize(upperTitle, "700", MAX_TEXT_W, 140);
+  const singleLineSize = await fitFontSize(upperTitle, "700", MAX_TEXT_W, 165);
 
   if (singleLineSize >= 50) {
     // Fits on single line at readable size - use it
@@ -324,9 +374,9 @@ export async function makeTypographySvg({
     titleSize = singleLineSize;
   } else {
     // Need to wrap - use pixel-based wrapping (not arbitrary word count)
-    titleLines = wrapText(upperTitle, "700", 100, MAX_TEXT_W);
+    titleLines = wrapText(upperTitle, "700", 118, MAX_TEXT_W);
     // Find size that fits all wrapped lines
-    titleSize = 140;
+    titleSize = 165;
     for (const line of titleLines) {
       const fitted = await fitFontSize(line, "700", MAX_TEXT_W, titleSize);
       if (fitted < titleSize) titleSize = fitted;
@@ -419,14 +469,14 @@ export async function makeTypographySvg({
 </svg>`;
 }
 
-// Convenience: get PNG as File (for EPUB packaging)
-export async function makeCoverPngFile({
+// Convenience: get JPEG as File (for EPUB packaging)
+export async function makeCoverJpegFile({
   title,
   author,
   bg = "#3366AA",
   fontColor = "#FFFFFF",
   bgImageDataUrl,
-  filename = "cover.png",
+  filename = "cover.jpg",
 }: {
   title: string;
   author: string;
@@ -436,6 +486,6 @@ export async function makeCoverPngFile({
   filename?: string;
 }): Promise<File> {
   const svg = await makeCoverSvg({ title, author, bg, fontColor, bgImageDataUrl });
-  const pngBlob = await svgToPngBlob(svg);
-  return new File([pngBlob], filename, { type: "image/png" });
+  const jpegBlob = await svgToJpegBlob(svg);
+  return new File([jpegBlob], filename, { type: "image/jpeg" });
 }

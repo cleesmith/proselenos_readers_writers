@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import { showAlert } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import { makeCoverSvg, makeTypographySvg, svgToPngBlob } from '@/lib/makeCoverSvg';
+import { makeCoverSvg, makeTypographySvg, svgToJpegBlob } from '@/lib/makeCoverSvg';
 import {
   loadCoverSettings,
   saveCoverSettings,
@@ -43,8 +43,8 @@ export default function CoverModal({
   onCoverSaved,
 }: CoverModalProps) {
   const [settings, setSettings] = useState<CoverSettings>(DEFAULT_SETTINGS);
-  const [pngUrl, setPngUrl] = useState<string>('');
-  const [pngBlob, setPngBlob] = useState<Blob | null>(null);
+  const [jpegUrl, setJpegUrl] = useState<string>('');
+  const [jpegBlob, setJpegBlob] = useState<Blob | null>(null);
   const [typographyUrl, setTypographyUrl] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'cover' | 'typography'>('cover');
   const [loading, setLoading] = useState(false);
@@ -67,8 +67,8 @@ export default function CoverModal({
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setPngUrl('');
-      setPngBlob(null);
+      setJpegUrl('');
+      setJpegBlob(null);
       setTypographyUrl('');
       setActiveTab('cover');
       setSettingsLoaded(false);
@@ -78,14 +78,14 @@ export default function CoverModal({
   // Cleanup object URLs on unmount or when new ones are created
   useEffect(() => {
     return () => {
-      if (pngUrl) {
-        URL.revokeObjectURL(pngUrl);
+      if (jpegUrl) {
+        URL.revokeObjectURL(jpegUrl);
       }
       if (typographyUrl) {
         URL.revokeObjectURL(typographyUrl);
       }
     };
-  }, [pngUrl, typographyUrl]);
+  }, [jpegUrl, typographyUrl]);
 
   async function handleBgImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -131,7 +131,7 @@ export default function CoverModal({
         fontColor: settings.fontColor,
         bgImageDataUrl: settings.bgImageDataUrl,
       });
-      const coverBlob = await svgToPngBlob(coverSvg);
+      const coverBlob = await svgToJpegBlob(coverSvg);
 
       // Generate typography overlay (transparent with dark box)
       const typographySvg = await makeTypographySvg({
@@ -139,19 +139,19 @@ export default function CoverModal({
         author,
         fontColor: settings.fontColor,
       });
-      const typographyBlob = await svgToPngBlob(typographySvg);
+      const typographyBlob = await svgToJpegBlob(typographySvg);
 
       // Revoke old URLs if exist
-      if (pngUrl) {
-        URL.revokeObjectURL(pngUrl);
+      if (jpegUrl) {
+        URL.revokeObjectURL(jpegUrl);
       }
       if (typographyUrl) {
         URL.revokeObjectURL(typographyUrl);
       }
 
       // Set new URLs
-      setPngUrl(URL.createObjectURL(coverBlob));
-      setPngBlob(coverBlob);
+      setJpegUrl(URL.createObjectURL(coverBlob));
+      setJpegBlob(coverBlob);
       setTypographyUrl(URL.createObjectURL(typographyBlob));
     } catch (err) {
       console.error('Cover generation error:', err);
@@ -161,11 +161,11 @@ export default function CoverModal({
   }
 
   async function handleSaveToManuscript() {
-    if (!pngBlob) return;
+    if (!jpegBlob) return;
 
     setSaving(true);
     try {
-      const filename = 'cover.png';
+      const filename = 'cover.jpg';
 
       // Delete old cover blob if it has a different filename
       const oldMeta = await loadManuscriptMeta();
@@ -174,7 +174,7 @@ export default function CoverModal({
       }
 
       // Save the new cover image
-      await saveCoverImage(pngBlob, filename);
+      await saveCoverImage(jpegBlob, filename);
 
       // Update working copy meta (old format)
       const wcMeta = await loadWorkingCopyMeta();
@@ -427,7 +427,7 @@ export default function CoverModal({
           }}
         >
           {/* Tab buttons */}
-          {(pngUrl || typographyUrl) && (
+          {(jpegUrl || typographyUrl) && (
             <div
               style={{
                 display: 'flex',
@@ -483,10 +483,10 @@ export default function CoverModal({
               overflow: 'auto',
             }}
           >
-            {pngUrl && activeTab === 'cover' && (
+            {jpegUrl && activeTab === 'cover' && (
               <>
                 <img
-                  src={pngUrl}
+                  src={jpegUrl}
                   alt="Cover Preview"
                   style={{
                     maxWidth: '100%',
@@ -514,8 +514,8 @@ export default function CoverModal({
                     {saving ? 'Saving...' : 'Save to Manuscript'}
                   </button>
                   <a
-                    href={pngUrl}
-                    download="cover.png"
+                    href={jpegUrl}
+                    download="cover.jpg"
                     style={{
                       padding: '10px 20px',
                       fontSize: 14,
@@ -580,7 +580,7 @@ export default function CoverModal({
               </>
             )}
 
-            {!pngUrl && !typographyUrl && (
+            {!jpegUrl && !typographyUrl && (
               <div
                 style={{
                   color: theme.textMuted,
