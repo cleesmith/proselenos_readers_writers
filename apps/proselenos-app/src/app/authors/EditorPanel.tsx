@@ -100,7 +100,7 @@ interface EditorPanelProps {
 
 // Ref handle for parent to control editor
 export interface EditorPanelRef {
-  scrollToPassage: (passage: string, startIndex?: number) => void;
+  scrollToPassage: (passage: string, startIndex?: number) => boolean;
   updateContent: (content: string) => void;
   getContent: () => string;
 }
@@ -285,14 +285,16 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Scroll to and highlight a passage in the editor
   // FindReplacePlugin handles highlighting all matches automatically
-  const scrollToPassage = useCallback((passage: string, startIndex?: number) => {
-    if (!editor) return;
+  // Returns true if selection was successfully placed, false otherwise
+  const scrollToPassage = useCallback((passage: string, startIndex?: number): boolean => {
+    if (!editor) return false;
     editor.tf.focus();
 
     // Find the editor position by walking text nodes
     // plateToPlainText joins blocks with '\n\n', so account for that
     let charCount = 0;
     const blocks = editor.children;
+    let foundMatch = false;
 
     for (let blockIdx = 0; blockIdx < blocks.length; blockIdx++) {
       if (blockIdx > 0) charCount += 2; // '\n\n' separator between blocks
@@ -311,6 +313,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           if (charCount + textLength > startIndex) {
             const offset = startIndex - charCount;
             editor.tf.select({ path: [blockIdx, textIdx], offset });
+            foundMatch = true;
             break;
           }
         } else {
@@ -318,6 +321,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           const matchPos = textNode.text.indexOf(passage);
           if (matchPos !== -1) {
             editor.tf.select({ path: [blockIdx, textIdx], offset: matchPos });
+            foundMatch = true;
             break;
           }
         }
@@ -325,12 +329,11 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         charCount += textLength;
       }
 
-      // Check if we already placed the selection
-      if (editor.selection) {
-        const sel = editor.selection;
-        if (sel.anchor && sel.anchor.path[0] === blockIdx) break;
-      }
+      if (foundMatch) break;
     }
+
+    // Check if selection was actually set
+    if (!editor.selection) return false;
 
     // Scroll the selection into view via the DOM
     setTimeout(() => {
@@ -341,17 +344,14 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
       const rect = range.getBoundingClientRect();
       if (!rect || (rect.top === 0 && rect.left === 0)) return;
 
-      const editorEl = document.querySelector('[data-plate-editor]');
-      if (!editorEl) return;
-
-      const editorRect = editorEl.getBoundingClientRect();
-      const offsetTop = rect.top - editorRect.top;
-
-      // Only scroll if the match is outside the visible area
-      if (offsetTop < 0 || offsetTop > editorEl.clientHeight) {
-        editorEl.scrollTop += offsetTop - editorEl.clientHeight / 3;
+      // Use scrollIntoView for more reliable scrolling
+      const node = range.startContainer.parentElement;
+      if (node) {
+        node.scrollIntoView({ behavior: 'instant', block: 'center' });
       }
-    }, 0);
+    }, 50);
+
+    return true;
   }, [editor]);
 
   // Update content programmatically (for One-by-one Accept)

@@ -507,12 +507,22 @@ export default function AuthorsLayout({
   const handleSearchNavigate = useCallback((result: typeof searchResults[0], index: number) => {
     setCurrentSearchIndex(index);
     setSelectedSectionId(result.sectionId);
-    // Scroll to match after section loads
-    setTimeout(() => {
-      if (editorPanelRef.current) {
-        editorPanelRef.current.scrollToPassage(result.matchText, result.matchIndex);
-      }
-    }, 100);
+
+    // Use longer delay for section changes, retry if needed
+    const attemptScroll = (attempt: number) => {
+      if (attempt > 3) return; // Max 3 attempts
+
+      setTimeout(() => {
+        if (editorPanelRef.current) {
+          const success = editorPanelRef.current.scrollToPassage(result.matchText, result.matchIndex);
+          if (!success && attempt < 3) {
+            attemptScroll(attempt + 1); // Retry
+          }
+        }
+      }, attempt === 1 ? 150 : 300); // 150ms first, 300ms retries
+    };
+
+    attemptScroll(1);
   }, []);
 
   // Auto-navigate to search result when search is performed or index changes
@@ -521,11 +531,22 @@ export default function AuthorsLayout({
       const result = searchResults[currentSearchIndex];
       if (result) {
         setSelectedSectionId(result.sectionId);
-        setTimeout(() => {
-          if (editorPanelRef.current) {
-            editorPanelRef.current.scrollToPassage(result.matchText, result.matchIndex);
-          }
-        }, 100);
+
+        // Use longer delay for section changes, retry if needed
+        const attemptScroll = (attempt: number) => {
+          if (attempt > 3) return; // Max 3 attempts
+
+          setTimeout(() => {
+            if (editorPanelRef.current) {
+              const success = editorPanelRef.current.scrollToPassage(result.matchText, result.matchIndex);
+              if (!success && attempt < 3) {
+                attemptScroll(attempt + 1); // Retry
+              }
+            }
+          }, attempt === 1 ? 150 : 300); // 150ms first, 300ms retries
+        };
+
+        attemptScroll(1);
       }
     }
   }, [searchActive, searchResults, currentSearchIndex]);
