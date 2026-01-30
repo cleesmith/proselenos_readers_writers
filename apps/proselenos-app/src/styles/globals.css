@@ -431,13 +431,3 @@ foliate-view {
   transition: none !important;
 }
 
-/* Search highlight - theme aware */
-.search-highlight {
-  background-color: #fff59d;
-  border-radius: 2px;
-  padding: 1px 0;
-}
-
-[data-theme*="-dark"] .search-highlight {
-  background-color: #b8860b; /* Dark goldenrod - readable in dark mode */
-}
