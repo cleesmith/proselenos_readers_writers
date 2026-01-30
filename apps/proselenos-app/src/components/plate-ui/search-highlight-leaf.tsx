@@ -8,11 +8,7 @@ export function SearchHighlightLeaf(props: PlateLeafProps) {
     <PlateLeaf
       {...props}
       as="span"
-      style={{
-        backgroundColor: '#fff59d',
-        borderRadius: '2px',
-        padding: '1px 0',
-      }}
+      className="search-highlight"
     >
       {props.children}
     </PlateLeaf>
