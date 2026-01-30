@@ -100,7 +100,7 @@ export default function SearchResultsPanel({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '12px', color: theme.text, fontWeight: 'bold' }}>
-            Match {currentIndex + 1} of {total} • {currentResult.sectionTitle}
+            Match {currentIndex + 1} of {total}
           </span>
           <div style={{ display: 'flex', gap: '4px' }}>
             <StyledSmallButton onClick={onPrev} theme={theme} disabled={isFirstResult}>
@@ -110,6 +110,9 @@ export default function SearchResultsPanel({
               Next
             </StyledSmallButton>
           </div>
+          <span style={{ fontSize: '12px', color: theme.textMuted }}>
+            • {currentResult.sectionTitle}
+          </span>
         </div>
         <StyledSmallButton onClick={onClose} theme={theme}>
           Close

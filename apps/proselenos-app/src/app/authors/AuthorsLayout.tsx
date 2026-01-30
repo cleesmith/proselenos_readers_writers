@@ -435,6 +435,9 @@ export default function AuthorsLayout({
     const maxResults = 100;
 
     for (const section of epub.sections) {
+      // Skip protected sections (Cover, Title Page, Copyright)
+      if ((PROTECTED_SECTION_IDS as readonly string[]).includes(section.id)) continue;
+
       // Search in title
       const titleLower = section.title.toLowerCase();
       let titleIndex = titleLower.indexOf(lowerQuery);
