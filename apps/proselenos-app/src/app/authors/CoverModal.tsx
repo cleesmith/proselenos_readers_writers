@@ -229,16 +229,23 @@ export default function CoverModal({
           flexShrink: 0,
         }}
       >
-        <h2
+        <button
+          onClick={handleGenerate}
+          disabled={loading || saving}
           style={{
-            margin: 0,
-            fontSize: '18px',
+            padding: '8px 16px',
+            fontSize: 14,
             fontWeight: 'bold',
-            color: theme.text,
+            color: '#fff',
+            backgroundColor: loading ? '#999' : '#2563eb',
+            border: 'none',
+            borderRadius: 6,
+            cursor: loading || saving ? 'not-allowed' : 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
           }}
         >
-          Cover Generator
-        </h2>
+          {loading ? 'Generating...' : 'Cover Generate'}
+        </button>
 
         <StyledSmallButton onClick={onClose} disabled={loading || saving} theme={theme}>
           Close
@@ -383,35 +390,26 @@ export default function CoverModal({
               )}
             </div>
             {settings.bgImageDataUrl && (
-              <div style={{ marginTop: '8px', fontSize: '12px', color: theme.textMuted }}>
-                Background image set
+              <div style={{ marginTop: '8px' }}>
+                <div style={{ fontSize: '12px', color: theme.textMuted }}>
+                  Background image set
+                </div>
+                <img
+                  src={settings.bgImageDataUrl}
+                  alt="Background preview"
+                  style={{
+                    marginTop: '6px',
+                    maxWidth: '80px',
+                    maxHeight: '80px',
+                    objectFit: 'cover',
+                    borderRadius: '4px',
+                    border: `1px solid ${theme.border}`,
+                  }}
+                />
               </div>
             )}
           </div>
 
-          {/* Divider before Generate button */}
-          <div style={{ borderBottom: `1px solid ${theme.border}`, margin: '8px 0' }} />
-
-          {/* Generate button */}
-          <div style={{ marginTop: '4px' }}>
-            <button
-              onClick={handleGenerate}
-              disabled={loading || saving}
-              style={{
-                padding: '8px 16px',
-                fontSize: 14,
-                fontWeight: 'bold',
-                color: '#fff',
-                backgroundColor: loading ? '#999' : '#2563eb',
-                border: 'none',
-                borderRadius: 6,
-                cursor: loading || saving ? 'not-allowed' : 'pointer',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              }}
-            >
-              {loading ? 'Generating...' : 'Generate'}
-            </button>
-          </div>
         </div>
 
         {/* Right Panel - Preview with Tabs */}
@@ -589,7 +587,7 @@ export default function CoverModal({
                   padding: '40px',
                 }}
               >
-                Click &quot;Generate&quot; to preview your cover
+                Click &quot;Cover Generate&quot; to preview your cover
               </div>
             )}
           </div>
