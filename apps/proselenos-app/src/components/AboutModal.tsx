@@ -289,17 +289,17 @@ export default function AboutModal({
             </ul>
           </div>
 
-          {/* Book on Amazon & Ko-fi Donate */}
+          {/* Book & Ko-fi Donate */}
           <div className="mt-6 flex items-center justify-center gap-4">
             <a
-              href="https://a.co/d/cGavtX4"
+              href="https://slipthetrap.itch.io/everything-ebooks-the-book-about-the-app"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium shadow hover:opacity-90 focus:outline-none focus:ring"
               style={{ backgroundColor: '#794bc4', color: '#fff' }}
               aria-label="EverythingEbooks book"
             >
-              EverythingEbooks the book
+              Everything Ebooks the book
             </a>
             <a
               href="https://ko-fi.com/slipthetrap"
