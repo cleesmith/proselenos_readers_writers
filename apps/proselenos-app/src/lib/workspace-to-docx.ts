@@ -82,8 +82,7 @@ export async function exportWorkspaceToDocx(): Promise<Blob> {
   let isFirstSection = true;
 
   for (const section of workingCopy.sections) {
-    // Skip cover (no text content)
-    if (section.type === 'cover') continue;
+    // Note: Cover sections are filtered out at the state level, so no need to skip here
 
     // Page break before each section (except first)
     // Vellum requires: Page Break + Heading 1 to detect chapters

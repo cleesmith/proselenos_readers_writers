@@ -116,15 +116,17 @@ ELEMENT_MAP.set('cover', {
   description: 'Book cover image',
 });
 
-// Protected sections that cannot be deleted or moved (always first 3)
-export const PROTECTED_SECTION_IDS = ['cover', 'title-page', 'copyright'] as const;
+// Protected sections that cannot be deleted or moved (always first 2)
+// Note: Cover is handled via Menu > Cover, not as a section
+export const PROTECTED_SECTION_IDS = ['title-page', 'copyright'] as const;
 export const PROTECTED_SECTION_COUNT = PROTECTED_SECTION_IDS.length;
 
 // Types that can have multiple instances (all others are singletons)
 export const MULTI_INSTANCE_TYPES: ElementType[] = ['chapter', 'uncategorized', 'no-matter'];
 
 // Types hidden from "Add Section" UI (protected sections that always exist, or generated during publish)
-export const HIDDEN_TYPES: ElementType[] = ['table-of-contents', 'cover', 'title-page', 'copyright'];
+// Note: 'cover' kept in ElementType union for backward compat, but filtered out at state level
+export const HIDDEN_TYPES: ElementType[] = ['table-of-contents', 'title-page', 'copyright'];
 
 // Check if a type can only exist once
 export function isSingletonType(type: ElementType): boolean {
@@ -149,7 +151,8 @@ export function normalizeElementType(type: string | undefined): ElementType {
 // ============================================================================
 
 // Section 1: Required (fixed order, no move, no delete)
-export const REQUIRED_TYPES: ElementType[] = ['cover', 'title-page', 'copyright'];
+// Note: 'cover' removed - cover image handled via Menu > Cover, not as a section
+export const REQUIRED_TYPES: ElementType[] = ['title-page', 'copyright'];
 
 // Section 2: Front Matter (optional, reorder within only)
 export const FRONT_MATTER_TYPES: ElementType[] = ['blurbs', 'half-title', 'dedication', 'epigraph'];

@@ -873,12 +873,13 @@ export async function saveWorkingCopyMeta(meta: WorkingCopyMeta): Promise<void> 
 /**
  * Infer section type from title for formatting support.
  * Only structural/metadata sections are non-chapters.
+ * Note: 'cover' is no longer a section type - cover is handled via Menu > Cover
  */
 function inferSectionType(title: string): ElementType {
   const lowerTitle = title.toLowerCase();
 
   // Only truly structural/metadata sections are non-chapters
-  if (lowerTitle === 'cover') return 'cover';
+  // Note: 'cover' removed - cover is handled via Menu > Cover, not as a section
   if (lowerTitle.includes('title page')) return 'title-page';
   if (lowerTitle.includes('copyright')) return 'copyright';
   if (lowerTitle.includes('table of contents') || lowerTitle === 'contents') return 'table-of-contents';

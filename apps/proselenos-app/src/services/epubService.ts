@@ -28,13 +28,14 @@ export interface ParsedEpub {
 /**
  * Infer section type from title for formatting support.
  * Only structural/metadata sections are non-chapters.
+ * Note: 'cover' is no longer a section type - cover is handled via Menu > Cover
  */
 function inferSectionType(title: string): ElementType {
   const lowerTitle = title.toLowerCase();
 
   // Only truly structural/metadata sections are non-chapters
   // (these don't need markdown formatting)
-  if (lowerTitle === 'cover') return 'cover';
+  // Note: 'cover' removed - cover is handled via Menu > Cover, not as a section
   if (lowerTitle.includes('title page')) return 'title-page';
   if (lowerTitle.includes('copyright')) return 'copyright';
   if (lowerTitle.includes('table of contents') || lowerTitle === 'contents') return 'table-of-contents';
@@ -156,8 +157,9 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     });
   }
 
-  // Enforce first 3 sections: Cover, Title Page, Copyright (in that order)
+  // Enforce first 2 sections: Title Page, Copyright (in that order)
   // These sections cannot be deleted or moved by the user
+  // Note: Cover is handled via Menu > Cover, not as a section - filter out any cover sections
   const year = new Date().getFullYear();
 
   // Helper to find a section by id or title
@@ -165,25 +167,14 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     sections.find(s => s.id === id || s.title.toLowerCase() === titleKeyword);
 
   // Extract existing protected sections (if any)
-  const existingCover = findSection('cover', 'cover');
   const existingTitlePage = findSection('title-page', 'title page');
   const existingCopyright = findSection('copyright', 'copyright');
 
-  // Remove existing protected sections from their current positions
+  // Remove existing protected sections and cover sections from their current positions
+  // Cover sections are filtered out entirely - cover is handled via Menu > Cover
   const otherSections = sections.filter(s =>
-    s !== existingCover && s !== existingTitlePage && s !== existingCopyright
+    s !== existingTitlePage && s !== existingCopyright && s.type !== 'cover'
   );
-
-  // Create Cover section (use existing or create new)
-  // XHTML-Native: Use xhtml field
-  const coverSection: ParsedSection = existingCover || {
-    id: 'cover',
-    title: 'Cover',
-    href: 'cover.xhtml',
-    xhtml: '<p>Use Format &gt; Image to add your cover image</p>',
-    type: 'cover',
-  };
-  if (!coverSection.type) coverSection.type = 'cover';
 
   // Create Title Page section (use existing or create new)
   const titlePageSection: ParsedSection = existingTitlePage || {
@@ -205,8 +196,8 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
   };
   if (!copyrightSection.type) copyrightSection.type = 'copyright';
 
-  // Rebuild sections array with protected sections first
-  const orderedSections = [coverSection, titlePageSection, copyrightSection, ...otherSections];
+  // Rebuild sections array with protected sections first (no cover section)
+  const orderedSections = [titlePageSection, copyrightSection, ...otherSections];
 
   return {
     title: title || 'Untitled',

@@ -562,26 +562,30 @@ export default function AuthorsLayout({
       if (saved) {
         // Convert FullWorkingCopy to ParsedEpub format for UI
         // XHTML-Native: Use xhtml field directly
+        // Filter out cover sections - cover is now handled via Menu > Cover, not as a section
         const epub: ParsedEpub = {
           title: saved.title,
           author: saved.author,
           language: saved.language,
           coverImage: saved.coverImage,
           sections: reorderSectionsByVisualGroup(
-            saved.sections.map((s) => ({
-              id: s.id,
-              title: s.title,
-              href: `${s.id}.xhtml`,
-              xhtml: s.xhtml,
-              type: s.type,
-            }))
+            saved.sections
+              .filter((s) => s.type !== 'cover')
+              .map((s) => ({
+                id: s.id,
+                title: s.title,
+                href: `${s.id}.xhtml`,
+                xhtml: s.xhtml,
+                type: s.type,
+              }))
           ),
         };
         setEpub(epub);
         setSelectedSectionId(epub.sections[0]?.id ?? null);
       } else {
         // No existing book - auto-create a new blank manuscript
-        // First 3 sections (Cover, Title Page, Copyright) are protected - cannot be deleted or moved
+        // First 2 sections (Title Page, Copyright) are protected - cannot be deleted or moved
+        // Note: Cover is handled via Menu > Cover, not as a section
         await clearWorkingCopy();
         const year = new Date().getFullYear();
         // XHTML-Native: Use xhtml for content
@@ -591,7 +595,6 @@ export default function AuthorsLayout({
           language: 'en',
           coverImage: null,
           sections: [
-            { id: 'cover', title: 'Cover', xhtml: '<p>Use Format &gt; Image to add your cover image</p>', type: 'cover' as const },
             { id: 'title-page', title: 'Title Page', xhtml: '<h1>Untitled</h1>\n<p>by Anonymous</p>', type: 'title-page' as const },
             { id: 'copyright', title: 'Copyright', xhtml: `<p>Copyright © ${year} by Anonymous</p>\n<p>All rights reserved.</p>\n<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>`, type: 'copyright' as const },
             { id: 'chapter-1', title: 'Chapter 1', xhtml: '<p></p>', type: 'chapter' as const },
@@ -640,19 +643,22 @@ export default function AuthorsLayout({
     const reloadData = async () => {
       const saved = await loadFullWorkingCopy();
       if (saved) {
+        // Filter out cover sections - cover is handled via Menu > Cover, not as a section
         const newEpub: ParsedEpub = {
           title: saved.title,
           author: saved.author,
           language: saved.language,
           coverImage: saved.coverImage,
           sections: reorderSectionsByVisualGroup(
-            saved.sections.map((s) => ({
-              id: s.id,
-              title: s.title,
-              href: `${s.id}.xhtml`,
-              xhtml: s.xhtml,
-              type: s.type,
-            }))
+            saved.sections
+              .filter((s) => s.type !== 'cover')
+              .map((s) => ({
+                id: s.id,
+                title: s.title,
+                href: `${s.id}.xhtml`,
+                xhtml: s.xhtml,
+                type: s.type,
+              }))
           ),
         };
         setEpub(newEpub);
@@ -807,6 +813,7 @@ export default function AuthorsLayout({
           }
 
           // Reload from IndexedDB to get normalized IDs
+          // Filter out cover sections - cover is handled via Menu > Cover, not as a section
           const saved = await loadFullWorkingCopy();
           if (saved) {
             const epub: ParsedEpub = {
@@ -814,13 +821,15 @@ export default function AuthorsLayout({
               author: saved.author,
               language: saved.language,
               coverImage: saved.coverImage,
-              sections: saved.sections.map((s) => ({
-                id: s.id,
-                title: s.title,
-                href: `${s.id}.xhtml`,
-                xhtml: s.xhtml,
-                type: s.type,
-              })),
+              sections: saved.sections
+                .filter((s) => s.type !== 'cover')
+                .map((s) => ({
+                  id: s.id,
+                  title: s.title,
+                  href: `${s.id}.xhtml`,
+                  xhtml: s.xhtml,
+                  type: s.type,
+                })),
               images: parsed.images, // Pass through for immediate access
             };
             setEpub(epub);
@@ -877,6 +886,7 @@ export default function AuthorsLayout({
               })),
           });
           // Reload from IndexedDB to get normalized IDs
+          // Filter out cover sections - cover is handled via Menu > Cover, not as a section
           const saved = await loadFullWorkingCopy();
           if (saved) {
             const loadedEpub: ParsedEpub = {
@@ -884,13 +894,15 @@ export default function AuthorsLayout({
               author: saved.author,
               language: saved.language,
               coverImage: saved.coverImage,
-              sections: saved.sections.map((s) => ({
-                id: s.id,
-                title: s.title,
-                href: `${s.id}.xhtml`,
-                xhtml: s.xhtml,
-                type: s.type,
-              })),
+              sections: saved.sections
+                .filter((s) => s.type !== 'cover')
+                .map((s) => ({
+                  id: s.id,
+                  title: s.title,
+                  href: `${s.id}.xhtml`,
+                  xhtml: s.xhtml,
+                  type: s.type,
+                })),
             };
             setEpub(loadedEpub);
             setSelectedSectionId(loadedEpub.sections[0]?.id ?? null);
@@ -956,7 +968,8 @@ export default function AuthorsLayout({
     await clearWorkingCopy();
     const year = new Date().getFullYear();
     // Create blank manuscript with typed sections
-    // First 3 sections (Cover, Title Page, Copyright) are protected - cannot be deleted or moved
+    // First 2 sections (Title Page, Copyright) are protected - cannot be deleted or moved
+    // Note: Cover is handled via Menu > Cover, not as a section
     // XHTML-Native: Use xhtml for content
     const blank = {
       title: 'Untitled',
@@ -964,7 +977,6 @@ export default function AuthorsLayout({
       language: 'en',
       coverImage: null,
       sections: [
-        { id: 'cover', title: 'Cover', xhtml: '<p>Use Format &gt; Image to add your cover image</p>', type: 'cover' as const },
         { id: 'title-page', title: 'Title Page', xhtml: '<h1>Untitled</h1>\n<p>by Anonymous</p>', type: 'title-page' as const },
         { id: 'copyright', title: 'Copyright', xhtml: `<p>Copyright © ${year} by Anonymous</p>\n<p>All rights reserved.</p>\n<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>`, type: 'copyright' as const },
         { id: 'chapter-1', title: 'Chapter 1', xhtml: '<p></p>', type: 'chapter' as const },
