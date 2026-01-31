@@ -189,6 +189,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Save button state
   const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Handle manual save with visual feedback
   const handleSaveClick = useCallback(async () => {
@@ -196,6 +197,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     setIsSaving(true);
     try {
       await onSave();
+      setHasChanges(false);  // Reset unsaved indicator after successful save
     } finally {
       // Brief delay to show "Saved" state
       setTimeout(() => setIsSaving(false), 500);
@@ -231,6 +233,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     editor.tf.setValue(value);
 
     setOriginalXhtml(sectionXhtml);
+    setHasChanges(false);  // Reset unsaved indicator when section changes
     setIsEditorReady(true);
   }, [sectionXhtml, editor]);
 
@@ -257,6 +260,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
     // Check if content has changed by comparing XHTML
     const hasChanged = xhtml !== originalXhtml;
+    setHasChanges(hasChanged);  // Update Save button indicator
 
     // Notify parent with XHTML
     onContentChange?.(hasChanged, xhtml);
@@ -523,15 +527,15 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           </svg>
         </StyledSmallButton>
 
-        {/* Manual Save button */}
+        {/* Manual Save button - turns red when unsaved changes exist */}
         <StyledSmallButton
           theme={theme}
           onClick={handleSaveClick}
-          title="Save current section (Ctrl+S)"
+          title={hasChanges ? "Unsaved changes - click to save (Ctrl+S)" : "Save current section (Ctrl+S)"}
           disabled={toolExecuting || isSaving}
           styleOverrides={{
-            backgroundColor: isSaving ? '#28a745' : undefined,
-            color: isSaving ? 'white' : undefined,
+            backgroundColor: isSaving ? '#28a745' : hasChanges ? '#dc3545' : undefined,
+            color: (isSaving || hasChanges) ? 'white' : undefined,
           }}
         >
           {isSaving ? 'Saved' : 'Save'}
