@@ -26,9 +26,9 @@ import {
   resetWritingAssistantPrompt,
   isWritingAssistantPromptCustomized,
   getWritingAssistantDefaultPrompt,
-  getWritingAssistantStepIds,
   resetAllWritingAssistantPrompts,
 } from '@/services/manuscriptStorage';
+import { INITIAL_WORKFLOW_STEPS } from '@/app/writing-assistant/constants';
 import Swal from 'sweetalert2';
 
 // Helper to strip Markdown formatting (copied from EditorModal.tsx)
@@ -162,14 +162,14 @@ export default function PromptEditorModal({
     const prompts: PromptInfo[] = [];
 
     try {
-      if (category === 'AI Writing') {
-        // Load AI Writing prompts
-        const stepIds = getWritingAssistantStepIds();
-        for (const stepId of stepIds) {
-          const isCustom = await isWritingAssistantPromptCustomized(stepId);
+      // Handle both "AI Writing" and "AI Writing Tools" (the actual category name from data)
+      if (category === 'AI Writing' || category === 'AI Writing Tools') {
+        // Load AI Writing prompts with proper names and order from constants
+        for (const step of INITIAL_WORKFLOW_STEPS) {
+          const isCustom = await isWritingAssistantPromptCustomized(step.id);
           prompts.push({
-            id: `wa:${stepId}`,
-            name: stepId.charAt(0).toUpperCase() + stepId.slice(1),
+            id: `wa:${step.id}`,
+            name: step.name, // Use proper display name from constants
             isCustomized: isCustom,
             isUserCreated: false,
           });
@@ -608,7 +608,9 @@ export default function PromptEditorModal({
           >
             <option value="">Category...</option>
             {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
+              <option key={cat} value={cat}>
+                {cat === 'AI Writing Tools' ? 'AI Writing' : cat}
+              </option>
             ))}
           </select>
         </div>
