@@ -1,15 +1,15 @@
 {
   "categories": [
-    "AI Writing Tools",
+    "AI Writing",
     "Core Editing Tools",
     "Other Editing Tools",
     "User Tools"
   ],
   "tools": [
-    { "id": "AI Writing Tools/brainstorm.txt", "category": "AI Writing Tools", "name": "brainstorm.txt", "scope": "all" },
-    { "id": "AI Writing Tools/chapter_writer.txt", "category": "AI Writing Tools", "name": "chapter_writer.txt", "scope": "all" },
-    { "id": "AI Writing Tools/outline_writer.txt", "category": "AI Writing Tools", "name": "outline_writer.txt", "scope": "all" },
-    { "id": "AI Writing Tools/world_writer.txt", "category": "AI Writing Tools", "name": "world_writer.txt", "scope": "all" },
+    { "id": "AI Writing/brainstorm.txt", "category": "AI Writing", "name": "brainstorm.txt", "scope": "all" },
+    { "id": "AI Writing/chapter_writer.txt", "category": "AI Writing", "name": "chapter_writer.txt", "scope": "all" },
+    { "id": "AI Writing/outline_writer.txt", "category": "AI Writing", "name": "outline_writer.txt", "scope": "all" },
+    { "id": "AI Writing/world_writer.txt", "category": "AI Writing", "name": "world_writer.txt", "scope": "all" },
     { "id": "Core Editing Tools/line_editing_by_chapter.txt", "category": "Core Editing Tools", "name": "line_editing_by_chapter.txt", "scope": "chapter" },
     { "id": "Core Editing Tools/copy_editing.txt", "category": "Core Editing Tools", "name": "copy_editing.txt", "scope": "all" },
     { "id": "Core Editing Tools/developmental_editing.txt", "category": "Core Editing Tools", "name": "developmental_editing.txt", "scope": "all" },

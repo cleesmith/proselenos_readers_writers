@@ -103,6 +103,7 @@ interface AuthorsLayoutProps {
   onEditorClick: () => void;
   onAIWritingClick: () => void;
   onChatClick: () => void;
+  onPromptsClick: () => void;
   onCoverClick: () => void;
   onXrayClick?: () => void;
   onLoadFromLibraryClick: () => void;
@@ -148,6 +149,7 @@ export default function AuthorsLayout({
   onEditorClick,
   onAIWritingClick,
   onChatClick,
+  onPromptsClick,
   onCoverClick,
   onXrayClick,
   onLoadFromLibraryClick,
@@ -1669,6 +1671,7 @@ export default function AuthorsLayout({
         onAISettingsClick={onAISettingsClick}
         onEditorClick={onEditorClick}
         onChatClick={onChatClick}
+        onPromptsClick={onPromptsClick}
         onNewClick={handleNew}
         onOpenClick={handleOpenEpub}
         onOpenDocxClick={handleOpenDocx}

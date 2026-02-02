@@ -648,6 +648,152 @@ export async function resetWritingAssistantPrompt(stepId: string): Promise<void>
   }
 }
 
+// Check if a AI Writing prompt is customized (differs from default)
+export async function isWritingAssistantPromptCustomized(stepId: string): Promise<boolean> {
+  const data = await getValue<WritingAssistantPromptsData>(STORES.AI, 'writing_assistant_prompts.json');
+  if (!data || !data.prompts[stepId]) return false;
+  const defaultPrompt = WRITING_ASSISTANT_DEFAULTS[stepId];
+  if (!defaultPrompt) return false;
+  return data.prompts[stepId] !== defaultPrompt;
+}
+
+// Get the default AI Writing prompt (for restore comparison)
+export function getWritingAssistantDefaultPrompt(stepId: string): string {
+  return WRITING_ASSISTANT_DEFAULTS[stepId] || '';
+}
+
+// Get all AI Writing step IDs
+export function getWritingAssistantStepIds(): string[] {
+  return Object.keys(WRITING_ASSISTANT_DEFAULTS);
+}
+
+// ============================================
+// User Tools (custom prompts created by user)
+// ============================================
+
+// Check if a prompt is user-created (exists in customized but not in originals)
+export async function isUserCreatedPrompt(toolId: string): Promise<boolean> {
+  const data = await loadToolPromptsData();
+  if (!data) return false;
+  // User-created if it's in customized but NOT in originals
+  return (toolId in data.customized) && !(toolId in data.originals);
+}
+
+// Add a new user-created prompt
+export async function addUserPrompt(name: string, content: string): Promise<string> {
+  const data = await loadToolPromptsData();
+  if (!data) throw new Error('Tool prompts not initialized');
+
+  // Generate tool ID in User Tools category
+  const toolId = `User Tools/${name}.txt`;
+
+  // Check for duplicate
+  if (toolId in data.customized || toolId in data.originals) {
+    throw new Error(`A prompt named "${name}" already exists`);
+  }
+
+  // Add to customized (user-created prompts only exist in customized)
+  data.customized[toolId] = content;
+
+  // Ensure User Tools category exists
+  if (!data.categories.includes('User Tools')) {
+    data.categories.push('User Tools');
+  }
+
+  // Add to toolOrder
+  if (!data.toolOrder.includes(toolId)) {
+    data.toolOrder.push(toolId);
+  }
+
+  await saveToolPromptsData(data);
+  return toolId;
+}
+
+// Delete a user-created prompt
+export async function deleteUserPrompt(toolId: string): Promise<void> {
+  const data = await loadToolPromptsData();
+  if (!data) return;
+
+  // Only allow deleting user-created prompts (not in originals)
+  if (toolId in data.originals) {
+    throw new Error('Cannot delete built-in prompts');
+  }
+
+  // Remove from customized
+  delete data.customized[toolId];
+
+  // Remove from toolOrder
+  data.toolOrder = data.toolOrder.filter(id => id !== toolId);
+
+  await saveToolPromptsData(data);
+}
+
+// Reset all tool prompts to defaults (clears customized, preserves user-created)
+export async function resetAllToolPrompts(): Promise<number> {
+  const data = await loadToolPromptsData();
+  if (!data) return 0;
+
+  let resetCount = 0;
+  const newCustomized: Record<string, string> = {};
+
+  // Keep only user-created prompts (those not in originals)
+  for (const [toolId, content] of Object.entries(data.customized)) {
+    if (!(toolId in data.originals)) {
+      // This is a user-created prompt, keep it
+      newCustomized[toolId] = content;
+    } else {
+      // This was a customization of a built-in prompt, remove it
+      resetCount++;
+    }
+  }
+
+  data.customized = newCustomized;
+  await saveToolPromptsData(data);
+  return resetCount;
+}
+
+// Reset all AI Writing prompts to defaults
+export async function resetAllWritingAssistantPrompts(): Promise<number> {
+  const data = await getValue<WritingAssistantPromptsData>(STORES.AI, 'writing_assistant_prompts.json');
+  if (!data) return 0;
+
+  let resetCount = 0;
+  for (const stepId of Object.keys(WRITING_ASSISTANT_DEFAULTS)) {
+    if (data.prompts[stepId] !== WRITING_ASSISTANT_DEFAULTS[stepId]) {
+      resetCount++;
+    }
+  }
+
+  // Reset all prompts to defaults
+  data.prompts = { ...WRITING_ASSISTANT_DEFAULTS };
+  await setValue(STORES.AI, 'writing_assistant_prompts.json', data);
+  return resetCount;
+}
+
+// Get list of all prompt categories for PromptEditor
+export async function getPromptCategories(): Promise<string[]> {
+  const data = await loadToolPromptsData();
+  const categories: string[] = [];
+
+  if (data?.categories) {
+    // Add tool categories, ensuring User Tools is last
+    const toolCategories = data.categories.filter(c => c !== 'User Tools');
+    categories.push(...toolCategories);
+    if (data.categories.includes('User Tools')) {
+      categories.push('User Tools');
+    }
+  }
+
+  return categories;
+}
+
+// Get original (default) prompt content for a tool
+export async function getOriginalToolPrompt(toolId: string): Promise<string | null> {
+  const data = await loadToolPromptsData();
+  if (!data) return null;
+  return data.originals[toolId] ?? null;
+}
+
 // ============================================
 // publish/ store
 // ============================================

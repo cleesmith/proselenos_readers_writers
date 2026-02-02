@@ -21,6 +21,7 @@ interface AuthorsHeaderProps {
   onAISettingsClick: () => void;
   onEditorClick: () => void;
   onChatClick: () => void;
+  onPromptsClick: () => void;
   onNewClick: () => void;
   onOpenClick: () => void;
   onOpenDocxClick: () => void;
@@ -50,6 +51,7 @@ export default function AuthorsHeader({
   onAISettingsClick,
   onEditorClick,
   onChatClick,
+  onPromptsClick,
   onNewClick,
   onOpenClick,
   onOpenDocxClick,
@@ -393,6 +395,25 @@ export default function AuthorsHeader({
             >
               <PiChatCircle size={16} />
               Chat
+            </button>
+            <button
+              onClick={() => { onPromptsClick(); setMenuOpen(false); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '8px 12px',
+                background: 'rgba(34, 197, 94, 0.2)',
+                border: 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                color: theme.text,
+                fontSize: '13px',
+              }}
+            >
+              <PiNotePencil size={16} />
+              Prompts
             </button>
             <button
               onClick={() => { onFilesClick(); setMenuOpen(false); }}

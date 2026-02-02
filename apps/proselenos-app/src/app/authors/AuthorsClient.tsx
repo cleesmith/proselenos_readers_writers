@@ -19,6 +19,7 @@ import BookInfoModal from './BookInfoModal';
 import LibraryBooksModal from './LibraryBooksModal';
 import CoverModal from './CoverModal';
 import ManuscriptXrayModal from '@/components/xray/ManuscriptXrayModal';
+import PromptEditorModal from '@/components/PromptEditorModal';
 import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
 import { parseEpub } from '@/services/epubService';
 import { Book } from '@/types/book';
@@ -85,6 +86,8 @@ export default function AuthorsClient() {
   const [showCoverModal, setShowCoverModal] = useState(false);
   // X-Ray modal state
   const [showXrayModal, setShowXrayModal] = useState(false);
+  // Prompt Editor modal state
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
   const [coverTitle, setCoverTitle] = useState('');
   const [coverAuthor, setCoverAuthor] = useState('');
 
@@ -427,6 +430,7 @@ export default function AuthorsClient() {
         onEditorClick={() => setShowEditor(true)}
         onAIWritingClick={() => setShowAIWriting(true)}
         onChatClick={() => setShowChat(true)}
+        onPromptsClick={() => setShowPromptEditor(true)}
         onCoverClick={handleOpenCoverModal}
         onXrayClick={() => setShowXrayModal(true)}
         onLoadFromLibraryClick={() => setShowLibraryModal(true)}
@@ -586,6 +590,14 @@ export default function AuthorsClient() {
         isOpen={showXrayModal}
         onClose={() => setShowXrayModal(false)}
         bookTitle={coverTitle || undefined}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* Prompt Editor Modal */}
+      <PromptEditorModal
+        isOpen={showPromptEditor}
+        onClose={() => setShowPromptEditor(false)}
+        theme={theme}
         isDarkMode={isDarkMode}
       />
 
