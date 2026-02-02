@@ -181,7 +181,12 @@ export default function PromptEditorModal({
           const toolIds = data.toolOrder || Object.keys(data.originals);
           for (const toolId of toolIds) {
             if (toolId.startsWith(category + '/')) {
-              const name = toolId.split('/')[1]?.replace('.txt', '') || toolId;
+              const rawName = toolId.split('/')[1]?.replace('.txt', '') || toolId;
+              // Format: snake_case → Title Case (e.g., "line_editing_by_chapter" → "Line Editing By Chapter")
+              const name = rawName
+                .split('_')
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
               const isCustom = await isToolPromptCustomized(toolId);
               const isUser = await isUserCreatedPrompt(toolId);
               prompts.push({
