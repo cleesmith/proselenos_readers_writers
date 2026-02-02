@@ -413,6 +413,36 @@ export default function AuthorsClient() {
     }
   };
 
+  // Handler for when prompts are changed in PromptEditorModal
+  // Re-initializes tool prompts and refreshes the toolbar
+  const handlePromptsChanged = useCallback(async () => {
+    try {
+      // Re-initialize tool prompts from IndexedDB
+      await initializeToolPrompts();
+      await initWritingAssistantPrompts();
+
+      // Reload tools list to refresh the toolbar
+      const toolsByCategory = await listToolsByCategory();
+      const allTools = toolsByCategory.flatMap(({ category, tools }) =>
+        tools.map((t) => ({
+          id: t.id,
+          name: t.name,
+          category,
+        }))
+      );
+
+      toolsActions.setAvailableTools(allTools);
+
+      // If a category is selected, refresh its tools list
+      if (toolsState.selectedCategory) {
+        const filtered = allTools.filter((t) => t.category === toolsState.selectedCategory);
+        toolsActions.setToolsInCategory(filtered);
+      }
+    } catch (error) {
+      console.error('Failed to refresh tool prompts:', error);
+    }
+  }, [toolsActions, toolsState.selectedCategory]);
+
   return (
     <>
       <AuthorsLayout
@@ -597,6 +627,7 @@ export default function AuthorsClient() {
       <PromptEditorModal
         isOpen={showPromptEditor}
         onClose={() => setShowPromptEditor(false)}
+        onPromptsChanged={handlePromptsChanged}
         theme={theme}
         isDarkMode={isDarkMode}
       />

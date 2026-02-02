@@ -112,6 +112,7 @@ interface PromptInfo {
 interface PromptEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPromptsChanged?: () => void;  // Callback after prompts are saved to refresh toolbar
   theme: ThemeConfig;
   isDarkMode: boolean;
 }
@@ -119,6 +120,7 @@ interface PromptEditorModalProps {
 export default function PromptEditorModal({
   isOpen,
   onClose,
+  onPromptsChanged,
   theme,
   isDarkMode,
 }: PromptEditorModalProps) {
@@ -333,6 +335,9 @@ export default function PromptEditorModal({
       // Refresh prompts list to update badges
       await loadPromptsForCategory(selectedCategory);
 
+      // Notify parent to refresh toolbar
+      onPromptsChanged?.();
+
       showAlert('Prompt saved', 'success', undefined, isDarkMode);
     } catch (error) {
       console.error('Error saving prompt:', error);
@@ -384,6 +389,9 @@ export default function PromptEditorModal({
       // Refresh prompts list
       await loadPromptsForCategory(selectedCategory);
 
+      // Notify parent to refresh toolbar
+      onPromptsChanged?.();
+
       showAlert('Prompt restored to default', 'success', undefined, isDarkMode);
     } catch (error) {
       console.error('Error restoring prompt:', error);
@@ -418,6 +426,10 @@ export default function PromptEditorModal({
 
       setShowAddDialog(false);
       setNewPromptName('');
+
+      // Notify parent to refresh toolbar
+      onPromptsChanged?.();
+
       showAlert(`Created "${newPromptName}"`, 'success', undefined, isDarkMode);
     } catch (error) {
       console.error('Error adding prompt:', error);
@@ -462,6 +474,9 @@ export default function PromptEditorModal({
       // Refresh prompts list
       await loadPromptsForCategory(selectedCategory);
 
+      // Notify parent to refresh toolbar
+      onPromptsChanged?.();
+
       showAlert(`Deleted "${promptName}"`, 'success', undefined, isDarkMode);
     } catch (error) {
       console.error('Error deleting prompt:', error);
@@ -503,6 +518,9 @@ export default function PromptEditorModal({
 
       // Refresh prompts list
       await loadPromptsForCategory(selectedCategory);
+
+      // Notify parent to refresh toolbar
+      onPromptsChanged?.();
 
       showAlert(`Reset ${totalReset} prompt${totalReset !== 1 ? 's' : ''} to defaults`, 'success', undefined, isDarkMode);
     } catch (error) {
