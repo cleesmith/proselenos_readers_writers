@@ -69,6 +69,7 @@ import {
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
 import { generateHtmlFromSections, openHtmlInNewTab } from '@/lib/html-generator';
 import { exportWorkspaceToDocx } from '@/lib/workspace-to-docx';
+import { exportWorkspaceToFountain } from '@/lib/fountain-generator';
 import { xhtmlToPlainText } from '@/lib/plateXhtml';
 import environmentConfig from '@/services/environment';
 import { parseToolReport } from '@/utils/parseToolReport';
@@ -1581,6 +1582,30 @@ export default function AuthorsLayout({
     }
   };
 
+  // Handle Fountain export - download screenplay format
+  const handleFountainExport = async () => {
+    // Save pending changes first
+    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
+      await saveCurrentSection();
+    }
+
+    try {
+      const blob = await exportWorkspaceToFountain();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${epub?.title || 'screenplay'}.fountain`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showAlert('Downloaded Fountain!', 'success', undefined, isDarkMode);
+    } catch (error) {
+      console.error('Fountain export failed:', error);
+      showAlert('Fountain export failed', 'error', undefined, isDarkMode);
+    }
+  };
+
   // Handle section selection - auto-save current section before switching
   const handleSelectSection = async (sectionId: string) => {
     if (sectionId === selectedSectionId) return; // Same section, no action needed
@@ -1685,6 +1710,7 @@ export default function AuthorsLayout({
         onCoverClick={onCoverClick}
         onHtmlExportClick={handleHtmlExport}
         onDocxExportClick={handleDocxExport}
+        onFountainExportClick={handleFountainExport}
         onXrayClick={onXrayClick}
         onSaveWorkspace={saveCurrentSection}
       />
