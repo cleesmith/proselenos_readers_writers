@@ -1599,7 +1599,7 @@ export default function AuthorsLayout({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showAlert('Downloaded Fountain!', 'success', undefined, isDarkMode);
+      showAlert('Downloaded Fountain!\nThe .fountain file downloaded will need clean up and editing in a proper screenplay editor.', 'success', undefined, isDarkMode);
     } catch (error) {
       console.error('Fountain export failed:', error);
       showAlert('Fountain export failed', 'error', undefined, isDarkMode);
