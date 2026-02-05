@@ -134,8 +134,10 @@ function formatFountainElement(element: FountainElement): string {
       return text;
 
     case 'transition':
-      // Transitions are already in proper format (ALL CAPS + TO: or > prefix)
-      return text;
+      // Natural transitions (ALL CAPS ending in TO:) export as-is
+      if (/^[A-Z\s]+TO:$/.test(text.trim())) return text;
+      // Forced transitions need > prefix restored (fountain-js strips it on parse)
+      return `> ${text}`;
 
     case 'page_break':
       return '===';
@@ -230,7 +232,8 @@ function generateTitlePage(
     for (const key of orderedKeys) {
       if (fountainTitlePage[key]) {
         // Multi-line values need to be indented (3 spaces per Fountain spec)
-        const value = fountainTitlePage[key];
+        // Trim leading/trailing newlines to prevent blank lines (fountain-js may add them from <br/> parsing)
+        const value = fountainTitlePage[key].replace(/^\n+|\n+$/g, '');
         if (value.includes('\n')) {
           lines.push(`${key}:`);
           for (const valueLine of value.split('\n')) {

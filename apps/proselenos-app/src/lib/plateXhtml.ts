@@ -97,12 +97,20 @@ function serializeNode(node: PlateElement | PlateText): string {
     .join('');
 
   switch (element.type) {
-    case 'p':
+    case 'p': {
+      let pAttrs = '';
+      const ft = (element as any).fountainType;
+      if (ft) pAttrs += ` data-fountain="${ft}"`;
+      const fd = (element as any).fountainDual;
+      if (fd) pAttrs += ` data-fountain-dual="${fd}"`;
+      const fdp = (element as any).fountainDepth;
+      if (fdp) pAttrs += ` data-fountain-depth="${fdp}"`;
       const pAlign = (element as any).align;
       if (pAlign && pAlign !== 'left') {
-        return `<p style="text-align: ${pAlign}">${children}</p>\n`;
+        return `<p${pAttrs} style="text-align: ${pAlign}">${children}</p>\n`;
       }
-      return `<p>${children}</p>\n`;
+      return `<p${pAttrs}>${children}</p>\n`;
+    }
 
     case 'h1':
       return `<h1>${children}</h1>\n`;
@@ -470,10 +478,17 @@ function parseElement(el: Element): PlateElement | null {
 
   switch (tag) {
     case 'p': {
-      if (hasAlign) {
-        return { type: 'p', align, children: validChildren };
-      }
-      return { type: 'p', children: validChildren };
+      const node: PlateElement = hasAlign
+        ? { type: 'p', align, children: validChildren }
+        : { type: 'p', children: validChildren };
+      // Preserve Fountain screenplay attributes for round-trip export
+      const ft = el.getAttribute('data-fountain');
+      if (ft) node.fountainType = ft;
+      const fd = el.getAttribute('data-fountain-dual');
+      if (fd) node.fountainDual = fd;
+      const fdp = el.getAttribute('data-fountain-depth');
+      if (fdp) node.fountainDepth = fdp;
+      return node;
     }
 
     case 'h1': {
