@@ -25,6 +25,7 @@ interface AuthorsHeaderProps {
   onNewClick: () => void;
   onOpenClick: () => void;
   onOpenDocxClick: () => void;
+  onOpenFountainClick: () => void;
   onLoadFromLibraryClick: () => void;
   onSaveClick: () => void;
   hasApiKey: boolean;
@@ -56,6 +57,7 @@ export default function AuthorsHeader({
   onNewClick,
   onOpenClick,
   onOpenDocxClick,
+  onOpenFountainClick,
   onLoadFromLibraryClick,
   onSaveClick,
   hasApiKey,
@@ -189,7 +191,7 @@ export default function AuthorsHeader({
                   borderRadius: '4px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                   zIndex: 1000,
-                  minWidth: '160px',
+                  minWidth: '220px',
                 }}
               >
                 <button
@@ -255,6 +257,22 @@ export default function AuthorsHeader({
                   }}
                 >
                   Load DOCX <PiArrowRight style={{ display: 'inline', verticalAlign: 'middle' }} /> EPUB
+                </button>
+                <button
+                  onClick={() => { onOpenFountainClick(); setOpenDropdownOpen(false); }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    color: theme.text,
+                    fontSize: '13px',
+                  }}
+                >
+                  Load Fountain Screenplay
                 </button>
               </div>
             )}

@@ -998,6 +998,7 @@ export interface ManuscriptMeta {
   imageIds?: string[];
   sections: SectionMeta[];
   libraryBookHash?: string;  // Hash of book in e-reader library (for updates)
+  fountainTitlePage?: Record<string, string>;  // Original Fountain title page fields (Credit, Contact, etc.)
 }
 
 // NEW: SectionMeta - metadata only, content is in separate .xhtml file

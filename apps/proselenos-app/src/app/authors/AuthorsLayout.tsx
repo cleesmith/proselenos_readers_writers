@@ -927,6 +927,275 @@ export default function AuthorsLayout({
     input.click();
   };
 
+  // Handle opening a Fountain screenplay file
+  // Parses .fountain tokens, splits on scene_heading, converts to XHTML sections
+  // Preserves token types via data-fountain attributes for round-trip export
+  const handleOpenFountain = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.fountain';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          const text = await file.text();
+          const { Fountain } = await import('fountain-js');
+          const fountain = new Fountain();
+          const result = fountain.parse(text, true);
+          const tokens = result.tokens || [];
+
+          // Strip any HTML tags that fountain-js may inject into token text
+          const stripHtml = (s: string): string => s.replace(/<[^>]*>/g, '');
+
+          // Extract title and author from title page tokens, and capture ALL title page fields
+          // fountain-js splits "Title: Foo" into token.type="title", token.text="Foo"
+          let title = file.name.replace(/\.fountain$/i, '');
+          let author = '';
+          const fountainTitlePage: Record<string, string> = {};
+          for (const token of tokens) {
+            if (token.is_title && token.text) {
+              const cleanText = stripHtml(token.text).trim();
+              if (token.type === 'title') {
+                title = cleanText;
+                fountainTitlePage['Title'] = cleanText;
+              } else if (token.type === 'author' || token.type === 'authors') {
+                author = cleanText;
+                fountainTitlePage['Author'] = cleanText;
+              } else if (token.type === 'credit') {
+                fountainTitlePage['Credit'] = cleanText;
+              } else if (token.type === 'source') {
+                fountainTitlePage['Source'] = cleanText;
+              } else if (token.type === 'notes') {
+                fountainTitlePage['Notes'] = cleanText;
+              } else if (token.type === 'draft_date') {
+                fountainTitlePage['Draft date'] = cleanText;
+              } else if (token.type === 'contact') {
+                fountainTitlePage['Contact'] = cleanText;
+              } else if (token.type === 'copyright') {
+                fountainTitlePage['Copyright'] = cleanText;
+              } else if (token.type === 'revision') {
+                fountainTitlePage['Revision'] = cleanText;
+              } else if (token.type) {
+                // Catch any other title page fields
+                const key = token.type.charAt(0).toUpperCase() + token.type.slice(1).replace(/_/g, ' ');
+                fountainTitlePage[key] = cleanText;
+              }
+            }
+          }
+
+          // Types to skip entirely (grouping markers with no text content)
+          const skipTypes = new Set(['spaces']);
+
+          // Paragraph type: carries fountain type info through to XHTML generation
+          interface FountainParagraph {
+            text: string;
+            fountainType: string;
+            depth?: number;
+            dual?: string;  // 'left' or 'right' for dual dialogue
+          }
+
+          // Detect natural Fountain scene headings (INT/EXT/EST/I./E. patterns)
+          // Forced headings (prefixed with . in source) need the . restored for round-trip
+          const isNaturalSceneHeading = /^(?:(?:int|i)\.?\/(?:ext|e)|int|ext|est)[. ]/i;
+
+          // Split tokens into chapters on scene_heading boundaries
+          const chapters: { title: string; paragraphs: FountainParagraph[] }[] = [];
+          let currentChapter: { title: string; paragraphs: FountainParagraph[] } | null = null;
+
+          // Track dual dialogue state
+          let inDualDialogue = false;
+          let dualSide: 'left' | 'right' = 'left';
+
+          for (const token of tokens) {
+            if (token.is_title) continue; // Skip title page tokens
+            if (skipTypes.has(token.type)) continue;
+
+            // Track dual dialogue grouping
+            if (token.type === 'dual_dialogue_begin') {
+              inDualDialogue = true;
+              dualSide = 'left';
+              continue;
+            }
+            if (token.type === 'dual_dialogue_end') {
+              inDualDialogue = false;
+              continue;
+            }
+            // dialogue_begin/dialogue_end: track which side of dual dialogue
+            if (token.type === 'dialogue_begin') {
+              if (inDualDialogue && dualSide === 'left') {
+                // After first dialogue block ends, next one is right
+              }
+              continue;
+            }
+            if (token.type === 'dialogue_end') {
+              if (inDualDialogue) {
+                dualSide = 'right';
+              }
+              continue;
+            }
+
+            if (token.type === 'scene_heading') {
+              // Start a new chapter
+              const headingText = stripHtml(token.text || 'Untitled Scene');
+              currentChapter = { title: headingText, paragraphs: [] };
+              chapters.push(currentChapter);
+              // Restore . prefix for forced scene headings so they round-trip correctly
+              const prefix = isNaturalSceneHeading.test(headingText) ? '' : '.';
+              currentChapter.paragraphs.push({
+                text: prefix + headingText,
+                fountainType: 'scene_heading',
+              });
+            } else if (token.text !== undefined && token.text !== null) {
+              const cleaned = stripHtml(token.text).trim();
+              if (!cleaned) continue;
+              if (!currentChapter) {
+                // Content before first scene heading → "Preamble"
+                currentChapter = { title: 'Preamble', paragraphs: [] };
+                chapters.push(currentChapter);
+              }
+
+              // Build paragraph with fountain type info
+              const para: FountainParagraph = {
+                text: cleaned,
+                fountainType: token.type || 'action',
+              };
+
+              // Carry section depth if available
+              if (token.type === 'section' && token.depth) {
+                para.depth = token.depth;
+              }
+
+              // Mark dual dialogue characters
+              if (inDualDialogue && token.type === 'character') {
+                para.dual = dualSide;
+              }
+
+              currentChapter.paragraphs.push(para);
+            }
+          }
+
+          // If no chapters were created (no scene headings at all), make one from all content
+          if (chapters.length === 0) {
+            const allParas: FountainParagraph[] = [];
+            for (const t of tokens) {
+              if (t.is_title || skipTypes.has(t.type)) continue;
+              if (['dialogue_begin', 'dialogue_end', 'dual_dialogue_begin', 'dual_dialogue_end'].includes(t.type)) continue;
+              if (t.text) {
+                const cleaned = stripHtml(t.text).trim();
+                if (cleaned) {
+                  allParas.push({ text: cleaned, fountainType: t.type || 'action' });
+                }
+              }
+            }
+            if (allParas.length > 0) {
+              chapters.push({ title: 'Chapter 1', paragraphs: allParas });
+            }
+          }
+
+          // Helper to generate a <p> tag with data-fountain attributes
+          const fountainParagraphToXhtml = (para: FountainParagraph): string => {
+            let attrs = `data-fountain="${escapeHtmlForLayout(para.fountainType)}"`;
+            if (para.depth !== undefined) {
+              attrs += ` data-fountain-depth="${para.depth}"`;
+            }
+            if (para.dual) {
+              attrs += ` data-fountain-dual="${para.dual}"`;
+            }
+            return `<p ${attrs}>${escapeHtmlForLayout(para.text)}</p>`;
+          };
+
+          // Use pre-heading content (Preamble) as copyright if present
+          let copyrightXhtml: string;
+          if (chapters.length > 0 && chapters[0]?.title === 'Preamble') {
+            const preamble = chapters.shift()!;
+            copyrightXhtml = preamble.paragraphs
+              .map(p => fountainParagraphToXhtml(p))
+              .join('\n') || '<p></p>';
+          } else {
+            // No pre-heading content; generate default copyright
+            copyrightXhtml = `<p>Copyright &copy; ${new Date().getFullYear()} ${escapeHtmlForLayout(author || title)}</p>\n<p>All rights reserved.</p>`;
+          }
+
+          // Build sections array: Title Page + Copyright + content chapters
+          const sections = [
+            {
+              id: 'title-page',
+              title: 'Title Page',
+              xhtml: `<p>${escapeHtmlForLayout(title)}</p>\n<p>${escapeHtmlForLayout(author)}</p>`,
+            },
+            {
+              id: 'copyright',
+              title: 'Copyright',
+              xhtml: copyrightXhtml,
+            },
+            ...chapters.map((ch, i) => ({
+              id: `chapter-${i + 1}`,
+              title: ch.title,
+              xhtml: ch.paragraphs
+                .map(p => fountainParagraphToXhtml(p))
+                .join('\n') || '<p></p>',
+            })),
+          ];
+
+          // Clear and save
+          await clearWorkingCopy();
+          await saveFullWorkingCopy({
+            title,
+            author,
+            language: 'en',
+            coverImage: null,
+            sections,
+          });
+
+          // Save fountain title page fields to ManuscriptMeta
+          if (Object.keys(fountainTitlePage).length > 0) {
+            const manuscriptMeta = await loadManuscriptMeta();
+            if (manuscriptMeta) {
+              manuscriptMeta.fountainTitlePage = fountainTitlePage;
+              await saveManuscriptMeta(manuscriptMeta);
+            }
+          }
+
+          // Reload from IndexedDB to get normalized IDs
+          const saved = await loadFullWorkingCopy();
+          if (saved) {
+            const loadedEpub: ParsedEpub = {
+              title: saved.title,
+              author: saved.author,
+              language: saved.language,
+              coverImage: saved.coverImage,
+              sections: saved.sections
+                .filter((s) => s.type !== 'cover')
+                .map((s) => ({
+                  id: s.id,
+                  title: s.title,
+                  href: `${s.id}.xhtml`,
+                  xhtml: s.xhtml,
+                  type: s.type,
+                })),
+            };
+            setEpub(loadedEpub);
+            setSelectedSectionId(loadedEpub.sections[0]?.id ?? null);
+          }
+
+          // Load metadata for Title Page form
+          const meta = await loadWorkingCopyMeta();
+          if (meta) {
+            setBookMeta(meta);
+          }
+
+          // Reset AI Editing state
+          await onResetTools?.();
+          showAlert(`Loaded "${title}" with ${chapters.length} scenes from Fountain screenplay`, 'success', undefined, isDarkMode);
+        } catch (error) {
+          console.error('Error parsing Fountain file:', error);
+          showAlert('Error parsing Fountain file. Please try a different file.', 'error', undefined, isDarkMode);
+        }
+      }
+    };
+    input.click();
+  };
+
   // Handle removing a section/chapter
   const handleRemoveSection = async (sectionId: string) => {
     if (!epub) return;
@@ -1700,6 +1969,7 @@ export default function AuthorsLayout({
         onNewClick={handleNew}
         onOpenClick={handleOpenEpub}
         onOpenDocxClick={handleOpenDocx}
+        onOpenFountainClick={handleOpenFountain}
         onLoadFromLibraryClick={onLoadFromLibraryClick}
         onSaveClick={handleSave}
         hasApiKey={hasApiKey}
