@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiFileDoc, PiFileText, PiImage, PiArrowRight, PiGear } from 'react-icons/pi';
+import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileHtml, PiFileDoc, /* PiFileText, */ PiImage, PiArrowRight, PiGear } from 'react-icons/pi';
 import { GiBoxUnpacking } from 'react-icons/gi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
@@ -57,7 +57,7 @@ export default function AuthorsHeader({
   onNewClick,
   onOpenClick,
   onOpenDocxClick,
-  onOpenFountainClick,
+  onOpenFountainClick: _onOpenFountainClick,
   onLoadFromLibraryClick,
   onSaveClick,
   hasApiKey,
@@ -68,7 +68,7 @@ export default function AuthorsHeader({
   onCoverClick,
   onHtmlExportClick,
   onDocxExportClick,
-  onFountainExportClick,
+  onFountainExportClick: _onFountainExportClick,
   onXrayClick,
   onSaveWorkspace,
 }: AuthorsHeaderProps) {
@@ -258,7 +258,7 @@ export default function AuthorsHeader({
                 >
                   Load DOCX <PiArrowRight style={{ display: 'inline', verticalAlign: 'middle' }} /> EPUB
                 </button>
-                <button
+                {/* <button
                   onClick={() => { onOpenFountainClick(); setOpenDropdownOpen(false); }}
                   style={{
                     display: 'block',
@@ -273,7 +273,7 @@ export default function AuthorsHeader({
                   }}
                 >
                   Load Fountain Screenplay
-                </button>
+                </button> */}
               </div>
             )}
           </div>
@@ -530,7 +530,7 @@ export default function AuthorsHeader({
               <PiFileDoc size={16} />
               DOCX
             </button>
-            <button
+            {/* <button
               onClick={() => { onFountainExportClick?.(); setMenuOpen(false); }}
               style={{
                 display: 'flex',
@@ -548,7 +548,7 @@ export default function AuthorsHeader({
             >
               <PiFileText size={16} />
               Fountain
-            </button>
+            </button> */}
             <button
               onClick={() => { onXrayClick?.(); setMenuOpen(false); }}
               style={{
