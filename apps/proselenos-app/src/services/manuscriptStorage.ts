@@ -1336,6 +1336,90 @@ export async function clearManuscriptImages(): Promise<void> {
   }
 }
 
+// ============================================
+// Audio files (for Visual Narrative)
+// ============================================
+
+/**
+ * Save an audio file to IndexedDB
+ */
+export async function saveManuscriptAudio(filename: string, blob: Blob): Promise<void> {
+  await setValue(STORES.MANUSCRIPT, `audio/${filename}`, blob);
+}
+
+/**
+ * Get an audio file from IndexedDB
+ */
+export async function getManuscriptAudio(filename: string): Promise<Blob | null> {
+  return getValue<Blob>(STORES.MANUSCRIPT, `audio/${filename}`);
+}
+
+/**
+ * Delete an audio file from IndexedDB
+ */
+export async function deleteManuscriptAudio(filename: string): Promise<void> {
+  await deleteValue(STORES.MANUSCRIPT, `audio/${filename}`);
+}
+
+/**
+ * Get all audio files (for picker display)
+ * Returns array of {filename, blob} for each stored audio file
+ */
+export async function getAllManuscriptAudios(): Promise<Array<{filename: string, blob: Blob}>> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORES.MANUSCRIPT, 'readonly');
+      const store = tx.objectStore(STORES.MANUSCRIPT);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const results = req.result || [];
+        const audios: Array<{filename: string, blob: Blob}> = [];
+
+        for (const item of results) {
+          if (item.key && typeof item.key === 'string' && item.key.startsWith('audio/')) {
+            const filename = item.key.replace('audio/', '');
+            if (item.value instanceof Blob) {
+              audios.push({ filename, blob: item.value });
+            }
+          }
+        }
+
+        resolve(audios);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Clear all audio files from IndexedDB
+ * Called when creating a new manuscript
+ */
+export async function clearManuscriptAudios(): Promise<void> {
+  try {
+    const db = await openDB();
+    const keys = await new Promise<string[]>((resolve, reject) => {
+      const tx = db.transaction(STORES.MANUSCRIPT, 'readonly');
+      const store = tx.objectStore(STORES.MANUSCRIPT);
+      const req = store.getAllKeys();
+      req.onsuccess = () => resolve(req.result as string[]);
+      req.onerror = () => reject(req.error);
+    });
+
+    for (const key of keys) {
+      if (typeof key === 'string' && key.startsWith('audio/')) {
+        await deleteValue(STORES.MANUSCRIPT, key);
+      }
+    }
+  } catch {
+    // Ignore errors during cleanup
+  }
+}
+
 // Full working copy functions (for convenience)
 // NOW uses XHTML as single source of truth
 export interface FullWorkingCopy {

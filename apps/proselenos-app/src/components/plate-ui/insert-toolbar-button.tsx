@@ -5,10 +5,13 @@ import {
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
+  MessageSquareQuoteIcon,
   MinusIcon,
   PilcrowIcon,
   PlusIcon,
   QuoteIcon,
+  SparklesIcon,
+  TypeIcon,
 } from 'lucide-react';
 import { KEYS } from 'platejs';
 import { type PlateEditor, useEditorRef } from 'platejs/react';
@@ -69,6 +72,36 @@ const groups: Group[] = [
         icon: <MinusIcon />,
         label: 'Divider',
         value: KEYS.hr,
+      },
+    ].map((item) => ({
+      ...item,
+      onSelect: (editor: PlateEditor, value: string) => {
+        insertBlock(editor, value);
+      },
+    })),
+  },
+  {
+    group: 'Visual Narrative',
+    items: [
+      {
+        icon: <MessageSquareQuoteIcon />,
+        label: 'Dialogue',
+        value: 'vn_dialogue',
+      },
+      {
+        icon: <TypeIcon />,
+        label: 'Internal Thought',
+        value: 'vn_internal',
+      },
+      {
+        icon: <SparklesIcon />,
+        label: 'Emphasis Line',
+        value: 'vn_emphasis',
+      },
+      {
+        icon: <MinusIcon />,
+        label: 'Scene Break',
+        value: 'vn_scene_break',
       },
     ].map((item) => ({
       ...item,

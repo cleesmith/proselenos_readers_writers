@@ -11,14 +11,17 @@ import {
   LightbulbIcon,
   ListIcon,
   ListOrdered,
+  MessageSquareQuoteIcon,
+  MinusIcon,
   PenToolIcon,
   PilcrowIcon,
   Quote,
   RadicalIcon,
-
+  SparklesIcon,
   Square,
   Table,
   TableOfContentsIcon,
+  TypeIcon,
 } from 'lucide-react';
 import { KEYS, type TComboboxInputElement } from 'platejs';
 import type { PlateEditor, PlateElementProps } from 'platejs/react';
@@ -128,6 +131,40 @@ const groups: Group[] = [
         keywords: ['note'],
         label: 'Callout',
         value: KEYS.callout,
+      },
+    ].map((item) => ({
+      ...item,
+      onSelect: (editor, value) => {
+        insertBlock(editor, value, { upsert: true });
+      },
+    })),
+  },
+  {
+    group: 'Visual Narrative',
+    items: [
+      {
+        icon: <MessageSquareQuoteIcon />,
+        keywords: ['dialogue', 'speaker', 'talk', 'say'],
+        label: 'Dialogue',
+        value: 'vn_dialogue',
+      },
+      {
+        icon: <TypeIcon />,
+        keywords: ['internal', 'thought', 'thinking'],
+        label: 'Internal Thought',
+        value: 'vn_internal',
+      },
+      {
+        icon: <SparklesIcon />,
+        keywords: ['emphasis', 'highlight', 'centered'],
+        label: 'Emphasis Line',
+        value: 'vn_emphasis',
+      },
+      {
+        icon: <MinusIcon />,
+        keywords: ['break', 'scene', 'separator', 'divider'],
+        label: 'Scene Break',
+        value: 'vn_scene_break',
       },
     ].map((item) => ({
       ...item,

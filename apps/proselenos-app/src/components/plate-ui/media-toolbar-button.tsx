@@ -18,6 +18,7 @@ import * as React from 'react';
 import { toast } from 'sonner';
 import { useFilePicker } from 'use-file-picker';
 import { useImageLibrary } from '@/contexts/ImageLibraryContext';
+import { useAudioLibrary } from '@/contexts/AudioLibraryContext';
 
 import {
   AlertDialog,
@@ -89,6 +90,7 @@ export function MediaToolbarButton({
   const [open, setOpen] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const imageLibrary = useImageLibrary();
+  const audioLibrary = useAudioLibrary();
 
   const { openFilePicker } = useFilePicker({
     accept: currentConfig.accept,
@@ -98,12 +100,29 @@ export function MediaToolbarButton({
     },
   });
 
+  // Audio-only picker: uploads to library without inserting a node
+  const { openFilePicker: openAudioLibraryPicker } = useFilePicker({
+    accept: ['audio/*'],
+    multiple: true,
+    onFilesSelected: async ({ plainFiles }) => {
+      if (!audioLibrary) return;
+      for (const file of plainFiles) {
+        await audioLibrary.uploadAudioToLibrary(file);
+      }
+      toast.success(`${plainFiles.length} audio file${plainFiles.length > 1 ? 's' : ''} added to library`);
+    },
+  });
+
   return (
     <>
       <ToolbarSplitButton
         tooltip={currentConfig.tooltip}
         onClick={() => {
-          openFilePicker();
+          if (nodeType === KEYS.audio && audioLibrary) {
+            openAudioLibraryPicker();
+          } else {
+            openFilePicker();
+          }
         }}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown') {
@@ -133,7 +152,13 @@ export function MediaToolbarButton({
             onClick={(e) => e.stopPropagation()}
           >
             <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={() => openFilePicker()}>
+              <DropdownMenuItem onSelect={() => {
+                if (nodeType === KEYS.audio && audioLibrary) {
+                  openAudioLibraryPicker();
+                } else {
+                  openFilePicker();
+                }
+              }}>
                 {currentConfig.icon}
                 Upload from computer
               </DropdownMenuItem>
@@ -145,6 +170,12 @@ export function MediaToolbarButton({
                 <DropdownMenuItem onSelect={() => imageLibrary.openImageLibrary()}>
                   <FolderOpenIcon className="size-4" />
                   Image Library
+                </DropdownMenuItem>
+              )}
+              {nodeType === KEYS.audio && audioLibrary && (
+                <DropdownMenuItem onSelect={() => audioLibrary.openAudioLibrary()}>
+                  <FolderOpenIcon className="size-4" />
+                  Audio Library
                 </DropdownMenuItem>
               )}
             </DropdownMenuGroup>

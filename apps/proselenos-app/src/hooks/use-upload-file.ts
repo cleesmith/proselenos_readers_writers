@@ -1,14 +1,15 @@
 /**
- * Image upload hook that stores directly to IndexedDB.
- * No external service required - images persist locally.
+ * Media upload hook that stores directly to IndexedDB.
+ * No external service required - files persist locally.
  *
- * Storage convention: images/{filename}
- * This matches EPUB3 structure: OEBPS/images/
+ * Storage conventions:
+ *   images/{filename} → EPUB3 structure: OEBPS/images/
+ *   audio/{filename}  → EPUB3 structure: OEBPS/audio/
  */
 import * as React from 'react';
 import { toast } from 'sonner';
 
-import { saveManuscriptImage } from '@/services/manuscriptStorage';
+import { saveManuscriptImage, saveManuscriptAudio } from '@/services/manuscriptStorage';
 
 export interface UploadedFile {
   key: string;
@@ -45,23 +46,25 @@ export function useUploadFile({
       // Simulate progress for UX (actual IndexedDB write is fast)
       setProgress(30);
 
-      // Save to IndexedDB using existing manuscriptStorage function
-      // This stores at key: "images/{uniqueFilename}"
-      await saveManuscriptImage(uniqueFilename, file);
+      // Route to appropriate storage based on file type
+      const isAudio = file.type.startsWith('audio/');
+      if (isAudio) {
+        await saveManuscriptAudio(uniqueFilename, file);
+      } else {
+        await saveManuscriptImage(uniqueFilename, file);
+      }
 
       setProgress(100);
 
-      // Return URL in EPUB-compatible format: "images/{filename}"
-      // This format works for:
-      // 1. plateXhtml.ts serialization (img src="images/...")
-      // 2. EPUB export (OEBPS/images/...)
-      // 3. Resolution via useResolvedImageUrl hook
+      // Return URL in EPUB-compatible format
+      // Images: "images/{filename}" → OEBPS/images/
+      // Audio:  "audio/{filename}"  → OEBPS/audio/
       const result: UploadedFile = {
         key: uniqueFilename,
         name: file.name,
         size: file.size,
         type: file.type,
-        url: `images/${uniqueFilename}`,
+        url: isAudio ? `audio/${uniqueFilename}` : `images/${uniqueFilename}`,
       };
 
       setUploadedFile(result);
@@ -69,8 +72,8 @@ export function useUploadFile({
 
       return result;
     } catch (error) {
-      console.error('Image upload failed:', error);
-      const message = error instanceof Error ? error.message : 'Failed to save image';
+      console.error('Media upload failed:', error);
+      const message = error instanceof Error ? error.message : 'Failed to save file';
       toast.error(message);
       onUploadError?.(error);
       return undefined;

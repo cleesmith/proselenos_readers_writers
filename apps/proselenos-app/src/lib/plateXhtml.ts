@@ -98,6 +98,22 @@ function serializeNode(node: PlateElement | PlateText): string {
 
   switch (element.type) {
     case 'p': {
+      // Visual Narrative paragraph variants
+      const vnType = (element as any).vnType as string | undefined;
+      if (vnType === 'internal') {
+        return `<p class="internal">${children}</p>\n`;
+      }
+      if (vnType === 'emphasis') {
+        return `<p class="emphasis-line">${children}</p>\n`;
+      }
+      if (vnType === 'scene_audio') {
+        const audioId = (element as any).audioId || '';
+        const audioLabel = (element as any).audioLabel || 'audio';
+        const audioMediaType = (element as any).audioMediaType || 'audio/wav';
+        return `<div class="scene-audio">\n  <p class="audio-label">\u{1F50A} ${escapeHtml(audioLabel)}</p>\n  <audio controls="controls" preload="none">\n    <source src="audio/${escapeAttr(audioId)}" type="${escapeAttr(audioMediaType)}"/>\n  </audio>\n</div>\n`;
+      }
+
+      // Standard paragraph (with Fountain and alignment support)
       let pAttrs = '';
       const ft = (element as any).fountainType;
       if (ft) pAttrs += ` data-fountain="${ft}"`;
@@ -130,16 +146,39 @@ function serializeNode(node: PlateElement | PlateText): string {
     case 'h6':
       return `<h6>${children}</h6>\n`;
 
-    case 'blockquote':
+    case 'blockquote': {
+      // Visual Narrative dialogue
+      const bqVnType = (element as any).vnType as string | undefined;
+      if (bqVnType === 'dialogue') {
+        const speaker = (element as any).speaker || '';
+        return `<div class="dialogue"><span class="speaker">${escapeHtml(speaker)}</span>${children}</div>\n`;
+      }
       return `<blockquote>${children}</blockquote>\n`;
+    }
 
     case 'a':
     case 'link':
       const href = element.url || '';
       return `<a href="${escapeAttr(href)}">${children}</a>`;
 
+    case 'audio': {
+      const audioSrc = (element.url || '') as string;
+      const audioFilename = audioSrc.split('/').pop() || audioSrc;
+      const audioCaption = (element.caption as Array<{text: string}> | undefined)?.[0]?.text || '';
+
+      let audioHtml = `<div class="audio-block">\n`;
+      audioHtml += `  <audio controls="controls" preload="none">\n`;
+      audioHtml += `    <source src="audio/${escapeAttr(audioFilename)}"/>\n`;
+      audioHtml += `  </audio>\n`;
+      if (audioCaption) {
+        audioHtml += `  <p class="caption">${escapeHtml(audioCaption)}</p>\n`;
+      }
+      audioHtml += `</div>\n`;
+      return audioHtml;
+    }
+
     case 'img':
-    case 'image':
+    case 'image': {
       const imgSrc = (element.url || '') as string;
       const imgAlt = (element.alt || '') as string;
       const imgFilename = imgSrc.split('/').pop() || imgSrc;
@@ -147,6 +186,19 @@ function serializeNode(node: PlateElement | PlateText): string {
       // Caption is stored as array of text nodes: [{ text: 'caption' }]
       const imgCaption = (element.caption as Array<{text: string}> | undefined)?.[0]?.text || '';
 
+      // Visual Narrative image layout
+      const vnLayout = (element as any).vnLayout as string | undefined;
+      if (vnLayout) {
+        let vnImgHtml = `<div class="visual ${escapeAttr(vnLayout)}">\n`;
+        vnImgHtml += `  <img src="images/${escapeAttr(imgFilename)}" alt="${escapeAttr(imgAlt)}"/>\n`;
+        if (imgCaption) {
+          vnImgHtml += `  <p class="caption">${escapeHtml(imgCaption)}</p>\n`;
+        }
+        vnImgHtml += `</div>\n`;
+        return vnImgHtml;
+      }
+
+      // Standard figure output
       // Ensure width has CSS units - PlateJS stores numbers for pixel values
       let widthValue: string | undefined;
       if (typeof imgWidth === 'number') {
@@ -165,6 +217,7 @@ function serializeNode(node: PlateElement | PlateText): string {
       }
       figureHtml += `</figure>\n`;
       return figureHtml;
+    }
 
     case 'ul':
       return `<ul>\n${children}</ul>\n`;
@@ -175,8 +228,14 @@ function serializeNode(node: PlateElement | PlateText): string {
     case 'li':
       return `<li>${children}</li>\n`;
 
-    case 'hr':
+    case 'hr': {
+      // Visual Narrative scene break
+      const hrVnType = (element as any).vnType as string | undefined;
+      if (hrVnType === 'scene_break') {
+        return `<p class="scene-break">\u2022 \u2022 \u2022</p>\n`;
+      }
       return '<hr/>\n';
+    }
 
     default:
       // Unknown element type - just return children wrapped in div
@@ -258,17 +317,42 @@ function processBlockChildren(container: Element): (PlateElement | PlateText)[] 
 
     switch (tag) {
       case 'p': {
-        // Vellum scene breaks: <p class="implicit-break scene-break"></p>
-        if (el.classList.contains('scene-break') || el.classList.contains('implicit-break')) {
-          // Only treat as scene break if the paragraph is empty
+        // Visual Narrative scene break: <p class="scene-break">• • •</p>
+        if (el.classList.contains('scene-break')) {
+          blocks.push({ type: 'hr', vnType: 'scene_break', children: [{ text: '' }] });
+          break;
+        }
+        // Vellum scene breaks: <p class="implicit-break"></p>
+        if (el.classList.contains('implicit-break')) {
           const textContent = el.textContent?.trim() || '';
           if (textContent === '') {
             blocks.push({ type: 'p', children: [{ text: '' }] });
             break;
           }
         }
+        // Visual Narrative internal thought: <p class="internal">
+        if (el.classList.contains('internal')) {
+          const children = parseChildren(el);
+          blocks.push({ type: 'p', vnType: 'internal', children: children.length > 0 ? children : [{ text: '' }] });
+          break;
+        }
+        // Visual Narrative emphasis line: <p class="emphasis-line">
+        if (el.classList.contains('emphasis-line')) {
+          const children = parseChildren(el);
+          blocks.push({ type: 'p', vnType: 'emphasis', children: children.length > 0 ? children : [{ text: '' }] });
+          break;
+        }
+        // Visual Narrative plain narration: <p class="narration"> — just a regular paragraph
+        // (narration class is cosmetic, no special PlateJS property needed)
         const parsed = parseElement(el);
         if (parsed) blocks.push(parsed);
+        break;
+      }
+
+      case 'audio': {
+        // Standalone <audio> element → PlateJS audio node
+        const audioNode = parseAudioElement(el);
+        blocks.push(audioNode);
         break;
       }
 
@@ -297,8 +381,9 @@ function processBlockChildren(container: Element): (PlateElement | PlateText)[] 
         break;
       }
 
-      case 'section': {
-        // Sections are structural wrappers in many non-Vellum epubs — recurse into children
+      case 'section':
+      case 'article': {
+        // Structural wrappers (sections, VN scene articles) — recurse into children
         const innerBlocks = processBlockChildren(el);
         blocks.push(...innerBlocks);
         break;
@@ -333,6 +418,91 @@ function handleDiv(el: Element, blocks: (PlateElement | PlateText)[]): void {
   // Vellum page-break: explicit page break marker
   if (el.classList.contains('page-break')) {
     blocks.push({ type: 'hr', children: [{ text: '' }] });
+    return;
+  }
+
+  // Visual Narrative dialogue: <div class="dialogue"><span class="speaker">Name</span> text</div>
+  if (el.classList.contains('dialogue')) {
+    const speakerEl = el.querySelector('span.speaker');
+    const speaker = speakerEl?.textContent?.trim() || '';
+    // Remove speaker span before parsing children so it doesn't appear in text
+    if (speakerEl) speakerEl.remove();
+    // Strip formatting whitespace left by old serialization (decorative \n and spaces)
+    el.normalize();
+    Array.from(el.childNodes).forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE && node.textContent != null) {
+        node.textContent = node.textContent.replace(/^\n\s*/, '').replace(/\n\s*$/, '');
+      }
+    });
+    const children = parseChildren(el);
+    blocks.push({
+      type: 'blockquote',
+      vnType: 'dialogue',
+      speaker,
+      children: children.length > 0 ? children : [{ text: '' }]
+    });
+    return;
+  }
+
+  // Visual Narrative image with layout: <div class="visual wide|centered|inline-right|inline-left">
+  if (el.classList.contains('visual')) {
+    const img = el.querySelector('img');
+    if (img) {
+      const imgNode = parseImageElement(img);
+      // Detect layout from class list
+      let vnLayout: string | undefined;
+      if (el.classList.contains('wide')) vnLayout = 'wide';
+      else if (el.classList.contains('centered')) vnLayout = 'centered';
+      else if (el.classList.contains('inline-right')) vnLayout = 'inline-right';
+      else if (el.classList.contains('inline-left')) vnLayout = 'inline-left';
+      if (vnLayout) (imgNode as any).vnLayout = vnLayout;
+      // Extract caption from .caption element
+      const captionEl = el.querySelector('.caption, figcaption');
+      const captionText = captionEl?.textContent?.trim() || '';
+      if (captionText) (imgNode as any).caption = [{ text: captionText }];
+      blocks.push(imgNode);
+    }
+    return;
+  }
+
+  // Audio block (toolbar-inserted): <div class="audio-block">
+  if (el.classList.contains('audio-block')) {
+    const audioEl = el.querySelector('audio');
+    if (audioEl) {
+      const audioNode = parseAudioElement(audioEl);
+      // Extract caption from .caption element
+      const captionEl = el.querySelector('.caption, figcaption');
+      const captionText = captionEl?.textContent?.trim() || '';
+      if (captionText) (audioNode as any).caption = [{ text: captionText }];
+      blocks.push(audioNode);
+    }
+    return;
+  }
+
+  // Visual Narrative audio: <div class="scene-audio">
+  if (el.classList.contains('scene-audio')) {
+    const labelEl = el.querySelector('.audio-label');
+    const sourceEl = el.querySelector('source');
+    const rawLabel = labelEl?.textContent?.trim() || 'audio';
+    // Strip the 🔊 emoji prefix if present
+    const audioLabel = rawLabel.replace(/^\u{1F50A}\s*/u, '');
+    const srcAttr = sourceEl?.getAttribute('src') || '';
+    // Strip 'audio/' prefix to get just the filename
+    const audioId = srcAttr.replace(/^(\.\.\/)?audio\//, '');
+    const audioMediaType = sourceEl?.getAttribute('type') || 'audio/wav';
+    blocks.push({
+      type: 'p',
+      vnType: 'scene_audio',
+      audioId,
+      audioLabel,
+      audioMediaType,
+      children: [{ text: '' }]
+    });
+    return;
+  }
+
+  // Visual Narrative clearfix: <div class="clearfix"> — skip (cosmetic only)
+  if (el.classList.contains('clearfix')) {
     return;
   }
 
@@ -618,6 +788,29 @@ function parseImageElement(el: Element): PlateElement {
     type: 'img',
     url: url,
     alt: alt,
+    children: [{ text: '' }]
+  };
+}
+
+/**
+ * Parse an audio element
+ * Preserves the "audio/{filename}" format for consistency with upload
+ */
+function parseAudioElement(el: Element): PlateElement {
+  // Try <source> child first, then src attribute on <audio> itself
+  const sourceEl = el.querySelector('source');
+  const src = sourceEl?.getAttribute('src') || el.getAttribute('src') || '';
+
+  // Normalize URL to audio/{filename} format
+  let url = src;
+  if (src && !src.startsWith('audio/') && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
+    const filename = src.split('/').pop() || src;
+    url = `audio/${filename}`;
+  }
+
+  return {
+    type: 'audio',
+    url: url,
     children: [{ text: '' }]
   };
 }

@@ -47,6 +47,7 @@ export function FixedToolbarButtons() {
             </MarkToolbarButton>
             <LinkToolbarButton />
             <MediaToolbarButton nodeType={KEYS.img} />
+            <MediaToolbarButton nodeType={KEYS.audio} />
           </ToolbarGroup>
 
           <ToolbarGroup>

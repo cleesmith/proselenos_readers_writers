@@ -67,6 +67,31 @@ const insertBlockMap: Record<
     editor.getTransforms(TablePlugin).insert.table({}, { select: true }),
   [KEYS.toc]: (editor) => insertToc(editor, { select: true }),
   [KEYS.video]: (editor) => insertVideoPlaceholder(editor, { select: true }),
+  // Visual Narrative block types
+  'vn_dialogue': (editor) => {
+    editor.tf.insertNodes(
+      { type: 'blockquote', vnType: 'dialogue', speaker: '', children: [{ text: '' }] },
+      { select: true }
+    );
+  },
+  'vn_internal': (editor) => {
+    editor.tf.insertNodes(
+      { type: 'p', vnType: 'internal', children: [{ text: '' }] },
+      { select: true }
+    );
+  },
+  'vn_emphasis': (editor) => {
+    editor.tf.insertNodes(
+      { type: 'p', vnType: 'emphasis', children: [{ text: '' }] },
+      { select: true }
+    );
+  },
+  'vn_scene_break': (editor) => {
+    editor.tf.insertNodes(
+      { type: 'hr', vnType: 'scene_break', children: [{ text: '' }] },
+      { select: true }
+    );
+  },
 };
 
 const insertInlineMap: Record<

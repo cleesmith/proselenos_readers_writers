@@ -31,7 +31,6 @@ import { MarkdownKit } from '@/components/plate-editor/plugins/markdown-kit';
 import { MathKit } from '@/components/plate-editor/plugins/math-kit';
 import { MediaKit } from '@/components/plate-editor/plugins/media-kit';
 import { MentionKit } from '@/components/plate-editor/plugins/mention-kit';
-import { SlashKit } from '@/components/plate-editor/plugins/slash-kit';
 import { SuggestionKit } from '@/components/plate-editor/plugins/suggestion-kit';
 import { TableKit } from '@/components/plate-editor/plugins/table-kit';
 import { TocKit } from '@/components/plate-editor/plugins/toc-kit';
@@ -74,7 +73,6 @@ export const EditorKit: any[] = [
   ...FindReplaceKit,
 
   // Editing
-  ...SlashKit,
   ...AutoformatKit,
   ...CursorOverlayKit,
   ...BlockMenuKit,

@@ -8,6 +8,7 @@
 import JSZip from 'jszip';
 import { ManuscriptSettings, WorkingCopyMeta, WorkingCopySection } from '@/services/manuscriptStorage';
 import { xhtmlToPlainText } from './plateXhtml';
+import { VISUAL_NARRATIVE_CSS } from './visual-narrative-css';
 
 // TypeScript Interfaces
 // XHTML-Native: Chapter now stores xhtml directly
@@ -70,11 +71,18 @@ export interface ManuscriptImage {
  *
  * XHTML-Native: Sections now contain XHTML directly - no conversion needed.
  */
+// Audio file interface (for Visual Narrative)
+export interface ManuscriptAudioFile {
+  filename: string;
+  blob: Blob;
+}
+
 export async function generateEpubFromWorkingCopy(
   meta: WorkingCopyMeta,
   sections: WorkingCopySection[],
   coverBlob?: Blob | null,
-  images?: ManuscriptImage[]
+  images?: ManuscriptImage[],
+  audioFiles?: ManuscriptAudioFile[]
 ): Promise<Uint8Array> {
   // Find Copyright section content (if exists)
   const copyrightSection = sections.find(s =>
@@ -193,7 +201,31 @@ export async function generateEpubFromWorkingCopy(
     }
   }
 
-  return generateEPUB(chapters, metadata, coverImageData, inlineImages, noMatterSections);
+  // Convert audio files to Uint8Array format
+  const inlineAudios: Array<{filename: string, data: Uint8Array}> = [];
+  if (audioFiles && audioFiles.length > 0) {
+    for (const aud of audioFiles) {
+      const arrayBuffer = await aud.blob.arrayBuffer();
+      inlineAudios.push({
+        filename: aud.filename,
+        data: new Uint8Array(arrayBuffer)
+      });
+    }
+  }
+
+  // Detect if any section contains Visual Narrative content
+  const hasVnContent = sections.some(s =>
+    s.xhtml && (
+      s.xhtml.includes('class="dialogue"') ||
+      s.xhtml.includes('class="internal"') ||
+      s.xhtml.includes('class="emphasis-line"') ||
+      s.xhtml.includes('class="scene-break"') ||
+      s.xhtml.includes('class="scene-audio"') ||
+      s.xhtml.includes('class="visual ')
+    )
+  );
+
+  return generateEPUB(chapters, metadata, coverImageData, inlineImages, noMatterSections, inlineAudios, hasVnContent);
 }
 
 /**
@@ -229,7 +261,9 @@ async function generateEPUB(
   metadata: any,
   coverImageData?: Uint8Array,
   inlineImages?: Array<{filename: string, data: Uint8Array}>,
-  noMatterSections?: Chapter[]
+  noMatterSections?: Chapter[],
+  inlineAudios?: Array<{filename: string, data: Uint8Array}>,
+  hasVnContent?: boolean
 ): Promise<Uint8Array> {
   const zip = new JSZip();
 
@@ -268,6 +302,13 @@ async function generateEPUB(
     }
   }
 
+  // 3c. Add audio files to OEBPS/audio/ (Visual Narrative)
+  if (inlineAudios && inlineAudios.length > 0) {
+    for (const aud of inlineAudios) {
+      zip.file(`OEBPS/audio/${aud.filename}`, aud.data);
+    }
+  }
+
   // 4. Create title page
   const titlePageHTML = createTitlePage(metadata);
   zip.file('OEBPS/title-page.xhtml', titlePageHTML);
@@ -281,16 +322,19 @@ async function generateEPUB(
   zip.file('OEBPS/contents.xhtml', contentsHTML);
 
   // 7. Create chapter HTML files
+  // Per-chapter VN detection: VN chapters get visual-narrative.css, others get style.css
   chapters.forEach(chapter => {
-    const chapterHTML = createChapterHTML(chapter, metadata);
+    const useVn = chapterHasVnContent(chapter.xhtml);
+    const chapterHTML = createChapterHTML(chapter, metadata, false, useVn);
     zip.file(`OEBPS/${chapter.id}.xhtml`, chapterHTML);
   });
 
   // 7b. Create No Matter files in nomatter/ folder (if any)
-  // Pass isNoMatter=true so CSS path uses "../css/style.css" (fixes RSC-007)
+  // Pass isNoMatter=true so CSS path uses "../css/" prefix (fixes RSC-007)
   if (noMatterSections && noMatterSections.length > 0) {
     noMatterSections.forEach(section => {
-      const sectionHTML = createChapterHTML(section, metadata, true);
+      const useVn = chapterHasVnContent(section.xhtml);
+      const sectionHTML = createChapterHTML(section, metadata, true, useVn);
       zip.file(`OEBPS/nomatter/${section.id}.xhtml`, sectionHTML);
     });
   }
@@ -303,7 +347,7 @@ async function generateEPUB(
 
   // 9. Create content.opf (EPUB 3.0 format) with all new items
   // Pass the shared UUID and cover image info for correct media-type
-  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections, bookUUID, coverImageInfo);
+  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections, bookUUID, coverImageInfo, inlineAudios, hasVnContent);
   zip.file('OEBPS/content.opf', contentOPF);
 
   // 10. Create nav.xhtml (EPUB 3.0 navigation, includes No Matter sections)
@@ -318,6 +362,11 @@ async function generateEPUB(
   // 12. Create CSS files in css/ subfolder
   const styleCSS = createFullWidthCSS();
   zip.file('OEBPS/css/style.css', styleCSS);
+
+  // 12b. Add Visual Narrative CSS (if VN content detected)
+  if (hasVnContent) {
+    zip.file('OEBPS/css/visual-narrative.css', VISUAL_NARRATIVE_CSS);
+  }
 
   // Generate and return the EPUB
   // CHANGE: 'nodebuffer' → 'uint8array' for browser compatibility
@@ -502,6 +551,24 @@ function getImageMediaType(filename: string): string {
   }
 }
 
+function getAudioMediaType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'wav':
+      return 'audio/wav';
+    case 'mp3':
+      return 'audio/mpeg';
+    case 'ogg':
+      return 'audio/ogg';
+    case 'm4a':
+      return 'audio/mp4';
+    case 'aac':
+      return 'audio/aac';
+    default:
+      return 'audio/wav';
+  }
+}
+
 /**
  * Convert markdown (bold, italic, links, images) to HTML
  * Applied after escapeHtml since markdown syntax doesn't contain <>
@@ -646,13 +713,30 @@ ${chapterItems}${aboutAuthorItem}${noMatterItems}
 }
 
 /**
+ * Check if a single chapter's XHTML contains Visual Narrative content.
+ * Same class checks as the global hasVnContent detection (line ~217).
+ */
+function chapterHasVnContent(xhtml?: string): boolean {
+  if (!xhtml) return false;
+  return (
+    xhtml.includes('class="dialogue"') ||
+    xhtml.includes('class="internal"') ||
+    xhtml.includes('class="emphasis-line"') ||
+    xhtml.includes('class="scene-break"') ||
+    xhtml.includes('class="scene-audio"') ||
+    xhtml.includes('class="visual ')
+  );
+}
+
+/**
  * Create HTML for a chapter
  * XHTML-Native: Uses xhtml directly if available (no conversion needed),
  * otherwise falls back to processMarkdown for backwards compatibility.
  *
- * @param isNoMatter - When true, CSS path uses "../css/style.css" for nomatter/ folder
+ * @param isNoMatter - When true, CSS path uses "../css/" prefix for nomatter/ folder
+ * @param useVnCss - When true, uses visual-narrative.css and <article class="scene"> wrapper
  */
-function createChapterHTML(chapter: Chapter, _metadata: any, isNoMatter: boolean = false): string {
+function createChapterHTML(chapter: Chapter, _metadata: any, isNoMatter: boolean = false, useVnCss: boolean = false): string {
   let bodyContent: string;
 
   if (chapter.xhtml) {
@@ -665,15 +749,35 @@ function createChapterHTML(chapter: Chapter, _metadata: any, isNoMatter: boolean
       .join('\n');
   }
 
-  // No Matter sections are in nomatter/ folder, so need "../css/style.css"
-  const cssPath = isNoMatter ? '../css/style.css' : 'css/style.css';
+  // No Matter sections are in nomatter/ folder, so need "../css/" prefix
+  const cssPrefix = isNoMatter ? '../css/' : 'css/';
 
+  if (useVnCss) {
+    // VN chapters: use visual-narrative.css only (no style.css — its * reset would conflict)
+    // Wrap in <article class="scene"> with <h1 class="scene-title"> to match Preview structure
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>${escapeHtml(chapter.title)}</title>
+  <link rel="stylesheet" type="text/css" href="${cssPrefix}visual-narrative.css"/>
+</head>
+<body>
+  <article class="scene" epub:type="chapter">
+    <h1 class="scene-title">${escapeHtml(chapter.title)}</h1>
+${bodyContent}
+  </article>
+</body>
+</html>`;
+  }
+
+  // Non-VN chapters: standard style.css with <section class="chapter"> (unchanged)
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
   <title>${escapeHtml(chapter.title)}</title>
-  <link rel="stylesheet" type="text/css" href="${cssPath}"/>
+  <link rel="stylesheet" type="text/css" href="${cssPrefix}style.css"/>
 </head>
 <body>
   <section class="chapter" epub:type="chapter">
@@ -790,7 +894,9 @@ function createEpub3ContentOPF(
   inlineImages?: Array<{filename: string, data: Uint8Array}>,
   noMatterSections?: Chapter[],
   uuid?: string,
-  coverImageInfo?: { extension: string; mediaType: string } | null
+  coverImageInfo?: { extension: string; mediaType: string } | null,
+  inlineAudios?: Array<{filename: string, data: Uint8Array}>,
+  hasVnContent?: boolean
 ): string {
   // Use provided UUID or generate a new one (for backwards compatibility)
   const bookId = uuid || generateUUID();
@@ -825,6 +931,23 @@ function createEpub3ContentOPF(
       })
       .join('\n');
   }
+
+  // Audio manifest entries (Visual Narrative)
+  let inlineAudiosManifest = '';
+  if (inlineAudios && inlineAudios.length > 0) {
+    inlineAudiosManifest = inlineAudios
+      .map(aud => {
+        const safeId = `audio-${aud.filename.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        const mediaType = getAudioMediaType(aud.filename);
+        return `    <item id="${safeId}" href="audio/${aud.filename}" media-type="${mediaType}"/>`;
+      })
+      .join('\n');
+  }
+
+  // VN CSS manifest entry
+  const vnCssManifest = hasVnContent
+    ? `    <item id="vn-style" href="css/visual-narrative.css" media-type="text/css"/>`
+    : '';
 
   const manifest = chapters
     .map(ch => `    <item id="${ch.id}" href="${ch.id}.xhtml" media-type="application/xhtml+xml"/>`)
@@ -875,6 +998,8 @@ ${coverPageManifest}
     <item id="style" href="css/style.css" media-type="text/css"/>
 ${coverManifest}
 ${inlineImagesManifest}
+${inlineAudiosManifest}
+${vnCssManifest}
 ${manifest}
 ${noMatterManifest}
   </manifest>

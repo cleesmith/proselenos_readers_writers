@@ -65,6 +65,9 @@ import {
   saveManuscriptImage,
   deleteManuscriptImage,
   getAllManuscriptImages,
+  saveManuscriptAudio,
+  deleteManuscriptAudio,
+  getAllManuscriptAudios,
 } from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
 import { generateHtmlFromSections, openHtmlInNewTab } from '@/lib/html-generator';
@@ -208,6 +211,9 @@ export default function AuthorsLayout({
   // Inline images state
   const [manuscriptImages, setManuscriptImages] = useState<Array<{filename: string, blob: Blob}>>([]);
   const [imageUrls, setImageUrls] = useState<Array<{filename: string, url: string}>>([]);
+
+  // Audio files state (for Visual Narrative)
+  const [manuscriptAudios, setManuscriptAudios] = useState<Array<{filename: string, blob: Blob}>>([]);
 
   // Computed values
   // XHTML-Native: Extract plain text from XHTML for word counts
@@ -699,6 +705,15 @@ export default function AuthorsLayout({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookMeta]);
 
+  // Load audio files on mount and when bookMeta changes
+  useEffect(() => {
+    const loadAudios = async () => {
+      const audios = await getAllManuscriptAudios();
+      setManuscriptAudios(audios);
+    };
+    loadAudios();
+  }, [bookMeta]);
+
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
@@ -767,6 +782,21 @@ export default function AuthorsLayout({
     }));
     setImageUrls(urls);
   }, [bookMeta, imageUrls]);
+
+  // Audio upload handler
+  const handleAudioUpload = useCallback(async (file: File) => {
+    const filename = file.name;
+    await saveManuscriptAudio(filename, file);
+    const audios = await getAllManuscriptAudios();
+    setManuscriptAudios(audios);
+  }, []);
+
+  // Audio delete handler
+  const handleAudioDelete = useCallback(async (filename: string) => {
+    await deleteManuscriptAudio(filename);
+    const audios = await getAllManuscriptAudios();
+    setManuscriptAudios(audios);
+  }, []);
 
   // Handle opening an epub file
   // XHTML-Native: Uses xhtml field from parsed sections
@@ -1707,12 +1737,14 @@ export default function AuthorsLayout({
       // 6. Fetch images fresh from IndexedDB to ensure we have any newly uploaded images
       const freshImages = await getAllManuscriptImages();
 
-      // 7. Generate EPUB (include inline images)
+      // 7. Generate EPUB (include inline images and audio files)
+      const freshAudios = await getAllManuscriptAudios();
       const epubData = await generateEpubFromWorkingCopy(
         meta,
         orderedSections,
         coverBlob,
-        freshImages
+        freshImages,
+        freshAudios
       );
 
       // 6. Create File object
@@ -2114,6 +2146,10 @@ export default function AuthorsLayout({
             images={imageUrls}
             onImageUpload={handleImageUpload}
             onImageDelete={handleImageDelete}
+            // Audio picker props
+            audios={manuscriptAudios.map(a => ({ filename: a.filename, size: a.blob.size }))}
+            onAudioUpload={handleAudioUpload}
+            onAudioDelete={handleAudioDelete}
           />
         )}
       </div>

@@ -10,8 +10,11 @@ import { isValidToolReport } from '@/utils/parseToolReport';
 import OneByOnePanel from './OneByOnePanel';
 import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
+import AudioPickerModal from './AudioPickerModal';
+import SectionPreview from './SectionPreview';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { ImageLibraryProvider } from '@/contexts/ImageLibraryContext';
+import { AudioLibraryProvider } from '@/contexts/AudioLibraryContext';
 
 
 // PlateJS imports
@@ -26,6 +29,11 @@ import { cn } from '@/lib/utils';
 interface ImageInfo {
   filename: string;
   url: string;
+}
+
+interface AudioInfo {
+  filename: string;
+  size: number;
 }
 
 interface Tool {
@@ -96,6 +104,10 @@ interface EditorPanelProps {
   images?: ImageInfo[];
   onImageUpload?: (file: File) => Promise<void>;
   onImageDelete?: (filename: string) => void;
+  // Audio picker props
+  audios?: AudioInfo[];
+  onAudioUpload?: (file: File) => Promise<void>;
+  onAudioDelete?: (filename: string) => void;
 }
 
 // Ref handle for parent to control editor
@@ -159,6 +171,10 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   images,
   onImageUpload,
   onImageDelete,
+  // Audio picker props
+  audios,
+  onAudioUpload,
+  onAudioDelete,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -187,22 +203,15 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   // Image picker state
   const [showImagePicker, setShowImagePicker] = useState(false);
 
+  // Audio picker state
+  const [showAudioPicker, setShowAudioPicker] = useState(false);
+
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+
   // Save button state
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-
-  // Handle manual save with visual feedback
-  const handleSaveClick = useCallback(async () => {
-    if (!onSave || isSaving) return;
-    setIsSaving(true);
-    try {
-      await onSave();
-      setHasChanges(false);  // Reset unsaved indicator after successful save
-    } finally {
-      // Brief delay to show "Saved" state
-      setTimeout(() => setIsSaving(false), 500);
-    }
-  }, [onSave, isSaving]);
 
   // Create initial value - use plateValue if available, otherwise create empty
   const initialValue = useMemo(() => {
@@ -232,7 +241,10 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     editor.tf.reset();
     editor.tf.setValue(value);
 
-    setOriginalXhtml(sectionXhtml);
+    // Use the editor's normalized XHTML as the baseline for change detection.
+    // This avoids false positives from round-trip differences (whitespace, attribute order, etc.)
+    // between the raw sectionXhtml prop and what plateToXhtml(editor.children) produces.
+    setOriginalXhtml(plateToXhtml(editor.children as Value));
     setHasChanges(false);  // Reset unsaved indicator when section changes
     setIsEditorReady(true);
   }, [sectionXhtml, editor]);
@@ -266,6 +278,23 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     onContentChange?.(hasChanged, xhtml);
   }, [editor, isEditorReady, originalXhtml, onContentChange]);
 
+  // Handle manual save with visual feedback
+  const handleSaveClick = useCallback(async () => {
+    if (!onSave || isSaving) return;
+    setIsSaving(true);
+    try {
+      await onSave();
+      // Sync originalXhtml to what the editor actually contains,
+      // so the change-detection comparison stays accurate after save.
+      const plateValue = editor.children as Value;
+      setOriginalXhtml(plateToXhtml(plateValue));
+      setHasChanges(false);  // Reset unsaved indicator after successful save
+    } finally {
+      // Brief delay to show "Saved" state
+      setTimeout(() => setIsSaving(false), 500);
+    }
+  }, [onSave, isSaving, editor]);
+
   // Handle image insertion from picker
   // XHTML-Native: Inserts as proper Plate image element node
   const handleImageInsert = useCallback((filename: string, altText: string) => {
@@ -280,6 +309,24 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     });
 
     setShowImagePicker(false);
+
+    // Update parent with new XHTML
+    const plateValue = editor.children as Value;
+    const xhtml = plateToXhtml(plateValue);
+    onContentChange?.(xhtml !== originalXhtml, xhtml);
+  }, [editor, originalXhtml, onContentChange]);
+
+  // Handle audio insertion from picker
+  const handleAudioInsert = useCallback((filename: string, _label: string, _mediaType: string) => {
+    if (!editor) return;
+
+    editor.tf.insertNodes({
+      type: 'audio',
+      url: `audio/${filename}`,
+      children: [{ text: '' }],
+    });
+
+    setShowAudioPicker(false);
 
     // Update parent with new XHTML
     const plateValue = editor.children as Value;
@@ -435,6 +482,12 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   return (
     <ImageLibraryProvider value={{ openImageLibrary: () => setShowImagePicker(true) }}>
+    <AudioLibraryProvider value={{
+      openAudioLibrary: () => setShowAudioPicker(true),
+      uploadAudioToLibrary: async (file: File) => {
+        await onAudioUpload?.(file);
+      },
+    }}>
     <main
       style={{
         flex: 1,
@@ -525,6 +578,20 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="9" y1="3" x2="9" y2="21" />
           </svg>
+        </StyledSmallButton>
+
+        {/* Preview button */}
+        <StyledSmallButton
+          theme={theme}
+          onClick={() => setShowPreview(!showPreview)}
+          title={showPreview ? "Close preview" : "Preview section as EPUB"}
+          disabled={toolExecuting}
+          styleOverrides={{
+            backgroundColor: showPreview ? '#6366f1' : undefined,
+            color: showPreview ? 'white' : undefined,
+          }}
+        >
+          {showPreview ? 'Edit' : 'Preview'}
         </StyledSmallButton>
 
         {/* Manual Save button - turns red when unsaved changes exist */}
@@ -661,40 +728,54 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         </div>
       </div>
 
-      {/* Editor content area - PlateJS editor */}
+      {/* Editor content area - PlateJS editor OR Preview */}
       <div
         style={{
           flex: 1,
           overflow: 'hidden',
-          padding: '4px',
+          padding: showPreview ? '0' : '4px',
         }}
       >
-        <Plate
-          editor={editor}
-          onChange={handleEditorChange}
-        >
-          <EditorContainer
-            className={cn(
-              'h-full rounded border',
-              isDarkMode ? 'bg-[#343a40] border-gray-600' : 'bg-[#f8f9fa] border-gray-300'
-            )}
-            style={{
-              fontFamily: 'Georgia, serif',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              color: theme.text,
-            }}
+        {showPreview ? (
+          <SectionPreview
+            xhtml={(() => {
+              if (!editor) return '';
+              const plateValue = editor.children as Value;
+              return plateToXhtml(plateValue);
+            })()}
+            sectionTitle={chapterTitle}
+            onClose={() => setShowPreview(false)}
+            theme={theme}
+            isDarkMode={isDarkMode}
+          />
+        ) : (
+          <Plate
+            editor={editor}
+            onChange={handleEditorChange}
           >
-            <Editor
-              variant="default"
-              placeholder="Type here..."
+            <EditorContainer
               className={cn(
-                'min-h-full',
-                isDarkMode && 'placeholder:text-gray-500'
+                'h-full rounded border',
+                isDarkMode ? 'bg-[#343a40] border-gray-600' : 'bg-[#f8f9fa] border-gray-300'
               )}
-            />
-          </EditorContainer>
-        </Plate>
+              style={{
+                fontFamily: 'Georgia, serif',
+                fontSize: '14px',
+                lineHeight: '1.6',
+                color: theme.text,
+              }}
+            >
+              <Editor
+                variant="default"
+                placeholder="Type here..."
+                className={cn(
+                  'min-h-full',
+                  isDarkMode && 'placeholder:text-gray-500'
+                )}
+              />
+            </EditorContainer>
+          </Plate>
+        )}
       </div>
 
       {/* One-by-one inline panel */}
@@ -739,7 +820,20 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         onDelete={onImageDelete ?? (() => {})}
         onClose={() => setShowImagePicker(false)}
       />
+
+      {/* Audio picker modal */}
+      <AudioPickerModal
+        isOpen={showAudioPicker}
+        theme={theme}
+        isDarkMode={isDarkMode}
+        audios={audios ?? []}
+        onSelect={handleAudioInsert}
+        onUpload={onAudioUpload ?? (async () => {})}
+        onDelete={onAudioDelete ?? (() => {})}
+        onClose={() => setShowAudioPicker(false)}
+      />
     </main>
+    </AudioLibraryProvider>
     </ImageLibraryProvider>
   );
 });
