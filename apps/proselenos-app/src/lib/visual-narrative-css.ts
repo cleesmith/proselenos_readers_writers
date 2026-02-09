@@ -108,7 +108,6 @@ nav ol li a {
   padding-left: 1.5em;
   border-left: 2px solid;
   border-left-color: rgba(128, 128, 128, 0.3);
-  font-style: italic;
 }
 
 .dialogue .speaker {
