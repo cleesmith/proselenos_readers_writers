@@ -68,7 +68,7 @@ function DialogueElement(props: PlateElementProps) {
           }
         }}
       />
-      <div className="italic">{props.children}</div>
+      <div>{props.children}</div>
     </PlateElement>
   );
 }

@@ -47,7 +47,7 @@ export function useUploadFile({
       setProgress(30);
 
       // Route to appropriate storage based on file type
-      const isAudio = file.type.startsWith('audio/');
+      const isAudio = file.type.startsWith('audio/') || file.type === 'video/mp4' || file.type === 'video/webm';
       if (isAudio) {
         await saveManuscriptAudio(uniqueFilename, file);
       } else {

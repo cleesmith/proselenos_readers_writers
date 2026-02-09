@@ -1627,4 +1627,7 @@ export async function clearWorkingCopy(): Promise<void> {
 
   // Delete all inline images
   await clearManuscriptImages();
+
+  // Delete all audio files
+  await clearManuscriptAudios();
 }

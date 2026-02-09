@@ -25,7 +25,7 @@ interface AudioPickerModalProps {
 }
 
 // Accepted audio formats
-const ACCEPTED_FORMATS = 'audio/wav,audio/mpeg,audio/ogg,audio/mp4,audio/aac';
+const ACCEPTED_FORMATS = 'audio/wav,audio/mpeg,audio/ogg,audio/mp4,audio/aac,audio/webm,.webm,.mp4,.mp3';
 
 // Map MIME type from file extension for common types
 function guessMediaType(filename: string): string {
@@ -36,6 +36,8 @@ function guessMediaType(filename: string): string {
     ogg: 'audio/ogg',
     m4a: 'audio/mp4',
     aac: 'audio/aac',
+    webm: 'audio/webm',
+    mp4: 'audio/mp4',
   };
   return map[ext] || 'audio/wav';
 }
@@ -70,8 +72,8 @@ export default function AudioPickerModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('audio/')) {
-      alert('Please select an audio file (WAV, MP3, OGG, M4A, or AAC)');
+    if (!file.type.startsWith('audio/') && file.type !== 'video/mp4' && file.type !== 'video/webm') {
+      alert('Please select an audio file (WAV, MP3, OGG, M4A, AAC, WebM, or MP4)');
       return;
     }
 
@@ -201,7 +203,7 @@ export default function AudioPickerModal({
             fontSize: '12px',
             color: theme.textMuted,
           }}>
-            Supported: WAV, MP3, OGG, M4A, AAC
+            Supported: WAV, MP3, OGG, M4A, AAC, WebM, MP4
           </span>
         </div>
 

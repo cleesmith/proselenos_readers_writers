@@ -25,7 +25,7 @@ const CONTENT: Record<
   }
 > = {
   [KEYS.audio]: {
-    accept: ['audio/*'],
+    accept: ['audio/*', '.webm', '.mp4'],
     content: 'Add an audio file',
     icon: <AudioLines />,
   },

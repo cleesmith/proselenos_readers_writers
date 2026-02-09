@@ -55,7 +55,7 @@ const MEDIA_CONFIG: Record<
   }
 > = {
   [KEYS.audio]: {
-    accept: ['audio/*'],
+    accept: ['audio/*', '.webm', '.mp4'],
     icon: <AudioLinesIcon className="size-4" />,
     title: 'Insert Audio',
     tooltip: 'Audio',
@@ -102,7 +102,7 @@ export function MediaToolbarButton({
 
   // Audio-only picker: uploads to library without inserting a node
   const { openFilePicker: openAudioLibraryPicker } = useFilePicker({
-    accept: ['audio/*'],
+    accept: ['audio/*', '.webm', '.mp4'],
     multiple: true,
     onFilesSelected: async ({ plainFiles }) => {
       if (!audioLibrary) return;
@@ -162,10 +162,12 @@ export function MediaToolbarButton({
                 {currentConfig.icon}
                 Upload from computer
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
-                <LinkIcon />
-                Insert via URL
-              </DropdownMenuItem>
+              {nodeType !== KEYS.img && nodeType !== KEYS.audio && (
+                <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
+                  <LinkIcon />
+                  Insert via URL
+                </DropdownMenuItem>
+              )}
               {nodeType === KEYS.img && imageLibrary && (
                 <DropdownMenuItem onSelect={() => imageLibrary.openImageLibrary()}>
                   <FolderOpenIcon className="size-4" />
@@ -183,20 +185,22 @@ export function MediaToolbarButton({
         </DropdownMenu>
       </ToolbarSplitButton>
 
-      <AlertDialog
-        onOpenChange={(value) => {
-          setDialogOpen(value);
-        }}
-        open={dialogOpen}
-      >
-        <AlertDialogContent className="gap-6">
-          <MediaUrlDialogContent
-            currentConfig={currentConfig}
-            nodeType={nodeType}
-            setOpen={setDialogOpen}
-          />
-        </AlertDialogContent>
-      </AlertDialog>
+      {nodeType !== KEYS.img && nodeType !== KEYS.audio && (
+        <AlertDialog
+          onOpenChange={(value) => {
+            setDialogOpen(value);
+          }}
+          open={dialogOpen}
+        >
+          <AlertDialogContent className="gap-6">
+            <MediaUrlDialogContent
+              currentConfig={currentConfig}
+              nodeType={nodeType}
+              setOpen={setDialogOpen}
+            />
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </>
   );
 }

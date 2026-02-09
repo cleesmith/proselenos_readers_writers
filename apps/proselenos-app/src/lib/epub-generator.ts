@@ -289,23 +289,25 @@ async function generateEPUB(
   if (coverImageData) {
     coverImageInfo = detectImageType(coverImageData);
     // Add cover image file with correct extension
-    zip.file(`OEBPS/images/cover.${coverImageInfo.extension}`, coverImageData);
+    zip.file(`OEBPS/images/cover.${coverImageInfo.extension}`, coverImageData, { compression: 'STORE' });
   }
   // Always create cover page (with image or text fallback)
   const coverXHTML = createCoverPage(metadata, hasCover, coverImageInfo?.extension || 'jpg');
   zip.file('OEBPS/cover.xhtml', coverXHTML);
 
   // 3b. Add inline images to OEBPS/images/
+  // Images are already compressed (PNG, JPEG, WebP) — store without re-compression
   if (inlineImages && inlineImages.length > 0) {
     for (const img of inlineImages) {
-      zip.file(`OEBPS/images/${img.filename}`, img.data);
+      zip.file(`OEBPS/images/${img.filename}`, img.data, { compression: 'STORE' });
     }
   }
 
   // 3c. Add audio files to OEBPS/audio/ (Visual Narrative)
+  // Audio files are already compressed (MP3, AAC, OGG) — store without re-compression
   if (inlineAudios && inlineAudios.length > 0) {
     for (const aud of inlineAudios) {
-      zip.file(`OEBPS/audio/${aud.filename}`, aud.data);
+      zip.file(`OEBPS/audio/${aud.filename}`, aud.data, { compression: 'STORE' });
     }
   }
 
