@@ -1820,20 +1820,7 @@ export default function AuthorsLayout({
     const meta = await loadWorkingCopyMeta();
 
     try {
-      // 4. Load images and convert to base64 data URLs
-      const manuscriptImages = await getAllManuscriptImages();
-      const imagesMap = new Map<string, string>();
-
-      for (const img of manuscriptImages) {
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(img.blob);
-        });
-        imagesMap.set(img.filename, dataUrl);
-      }
-
-      // 5. Generate HTML with embedded images (cover image excluded)
+      // 4. Generate HTML (media elements are stripped — text + styling only)
       // XHTML-Native: Pass xhtml as content (html-generator handles it)
       const html = generateHtmlFromSections({
         title: workingCopy.title || 'Untitled',
@@ -1845,7 +1832,6 @@ export default function AuthorsLayout({
             title: s.title,
             content: s.xhtml,  // XHTML is valid HTML content
           })),
-        images: imagesMap,
         isDarkMode,
       });
 
