@@ -11,10 +11,10 @@ import { isDesktopAppPlatform } from '@/services/environment';
 
 export type ScrollSource = 'touch' | 'mouse';
 
-type PaginationSide = 'left' | 'right' | 'up' | 'down';
-type PaginationMode = 'page' | 'section';
+type NavDirection = 'left' | 'right' | 'up' | 'down';
+type NavMode = 'page' | 'section';
 
-const swapLeftRight = (side: PaginationSide) => {
+const swapLeftRight = (side: NavDirection) => {
   if (side === 'left') return 'right';
   if (side === 'right') return 'left';
   return side;
@@ -24,48 +24,35 @@ const swapLeftRight = (side: PaginationSide) => {
 // This prevents trackpad momentum from skipping multiple sections
 const COOLDOWN_DELAY = 500;
 
-export const viewPagination = (
+export const navigateView = (
   view: FoliateView | null,
   viewSettings: ViewSettings | null | undefined,
-  side: PaginationSide,
-  mode: PaginationMode = 'page',
+  side: NavDirection,
+  mode: NavMode = 'page',
 ) => {
   if (!view || !viewSettings) return;
   const renderer = view.renderer;
   if (view.book.dir === 'rtl') {
     side = swapLeftRight(side);
   }
-  if (renderer.scrolled) {
-    const { size } = renderer;
-    const showHeader = viewSettings.showHeader && viewSettings.showBarsOnScroll;
-    const showFooter = viewSettings.showFooter && viewSettings.showBarsOnScroll;
-    const scrollingOverlap = viewSettings.scrollingOverlap;
-    const distance = size - scrollingOverlap - (showHeader ? 44 : 0) - (showFooter ? 44 : 0);
-    switch (mode) {
-      case 'page':
-        return side === 'left' || side === 'up' ? view.prev(distance) : view.next(distance);
-      case 'section':
-        if (side === 'left' || side === 'up') {
-          return view.renderer.prevSection?.();
-        } else {
-          return view.renderer.nextSection?.();
-        }
-    }
-  } else {
-    switch (mode) {
-      case 'page':
-        return side === 'left' || side === 'up' ? view.prev() : view.next();
-      case 'section':
-        if (side === 'left' || side === 'up') {
-          return view.renderer.prevSection?.();
-        } else {
-          return view.renderer.nextSection?.();
-        }
-    }
+  const { size } = renderer;
+  const showHeader = viewSettings.showHeader && viewSettings.showBarsOnScroll;
+  const showFooter = viewSettings.showFooter && viewSettings.showBarsOnScroll;
+  const scrollingOverlap = viewSettings.scrollingOverlap;
+  const distance = size - scrollingOverlap - (showHeader ? 44 : 0) - (showFooter ? 44 : 0);
+  switch (mode) {
+    case 'page':
+      return side === 'left' || side === 'up' ? view.prev(distance) : view.next(distance);
+    case 'section':
+      if (side === 'left' || side === 'up') {
+        return view.renderer.prevSection?.();
+      } else {
+        return view.renderer.nextSection?.();
+      }
   }
 };
 
-export const usePagination = (
+export const useNavigation = (
   bookKey: string,
   viewRef: React.MutableRefObject<FoliateView | null>,
   containerRef: React.RefObject<HTMLDivElement>,
@@ -129,35 +116,23 @@ export const usePagination = (
                 }
                 if (!viewSettings.disableClick! && screenX >= viewCenterX) {
                   if (viewSettings.fullscreenClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'down');
+                    navigateView(viewRef.current, viewSettings, 'down');
                   } else if (viewSettings.swapClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'left');
+                    navigateView(viewRef.current, viewSettings, 'left');
                   } else {
-                    viewPagination(viewRef.current, viewSettings, 'right');
+                    navigateView(viewRef.current, viewSettings, 'right');
                   }
                 } else if (!viewSettings.disableClick! && screenX < viewCenterX) {
                   if (viewSettings.fullscreenClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'down');
+                    navigateView(viewRef.current, viewSettings, 'down');
                   } else if (viewSettings.swapClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'right');
+                    navigateView(viewRef.current, viewSettings, 'right');
                   } else {
-                    viewPagination(viewRef.current, viewSettings, 'left');
+                    navigateView(viewRef.current, viewSettings, 'left');
                   }
                 }
               }
             }
-          }
-        } else if (
-          msg.data.type === 'iframe-wheel' &&
-          !viewSettings.scrolled &&
-          (!bookData.isFixedLayout || viewSettings.zoomLevel <= 100)
-        ) {
-          // The wheel event is handled by the iframe itself in scrolled mode.
-          const { deltaY } = msg.data;
-          if (deltaY > 0) {
-            viewRef.current?.next(1);
-          } else if (deltaY < 0) {
-            viewRef.current?.prev(1);
           }
         } else if (msg.data.type === 'iframe-mouseup') {
           if (msg.data.button === 3) {
@@ -173,9 +148,9 @@ export const usePagination = (
         const { keyName } = msg.detail;
         setHoveredBookKey('');
         if (keyName === 'VolumeUp') {
-          viewPagination(viewRef.current, viewSettings, 'up');
+          navigateView(viewRef.current, viewSettings, 'up');
         } else if (keyName === 'VolumeDown') {
-          viewPagination(viewRef.current, viewSettings, 'down');
+          navigateView(viewRef.current, viewSettings, 'down');
         }
       } else if (
         msg.type === 'touch-swipe' &&
@@ -185,9 +160,9 @@ export const usePagination = (
         const { deltaX, deltaY } = msg.detail;
         if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
           if (deltaX > 0) {
-            viewPagination(viewRef.current, viewSettings, 'left');
+            navigateView(viewRef.current, viewSettings, 'left');
           } else {
-            viewPagination(viewRef.current, viewSettings, 'right');
+            navigateView(viewRef.current, viewSettings, 'right');
           }
         }
       }
@@ -199,9 +174,9 @@ export const usePagination = (
         const rightThreshold = width * 0.5;
         const viewSettings = getViewSettings(bookKey);
         if (clientX < leftThreshold) {
-          viewPagination(viewRef.current, viewSettings, 'left');
+          navigateView(viewRef.current, viewSettings, 'left');
         } else if (clientX > rightThreshold) {
-          viewPagination(viewRef.current, viewSettings, 'right');
+          navigateView(viewRef.current, viewSettings, 'right');
         }
       }
     }

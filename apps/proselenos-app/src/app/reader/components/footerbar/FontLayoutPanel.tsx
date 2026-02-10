@@ -71,9 +71,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
       view?.renderer.setAttribute('margin', `${marginPx}px`);
       view?.renderer.setAttribute('gap', `${gapPercent}%`);
 
-      if (currentViewSettings?.scrolled) {
-        view?.renderer.setAttribute('flow', 'scrolled');
-      }
+      view?.renderer.setAttribute('flow', 'scrolled');
     },
     [envConfig, bookKey, view, getViewSettings],
   );

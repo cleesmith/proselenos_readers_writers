@@ -58,15 +58,22 @@ const ProgressInfoView: React.FC<PageInfoProps> = ({
         time: formatNumber(Math.round(timeinfo.section), localize, lang),
       })
     : '';
-  const { page = 0, pages = 0 } = view?.renderer || {};
+  const renderer = view?.renderer;
+  const scrollPages = renderer && renderer.size > 0
+    ? Math.max(1, Math.ceil(renderer.viewSize / renderer.size))
+    : 0;
+  const currentScrollPage = renderer && renderer.size > 0
+    ? Math.floor(renderer.start / renderer.size)
+    : 0;
+  const pagesRemaining = Math.max(0, scrollPages - currentScrollPage - 1);
   const pageLeft =
-    pages - 1 > page
+    pagesRemaining > 0
       ? localize
         ? _('{{number}} pages left in chapter', {
-            number: formatNumber(pages - page - 1, localize, lang),
+            number: formatNumber(pagesRemaining, localize, lang),
           })
         : _('{{count}} pages left in chapter', {
-            count: pages - page - 1,
+            count: pagesRemaining,
           })
       : '';
 

@@ -7,7 +7,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { FooterBarProps, NavigationHandlers, FooterBarChildProps } from './types';
 import { debounce } from '@/utils/debounce';
-import { viewPagination } from '../../hooks/usePagination';
+import { navigateView } from '../../hooks/useNavigation';
 import MobileFooterBar from './MobileFooterBar';
 import DesktopFooterBar from './DesktopFooterBar';
 
@@ -57,11 +57,11 @@ const FooterBar: React.FC<FooterBarProps> = ({
   );
 
   const handleGoPrevPage = useCallback(() => {
-    viewPagination(view, viewSettings, 'left');
+    navigateView(view, viewSettings, 'left');
   }, [view, viewSettings]);
 
   const handleGoNextPage = useCallback(() => {
-    viewPagination(view, viewSettings, 'right');
+    navigateView(view, viewSettings, 'right');
   }, [view, viewSettings]);
 
   const handleGoPrevSection = useCallback(() => {

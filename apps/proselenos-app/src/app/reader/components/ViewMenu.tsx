@@ -16,8 +16,6 @@ import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { getStyles } from '@/utils/style';
-import { getMaxInlineSize } from '@/utils/config';
 import { saveViewSettings } from '@/helpers/settings';
 import MenuItem from '@/components/MenuItem';
 import Menu from '@/components/Menu';
@@ -37,7 +35,6 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
   const viewSettings = getViewSettings(bookKey)!;
 
   const { themeMode, isDarkMode, setThemeMode } = useThemeStore();
-  const [isScrolledMode, setScrolledMode] = useState(viewSettings!.scrolled);
   const [zoomLevel, setZoomLevel] = useState(viewSettings!.zoomLevel!);
   const [zoomMode, setZoomMode] = useState(viewSettings!.zoomMode!);
   const [spreadMode, setSpreadMode] = useState(viewSettings!.spreadMode!);
@@ -49,7 +46,6 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
   const zoomIn = () => setZoomLevel((prev) => Math.min(prev + ZOOM_STEP, MAX_ZOOM_LEVEL));
   const zoomOut = () => setZoomLevel((prev) => Math.max(prev - ZOOM_STEP, MIN_ZOOM_LEVEL));
   const resetZoom = () => setZoomLevel(100);
-  const toggleScrolledMode = () => setScrolledMode(!isScrolledMode);
 
   const openFontLayoutMenu = () => {
     setIsDropdownOpen?.(false);
@@ -65,19 +61,6 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
     desktopHandleToggleFullScreen();
     setIsDropdownOpen?.(false);
   };
-
-  useEffect(() => {
-    if (isScrolledMode === viewSettings!.scrolled) return;
-    viewSettings!.scrolled = isScrolledMode;
-    getView(bookKey)?.renderer.setAttribute('flow', isScrolledMode ? 'scrolled' : 'paginated');
-    getView(bookKey)?.renderer.setAttribute(
-      'max-inline-size',
-      `${getMaxInlineSize(viewSettings)}px`,
-    );
-    getView(bookKey)?.renderer.setStyles?.(getStyles(viewSettings!));
-    setViewSettings(bookKey, viewSettings!);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isScrolledMode]);
 
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'zoomLevel', zoomLevel, true, true);
@@ -231,14 +214,6 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
       )}
 
       <MenuItem label={_('Font & Layout')} shortcut='Shift+F' onClick={openFontLayoutMenu} />
-
-      <MenuItem
-        label={_('Scrolled Mode')}
-        shortcut='Shift+J'
-        Icon={isScrolledMode ? MdCheck : undefined}
-        onClick={toggleScrolledMode}
-        disabled={bookData.bookDoc?.rendition?.layout === 'pre-paginated'}
-      />
 
       <hr aria-hidden='true' className='border-base-300 my-1' />
 

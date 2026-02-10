@@ -242,8 +242,8 @@ export class View extends HTMLElement {
             await import('./fixed-layout.js')
             this.renderer = document.createElement('foliate-fxl')
         } else {
-            await import('./paginator.js')
-            this.renderer = document.createElement('foliate-paginator')
+            await import('./scroller.js')
+            this.renderer = document.createElement('foliate-scroller')
         }
         this.renderer.setAttribute('exportparts', 'head,foot,filter,container')
         this.renderer.addEventListener('load', e => this.#onLoad(e.detail))
@@ -319,7 +319,7 @@ export class View extends HTMLElement {
         const pageItem = this.#pageProgress?.getProgress(index, range)
         const cfi = this.getCFI(index, range)
         this.lastLocation = { ...progress, tocItem, pageItem, cfi, range }
-        if (reason === 'snap' || reason === 'page' || reason === 'scroll')
+        if (reason === 'scroll')
             this.history.replaceState(cfi)
         this.#emit('relocate', this.lastLocation)
     }

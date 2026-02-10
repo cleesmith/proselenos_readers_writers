@@ -8,7 +8,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { getStyles } from '@/utils/style';
 import { eventDispatcher } from '@/utils/event';
 import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL, ZOOM_STEP } from '@/services/constants';
-import { viewPagination } from './usePagination';
+import { navigateView } from './useNavigation';
 import useShortcuts from '@/hooks/useShortcuts';
 import useBooksManager from './useBooksManager';
 
@@ -30,13 +30,7 @@ const useBookShortcuts = ({ sideBarBookKey, bookKeys }: UseBookShortcutsProps) =
   const distance = fontSize * lineHeight * 3;
 
   const toggleScrollMode = () => {
-    const viewSettings = getViewSettings(sideBarBookKey ?? '');
-    if (viewSettings && sideBarBookKey) {
-      viewSettings.scrolled = !viewSettings.scrolled;
-      setViewSettings(sideBarBookKey, viewSettings!);
-      const flowMode = viewSettings.scrolled ? 'scrolled' : 'paginated';
-      getView(sideBarBookKey)?.renderer.setAttribute('flow', flowMode);
-    }
+    // Scroll-only mode: toggling is disabled
   };
 
   const switchSideBar = () => {
@@ -45,32 +39,32 @@ const useBookShortcuts = ({ sideBarBookKey, bookKeys }: UseBookShortcutsProps) =
 
   const goLeft = () => {
     const viewSettings = getViewSettings(sideBarBookKey ?? '');
-    viewPagination(getView(sideBarBookKey), viewSettings, 'left');
+    navigateView(getView(sideBarBookKey), viewSettings, 'left');
   };
 
   const goRight = () => {
     const viewSettings = getViewSettings(sideBarBookKey ?? '');
-    viewPagination(getView(sideBarBookKey), viewSettings, 'right');
+    navigateView(getView(sideBarBookKey), viewSettings, 'right');
   };
 
   const goPrevSection = () => {
     const viewSettings = getViewSettings(sideBarBookKey ?? '');
-    viewPagination(getView(sideBarBookKey), viewSettings, 'up', 'section');
+    navigateView(getView(sideBarBookKey), viewSettings, 'up', 'section');
   };
 
   const goNextSection = () => {
     const viewSettings = getViewSettings(sideBarBookKey ?? '');
-    viewPagination(getView(sideBarBookKey), viewSettings, 'down', 'section');
+    navigateView(getView(sideBarBookKey), viewSettings, 'down', 'section');
   };
 
   const goLeftSection = () => {
     const viewSettings = getViewSettings(sideBarBookKey ?? '');
-    viewPagination(getView(sideBarBookKey), viewSettings, 'left', 'section');
+    navigateView(getView(sideBarBookKey), viewSettings, 'left', 'section');
   };
 
   const goRightSection = () => {
     const viewSettings = getViewSettings(sideBarBookKey ?? '');
-    viewPagination(getView(sideBarBookKey), viewSettings, 'right', 'section');
+    navigateView(getView(sideBarBookKey), viewSettings, 'right', 'section');
   };
 
   const goPrev = () => {

@@ -29,7 +29,7 @@ export class Overlayer {
 
         const splitRanges = []
         paragraphs.forEach((p) => {
-            const pRange = document.createRange()
+            const pRange = this.#doc.createRange()
             if (range.intersectsNode(p)) {
                 pRange.selectNodeContents(p)
                 if (pRange.compareBoundaryPoints(Range.START_TO_START, range) < 0) {
@@ -47,13 +47,16 @@ export class Overlayer {
         if (this.#map.has(key)) this.remove(key)
         if (typeof range === 'function') range = range(this.#svg.getRootNode())
         const zoom = this.#zoom
+        const win = this.#doc.defaultView
+        const scrollX = win?.scrollX ?? 0
+        const scrollY = win?.scrollY ?? 0
         let rects = []
         this.#splitRangeByParagraph(range).forEach((pRange) => {
             const pRects = Array.from(pRange.getClientRects()).map(rect => ({
-                left: rect.left * zoom,
-                top: rect.top * zoom,
-                right: rect.right * zoom,
-                bottom: rect.bottom * zoom,
+                left: rect.left * zoom + scrollX,
+                top: rect.top * zoom + scrollY,
+                right: rect.right * zoom + scrollX,
+                bottom: rect.bottom * zoom + scrollY,
                 width: rect.width * zoom,
                 height: rect.height * zoom,
             }))
@@ -69,6 +72,9 @@ export class Overlayer {
         this.#map.delete(key)
     }
     redraw() {
+        const win = this.#doc.defaultView
+        const scrollX = win?.scrollX ?? 0
+        const scrollY = win?.scrollY ?? 0
         for (const obj of this.#map.values()) {
             const { range, draw, options, element } = obj
             this.#svg.removeChild(element)
@@ -76,10 +82,10 @@ export class Overlayer {
             let rects = []
             this.#splitRangeByParagraph(range).forEach((pRange) => {
                 const pRects = Array.from(pRange.getClientRects()).map(rect => ({
-                    left: rect.left * zoom,
-                    top: rect.top * zoom,
-                    right: rect.right * zoom,
-                    bottom: rect.bottom * zoom,
+                    left: rect.left * zoom + scrollX,
+                    top: rect.top * zoom + scrollY,
+                    right: rect.right * zoom + scrollX,
+                    bottom: rect.bottom * zoom + scrollY,
                     width: rect.width * zoom,
                     height: rect.height * zoom,
                 }))
@@ -92,12 +98,17 @@ export class Overlayer {
         }
     }
     hitTest({ x, y }) {
+        const win = this.#doc.defaultView
+        const scrollX = win?.scrollX ?? 0
+        const scrollY = win?.scrollY ?? 0
+        const absX = x + scrollX
+        const absY = y + scrollY
         const arr = Array.from(this.#map.entries())
         // loop in reverse to hit more recently added items first
         for (let i = arr.length - 1; i >= 0; i--) {
             const [key, obj] = arr[i]
             for (const { left, top, right, bottom } of obj.rects)
-                if (top <= y && left <= x && bottom > y && right > x)
+                if (top <= absY && left <= absX && bottom > absY && right > absX)
                     return [key, obj.range]
         }
         return []

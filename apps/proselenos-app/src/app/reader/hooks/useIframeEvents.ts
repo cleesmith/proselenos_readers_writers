@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useReaderStore } from '@/store/readerStore';
-import { useBookDataStore } from '@/store/bookDataStore';
 import { debounce } from '@/utils/debounce';
-import { ScrollSource } from './usePagination';
+import { ScrollSource } from './useNavigation';
 
 export const useMouseEvent = (
   bookKey: string,
@@ -82,8 +81,7 @@ export const useTouchEvent = (
   handlePageFlip: (msg: CustomEvent) => void,
   handleContinuousScroll: (source: ScrollSource, delta: number, threshold: number) => void,
 ) => {
-  const { getBookData } = useBookDataStore();
-  const { hoveredBookKey, setHoveredBookKey, getViewSettings } = useReaderStore();
+  const { hoveredBookKey, setHoveredBookKey } = useReaderStore();
 
   let touchStart: IframeTouch | null = null;
   let touchEnd: IframeTouch | null = null;
@@ -102,16 +100,7 @@ export const useTouchEvent = (
       touchEnd = touch;
     }
     if (hoveredBookKey && touchEnd) {
-      const viewSettings = getViewSettings(bookKey)!;
-      const deltaY = touchEnd.screenY - touchStart.screenY;
-      const deltaX = touchEnd.screenX - touchStart.screenX;
-      if (!viewSettings!.scrolled && !viewSettings!.vertical) {
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-          setHoveredBookKey(null);
-        }
-      } else {
-        setHoveredBookKey(null);
-      }
+      setHoveredBookKey(null);
     }
   };
 
@@ -123,30 +112,11 @@ export const useTouchEvent = (
       touchEnd = touch;
     }
 
-    const windowWidth = window.innerWidth;
     if (touchEnd) {
-      const viewSettings = getViewSettings(bookKey)!;
-      const bookData = getBookData(bookKey)!;
       const deltaY = touchEnd.screenY - touchStart.screenY;
       const deltaX = touchEnd.screenX - touchStart.screenX;
-      // also check for deltaX to prevent swipe page turn from triggering the toggle
-      if (
-        deltaY < -10 &&
-        Math.abs(deltaY) > Math.abs(deltaX) * 2 &&
-        Math.abs(deltaX) < windowWidth * 0.3
-      ) {
-        // swipe up to toggle the header bar and the footer bar, only for horizontal page mode
-        if (
-          !viewSettings!.scrolled && // not scrolled
-          !viewSettings!.vertical && // not vertical
-          (!bookData.isFixedLayout || viewSettings.zoomLevel <= 100) // for fixed layout, not when zoomed in
-        ) {
-          setHoveredBookKey(hoveredBookKey ? null : bookKey);
-        }
-      } else {
-        if (hoveredBookKey) {
-          setHoveredBookKey(null);
-        }
+      if (hoveredBookKey) {
+        setHoveredBookKey(null);
       }
       handlePageFlip(
         new CustomEvent('touch-swipe', {
