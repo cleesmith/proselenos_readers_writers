@@ -92,6 +92,18 @@ const insertBlockMap: Record<
       { select: true }
     );
   },
+  'vn_sticky_image': (editor) => {
+    editor.tf.insertNodes(
+      {
+        type: 'blockquote',
+        vnType: 'sticky_image',
+        imageUrl: '',
+        imageAlt: '',
+        children: [{ type: 'p', children: [{ text: '' }] }]
+      },
+      { select: true }
+    );
+  },
 };
 
 const insertInlineMap: Record<

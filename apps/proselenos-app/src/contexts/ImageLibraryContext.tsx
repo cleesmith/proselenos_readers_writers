@@ -3,7 +3,8 @@
 import { createContext, useContext } from 'react';
 
 interface ImageLibraryContextType {
-  openImageLibrary: () => void;
+  openImageLibrary: (callback?: (filename: string, altText: string) => void) => void;
+  images: Array<{ filename: string; url: string }>;
 }
 
 const ImageLibraryContext = createContext<ImageLibraryContextType | null>(null);

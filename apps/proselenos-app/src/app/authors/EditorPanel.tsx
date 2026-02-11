@@ -202,6 +202,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Image picker state
   const [showImagePicker, setShowImagePicker] = useState(false);
+  const pendingImageCallbackRef = useRef<((filename: string, altText: string) => void) | null>(null);
 
   // Audio picker state
   const [showAudioPicker, setShowAudioPicker] = useState(false);
@@ -296,8 +297,17 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   }, [onSave, isSaving, editor]);
 
   // Handle image insertion from picker
-  // XHTML-Native: Inserts as proper Plate image element node
+  // XHTML-Native: Inserts as proper Plate image element node, or calls pending callback
   const handleImageInsert = useCallback((filename: string, altText: string) => {
+    // If a callback is pending (e.g. from StickyImageElement), call it instead of inserting
+    if (pendingImageCallbackRef.current) {
+      const cb = pendingImageCallbackRef.current;
+      pendingImageCallbackRef.current = null;
+      setShowImagePicker(false);
+      cb(filename, altText);
+      return;
+    }
+
     if (!editor) return;
 
     // Insert proper Plate image element node
@@ -481,7 +491,15 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   };
 
   return (
-    <ImageLibraryProvider value={{ openImageLibrary: () => setShowImagePicker(true) }}>
+    <ImageLibraryProvider value={{
+      openImageLibrary: (callback) => {
+        if (callback) {
+          pendingImageCallbackRef.current = callback;
+        }
+        setShowImagePicker(true);
+      },
+      images: images ?? [],
+    }}>
     <AudioLibraryProvider value={{
       openAudioLibrary: () => setShowAudioPicker(true),
       uploadAudioToLibrary: async (file: File) => {
@@ -818,7 +836,10 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         onSelect={handleImageInsert}
         onUpload={onImageUpload ?? (async () => {})}
         onDelete={onImageDelete ?? (() => {})}
-        onClose={() => setShowImagePicker(false)}
+        onClose={() => {
+          pendingImageCallbackRef.current = null;
+          setShowImagePicker(false);
+        }}
       />
 
       {/* Audio picker modal */}

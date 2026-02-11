@@ -28,6 +28,9 @@ interface PlateElement {
   [key: string]: unknown;
 }
 
+// Counter for unique sticky-image enlarge checkbox IDs
+let stickyEnlargeCounter = 0;
+
 /**
  * PlateJS JSON → Clean EPUB3 XHTML
  *
@@ -41,6 +44,7 @@ export function plateToXhtml(value: Value): string {
     return '';
   }
 
+  stickyEnlargeCounter = 0;
   const html = serializeNodes(value as (PlateElement | PlateText)[]);
   return html;
 }
@@ -152,6 +156,33 @@ function serializeNode(node: PlateElement | PlateText): string {
       if (bqVnType === 'dialogue') {
         const speaker = (element as any).speaker || '';
         return `<div class="dialogue"><span class="speaker">${escapeHtml(speaker)}</span>${children}</div>\n`;
+      }
+      if (bqVnType === 'sticky_image') {
+        const imgUrl = (element as any).imageUrl || '';
+        const imgAlt = (element as any).imageAlt || '';
+        // Strip "images/" prefix for src, since EPUB images live in images/ dir
+        const imgFilename = imgUrl.replace(/^images\//, '');
+        const imgSrc = imgFilename ? `images/${escapeAttr(imgFilename)}` : '';
+        stickyEnlargeCounter++;
+        const enlargeId = `enlarge-${stickyEnlargeCounter}`;
+        let stickyHtml = `<div class="sticky-wrap">\n`;
+        stickyHtml += `  <div class="sticky-img-wrap"${imgSrc ? ` style="--sticky-bg: url('${escapeAttr(imgSrc)}')"` : ''}>\n`;
+        if (imgSrc) {
+          stickyHtml += `    <input type="checkbox" id="${enlargeId}"/>\n`;
+          stickyHtml += `    <label class="img-label" for="${enlargeId}">\n`;
+          stickyHtml += `      <img class="sticky-img" src="${escapeAttr(imgSrc)}" alt="${escapeAttr(imgAlt)}"/>\n`;
+          stickyHtml += `    </label>\n`;
+          stickyHtml += `    <label class="enlarge-overlay" for="${enlargeId}"></label>\n`;
+        }
+        if (imgAlt) {
+          stickyHtml += `    <p class="sticky-caption">${escapeHtml(imgAlt)}</p>\n`;
+        }
+        stickyHtml += `  </div>\n`;
+        stickyHtml += `  <div class="sticky-text">\n`;
+        stickyHtml += `${children}`;
+        stickyHtml += `  </div>\n`;
+        stickyHtml += `</div>\n`;
+        return stickyHtml;
       }
       return `<blockquote>${children}</blockquote>\n`;
     }
@@ -418,6 +449,30 @@ function handleDiv(el: Element, blocks: (PlateElement | PlateText)[]): void {
   // Vellum page-break: explicit page break marker
   if (el.classList.contains('page-break')) {
     blocks.push({ type: 'hr', children: [{ text: '' }] });
+    return;
+  }
+
+  // Visual Narrative sticky image: <div class="sticky-wrap">
+  if (el.classList.contains('sticky-wrap')) {
+    const img = el.querySelector('.sticky-img');
+    const textDiv = el.querySelector('.sticky-text');
+    const imgSrc = img?.getAttribute('src') || '';
+    const imgAlt = img?.getAttribute('alt') || '';
+    // Normalize URL to images/{filename}
+    let imageUrl = imgSrc;
+    if (imgSrc && !imgSrc.startsWith('images/')) {
+      const filename = imgSrc.split('/').pop() || imgSrc;
+      imageUrl = `images/${filename}`;
+    }
+    // Parse text children (multiple <p> blocks) via processBlockChildren
+    const textChildren = textDiv ? processBlockChildren(textDiv) : [{ text: '' } as PlateText];
+    blocks.push({
+      type: 'blockquote',
+      vnType: 'sticky_image',
+      imageUrl,
+      imageAlt: imgAlt,
+      children: textChildren.length > 0 ? textChildren : [{ type: 'p', children: [{ text: '' }] }]
+    });
     return;
   }
 

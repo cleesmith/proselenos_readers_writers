@@ -8,6 +8,7 @@ import {
   MessageSquareQuoteIcon,
   MinusIcon,
   PilcrowIcon,
+  PinIcon,
   PlusIcon,
   QuoteIcon,
   SparklesIcon,
@@ -102,6 +103,11 @@ const groups: Group[] = [
         icon: <MinusIcon />,
         label: 'Scene Break',
         value: 'vn_scene_break',
+      },
+      {
+        icon: <PinIcon />,
+        label: 'Sticky Image',
+        value: 'vn_sticky_image',
       },
     ].map((item) => ({
       ...item,

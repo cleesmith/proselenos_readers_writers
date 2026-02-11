@@ -58,6 +58,11 @@ export default function SectionPreview({
           new RegExp(`(src=["'])((?:\\.\\./)?images/)${escapedFilename}(["'])`, 'g'),
           `$1${blobUrl}$3`
         );
+        // Replace url() references in inline styles (e.g. --sticky-bg)
+        processedXhtml = processedXhtml.replace(
+          new RegExp(`url\\((['"]?)(?:\\.\\./)?images/${escapedFilename}\\1\\)`, 'g'),
+          `url($1${blobUrl}$1)`
+        );
       }
 
       // Create blob URL map for audio

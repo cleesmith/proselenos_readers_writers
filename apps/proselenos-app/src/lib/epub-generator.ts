@@ -7,7 +7,7 @@
 
 import JSZip from 'jszip';
 import { ManuscriptSettings, WorkingCopyMeta, WorkingCopySection } from '@/services/manuscriptStorage';
-import { xhtmlToPlainText } from './plateXhtml';
+import { xhtmlToPlainText, plateToXhtml, xhtmlToPlate } from './plateXhtml';
 import { VISUAL_NARRATIVE_CSS } from './visual-narrative-css';
 
 // TypeScript Interfaces
@@ -134,8 +134,14 @@ export async function generateEpubFromWorkingCopy(
       continue;
     }
 
+    // Normalize stored XHTML through round-trip to ensure latest serialization
+    // (e.g. sticky-image checkbox+label structure added after initial save)
+    const normalizedXhtml = section.xhtml
+      ? plateToXhtml(xhtmlToPlate(section.xhtml))
+      : '';
+
     // XHTML-Native: Get plain text for fallback, but keep XHTML as source of truth
-    const plainText = xhtmlToPlainText(section.xhtml);
+    const plainText = xhtmlToPlainText(normalizedXhtml);
     const paragraphs = plainText
       .split(/\n\s*\n/)
       .map(p => p.replace(/\n/g, ' ').trim())
@@ -147,7 +153,7 @@ export async function generateEpubFromWorkingCopy(
       title: section.title,
       content: paragraphs,     // Plain text fallback
       paragraphs: paragraphs,  // Legacy
-      xhtml: section.xhtml,    // XHTML source of truth
+      xhtml: normalizedXhtml,  // XHTML source of truth (normalized)
     };
 
     // No Matter sections go to separate array
@@ -221,7 +227,8 @@ export async function generateEpubFromWorkingCopy(
       s.xhtml.includes('class="emphasis-line"') ||
       s.xhtml.includes('class="scene-break"') ||
       s.xhtml.includes('class="scene-audio"') ||
-      s.xhtml.includes('class="visual ')
+      s.xhtml.includes('class="visual ') ||
+      s.xhtml.includes('class="sticky-wrap"')
     )
   );
 
@@ -726,7 +733,8 @@ function chapterHasVnContent(xhtml?: string): boolean {
     xhtml.includes('class="emphasis-line"') ||
     xhtml.includes('class="scene-break"') ||
     xhtml.includes('class="scene-audio"') ||
-    xhtml.includes('class="visual ')
+    xhtml.includes('class="visual ') ||
+    xhtml.includes('class="sticky-wrap"')
   );
 }
 

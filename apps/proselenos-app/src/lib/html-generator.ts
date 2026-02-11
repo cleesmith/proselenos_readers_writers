@@ -63,7 +63,8 @@ function sectionHasVnContent(html: string): boolean {
     html.includes('class="emphasis-line"') ||
     html.includes('class="scene-break"') ||
     html.includes('class="scene-audio"') ||
-    html.includes('class="visual ')
+    html.includes('class="visual ') ||
+    html.includes('class="sticky-wrap"')
   );
 }
 
@@ -92,6 +93,8 @@ function processContent(text: string): string {
  */
 function stripMediaElements(html: string): string {
   let result = html
+    // VN sticky image blocks: <div class="sticky-wrap">..nested divs..</div>
+    .replace(/<div\s+class="sticky-wrap"[^>]*>[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/g, '')
     // VN image blocks: <div class="visual ...">...</div>
     .replace(/<div\s+class="visual[^"]*"[^>]*>.*?<\/div>/gs, '')
     // VN scene-audio blocks: <div class="scene-audio">...</div>
