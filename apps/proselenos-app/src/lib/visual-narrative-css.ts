@@ -314,7 +314,7 @@ nav ol li a {
   inset: 0;
   z-index: 200;
   background: center / contain no-repeat var(--sticky-bg);
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: #000;
   cursor: zoom-out;
 }
 
