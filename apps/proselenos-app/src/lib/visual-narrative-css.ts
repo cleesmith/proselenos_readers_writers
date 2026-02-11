@@ -318,6 +318,10 @@ nav ol li a {
   cursor: zoom-out;
 }
 
+.sticky-img-wrap:has(input:checked) {
+  z-index: 999;
+}
+
 .sticky-img-wrap:has(input:checked) label.img-label {
   cursor: zoom-out;
 }
