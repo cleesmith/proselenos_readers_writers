@@ -354,16 +354,13 @@ figcaption {
   cursor: zoom-out;
 }
 
-.sticky-img-wrap:has(input:checked) {
-  z-index: 999;
-}
-
-.sticky-img-wrap:has(input:checked) label.img-label {
+.sticky-img-wrap input:checked ~ label.img-label {
   cursor: zoom-out;
 }
 
-.sticky-img-wrap:has(input:checked) label.enlarge-overlay {
+.sticky-img-wrap input:checked ~ label.enlarge-overlay {
   display: block;
+  z-index: 9999;
 }
 
 .sticky-caption {
