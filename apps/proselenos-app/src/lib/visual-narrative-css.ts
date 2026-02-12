@@ -196,6 +196,29 @@ nav ol li a {
   clear: both;
 }
 
+/* ── Figures (resized images) ────────────── */
+
+figure {
+  margin: 2em auto;
+  text-align: center;
+  max-width: 100%;
+}
+
+figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 2px;
+}
+
+figcaption {
+  font-size: 0.8em;
+  text-align: center;
+  margin-top: 0.5em;
+  font-style: italic;
+  opacity: 0.5;
+}
+
 /* ── Audio ────────────────────────────────── */
 
 .scene-audio {
@@ -261,6 +284,7 @@ nav ol li a {
   .visual.centered { width: 90%; }
   .dialogue { padding-left: 1em; }
   .internal { margin: 1.5em 0.5em; }
+  figure { max-width: 100% !important; }
 }
 
 @media (min-width: 1000px) {

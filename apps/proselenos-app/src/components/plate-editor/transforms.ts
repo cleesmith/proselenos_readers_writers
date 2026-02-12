@@ -183,13 +183,75 @@ const setList = (
 
 const setBlockMap: Record<
   string,
-  (editor: PlateEditor, type: string, entry: NodeEntry<TElement>) => void
+  (editor: PlateEditor, type: string, entry: NodeEntry<TElement>, allEntries?: NodeEntry<TElement>[]) => void
 > = {
   [KEYS.listTodo]: setList,
   [KEYS.ol]: setList,
   [KEYS.ul]: setList,
   [ACTION_THREE_COLUMNS]: (editor) => toggleColumnGroup(editor, { columns: 3 }),
   [KEYS.codeBlock]: (editor) => toggleCodeBlock(editor),
+  'vn_dialogue': (editor, _type, entry, allEntries?) => {
+    const entries = allEntries || [entry];
+
+    if (entries.length <= 1) {
+      // Single block: convert in-place, empty speaker
+      const [, path] = entry;
+      editor.tf.setNodes(
+        { type: 'blockquote', vnType: 'dialogue', speaker: '' },
+        { at: path }
+      );
+      return;
+    }
+
+    // Multi-block: line 1 → speaker, lines 2+ → paragraph children
+    const firstNode = entries[0][0];
+    const speakerText = firstNode.children
+      ?.map((c: any) => c.text || '').join('') || '';
+
+    // Wrap each remaining block's children in a { type: 'p' } element
+    const dialogueChildren: any[] = [];
+    for (let i = 1; i < entries.length; i++) {
+      const [node] = entries[i];
+      const kids = node.children && node.children.length > 0
+        ? [...node.children]
+        : [{ text: '' }];
+      dialogueChildren.push({ type: 'p', children: kids });
+    }
+    if (dialogueChildren.length === 0) {
+      dialogueChildren.push({ type: 'p', children: [{ text: '' }] });
+    }
+
+    // Remove all blocks last-to-first (preserves earlier paths)
+    for (let i = entries.length - 1; i >= 0; i--) {
+      editor.tf.removeNodes({ at: entries[i][1] });
+    }
+
+    // Insert new dialogue node at the first block's original path
+    const firstPath = entries[0][1];
+    editor.tf.insertNodes(
+      {
+        type: 'blockquote',
+        vnType: 'dialogue',
+        speaker: speakerText,
+        children: dialogueChildren,
+      },
+      { at: firstPath, select: true }
+    );
+  },
+  'vn_internal': (editor, _type, entry) => {
+    const [, path] = entry;
+    editor.tf.setNodes(
+      { type: 'p', vnType: 'internal' },
+      { at: path }
+    );
+  },
+  'vn_emphasis': (editor, _type, entry) => {
+    const [, path] = entry;
+    editor.tf.setNodes(
+      { type: 'p', vnType: 'emphasis' },
+      { at: path }
+    );
+  },
 };
 
 export const setBlockType = (
@@ -198,11 +260,34 @@ export const setBlockType = (
   { at }: { at?: Path } = {}
 ) => {
   editor.tf.withoutNormalizing(() => {
+    // Special case: vn_dialogue merges multiple blocks into one
+    if (type === 'vn_dialogue') {
+      const allEntries = Array.from(editor.api.blocks({ mode: 'lowest' }));
+      if (allEntries.length > 0) {
+        // Clean stale VN props from the first entry
+        const [firstNode, firstPath] = allEntries[0];
+        if ((firstNode as any).vnType) {
+          editor.tf.unsetNodes(
+            ['vnType', 'speaker', 'imageUrl', 'imageAlt', 'audioId', 'audioLabel', 'audioMediaType'],
+            { at: firstPath }
+          );
+        }
+        setBlockMap['vn_dialogue'](editor, type, allEntries[0], allEntries);
+      }
+      return;
+    }
+
     const setEntry = (entry: NodeEntry<TElement>) => {
       const [node, path] = entry;
 
       if (node[KEYS.listType]) {
         editor.tf.unsetNodes([KEYS.listType, 'indent'], { at: path });
+      }
+      if ((node as any).vnType) {
+        editor.tf.unsetNodes(
+          ['vnType', 'speaker', 'imageUrl', 'imageAlt', 'audioId', 'audioLabel', 'audioMediaType'],
+          { at: path }
+        );
       }
       if (type in setBlockMap) {
         return setBlockMap[type](editor, type, entry);
@@ -239,6 +324,11 @@ export const getBlockType = (block: TElement) => {
       return KEYS.listTodo;
     }
     return KEYS.ul;
+  }
+
+  const vnType = (block as any).vnType as string | undefined;
+  if (vnType) {
+    return `vn_${vnType}`;
   }
 
   return block.type;

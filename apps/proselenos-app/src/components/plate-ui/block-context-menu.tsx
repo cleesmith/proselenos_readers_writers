@@ -39,6 +39,12 @@ export function BlockContextMenu({ children }: { children: React.ReactNode }) {
               at: path,
             });
           }
+          if ((node as any).vnType) {
+            editor.tf.unsetNodes(
+              ['vnType', 'speaker', 'imageUrl', 'imageAlt', 'audioId', 'audioLabel', 'audioMediaType'],
+              { at: path }
+            );
+          }
 
           editor.tf.toggleBlock(type, { at: path });
         });

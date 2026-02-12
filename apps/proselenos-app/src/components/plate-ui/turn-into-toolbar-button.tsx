@@ -11,8 +11,11 @@ import {
   Heading4Icon,
   Heading5Icon,
   Heading6Icon,
+  MessageSquareQuoteIcon,
   PilcrowIcon,
   QuoteIcon,
+  SparklesIcon,
+  TypeIcon,
 } from 'lucide-react';
 import type { TElement } from 'platejs';
 import { KEYS } from 'platejs';
@@ -76,6 +79,24 @@ export const turnIntoItems = [
     keywords: ['citation', 'blockquote', '>'],
     label: 'Quote',
     value: KEYS.blockquote,
+  },
+  {
+    icon: <MessageSquareQuoteIcon />,
+    keywords: ['dialogue', 'speech', 'conversation'],
+    label: 'Dialogue',
+    value: 'vn_dialogue',
+  },
+  {
+    icon: <TypeIcon />,
+    keywords: ['internal', 'thought', 'inner'],
+    label: 'Internal Thought',
+    value: 'vn_internal',
+  },
+  {
+    icon: <SparklesIcon />,
+    keywords: ['emphasis', 'highlight', 'important'],
+    label: 'Emphasis Line',
+    value: 'vn_emphasis',
   },
 ];
 
