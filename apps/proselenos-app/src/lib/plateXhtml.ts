@@ -240,8 +240,20 @@ function serializeNode(node: PlateElement | PlateText): string {
       } else {
         widthValue = undefined;
       }
-      const widthStyle = widthValue ? ` style="width:${widthValue}"` : '';
-      let figureHtml = `<figure${widthStyle}>\n`;
+
+      // Read alignment from the Plate node
+      const imgAlign = (element as any).align as string | undefined;
+
+      // Build style attribute with width + alignment
+      const styleParts: string[] = [];
+      if (widthValue) styleParts.push(`width:${widthValue}`);
+      if (imgAlign && imgAlign !== 'center') styleParts.push(`text-align:${imgAlign}`);
+      const styleAttr = styleParts.length > 0 ? ` style="${styleParts.join(';')}"` : '';
+
+      // Add data-align for round-trip deserialization (only non-default)
+      const alignAttr = imgAlign && imgAlign !== 'center' ? ` data-align="${escapeAttr(imgAlign)}"` : '';
+
+      let figureHtml = `<figure${alignAttr}${styleAttr}>\n`;
       figureHtml += `  <img src="images/${escapeAttr(imgFilename)}" alt="${escapeAttr(imgAlt)}"/>\n`;
       if (imgCaption) {
         figureHtml += `  <figcaption>${escapeHtml(imgCaption)}</figcaption>\n`;
@@ -924,6 +936,12 @@ function parseFigureElement(el: Element): PlateElement {
   }
   if (captionText) {
     (node as any).caption = [{ text: captionText }];
+  }
+
+  // Restore alignment from data-align attribute
+  const alignAttr = el.getAttribute('data-align');
+  if (alignAttr && ['left', 'center', 'right'].includes(alignAttr)) {
+    (node as any).align = alignAttr;
   }
 
   return node;

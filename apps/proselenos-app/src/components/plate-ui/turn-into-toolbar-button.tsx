@@ -8,9 +8,6 @@ import {
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
-  Heading4Icon,
-  Heading5Icon,
-  Heading6Icon,
   MessageSquareQuoteIcon,
   PilcrowIcon,
   QuoteIcon,
@@ -55,24 +52,6 @@ export const turnIntoItems = [
     keywords: ['subtitle', 'h3'],
     label: 'Heading 3',
     value: 'h3',
-  },
-  {
-    icon: <Heading4Icon />,
-    keywords: ['subtitle', 'h4'],
-    label: 'Heading 4',
-    value: 'h4',
-  },
-  {
-    icon: <Heading5Icon />,
-    keywords: ['subtitle', 'h5'],
-    label: 'Heading 5',
-    value: 'h5',
-  },
-  {
-    icon: <Heading6Icon />,
-    keywords: ['subtitle', 'h6'],
-    label: 'Heading 6',
-    value: 'h6',
   },
   {
     icon: <QuoteIcon />,
@@ -124,7 +103,7 @@ export function TurnIntoToolbarButton(props: DropdownMenuProps) {
           pressed={open}
           tooltip="Turn into"
         >
-          {selectedItem.label}
+          Turn Into
         </ToolbarButton>
       </DropdownMenuTrigger>
 

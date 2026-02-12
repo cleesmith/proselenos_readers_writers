@@ -211,6 +211,18 @@ figure img {
   border-radius: 2px;
 }
 
+figure[data-align="left"] {
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+figure[data-align="right"] {
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+}
+
 figcaption {
   font-size: 0.8em;
   text-align: center;

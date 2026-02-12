@@ -8,6 +8,7 @@ import { KEYS } from 'platejs';
 import { useEditorReadOnly } from 'platejs/react';
 
 
+import { UndoToolbarButton, RedoToolbarButton } from './history-toolbar-button';
 import { AlignToolbarButton } from './align-toolbar-button';
 import { FontSizeToolbarButton } from './font-size-toolbar-button';
 import { ImportToolbarButton } from './import-toolbar-button';
@@ -32,13 +33,18 @@ export function FixedToolbarButtons() {
     <div className="flex w-full">
       {!readOnly && (
         <>
-          <ToolbarGroup>
+          <ToolbarGroup key="history">
+            <UndoToolbarButton />
+            <RedoToolbarButton />
+          </ToolbarGroup>
+
+          <ToolbarGroup key="insert">
             <InsertToolbarButton />
             <TurnIntoToolbarButton />
             <FontSizeToolbarButton />
           </ToolbarGroup>
 
-          <ToolbarGroup>
+          <ToolbarGroup key="marks">
             <MarkToolbarButton nodeType={KEYS.bold} tooltip="Bold">
               <BoldIcon />
             </MarkToolbarButton>
@@ -50,18 +56,18 @@ export function FixedToolbarButtons() {
             <MediaToolbarButton nodeType={KEYS.audio} />
           </ToolbarGroup>
 
-          <ToolbarGroup>
+          <ToolbarGroup key="align">
             <AlignToolbarButton />
             <ListToolbarButton />
           </ToolbarGroup>
 
-          <ToolbarGroup>
+          <ToolbarGroup key="indent">
             <OutdentToolbarButton />
             <IndentToolbarButton />
             <EmojiToolbarButton />
           </ToolbarGroup>
 
-          <ToolbarGroup>
+          <ToolbarGroup key="more">
             <MoreToolbarButton />
             <ImportToolbarButton />
           </ToolbarGroup>
