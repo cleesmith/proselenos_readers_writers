@@ -35,7 +35,7 @@ function inferSectionType(title: string): ElementType {
 
   // Only truly structural/metadata sections are non-chapters
   // (these don't need markdown formatting)
-  // Note: 'cover' removed - cover is handled via Menu > Cover, not as a section
+  if (lowerTitle === 'cover') return 'cover';
   if (lowerTitle.includes('title page')) return 'title-page';
   if (lowerTitle.includes('copyright')) return 'copyright';
   if (lowerTitle.includes('table of contents') || lowerTitle === 'contents') return 'table-of-contents';
@@ -152,7 +152,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
       id: spineItem.idref,
       title: sectionTitle,
       href: href,
-      xhtml: xhtml,  // Raw XHTML (single source of truth)
+      xhtml: stripLeadingTitle(xhtml, sectionTitle),  // Remove duplicate title from content
       type: sectionType,
     });
   }
@@ -425,6 +425,42 @@ function extractXhtmlBody(html: string): string {
   return innerHTML
     .replace(/>\s+</g, '>\n<')  // Normalize whitespace between tags
     .trim();
+}
+
+/**
+ * Strip the leading title element from XHTML body content if it matches the TOC title.
+ * This prevents duplicate titles: one in the UI header, one in the editor content.
+ * Handles both direct headings and headings wrapped in article/section/div elements.
+ */
+function stripLeadingTitle(xhtml: string, title: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<body>${xhtml}</body>`, 'text/html');
+  const body = doc.body;
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) return xhtml;
+
+  const isHeading = (el: Element) => /^H[1-6]$/.test(el.tagName);
+
+  const firstEl = body.firstElementChild;
+  if (!firstEl) return xhtml;
+
+  // Case 1: Direct heading child of body
+  if (isHeading(firstEl) && firstEl.textContent?.trim() === trimmedTitle) {
+    firstEl.remove();
+    return body.innerHTML.trim() || '<p></p>';
+  }
+
+  // Case 2: Heading inside a wrapper element (article, section, div)
+  const wrapperTags = ['ARTICLE', 'SECTION', 'DIV'];
+  if (wrapperTags.includes(firstEl.tagName)) {
+    const innerFirst = firstEl.firstElementChild;
+    if (innerFirst && isHeading(innerFirst) && innerFirst.textContent?.trim() === trimmedTitle) {
+      innerFirst.remove();
+      return body.innerHTML.trim() || '<p></p>';
+    }
+  }
+
+  return xhtml;
 }
 
 /**
