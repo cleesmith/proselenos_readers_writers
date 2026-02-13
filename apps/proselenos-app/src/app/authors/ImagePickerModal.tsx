@@ -25,7 +25,7 @@ interface ImagePickerModalProps {
 }
 
 // Accepted image formats
-const ACCEPTED_FORMATS = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml';
+const ACCEPTED_FORMATS = 'image/jpeg,image/png,image/gif,image/svg+xml';
 
 export default function ImagePickerModal({
   isOpen,
@@ -183,7 +183,7 @@ export default function ImagePickerModal({
             fontSize: '12px',
             color: theme.textMuted,
           }}>
-            Supported: JPEG, PNG, GIF, WebP, SVG
+            Supported: JPEG, PNG, GIF, SVG
           </span>
         </div>
 

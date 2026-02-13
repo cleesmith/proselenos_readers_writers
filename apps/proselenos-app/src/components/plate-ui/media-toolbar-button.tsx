@@ -67,7 +67,7 @@ const MEDIA_CONFIG: Record<
     tooltip: 'File',
   },
   [KEYS.img]: {
-    accept: ['image/*'],
+    accept: ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'],
     icon: <ImageIcon className="size-4" />,
     title: 'Insert Image',
     tooltip: 'Image',

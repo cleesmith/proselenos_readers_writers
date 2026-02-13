@@ -35,7 +35,7 @@ const CONTENT: Record<
     icon: <FileUp />,
   },
   [KEYS.img]: {
-    accept: ['image/*'],
+    accept: ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'],
     content: 'Add an image',
     icon: <ImageIcon />,
   },

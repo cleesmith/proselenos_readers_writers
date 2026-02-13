@@ -78,7 +78,7 @@ export const FILE_SELECTION_PRESETS = {
   },
   images: {
     accept: 'image/*',
-    extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
+    extensions: ['jpg', 'jpeg', 'png', 'gif', 'svg'],
     dialogTitle: _('Select Image'),
   },
   videos: {
