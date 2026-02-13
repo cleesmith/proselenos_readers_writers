@@ -17,6 +17,7 @@ import { navigateToLibrary } from '@/utils/nav';
 import { debounce } from '@/utils/debounce';
 import useShortcuts from '@/hooks/useShortcuts';
 import Dropdown from '@/components/Dropdown';
+import TrafficLightIcon from '@/components/TrafficLightIcon';
 import SettingsMenu from './SettingsMenu';
 import ViewMenu from './ViewMenu';
 
@@ -29,6 +30,8 @@ interface LibraryHeaderProps {
   onToggleSelectMode: () => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  exportChangeCount?: number;
+  onStorageClick?: () => void;
 }
 
 const LibraryHeader: React.FC<LibraryHeaderProps> = ({
@@ -40,6 +43,8 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   onToggleSelectMode,
   onSelectAll,
   onDeselectAll,
+  exportChangeCount = 0,
+  onStorageClick,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -167,11 +172,27 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
             onClick={switchToAuthorsMode}
             aria-label={_('Authors')}
             title={_('Write Ebook')}
-            className='mr-4 flex items-center gap-0 text-gray-500 hover:text-gray-400'
+            className='mr-2 flex items-center gap-0 text-gray-500 hover:text-gray-400'
           >
             <PiPencil className='h-5 w-5' />
             <span className='text-sm'>Authors</span>
           </button>
+          {onStorageClick && (
+            <div className='mr-4 flex items-center'>
+              <TrafficLightIcon
+                changeCount={exportChangeCount}
+                isDarkMode={themeMode === 'dark' || (themeMode === 'auto' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)}
+                onClick={onStorageClick}
+                tooltip={
+                  exportChangeCount === 0
+                    ? 'All backed up'
+                    : exportChangeCount === 1
+                      ? '1 book added since last export'
+                      : `${exportChangeCount} books added since last export`
+                }
+              />
+            </div>
+          )}
           <div className='relative flex h-9 max-w-sm flex-1 items-center sm:h-7'>
             <span className='absolute left-3 text-gray-500'>
               <FaSearch className='h-4 w-4' />

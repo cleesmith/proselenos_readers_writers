@@ -195,6 +195,29 @@ export default function AuthorsLayout({
   const [pendingTitle, setPendingTitle] = useState<string>('');
   // Removed: pendingSectionSwitch and showUnsavedDialog - now auto-saves on section switch
 
+  // Traffic light: track modified sections since last "send Ebook"
+  const LS_KEY_MODIFIED = 'ee_authors_modified_sections_since_send';
+  const [modifiedSectionsSinceSend, setModifiedSectionsSinceSend] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = localStorage.getItem(LS_KEY_MODIFIED);
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+    } catch { return new Set(); }
+  });
+  const markSectionModified = useCallback((key: string) => {
+    setModifiedSectionsSinceSend(prev => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      localStorage.setItem(LS_KEY_MODIFIED, JSON.stringify(Array.from(next)));
+      return next;
+    });
+  }, []);
+  const resetModifiedSections = useCallback(() => {
+    setModifiedSectionsSinceSend(new Set());
+    localStorage.setItem(LS_KEY_MODIFIED, '[]');
+  }, []);
+
   // One-by-one inline editing state
   const editorPanelRef = useRef<EditorPanelRef>(null);
   const [oneByOneActive, setOneByOneActive] = useState(false);
@@ -875,6 +898,8 @@ export default function AuthorsLayout({
           }
           // Reset AI Editing state
           await onResetTools?.();
+          // Reset traffic light — new manuscript loaded
+          resetModifiedSections();
         } catch (error) {
           console.error('Error parsing epub:', error);
           alert('Error parsing epub file. Please try a different file.');
@@ -947,6 +972,8 @@ export default function AuthorsLayout({
           }
           // Reset AI Editing state
           await onResetTools?.();
+          // Reset traffic light — new manuscript loaded
+          resetModifiedSections();
           showAlert(`Loaded "${parsed.title}" with ${parsed.sections.length} sections`, 'success', undefined, isDarkMode);
         } catch (error) {
           console.error('Error parsing docx:', error);
@@ -1216,6 +1243,8 @@ export default function AuthorsLayout({
 
           // Reset AI Editing state
           await onResetTools?.();
+          // Reset traffic light — new manuscript loaded
+          resetModifiedSections();
           showAlert(`Loaded "${title}" with ${chapters.length} scenes from Fountain screenplay`, 'success', undefined, isDarkMode);
         } catch (error) {
           console.error('Error parsing Fountain file:', error);
@@ -1261,6 +1290,7 @@ export default function AuthorsLayout({
       meta.sectionIds = meta.sectionIds.filter((id) => id !== sectionId);
       await saveWorkingCopyMeta(meta);
     }
+    markSectionModified(sectionId);
   };
 
   // Handle creating a new blank manuscript
@@ -1311,6 +1341,8 @@ export default function AuthorsLayout({
     }
     // Reset AI Editing state
     await onResetTools?.();
+    // Reset traffic light — fresh manuscript
+    resetModifiedSections();
   };
 
   // Helper to find the correct insertion index for a section type
@@ -1427,6 +1459,7 @@ export default function AuthorsLayout({
     setSelectedSectionId(newId);
     setHasUnsavedChanges(false);
     setPendingXhtml('');
+    markSectionModified(newId);
   };
 
   // Handle moving a section up (swap with previous)
@@ -1490,6 +1523,7 @@ export default function AuthorsLayout({
         }
       }
     }
+    markSectionModified(sectionId);
   };
 
   // Handle moving a section down (swap with next)
@@ -1550,6 +1584,7 @@ export default function AuthorsLayout({
         }
       }
     }
+    markSectionModified(sectionId);
   };
 
   // Handle moving a section to a different area (Front Matter, Introductory, Chapters, Back Matter)
@@ -1609,6 +1644,7 @@ export default function AuthorsLayout({
       }));
       await saveManuscriptMeta(manuscriptMeta);
     }
+    markSectionModified(sectionId);
   };
 
   // Handle cover image click - open file picker to change cover
@@ -1643,6 +1679,7 @@ export default function AuthorsLayout({
           if (epub) {
             setEpub({ ...epub, coverImage: file });
           }
+          markSectionModified('__cover__');
         } catch (error) {
           console.error('Error saving cover image:', error);
           alert('Error saving cover image. Please try again.');
@@ -1700,6 +1737,7 @@ export default function AuthorsLayout({
       manuscriptMeta.publisher = metadata.publisher;
       await saveManuscriptMeta(manuscriptMeta);
     }
+    markSectionModified('__metadata__');
   };
 
   // Handle Save button - generate EPUB and add to library
@@ -1793,6 +1831,8 @@ export default function AuthorsLayout({
             container: 'swal-above-modal'
           }
         });
+        // Reset traffic light — successful send
+        resetModifiedSections();
       } else {
         showAlert('EPUB was generated but could not be added to library.', 'error', undefined, isDarkMode);
       }
@@ -1957,6 +1997,7 @@ export default function AuthorsLayout({
     setHasUnsavedChanges(false);
     setPendingXhtml('');
     setPendingTitle('');
+    if (selectedSectionId) markSectionModified(selectedSectionId);
   };
 
   return (
@@ -2001,6 +2042,7 @@ export default function AuthorsLayout({
         onFountainExportClick={handleFountainExport}
         onXrayClick={onXrayClick}
         onSaveWorkspace={saveCurrentSection}
+        exportChangeCount={modifiedSectionsSinceSend.size}
       />
 
       {/* Main content: 2-panel layout */}

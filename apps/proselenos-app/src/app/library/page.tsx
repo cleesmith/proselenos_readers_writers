@@ -30,7 +30,7 @@ import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
 
 import { BookMetadata } from '@/libs/document';
 import { AboutWindow } from '@/components/AboutWindow';
-import { StorageWindow } from '@/components/StorageWindow';
+import { StorageWindow, setStorageDialogVisible } from '@/components/StorageWindow';
 import { BookDetailModal } from '@/components/metadata';
 import { useDragDropImport } from './hooks/useDragDropImport';
 import { Toast } from '@/components/Toast';
@@ -78,6 +78,28 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const [readerBookHash, setReaderBookHash] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const isInitiating = useRef(false);
+
+  // Traffic light: track books added since last export
+  const LS_KEY_BOOKS_ADDED = 'ee_library_books_added_since_export';
+  const [booksAddedSinceExport, setBooksAddedSinceExport] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const stored = localStorage.getItem(LS_KEY_BOOKS_ADDED);
+      return stored ? JSON.parse(stored) as number : 0;
+    } catch { return 0; }
+  });
+
+  // Listen for export-complete from StorageWindow
+  useEffect(() => {
+    const channel = new BroadcastChannel('everythingebooks-export-status');
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'export-complete') {
+        setBooksAddedSinceExport(0);
+        localStorage.setItem(LS_KEY_BOOKS_ADDED, '0');
+      }
+    };
+    return () => channel.close();
+  }, []);
 
   const viewSettings = settings.globalViewSettings;
 
@@ -351,6 +373,16 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setLibrary([...library]);
     appService?.saveLibraryBooks(library);
     setLoading(false);
+
+    // Track successful imports for traffic light indicator
+    const successCount = files.length - failedImports.length;
+    if (successCount > 0) {
+      setBooksAddedSinceExport(prev => {
+        const next = prev + successCount;
+        localStorage.setItem(LS_KEY_BOOKS_ADDED, JSON.stringify(next));
+        return next;
+      });
+    }
   };
 
   const handleBookDownload = useCallback(
@@ -438,6 +470,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setShowImportModal(true);
   };
 
+  const handleStorageClick = () => {
+    setStorageDialogVisible(true);
+  };
+
   const handleImportFromLocalFile = () => {
     setShowImportModal(false);
     console.log('Importing books...');
@@ -515,6 +551,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           onToggleSelectMode={() => handleSetSelectMode(!isSelectMode)}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
+          exportChangeCount={booksAddedSinceExport}
+          onStorageClick={handleStorageClick}
         />
       </div>
       {(loading || isSyncing) && (

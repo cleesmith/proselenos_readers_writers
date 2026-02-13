@@ -93,6 +93,10 @@ export const StorageWindow = () => {
     setIsExporting(true);
     try {
       await exportAndDownload();
+      // Notify library page that export is complete (resets traffic light)
+      const channel = new BroadcastChannel('everythingebooks-export-status');
+      channel.postMessage({ type: 'export-complete' });
+      channel.close();
       showAlert(_('Your backup has been downloaded.'), 'success', _('Export Complete'));
     } catch (err) {
       console.error('Export failed:', err);

@@ -8,6 +8,7 @@ import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiI
 import { GiBoxUnpacking } from 'react-icons/gi';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
+import TrafficLightIcon from '@/components/TrafficLightIcon';
 
 interface AuthorsHeaderProps {
   theme: ThemeConfig;
@@ -39,6 +40,7 @@ interface AuthorsHeaderProps {
   onFountainExportClick?: () => void;
   onXrayClick?: () => void;
   onSaveWorkspace?: () => Promise<void>;
+  exportChangeCount?: number;
 }
 
 export default function AuthorsHeader({
@@ -71,6 +73,7 @@ export default function AuthorsHeader({
   onFountainExportClick: _onFountainExportClick,
   onXrayClick,
   onSaveWorkspace,
+  exportChangeCount = 0,
 }: AuthorsHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -280,6 +283,18 @@ export default function AuthorsHeader({
           <StyledSmallButton theme={theme} onClick={onSaveClick} disabled={toolExecuting} styleOverrides={{ marginRight: 0 }} title="Put current ebook into Library">send Ebook</StyledSmallButton>
           <span style={{ color: isDarkMode ? '#86efac' : '#16a34a', fontSize: '16px' }}>⇨</span>
           <StyledSmallButton onClick={handleLibraryClick} theme={theme} title="Go read ebooks">Library</StyledSmallButton>
+          <TrafficLightIcon
+            changeCount={exportChangeCount}
+            isDarkMode={isDarkMode}
+            onClick={onStorageClick}
+            tooltip={
+              exportChangeCount === 0
+                ? 'All backed up'
+                : exportChangeCount === 1
+                  ? '1 section modified since last export'
+                  : `${exportChangeCount} sections modified since last export`
+            }
+          />
         </div>
       </div>
 
