@@ -1906,22 +1906,47 @@ export default function AuthorsLayout({
         mediaDataUrls[`audio/${aud.filename}`] = `data:${mime};base64,${base64}`;
       }
 
-      // 5. Generate HTML with embedded media
+      // 5. Load cover image and convert to base64 data URI
+      let coverImageDataUrl: string | undefined;
+      if (meta?.coverImageId) {
+        const coverBlob = await loadCoverImage();
+        if (coverBlob) {
+          const arrayBuffer = await coverBlob.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          const chunkSize = 8192;
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+          }
+          const base64 = btoa(binary);
+          const ext = meta.coverImageId.split('.').pop()?.toLowerCase() || 'jpg';
+          const mimeMap: Record<string, string> = {
+            png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+            svg: 'image/svg+xml', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+          };
+          const mime = mimeMap[ext] || 'image/jpeg';
+          coverImageDataUrl = `data:${mime};base64,${base64}`;
+        }
+      }
+
+      // 6. Generate HTML with embedded media
       const html = generateHtmlFromSections({
         title: workingCopy.title || 'Untitled',
         author: workingCopy.author || meta?.author || 'Unknown Author',
         year: new Date().getFullYear().toString(),
         sections: workingCopy.sections
-          .filter(s => s.title.toLowerCase().trim() !== 'cover')
           .map(s => ({
             title: s.title,
             content: s.xhtml,
           })),
         isDarkMode,
         mediaDataUrls,
+        coverImageDataUrl,
+        subtitle: meta?.subtitle,
+        publisher: meta?.publisher,
       });
 
-      // 6. Open in new tab
+      // 7. Open in new tab
       openHtmlInNewTab(html);
 
       showAlert('HTML opened in new tab!', 'success', undefined, isDarkMode);

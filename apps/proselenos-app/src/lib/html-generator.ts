@@ -11,6 +11,9 @@ export interface HtmlGeneratorOptions {
   sections: Array<{ title: string; content: string }>;
   isDarkMode?: boolean;
   mediaDataUrls?: Record<string, string>; // "images/photo.jpg" → "data:image/jpeg;base64,..."
+  coverImageDataUrl?: string;  // base64 data URL for cover image
+  subtitle?: string;           // book subtitle
+  publisher?: string;          // publisher name
 }
 
 /**
@@ -581,11 +584,50 @@ body.dark-mode .scene-audio {
 }`;
 
 /**
+ * Generate cover page HTML.
+ * If a cover image data URL is available, show it centered.
+ * Otherwise, produce a styled text fallback matching EPUB's blue-background cover.
+ */
+function generateCoverHtml(
+  title: string, author: string, coverImageDataUrl?: string
+): string {
+  if (coverImageDataUrl) {
+    return `
+  <section class="cover-page" style="text-align:center; margin:0; padding:2em 0;">
+    <img src="${coverImageDataUrl}" alt="Cover" style="max-width:100%; max-height:90vh; object-fit:contain;"/>
+  </section>`;
+  }
+  // Text fallback — styled like EPUB's blue cover
+  return `
+  <section class="cover-page" style="background:#00517b; color:#fff; text-align:center; padding:25% 2em 2em; min-height:80vh; font-family:Georgia,serif;">
+    <h1 style="font-size:2em; text-transform:uppercase; letter-spacing:0.15em; margin:0;">${escapeHtml(title)}</h1>
+    <p style="font-size:1.2em; margin-top:2em;">${escapeHtml(author)}</p>
+  </section>`;
+}
+
+/**
+ * Generate title page HTML from metadata.
+ * Mirrors EPUB's createTitlePage() using the same CSS classes from EPUB_BASE_CSS.
+ */
+function generateTitlePageHtml(
+  title: string, author: string, subtitle?: string, publisher?: string
+): string {
+  const subtitleHtml = subtitle
+    ? `\n    <p class="book-subtitle">${escapeHtml(subtitle)}</p>` : '';
+  return `
+  <section class="title-page">
+    <p class="book-title">${escapeHtml(title.toUpperCase())}</p>${subtitleHtml}
+    <p class="book-author">${escapeHtml(author)}</p>
+    <p class="book-publisher">${escapeHtml(publisher || 'Independent Publisher')}</p>
+  </section>`;
+}
+
+/**
  * Generate a complete single-page HTML file from manuscript sections.
  * HTML structure and CSS match the EPUB output from epub-generator.ts.
  */
 export function generateHtmlFromSections(options: HtmlGeneratorOptions): string {
-  const { title, author, year = new Date().getFullYear().toString(), sections, isDarkMode = true, mediaDataUrls } = options;
+  const { title, author, year = new Date().getFullYear().toString(), sections, isDarkMode = true, mediaDataUrls, coverImageDataUrl, subtitle, publisher } = options;
 
   // Build section HTML array (instead of one big string we split later)
   const sectionHtmls: string[] = [];
@@ -597,10 +639,10 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
     const section = sections[i]!;
     const lower = section.title.toLowerCase().trim();
 
-    // Skip editor's "Contents" section — we generate our own TOC
-    if (lower === 'contents' || lower === 'table of contents') {
-      continue;
-    }
+    // Skip sections we generate from metadata (like EPUB does)
+    if (lower === 'contents' || lower === 'table of contents') continue;
+    if (lower === 'cover') continue;
+    if (lower === 'title page') continue;
 
     let contentHtml = processContent(section.content);
     if (mediaDataUrls && Object.keys(mediaDataUrls).length > 0) {
@@ -610,13 +652,7 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
     }
     contentHtml = deduplicateEnlargeIds(contentHtml, i);
 
-    if (lower === 'title page') {
-      // Title Page → <section class="title-page">
-      sectionHtmls.push(`
-  <section class="title-page" id="section-${i}">
-${contentHtml}
-  </section>`);
-    } else if (lower === 'copyright') {
+    if (lower === 'copyright') {
       // Copyright → <section class="copyright-page">
       sectionHtmls.push(`
   <section class="copyright-page" id="section-${i}">
@@ -660,6 +696,12 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
   } else {
     sectionHtmls.splice(0, 0, tocHtml);
   }
+
+  // Prepend cover and title page (generated from metadata, like EPUB)
+  const coverHtml = generateCoverHtml(title, author, coverImageDataUrl);
+  const titlePageHtml = generateTitlePageHtml(title, author, subtitle, publisher);
+  sectionHtmls.unshift(titlePageHtml);
+  sectionHtmls.unshift(coverHtml);
 
   const allSectionsHtml = sectionHtmls.join('\n');
 
