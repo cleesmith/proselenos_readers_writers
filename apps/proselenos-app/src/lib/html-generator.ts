@@ -10,6 +10,7 @@ export interface HtmlGeneratorOptions {
   year?: string;
   sections: Array<{ title: string; content: string }>;
   isDarkMode?: boolean;
+  mediaDataUrls?: Record<string, string>; // "images/photo.jpg" → "data:image/jpeg;base64,..."
 }
 
 /**
@@ -26,8 +27,8 @@ function markdownToHtml(text: string): string {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     // Italic: __text__
     .replace(/__(.+?)__/g, '<em>$1</em>')
-    // Strip markdown images (media is removed from HTML export)
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '')
+    // Convert markdown images to <img> tags
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;height:auto"/>')
     // Links: [text](url) - now safe to process after images
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
     // Paragraphs: double newlines
@@ -115,6 +116,47 @@ function stripMediaElements(html: string): string {
     .replace(/\n{3,}/g, '\n\n');
 
   return result;
+}
+
+/**
+ * Replace media src references (images/*, audio/*) with base64 data URIs.
+ * Handles both src="..." attributes and CSS url() references (e.g. sticky-image backgrounds).
+ */
+function replaceMediaRefsWithDataUrls(html: string, mediaDataUrls: Record<string, string>): string {
+  let result = html;
+  for (const [key, dataUrl] of Object.entries(mediaDataUrls)) {
+    const filename = key.split('/').pop()!;
+    const escapedFilename = filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const prefix = key.startsWith('audio/') ? 'audio' : 'images';
+
+    // Replace src="images/filename" and src="../images/filename"
+    result = result.replace(
+      new RegExp(`(src=["'])((?:\\.\\./)?${prefix}/)${escapedFilename}(["'])`, 'g'),
+      `$1${dataUrl}$3`
+    );
+
+    // Replace CSS url() references: url(images/filename) or url('images/filename')
+    // Used by sticky-image --sticky-bg inline style variable
+    result = result.replace(
+      new RegExp(`url\\((['"]?)(?:\\.\\./)?${prefix}/${escapedFilename}\\1\\)`, 'g'),
+      `url($1${dataUrl}$1)`
+    );
+  }
+  return result;
+}
+
+/**
+ * Make sticky-image enlarge checkbox IDs unique per section.
+ * plateToXhtml() resets its counter per section, so every section has
+ * id="enlarge-1", id="enlarge-2", etc. In EPUB (separate files) this is fine,
+ * but in a single-page HTML all IDs must be unique for the CSS checkbox hack.
+ * Rewrites "enlarge-N" → "enlarge-{sectionIndex}-N" in both id and for attributes.
+ */
+function deduplicateEnlargeIds(html: string, sectionIndex: number): string {
+  return html.replace(
+    /(id|for)="enlarge-(\d+)"/g,
+    `$1="enlarge-${sectionIndex}-$2"`
+  );
 }
 
 /**
@@ -265,15 +307,6 @@ body {
   text-indent: 0;
 }
 
-.toc-note {
-  text-align: center;
-  font-size: 0.85em;
-  font-style: italic;
-  color: #888;
-  margin: 2em 0 0 0;
-  text-indent: 0;
-}
-
 /* Chapter styles */
 .chapter {
   margin: 0;
@@ -297,6 +330,67 @@ p {
 .chapter p:first-of-type {
   text-indent: 0;
   margin-top: 1.5em;
+}
+
+/* Inline images */
+.image-container {
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+.image-container img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Figures (resized images from editor) */
+figure {
+  text-align: center;
+  margin: 1.5em auto;
+  max-width: 100%;
+}
+
+figure img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+figure[data-align="left"] {
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+figure[data-align="right"] {
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+}
+
+figcaption {
+  font-size: 0.85em;
+  text-align: center;
+  margin-top: 0.5em;
+  font-style: italic;
+}
+
+/* Audio blocks (non-VN) */
+.audio-block {
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+.audio-block audio {
+  width: 80%;
+  max-width: 400px;
+}
+
+.audio-block .caption {
+  font-size: 0.85em;
+  font-style: italic;
+  margin-top: 0.5em;
 }
 
 /* Scene overrides — no indent, left-aligned */
@@ -369,8 +463,12 @@ body.dark-mode .toc-content a:hover {
   color: #ccc;
 }
 
-body.dark-mode .toc-note {
-  color: #777;
+body.dark-mode img {
+  opacity: 0.9;
+}
+
+body.dark-mode .scene-audio {
+  border-color: rgba(200, 200, 200, 0.15);
 }
 
 /* ── Sticky Footer ─────────────────────────── */
@@ -487,7 +585,7 @@ body.dark-mode .toc-note {
  * HTML structure and CSS match the EPUB output from epub-generator.ts.
  */
 export function generateHtmlFromSections(options: HtmlGeneratorOptions): string {
-  const { title, author, year = new Date().getFullYear().toString(), sections, isDarkMode = true } = options;
+  const { title, author, year = new Date().getFullYear().toString(), sections, isDarkMode = true, mediaDataUrls } = options;
 
   // Build section HTML array (instead of one big string we split later)
   const sectionHtmls: string[] = [];
@@ -505,7 +603,12 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
     }
 
     let contentHtml = processContent(section.content);
-    contentHtml = stripMediaElements(contentHtml);
+    if (mediaDataUrls && Object.keys(mediaDataUrls).length > 0) {
+      contentHtml = replaceMediaRefsWithDataUrls(contentHtml, mediaDataUrls);
+    } else {
+      contentHtml = stripMediaElements(contentHtml);
+    }
+    contentHtml = deduplicateEnlargeIds(contentHtml, i);
 
     if (lower === 'title page') {
       // Title Page → <section class="title-page">
@@ -548,7 +651,6 @@ ${contentHtml}
     <div class="toc-contents">
 ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a href="#section-${entry.index}"><span class="toc-item-title">${escapeHtml(entry.title)}</span></a></p></div>`).join('\n')}
     </div>
-    <p class="toc-note">Note: This HTML version does not include audio or images.</p>
   </div>` : '';
 
   // Insert TOC after Copyright section (or at the beginning)

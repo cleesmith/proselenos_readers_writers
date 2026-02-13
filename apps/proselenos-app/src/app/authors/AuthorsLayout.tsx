@@ -1860,8 +1860,53 @@ export default function AuthorsLayout({
     const meta = await loadWorkingCopyMeta();
 
     try {
-      // 4. Generate HTML (media elements are stripped — text + styling only)
-      // XHTML-Native: Pass xhtml as content (html-generator handles it)
+      // 4. Load all media from IndexedDB and convert to base64 data URIs
+      const [images, audios] = await Promise.all([
+        getAllManuscriptImages(),
+        getAllManuscriptAudios(),
+      ]);
+
+      const mediaDataUrls: Record<string, string> = {};
+
+      // Convert images to base64 data URIs
+      for (const img of images) {
+        const arrayBuffer = await img.blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+        const base64 = btoa(binary);
+        const ext = img.filename.split('.').pop()?.toLowerCase() || 'jpg';
+        const mimeMap: Record<string, string> = {
+          png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+          svg: 'image/svg+xml', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        };
+        const mime = mimeMap[ext] || 'image/jpeg';
+        mediaDataUrls[`images/${img.filename}`] = `data:${mime};base64,${base64}`;
+      }
+
+      // Convert audio to base64 data URIs
+      for (const aud of audios) {
+        const arrayBuffer = await aud.blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+        const base64 = btoa(binary);
+        const ext = aud.filename.split('.').pop()?.toLowerCase() || 'wav';
+        const mimeMap: Record<string, string> = {
+          mp3: 'audio/mpeg', ogg: 'audio/ogg', m4a: 'audio/mp4',
+          aac: 'audio/aac', webm: 'audio/webm', wav: 'audio/wav',
+        };
+        const mime = mimeMap[ext] || 'audio/wav';
+        mediaDataUrls[`audio/${aud.filename}`] = `data:${mime};base64,${base64}`;
+      }
+
+      // 5. Generate HTML with embedded media
       const html = generateHtmlFromSections({
         title: workingCopy.title || 'Untitled',
         author: workingCopy.author || meta?.author || 'Unknown Author',
@@ -1870,9 +1915,10 @@ export default function AuthorsLayout({
           .filter(s => s.title.toLowerCase().trim() !== 'cover')
           .map(s => ({
             title: s.title,
-            content: s.xhtml,  // XHTML is valid HTML content
+            content: s.xhtml,
           })),
         isDarkMode,
+        mediaDataUrls,
       });
 
       // 6. Open in new tab
