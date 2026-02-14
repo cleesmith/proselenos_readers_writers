@@ -147,5 +147,5 @@ export async function openBookAsHtml(
   });
 
   // 7. Open in new tab
-  openHtmlInNewTab(html);
+  await openHtmlInNewTab(html);
 }

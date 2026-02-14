@@ -1947,7 +1947,7 @@ export default function AuthorsLayout({
       });
 
       // 7. Open in new tab
-      openHtmlInNewTab(html);
+      await openHtmlInNewTab(html);
 
       showAlert('HTML opened in new tab!', 'success', undefined, isDarkMode);
     } catch (error) {

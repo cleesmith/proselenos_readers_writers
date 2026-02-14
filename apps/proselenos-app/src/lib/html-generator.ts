@@ -796,11 +796,23 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Open HTML content in a new browser tab
+ * Open HTML content in a new browser tab via a real HTTPS URL.
+ * Stores the HTML in IndexedDB and opens /reader/view which reads it back.
+ * This avoids blob: URLs which Chrome blocks from tab-sharing (e.g. Gemini).
  */
-export function openHtmlInNewTab(html: string): void {
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  // URL will be garbage collected when tab closes
+export async function openHtmlInNewTab(html: string): Promise<void> {
+  const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open('AppFileSystem', 1);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction('files', 'readwrite');
+    const store = tx.objectStore('files');
+    store.put({ path: '__reader_view_html', content: html });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+  window.open('/reader/view', '_blank');
 }

@@ -13,6 +13,7 @@ const CACHE_NAME = \`everythingebooks-\${CACHE_VERSION}\`;
 const PRECACHE_URLS = [
   '/library',
   '/authors',
+  '/reader/view',
 ];
 
 // Install: pre-cache critical pages
