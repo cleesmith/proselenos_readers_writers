@@ -1,10 +1,12 @@
 import clsx from 'clsx';
 import { useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { navigateToLibrary, navigateToReader, showReaderWindow } from '@/utils/nav';
+import { navigateToLibrary } from '@/utils/nav';
 import { useEnv } from '@/context/EnvContext';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useThemeStore } from '@/store/themeStore';
+import { openBookAsHtml } from '@/services/htmlReadingService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLongPress } from '@/hooks/useLongPress';
 import { Menu, MenuItem, revealItemInDir } from '@/utils/desktop-stubs';
@@ -77,7 +79,6 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   handleBookDownload,
   handleSetSelectMode,
   handleShowDetailsBook,
-  onOpenReader,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -85,6 +86,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   const { envConfig, appService } = useEnv();
   const { settings } = useSettingsStore();
   const { updateBook } = useLibraryStore();
+  const { isDarkMode } = useThemeStore();
 
   const showBookDetailsModal = useCallback(async (book: Book) => {
     if (await makeBookAvailable(book)) {
@@ -124,20 +126,16 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       } else {
         const available = await makeBookAvailable(book);
         if (!available) return;
-        if (appService?.hasWindow && settings.openBookInNewWindow) {
-          showReaderWindow(appService, [book.hash]);
-        } else if (onOpenReader) {
-          // Modal mode: open reader in modal
-          onOpenReader(book.hash);
-        } else {
-          setTimeout(() => {
-            navigateToReader(router, [book.hash]);
-          }, 0);
+        try {
+          await openBookAsHtml(book, envConfig, isDarkMode);
+        } catch (error) {
+          console.error('Failed to open book as HTML:', error);
+          alert(`Failed to open book: ${(error as Error).message || 'Unknown error'}`);
         }
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isSelectMode, settings.openBookInNewWindow, appService, onOpenReader],
+    [isSelectMode, envConfig, isDarkMode],
   );
 
   const handleGroupClick = useCallback(
@@ -237,7 +235,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         toggleSelection((item as BooksGroup).id);
       }
     }, 100),
-    [isSelectMode],
+    [isSelectMode, item],
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -253,7 +251,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         handleGroupClick(item as BooksGroup);
       }
     }, 100),
-    [handleSelectItem, handleBookClick, handleGroupClick],
+    [handleSelectItem, handleBookClick, handleGroupClick, item],
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -265,7 +263,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         groupContextMenuHandler(item as BooksGroup);
       }
     }, 100),
-    [itemSelected, settings.localBooksDir],
+    [itemSelected, settings.localBooksDir, item],
   );
 
   const { pressing, handlers } = useLongPress(

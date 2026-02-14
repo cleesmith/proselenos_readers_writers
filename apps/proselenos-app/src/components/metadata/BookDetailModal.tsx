@@ -25,6 +25,7 @@ interface BookDetailModalProps {
   handleBookUpload?: (book: Book) => void;
   handleBookDelete?: (book: Book) => void;
   handleBookMetadataUpdate?: (book: Book, updatedMetadata: BookMetadata) => void;
+  onReadEpub?: (book: Book) => void;
 }
 
 interface DeleteConfig {
@@ -40,6 +41,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   handleBookUpload,
   handleBookDelete,
   handleBookMetadataUpdate,
+  onReadEpub,
 }) => {
   const _ = useTranslation();
   const { safeAreaInsets } = useThemeStore();
@@ -177,6 +179,11 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     setShowXray(true);
   };
 
+  const handleReadEpub = () => {
+    handleClose();
+    onReadEpub?.(book);
+  };
+
   const handleCloseXray = () => {
     setShowXray(false);
   };
@@ -232,6 +239,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onUpload={handleBookUpload ? handleReupload : undefined}
                 onDownloadLocal={handleDownloadLocal}
                 onXray={handleXray}
+                onReadEpub={onReadEpub ? handleReadEpub : undefined}
               />
             )}
           </div>

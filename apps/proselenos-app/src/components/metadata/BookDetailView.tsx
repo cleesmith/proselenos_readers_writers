@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  MdOutlineAutoStories,
   MdOutlineCloudDownload,
   MdOutlineCloudUpload,
   MdOutlineDelete,
@@ -31,6 +32,7 @@ interface BookDetailViewProps {
   onUpload?: () => void;
   onDownloadLocal?: () => void;
   onXray?: () => void;
+  onReadEpub?: () => void;
 }
 
 const BookDetailView: React.FC<BookDetailViewProps> = ({
@@ -43,6 +45,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onUpload,
   onDownloadLocal,
   onXray,
+  onReadEpub,
 }) => {
   const _ = useTranslation();
 
@@ -90,6 +93,11 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
             {onXray && (
               <button onClick={onXray} title={_('X-ray: View epub structure')}>
                 <GiBoxUnpacking className='fill-base-content hover:fill-purple-500' />
+              </button>
+            )}
+            {onReadEpub && (
+              <button onClick={onReadEpub} title={_('Read in EPUB viewer')}>
+                <MdOutlineAutoStories className='fill-base-content hover:fill-blue-500' />
               </button>
             )}
           </div>

@@ -514,6 +514,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setReaderBookHash(bookHash);
   }, []);
 
+  const handleReadEpubFromModal = useCallback((book: Book) => {
+    setShowDetailsBook(null);
+    handleOpenReader(book.hash);
+  }, [handleOpenReader]);
+
   const handleCloseReader = useCallback(() => {
     setReaderBookHash(null);
     // Refresh library in case book progress changed
@@ -635,6 +640,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           onClose={() => setShowDetailsBook(null)}
           handleBookDelete={handleBookDelete('local')}
           handleBookMetadataUpdate={handleUpdateMetadata}
+          onReadEpub={handleReadEpubFromModal}
         />
       )}
       <AboutWindow />
