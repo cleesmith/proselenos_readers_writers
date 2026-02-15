@@ -6,6 +6,7 @@
 
 'use client';
 
+import { FaDiscord } from 'react-icons/fa';
 import { ThemeConfig } from '../app/shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { RELEASE_HASH } from '@/generated/release';
@@ -80,6 +81,30 @@ export default function AboutModal({
           overflow: 'auto',
           flex: 1
         }}>
+          {/* Discord Link */}
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <a
+              href="https://discord.gg/xJxXAXrPVb"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: '#5865F2',
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+              }}
+            >
+              <FaDiscord size={20} />
+              Join our Discord
+            </a>
+          </div>
+
           {/* Privacy/Terms Links */}
           <div style={{ marginBottom: '24px' }}>
             <p style={{ margin: '0 0 16px 0', color: isDarkMode ? '#9ca3af' : '#6b7280', fontSize: '14px' }}>

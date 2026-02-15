@@ -1,4 +1,4 @@
-import { FaGithub } from 'react-icons/fa';
+import { FaGithub, FaDiscord } from 'react-icons/fa';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import Link from './Link';
@@ -18,6 +18,15 @@ const SupportLinks = () => {
           aria-label='GitHub'
         >
           <FaGithub size={iconSize} />
+        </Link>
+        <Link
+          href='https://discord.gg/xJxXAXrPVb'
+          className='flex items-center gap-2 rounded-full p-1.5 text-white transition-colors hover:opacity-80'
+          style={{ backgroundColor: '#5865F2' }}
+          title='Discord'
+          aria-label='Discord'
+        >
+          <FaDiscord size={iconSize} />
         </Link>
       </div>
     </div>
