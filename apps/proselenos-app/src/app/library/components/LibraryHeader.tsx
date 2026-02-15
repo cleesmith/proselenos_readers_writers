@@ -40,7 +40,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   searchQuery,
   onSearchChange,
   onImportBooks,
-  onToggleSelectMode,
+  onToggleSelectMode: _onToggleSelectMode, // disabled: multi-select mode
   onSelectAll,
   onDeselectAll,
   exportChangeCount = 0,
@@ -68,7 +68,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   const { safeAreaInsets: insets } = useThemeStore();
 
   useShortcuts({
-    onToggleSelectMode,
+    // disabled: onToggleSelectMode,
   });
 
   // Sync local state when parent searchQuery changes

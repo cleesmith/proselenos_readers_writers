@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { MdCheckCircle, MdCheckCircleOutline } from 'react-icons/md';
+import { MdCheckCircle, MdCheckCircleOutline, MdOutlineAutoStories } from 'react-icons/md';
 import { LiaInfoCircleSolid } from 'react-icons/lia';
 
 import { Book } from '@/types/book';
@@ -19,6 +19,7 @@ interface BookItemProps {
   bookSelected: boolean;
   transferProgress: number | null;
   showBookDetailsModal: (book: Book) => void;
+  onReadBook?: (book: Book) => void;
 }
 
 const BookItem: React.FC<BookItemProps> = ({
@@ -29,6 +30,7 @@ const BookItem: React.FC<BookItemProps> = ({
   bookSelected,
   transferProgress,
   showBookDetailsModal,
+  onReadBook,
 }) => {
   const _ = useTranslation();
   const { appService } = useEnv();
@@ -98,21 +100,34 @@ const BookItem: React.FC<BookItemProps> = ({
           }}
         >
           {book.progress && <ReadingProgress book={book} />}
-          <div className='flex items-center justify-center gap-x-2'>
-            {!appService?.isMobile && (
+          <div className='flex items-center justify-center gap-x-8'>
+            {onReadBook && (
               <button
-                aria-label={_('Show Ebook Details')}
-                className='show-detail-button -m-2 p-2 sm:opacity-0 sm:group-hover:opacity-100'
+                aria-label={_('Read Ebook')}
+                title={_('Read Ebook')}
+                className='-m-2 p-2'
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => {
-                  showBookDetailsModal(book);
+                  onReadBook(book);
                 }}
               >
                 <div className='pt-[2px] sm:pt-[1px]'>
-                  <LiaInfoCircleSolid size={iconSize15} />
+                  <MdOutlineAutoStories size={iconSize15} className='fill-blue-500' />
                 </div>
               </button>
             )}
+            <button
+              aria-label={_('Show Ebook Details')}
+              className='show-detail-button -m-2 p-2'
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => {
+                showBookDetailsModal(book);
+              }}
+            >
+              <div className='pt-[2px] sm:pt-[1px]'>
+                <LiaInfoCircleSolid size={iconSize15} />
+              </div>
+            </button>
             {transferProgress !== null && transferProgress !== 100 && (
               <div
                 className='radial-progress'

@@ -79,6 +79,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   handleBookDownload,
   handleSetSelectMode,
   handleShowDetailsBook,
+  onOpenReader,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -268,9 +269,8 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
 
   const { pressing, handlers } = useLongPress(
     {
-      onLongPress: () => {
-        handleSelectItem();
-      },
+      onLongPress: undefined, // disabled: was handleSelectItem
+
       onTap: () => {
         handleOpenItem();
       },
@@ -278,7 +278,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         if (appService?.hasContextMenu) {
           handleContextMenu();
         } else if (appService?.isAndroidApp) {
-          handleSelectItem();
+          // disabled: was handleSelectItem();
         }
       },
     },
@@ -307,6 +307,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
           pressing && mode === 'grid' ? 'scale-95' : 'scale-100',
         )}
         role='button'
+        title={'format' in item ? 'Read enhanced HTML' : item.name}
         tabIndex={0}
         aria-label={'format' in item ? item.title : item.name}
         style={{
@@ -325,6 +326,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
               bookSelected={itemSelected}
               transferProgress={transferProgress}
               showBookDetailsModal={showBookDetailsModal}
+              onReadBook={onOpenReader ? (book: Book) => onOpenReader(book.hash) : undefined}
             />
           ) : (
             <GroupItem

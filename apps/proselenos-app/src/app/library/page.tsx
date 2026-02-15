@@ -490,7 +490,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   };
 
   const handleSetSelectMode = (selectMode: boolean) => {
-    // No Desktop - haptic feedback removed
+    if (selectMode) return; // disabled: multi-select mode
     setIsSelectMode(selectMode);
     setIsSelectAll(false);
     setIsSelectNone(false);

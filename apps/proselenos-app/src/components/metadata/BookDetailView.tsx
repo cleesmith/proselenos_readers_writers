@@ -64,7 +64,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
               {formatAuthors(book.author, book.primaryLanguage) || _('Unknown')}
             </p>
           </div>
-          <div className='flex flex-wrap items-center gap-x-4'>
+          <div className='flex flex-wrap items-center gap-x-8'>
             {onEdit && (
               <button onClick={onEdit} title={_('Edit Ebook Metadata')}>
                 <MdOutlineEdit className='fill-base-content hover:fill-blue-500' />
@@ -96,7 +96,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
               </button>
             )}
             {onReadEpub && (
-              <button onClick={onReadEpub} title={_('Read in EPUB viewer')}>
+              <button onClick={onReadEpub} title={_('Read Ebook')}>
                 <MdOutlineAutoStories className='fill-base-content hover:fill-blue-500' />
               </button>
             )}
