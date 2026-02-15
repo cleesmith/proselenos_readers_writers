@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiGear, PiPencil, PiTrash, PiArrowClockwise, PiDatabase, PiInfo } from 'react-icons/pi';
+import { PiGear, PiPencil, PiTrash, PiArrowClockwise, PiArrowCircleUp, PiDatabase, PiInfo } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { showConfirm, showAlert } from '@/app/shared/alerts';
 import { TbSunMoon } from 'react-icons/tb';
@@ -44,6 +44,29 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
   const [savedBookCoverForLockScreen, setSavedBookCoverForLockScreen] = useState(
     settings.savedBookCoverForLockScreen || '',
   );
+
+
+  const handleUpdateApp = async () => {
+    setIsDropdownOpen?.(false);
+    try {
+      // 1. Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      // 2. Clear all Cache Storage
+      const cacheNames = await caches.keys();
+      for (const name of cacheNames) {
+        await caches.delete(name);
+      }
+      // 3. Reload
+      window.location.reload();
+    } catch (error) {
+      console.error('Update app error:', error);
+    }
+  };
 
   const showAboutProselenosebooks = () => {
     setAboutDialogVisible(true);
@@ -309,6 +332,12 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
         Icon={PiTrash}
         buttonClass='bg-red-900/20 hover:!bg-red-900/30'
         onClick={handleResetLibrary}
+      />
+      <MenuItem
+        label={_('Update App')}
+        description={_('only works when online')}
+        Icon={PiArrowCircleUp}
+        onClick={handleUpdateApp}
       />
       <MenuItem label={_('About')} Icon={PiInfo} onClick={showAboutProselenosebooks} />
     </Menu>
