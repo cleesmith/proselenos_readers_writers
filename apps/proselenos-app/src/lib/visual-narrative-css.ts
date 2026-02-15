@@ -363,6 +363,10 @@ figcaption {
   z-index: 9999;
 }
 
+body:has(.sticky-img-wrap input:checked) .sticky-img-wrap {
+  position: static;
+}
+
 .sticky-caption {
   font-size: 0.75em;
   text-align: center;
