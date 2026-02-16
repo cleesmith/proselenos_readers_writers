@@ -1154,7 +1154,29 @@ export function xhtmlToPlainText(xhtml: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xhtml, 'text/html');
 
-  // Get text content from body, or entire document if no body
+  // Step 1: Remove elements that should NOT appear in AI text
+  // - sticky image wraps (caption "Space", img, enlarge UI)
+  // - figures with figcaptions (character portraits like "Vapo", "Cramb")
+  // - audio blocks (scene audio and toolbar-inserted audio)
+  const removeSelectors = [
+    'div.sticky-img-wrap',
+    'figure',
+    'div.scene-audio',
+    'div.audio-block',
+  ];
+  for (const selector of removeSelectors) {
+    doc.querySelectorAll(selector).forEach((el) => el.remove());
+  }
+
+  // Step 2: Fix dialogue speaker spans so they don't run into dialogue text
+  // e.g. <span class="speaker">cramb (with curiosity)</span>Where were we
+  //    → CRAMB (WITH CURIOSITY): Where were we
+  doc.querySelectorAll('div.dialogue span.speaker').forEach((span) => {
+    const text = (span.textContent || '').trim();
+    span.textContent = text.toUpperCase() + ': ';
+  });
+
+  // Step 3: Extract textContent as before
   const textContent = doc.body?.textContent || doc.documentElement?.textContent || '';
 
   // Clean up: normalize whitespace but preserve paragraph breaks
