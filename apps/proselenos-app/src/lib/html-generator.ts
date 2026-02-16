@@ -78,7 +78,7 @@ function sectionHasVnContent(html: string): boolean {
  */
 function processContent(text: string): string {
   // Detect if content is already HTML (contains common HTML tags)
-  const isHtml = /<(p|div|span|a|em|strong|i|b|br|img|h[1-6])[\s>\/]/i.test(text);
+  const isHtml = /<(p|div|span|a|em|strong|i|b|br|img|h[1-6]|pre|section)[\s>\/]/i.test(text);
 
   if (isHtml) {
     // Content is already HTML from EPUB
@@ -327,6 +327,15 @@ p {
   text-indent: 1.5em;
   text-align: justify;
   line-height: 1.6;
+}
+
+pre {
+  margin: 1em 0;
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  font-family: monospace;
 }
 
 /* First paragraph after chapter heading */

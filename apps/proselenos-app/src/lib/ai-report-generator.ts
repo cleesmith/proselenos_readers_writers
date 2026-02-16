@@ -45,8 +45,8 @@ export async function generateAIReportEpub(
   // 5. Chapter 1: AI Response
   zip.file('OEBPS/chapter1.xhtml', createChapterPage('AI Response', aiResponse, 'chapter1'));
 
-  // 6. Chapter 2: Request Sent
-  zip.file('OEBPS/chapter2.xhtml', createChapterPage('Request Sent', requestContent, 'chapter2'));
+  // 6. Chapter 2: Request Sent (preformatted - plain text sent to AI, no formatting)
+  zip.file('OEBPS/chapter2.xhtml', createPreformattedChapterPage('Request Sent', requestContent, 'chapter2'));
 
   // 7. Navigation (EPUB 3.0)
   zip.file('OEBPS/nav.xhtml', createNavXHTML(title));
@@ -143,6 +143,23 @@ function createChapterPage(chapterTitle: string, content: string, id: string): s
   <section class="chapter" epub:type="chapter" id="${id}">
     <h1>${escapeHtml(chapterTitle)}</h1>
 ${paragraphs}
+  </section>
+</body>
+</html>`;
+}
+
+function createPreformattedChapterPage(chapterTitle: string, content: string, id: string): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>${escapeHtml(chapterTitle)}</title>
+  <link rel="stylesheet" type="text/css" href="css/style.css"/>
+</head>
+<body>
+  <section class="chapter" epub:type="chapter" id="${id}">
+    <h1>${escapeHtml(chapterTitle)}</h1>
+    <pre>${escapeHtml(content)}</pre>
   </section>
 </body>
 </html>`;
@@ -286,6 +303,15 @@ p {
   text-align: left;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+pre {
+  margin: 0 0 1em 0;
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 nav h1 {

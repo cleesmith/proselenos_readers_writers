@@ -1176,11 +1176,31 @@ export function xhtmlToPlainText(xhtml: string): string {
     span.textContent = text.toUpperCase() + ': ';
   });
 
-  // Step 3: Extract textContent as before
+  // Step 3: Insert newlines at block-level element boundaries
+  // textContent ignores element structure, so we inject \n text nodes
+  // after block elements so paragraph/heading/list breaks survive extraction.
+  const blockTags = new Set([
+    'P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+    'BLOCKQUOTE', 'LI', 'UL', 'OL', 'HR', 'TABLE', 'TR',
+    'SECTION', 'ARTICLE',
+  ]);
+  doc.querySelectorAll('*').forEach((el) => {
+    if (blockTags.has(el.tagName)) {
+      el.after(doc.createTextNode('\n'));
+    }
+  });
+  // Replace <br> with newline text nodes
+  doc.querySelectorAll('br').forEach((br) => {
+    br.replaceWith(doc.createTextNode('\n'));
+  });
+
+  // Step 4: Extract textContent and clean up preserving newlines
   const textContent = doc.body?.textContent || doc.documentElement?.textContent || '';
 
-  // Clean up: normalize whitespace but preserve paragraph breaks
   return textContent
-    .replace(/\s+/g, ' ')  // Collapse whitespace
+    .split('\n')
+    .map(line => line.replace(/\s+/g, ' ').trim())  // collapse spaces within each line
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')  // max one blank line between sections
     .trim();
 }
