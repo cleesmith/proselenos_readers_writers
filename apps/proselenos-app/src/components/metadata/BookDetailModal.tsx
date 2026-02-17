@@ -17,6 +17,8 @@ import Spinner from '@/components/Spinner';
 import BookDetailView from './BookDetailView';
 import BookDetailEdit from './BookDetailEdit';
 import { XrayModal } from '@/components/xray';
+import JSZip from 'jszip';
+import { VISUAL_NARRATIVE_CSS_BOOKSELLER } from '@/lib/visual-narrative-css';
 
 interface BookDetailModalProps {
   book: Book;
@@ -175,6 +177,28 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadBookseller = async () => {
+    const appService = await envConfig.getAppService();
+    const epubFilename = getLocalBookFilename(book);
+    const epubFile = await appService.openFile(epubFilename, 'Books');
+    const arrayBuffer = await epubFile.arrayBuffer();
+
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const vnCssPath = 'OEBPS/css/visual-narrative.css';
+
+    if (zip.file(vnCssPath)) {
+      zip.file(vnCssPath, VISUAL_NARRATIVE_CSS_BOOKSELLER);
+    }
+
+    const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${makeSafeFilename(book.title)}-booksellers.epub`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleXray = () => {
     setShowXray(true);
   };
@@ -238,6 +262,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onDownload={undefined}
                 onUpload={handleBookUpload ? handleReupload : undefined}
                 onDownloadLocal={handleDownloadLocal}
+                onDownloadBookseller={handleDownloadBookseller}
                 onXray={handleXray}
                 onReadEpub={onReadEpub ? handleReadEpub : undefined}
               />
