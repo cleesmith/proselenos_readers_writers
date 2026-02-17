@@ -144,6 +144,8 @@ export async function openBookAsHtml(
     isDarkMode,
     mediaDataUrls,
     coverImageDataUrl,
+    publisher: parsed.publisher,
+    subtitle: parsed.subtitle,
   });
 
   // 7. Open in new tab

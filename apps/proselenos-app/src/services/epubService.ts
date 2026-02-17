@@ -20,6 +20,8 @@ export interface ParsedEpub {
   title: string;
   author: string;
   language: string;
+  publisher?: string;
+  subtitle?: string;
   coverImage: Blob | null;
   sections: ParsedSection[];
   images?: Array<{filename: string, blob: Blob}>;  // Inline images (not cover), optional for backwards compatibility
@@ -75,7 +77,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     throw new Error(`Invalid epub: missing ${rootfilePath}`);
   }
 
-  const { title, author, language, manifest, spine, coverImageId } = parseContentOpf(contentOpf);
+  const { title, author, language, publisher, manifest, spine, coverImageId } = parseContentOpf(contentOpf);
 
   // Step 3: Extract cover image if present
   let coverImage: Blob | null = null;
@@ -199,10 +201,24 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
   // Rebuild sections array with protected sections first (no cover section)
   const orderedSections = [titlePageSection, copyrightSection, ...otherSections];
 
+  // Extract subtitle from Title Page XHTML (subtitle is not in OPF metadata)
+  let subtitle: string | undefined;
+  const titlePageSec = orderedSections.find(s => s.type === 'title-page');
+  if (titlePageSec) {
+    const tpParser = new DOMParser();
+    const tpDoc = tpParser.parseFromString(`<body>${titlePageSec.xhtml}</body>`, 'text/html');
+    const subtitleEl = tpDoc.querySelector('.book-subtitle');
+    if (subtitleEl?.textContent?.trim()) {
+      subtitle = subtitleEl.textContent.trim();
+    }
+  }
+
   return {
     title: title || 'Untitled',
     author: author || '',
     language: language || 'en',
+    publisher: publisher || undefined,
+    subtitle,
     coverImage,
     sections: orderedSections,
     images,
@@ -232,6 +248,7 @@ function parseContentOpf(opfContent: string): {
   title: string;
   author: string;
   language: string;
+  publisher: string;
   manifest: Map<string, { id: string; href: string; mediaType: string; properties: string }>;
   spine: { idref: string; linear: boolean }[];
   coverImageId: string | null;
@@ -248,6 +265,9 @@ function parseContentOpf(opfContent: string): {
 
   const languageEl = doc.querySelector('metadata > language, metadata > dc\\:language');
   const language = languageEl?.textContent || 'en';
+
+  const publisherEl = doc.querySelector('metadata > publisher, metadata > dc\\:publisher');
+  const publisher = publisherEl?.textContent || '';
 
   // Extract manifest (including properties for cover-image detection)
   const manifest = new Map<string, { id: string; href: string; mediaType: string; properties: string }>();
@@ -287,7 +307,7 @@ function parseContentOpf(opfContent: string): {
     }
   });
 
-  return { title, author, language, manifest, spine, coverImageId };
+  return { title, author, language, publisher, manifest, spine, coverImageId };
 }
 
 /**
