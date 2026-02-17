@@ -83,6 +83,11 @@ export interface MyHrElement extends MyBlockElement {
   type: typeof KEYS.hr;
 }
 
+export interface MyLineBreakElement extends MyBlockElement {
+  children: [EmptyText];
+  type: 'line_break';
+}
+
 export interface MyImageElement
   extends MyBlockElement,
     TCaptionProps,
@@ -155,6 +160,7 @@ export type MyValue = (
   | MyH5Element
   | MyH6Element
   | MyHrElement
+  | MyLineBreakElement
   | MyImageElement
   | MyMediaEmbedElement
   | MyParagraphElement

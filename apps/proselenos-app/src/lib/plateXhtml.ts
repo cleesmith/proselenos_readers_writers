@@ -271,6 +271,9 @@ function serializeNode(node: PlateElement | PlateText): string {
     case 'li':
       return `<li>${children}</li>\n`;
 
+    case 'line_break':
+      return '<br/>\n';
+
     case 'hr': {
       // Visual Narrative scene break
       const hrVnType = (element as any).vnType as string | undefined;
@@ -396,6 +399,12 @@ function processBlockChildren(container: Element): (PlateElement | PlateText)[] 
         // Standalone <audio> element → PlateJS audio node
         const audioNode = parseAudioElement(el);
         blocks.push(audioNode);
+        break;
+      }
+
+      case 'br': {
+        // Standalone <br> at block level → line_break void element
+        blocks.push({ type: 'line_break', children: [{ text: '' }] });
         break;
       }
 

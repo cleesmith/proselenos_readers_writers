@@ -81,9 +81,7 @@ function processContent(text: string): string {
   const isHtml = /<(p|div|span|a|em|strong|i|b|br|img|h[1-6]|pre|section)[\s>\/]/i.test(text);
 
   if (isHtml) {
-    // Content is already HTML from EPUB
-    // Collapse multiple consecutive <br> tags into one (removes excessive blank lines)
-    return text.replace(/(<br\s*\/?>[\s]*){2,}/gi, '<br>');
+    return text;
   }
 
   // Plain text/markdown - apply conversion

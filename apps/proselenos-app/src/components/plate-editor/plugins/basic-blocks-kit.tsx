@@ -10,7 +10,7 @@ import {
   H6Plugin,
   HorizontalRulePlugin,
 } from '@platejs/basic-nodes/react';
-import { ParagraphPlugin } from 'platejs/react';
+import { createPlatePlugin, ParagraphPlugin } from 'platejs/react';
 
 import { BlockquoteElement } from '@/components/plate-ui/blockquote-node';
 import {
@@ -22,7 +22,13 @@ import {
   H6Element,
 } from '@/components/plate-ui/heading-node';
 import { HrElement } from '@/components/plate-ui/hr-node';
+import { LineBreakElement } from '@/components/plate-ui/line-break-node';
 import { ParagraphElement } from '@/components/plate-ui/paragraph-node';
+
+export const LineBreakPlugin = createPlatePlugin({
+  key: 'line_break',
+  node: { isElement: true, isVoid: true },
+});
 
 export const BasicBlocksKit = [
   ParagraphPlugin.withComponent(ParagraphElement),
@@ -85,4 +91,5 @@ export const BasicBlocksKit = [
     shortcuts: {},
   }),
   HorizontalRulePlugin.withComponent(HrElement),
+  LineBreakPlugin.withComponent(LineBreakElement),
 ];
