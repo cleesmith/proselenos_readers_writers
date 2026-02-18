@@ -31,9 +31,9 @@ export default function OneByOnePanel({
   isDarkMode,
   issues,
   currentIndex,
-  onAccept,
-  onCustom,
-  onSkip,
+  onAccept: _onAccept,
+  onCustom: _onCustom,
+  onSkip: _onSkip,
   onClose,
   onPrev,
   onNext,
@@ -61,13 +61,13 @@ export default function OneByOnePanel({
     setCustomText('');
   }, [currentIndex]);
 
-  const handleCustomClick = () => {
-    setShowCustomInput(true);
-  };
+  // const _handleCustomClick = () => {
+  //   setShowCustomInput(true);
+  // };
 
   const handleApplyCustom = () => {
     if (customText.trim()) {
-      onCustom(customText.trim());
+      _onCustom(customText.trim());
       setShowCustomInput(false);
       setCustomText('');
     }
@@ -134,6 +134,7 @@ export default function OneByOnePanel({
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          {/* Accept/Custom/Skip temporarily hidden — may return in future
           {!showCustomInput && (
             <>
               <StyledSmallButton onClick={onAccept} theme={theme}>
@@ -147,6 +148,7 @@ export default function OneByOnePanel({
               </StyledSmallButton>
             </>
           )}
+          */}
           <StyledSmallButton onClick={onClose} theme={theme}>
             Close
           </StyledSmallButton>
