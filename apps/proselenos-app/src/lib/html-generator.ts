@@ -89,6 +89,15 @@ function processContent(text: string): string {
 }
 
 /**
+ * Convert non-ASCII characters to numeric HTML entities.
+ * Ensures HTML displays correctly regardless of browser encoding settings,
+ * critical when sharing standalone .html files without a web server.
+ */
+function convertNonAsciiToEntities(html: string): string {
+  return html.replace(/[^\x00-\x7F]/g, (char) => `&#${char.codePointAt(0)};`);
+}
+
+/**
  * Strip all media elements (images, audio) from HTML content.
  * The HTML export focuses on text + styling; binary media would appear as
  * broken references since the data isn't embedded.
@@ -658,6 +667,7 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
       contentHtml = stripMediaElements(contentHtml);
     }
     contentHtml = deduplicateEnlargeIds(contentHtml, i);
+    contentHtml = convertNonAsciiToEntities(contentHtml);
 
     if (lower === 'copyright') {
       // Copyright → <section class="copyright-page">
@@ -741,7 +751,7 @@ ${allSectionsHtml}
       <button class="download-btn" id="downloadBtn" title="Download HTML file">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
       </button>
-      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '🌙' : '☀️'}</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#127769;' : '&#9728;&#65039;'}</button>
     </div>
   </div>
 
@@ -754,16 +764,16 @@ ${allSectionsHtml}
     const savedTheme = localStorage.getItem('html-ebook-theme');
     if (savedTheme === 'light' && body.classList.contains('dark-mode')) {
       body.classList.remove('dark-mode');
-      themeToggle.textContent = '☀️';
+      themeToggle.textContent = '\u2600\uFE0F';
     } else if (savedTheme === 'dark' && !body.classList.contains('dark-mode')) {
       body.classList.add('dark-mode');
-      themeToggle.textContent = '🌙';
+      themeToggle.textContent = '\u{1F319}';
     }
 
     themeToggle.addEventListener('click', () => {
       body.classList.toggle('dark-mode');
       const isDark = body.classList.contains('dark-mode');
-      themeToggle.textContent = isDark ? '🌙' : '☀️';
+      themeToggle.textContent = isDark ? '\u{1F319}' : '\u2600\uFE0F';
       localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
     });
 
@@ -799,7 +809,8 @@ function escapeHtml(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#039;')
+    .replace(/[^\x00-\x7F]/g, (char) => `&#${char.codePointAt(0)};`);
 }
 
 /**
