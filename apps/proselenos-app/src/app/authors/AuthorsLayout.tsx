@@ -1374,6 +1374,11 @@ export default function AuthorsLayout({
   const handleAddElement = async (elementType: ElementType) => {
     if (!epub) return;
 
+    // Auto-save current section if there are pending changes (same as handleSelectSection)
+    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
+      await saveCurrentSection();
+    }
+
     const meta = await loadWorkingCopyMeta();
     if (!meta) return;
 
