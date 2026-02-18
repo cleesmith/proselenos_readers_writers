@@ -1382,9 +1382,15 @@ export default function AuthorsLayout({
     const meta = await loadWorkingCopyMeta();
     if (!meta) return;
 
-    // Find next section number for ID
-    const numbers = meta.sectionIds.map(id => parseInt(id.split('-')[1] || '0') || 0);
-    const nextNum = Math.max(0, ...numbers) + 1;
+    // Find next section number for ID - check ALL sources to avoid duplicates
+    // WorkingCopyMeta.sectionIds can become stale, so also check ManuscriptMeta and in-memory epub
+    const numbersFromMeta = meta.sectionIds.map(id => parseInt(id.split('-')[1] || '0') || 0);
+    const manuscriptMetaForId = await loadManuscriptMeta();
+    const numbersFromManuscript = manuscriptMetaForId
+      ? manuscriptMetaForId.sections.map(s => parseInt(s.id.split('-')[1] || '0') || 0)
+      : [];
+    const numbersFromEpub = epub.sections.map(s => parseInt(s.id.split('-')[1] || '0') || 0);
+    const nextNum = Math.max(0, ...numbersFromMeta, ...numbersFromManuscript, ...numbersFromEpub) + 1;
     const newId = `section-${String(nextNum).padStart(3, '0')}`;
 
     // Get default title for this element type
