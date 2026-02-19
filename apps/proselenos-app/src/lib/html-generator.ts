@@ -1,4 +1,5 @@
-// lib/html-generator.ts
+// apps/proselenos-app/src/lib/html-generator.ts
+
 // Generates a single-page readable HTML file from manuscript sections
 // CSS matches the EPUB output (style.css + visual-narrative.css)
 
@@ -777,13 +778,33 @@ ${allSectionsHtml}
       localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
     });
 
+    // Convert non-ASCII to HTML entities in visible text only.
+    // Leaves HTML tags, attributes, <script>, and <style> untouched.
+    function convertForDownload(html) {
+      var blocks = [];
+      html = html.replace(/<(script|style)\\b[\\s\\S]*?<\\/\\1>/gi, function(m) {
+        blocks.push(m);
+        return '\\x00BLOCK' + (blocks.length - 1) + '\\x00';
+      });
+      html = html.replace(/>([^<]+)</g, function(match, text) {
+        var converted = text.replace(/[^\\x00-\\x7F]/g, function(c) {
+          return '&#' + c.codePointAt(0) + ';';
+        });
+        return '>' + converted + '<';
+      });
+      html = html.replace(/\\x00BLOCK(\\d+)\\x00/g, function(m, i) {
+        return blocks[parseInt(i)];
+      });
+      return html;
+    }
+
     // Download functionality
     const downloadBtn = document.getElementById('downloadBtn');
     downloadBtn.addEventListener('click', () => {
-      // Hide download button before capturing HTML (not needed in downloaded file)
       downloadBtn.style.display = 'none';
-      const html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+      var html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
       downloadBtn.style.display = '';
+      html = convertForDownload(html);
 
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
