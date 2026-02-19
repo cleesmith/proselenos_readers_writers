@@ -22,6 +22,26 @@ Click "**+Ebook**" to add your EPUB files and start reading.
 
 ---
 
+## The Power of Three: EBook, EeBook, EhBook
+
+Drop an ebook into **Everything Ebooks** and you instantly have three ways to read and share it.
+
+**EBook** - is the standard epub format that works on any ebook reader you already use. Nothing changes, nothing breaks. It is the book you started with.
+
+**EeBook** - is the same book opened in the Everything Ebooks reader. 
+It looks better, reads better, and gives you features that ordinary readers do not offer.
+
+**EhBook** - is something new. One click and you download your book as a single HTML+CSS+Javascript file that opens in any web browser. No app to install. No account to create. No store to browse. Just open it. Send it to a friend, put it on a thumb drive, email it to yourself. It works on a phone, a laptop, a tablet, anything with a browser. Light mode, dark mode, all built in.
+
+Three formats from one ebook. You do not have to be an author or go through a publishing process. You do not need technical knowledge. Your book never leaves your device and no server ever sees it. Everything happens right where you are, in your browser, on your machine.
+
+Write once, read everywhere is a promise others have made. 
+Everything Ebooks actually delivers it, and you do not have to write a word. 
+Just bring an ebook you already have.
+But if you're an author, read on.
+
+---
+
 ## For Authors
 
 **EPUB all the way down.** Your ebook is your manuscript.

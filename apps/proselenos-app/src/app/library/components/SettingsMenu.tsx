@@ -11,6 +11,7 @@ import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
+import { RELEASE_HASH } from '@/generated/release';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { setStorageDialogVisible } from '@/components/StorageWindow';
 import { saveSysSettings } from '@/helpers/settings';
@@ -334,7 +335,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
         onClick={handleResetLibrary}
       />
       <MenuItem
-        label={_('Update App')}
+        label={`${_('Update App')} - ${RELEASE_HASH}`}
         description={_('only works when online')}
         Icon={PiArrowCircleUp}
         onClick={handleUpdateApp}
