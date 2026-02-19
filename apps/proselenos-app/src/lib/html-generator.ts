@@ -787,7 +787,7 @@ ${allSectionsHtml}
         return '\\x00BLOCK' + (blocks.length - 1) + '\\x00';
       });
       html = html.replace(/>([^<]+)</g, function(match, text) {
-        var converted = text.replace(/[^\\x00-\\x7F]/g, function(c) {
+        var converted = text.replace(/[^\\x00-\\x7F]/gu, function(c) {
           return '&#' + c.codePointAt(0) + ';';
         });
         return '>' + converted + '<';
