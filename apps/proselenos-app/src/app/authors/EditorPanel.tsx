@@ -52,6 +52,7 @@ interface EditorPanelProps {
   hasApiKey: boolean;
   currentModel: string;
   // Section content - XHTML-Native: Single source of truth
+  sectionId?: string;
   sectionTitle: string;
   sectionXhtml: string;             // XHTML content (single source of truth)
   sectionType?: string;
@@ -129,6 +130,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   onAIWritingClick,
   hasApiKey,
   currentModel,
+  sectionId,
   sectionTitle,
   sectionXhtml,
   sectionType,
@@ -773,6 +775,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
               const plateValue = editor.children as Value;
               return plateToXhtml(plateValue);
             })()}
+            sectionId={sectionId}
             sectionTitle={chapterTitle}
             onClose={() => setShowPreview(false)}
             theme={theme}

@@ -1495,6 +1495,7 @@ export default function AuthorsLayout({
         id: s.id,
         title: s.title,
         type: (s.type || 'chapter') as ElementType,
+        wallpaperImageId: s.wallpaperImageId,
       }));
       await saveManuscriptMeta(manuscriptMeta);
     }
@@ -1672,6 +1673,7 @@ export default function AuthorsLayout({
       title: updatedSection.title,
       xhtml: updatedSection.xhtml || '<p></p>',
       type: newType,
+      wallpaperImageId: updatedSection.wallpaperImageId,
     });
 
     // Update meta.sectionIds to match reordered sections
@@ -1688,6 +1690,7 @@ export default function AuthorsLayout({
         id: s.id,
         title: s.title,
         type: (s.type || 'chapter') as ElementType,
+        wallpaperImageId: s.wallpaperImageId,
       }));
       await saveManuscriptMeta(manuscriptMeta);
     }
@@ -2239,6 +2242,7 @@ export default function AuthorsLayout({
             onAIWritingClick={async () => { await saveCurrentSection(); onAIWritingClick(); }}
             hasApiKey={hasApiKey}
             currentModel={currentModel}
+            sectionId={selectedSectionId || undefined}
             sectionTitle={selectedSection?.title ?? ''}
             sectionXhtml={selectedSection?.xhtml ?? '<p></p>'}
             sectionType={selectedSection?.type}

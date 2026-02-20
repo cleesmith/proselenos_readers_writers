@@ -9,7 +9,8 @@ import { useState, useEffect, useRef } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import { VISUAL_NARRATIVE_CSS } from '@/lib/visual-narrative-css';
-import { getAllManuscriptImages, getAllManuscriptAudios } from '@/services/manuscriptStorage';
+import { getAllManuscriptImages, getAllManuscriptAudios, loadManuscriptMeta } from '@/services/manuscriptStorage';
+import type { SectionMeta } from '@/services/manuscriptStorage';
 
 // Parallax CSS — mirrors html-generator.ts PARALLAX_CSS
 const PARALLAX_CSS = `/* ── Parallax Wallpaper styles ──────────────── */
@@ -74,6 +75,7 @@ const PARALLAX_JS = `
 
 interface SectionPreviewProps {
   xhtml: string;
+  sectionId?: string;
   sectionTitle: string;
   onClose: () => void;
   theme: ThemeConfig;
@@ -84,6 +86,7 @@ interface SectionPreviewProps {
 
 export default function SectionPreview({
   xhtml,
+  sectionId,
   sectionTitle,
   onClose,
   theme,
@@ -94,6 +97,10 @@ export default function SectionPreview({
   const [srcdoc, setSrcdoc] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const blobUrlsRef = useRef<string[]>([]);
+
+  // Meta display state
+  const [showMeta, setShowMeta] = useState(false);
+  const [metaEntry, setMetaEntry] = useState<SectionMeta | null>(null);
 
   const isWallpaperSection = sectionType === 'wallpaper-chapter' && !!wallpaperImageId;
 
@@ -245,10 +252,63 @@ ${renderAsWallpaper ? `<script>${PARALLAX_JS}</script>` : ''}
         }}>
           Preview: {sectionTitle}
         </span>
-        <StyledSmallButton onClick={onClose} theme={theme}>
-          Close Preview
-        </StyledSmallButton>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <StyledSmallButton
+            onClick={async () => {
+              if (showMeta) {
+                setShowMeta(false);
+                return;
+              }
+              const meta = await loadManuscriptMeta();
+              if (meta && sectionId) {
+                const section = meta.sections.find(s => s.id === sectionId);
+                if (section) {
+                  setMetaEntry(section);
+                } else {
+                  setMetaEntry(null);
+                }
+              } else {
+                setMetaEntry(null);
+              }
+              setShowMeta(true);
+            }}
+            theme={theme}
+          >
+            Meta
+          </StyledSmallButton>
+          <StyledSmallButton onClick={onClose} theme={theme}>
+            Close
+          </StyledSmallButton>
+        </div>
       </div>
+
+      {/* Meta display panel */}
+      {showMeta && (
+        <div style={{
+          padding: '8px 12px',
+          borderBottom: `1px solid ${theme.border}`,
+          backgroundColor: '#1a1a2e',
+          flexShrink: 0,
+          maxHeight: '200px',
+          overflow: 'auto',
+        }}>
+          <pre style={{
+            margin: 0,
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            lineHeight: '1.4',
+            color: '#c8c0b8',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}>
+            {metaEntry
+              ? Object.entries(metaEntry).map(([k, v]) => `${k}: ${v ?? '(none)'}`).join('\n')
+              : sectionId
+                ? 'Section not found in meta.json'
+                : 'No section ID available'}
+          </pre>
+        </div>
+      )}
 
       {/* Preview content */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
