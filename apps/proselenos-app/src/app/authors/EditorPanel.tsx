@@ -15,6 +15,7 @@ import SectionPreview from './SectionPreview';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { ImageLibraryProvider } from '@/contexts/ImageLibraryContext';
 import { AudioLibraryProvider } from '@/contexts/AudioLibraryContext';
+import { WallpaperProvider } from '@/contexts/WallpaperContext';
 
 
 // PlateJS imports
@@ -108,6 +109,9 @@ interface EditorPanelProps {
   audios?: AudioInfo[];
   onAudioUpload?: (file: File) => Promise<void>;
   onAudioDelete?: (filename: string) => void;
+  // Wallpaper+Chapter props
+  onChooseWallpaper?: () => void;
+  wallpaperImageId?: string;
 }
 
 // Ref handle for parent to control editor
@@ -127,7 +131,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   currentModel,
   sectionTitle,
   sectionXhtml,
-  sectionType: _sectionType,
+  sectionType,
   sectionWordCount,
   onContentChange,
   onTitleChange,
@@ -175,6 +179,9 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   audios,
   onAudioUpload,
   onAudioDelete,
+  // Wallpaper+Chapter props
+  onChooseWallpaper,
+  wallpaperImageId,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -506,6 +513,11 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         await onAudioUpload?.(file);
       },
     }}>
+    <WallpaperProvider value={{
+      sectionType,
+      chooseWallpaper: () => onChooseWallpaper?.(),
+      currentWallpaper: wallpaperImageId,
+    }}>
     <main
       style={{
         flex: 1,
@@ -765,6 +777,8 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
             onClose={() => setShowPreview(false)}
             theme={theme}
             isDarkMode={isDarkMode}
+            wallpaperImageId={wallpaperImageId}
+            sectionType={sectionType}
           />
         ) : (
           <Plate
@@ -854,6 +868,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         onClose={() => setShowAudioPicker(false)}
       />
     </main>
+    </WallpaperProvider>
     </AudioLibraryProvider>
     </ImageLibraryProvider>
   );

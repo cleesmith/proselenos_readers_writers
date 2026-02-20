@@ -19,6 +19,7 @@ export interface Chapter {
   content: string[];     // Plain text paragraphs (for fallback/legacy)
   paragraphs: string[];  // Same as content (legacy)
   xhtml?: string;        // XHTML content (single source of truth)
+  wallpaperImageId?: string;  // Wallpaper+Chapter: image filename for parallax background
 }
 
 /**
@@ -154,6 +155,7 @@ export async function generateEpubFromWorkingCopy(
       content: paragraphs,     // Plain text fallback
       paragraphs: paragraphs,  // Legacy
       xhtml: normalizedXhtml,  // XHTML source of truth (normalized)
+      wallpaperImageId: section.wallpaperImageId,  // Parallax background image
     };
 
     // No Matter sections go to separate array
@@ -219,7 +221,7 @@ export async function generateEpubFromWorkingCopy(
     }
   }
 
-  // Detect if any section contains Visual Narrative content
+  // Detect if any section contains Visual Narrative content (or wallpaper chapters)
   const hasVnContent = sections.some(s =>
     s.xhtml && (
       s.xhtml.includes('class="dialogue"') ||
@@ -230,9 +232,17 @@ export async function generateEpubFromWorkingCopy(
       s.xhtml.includes('class="visual ') ||
       s.xhtml.includes('class="sticky-wrap"')
     )
-  );
+  ) || sections.some(s => s.type === 'wallpaper-chapter' && !!s.wallpaperImageId);
 
-  return generateEPUB(chapters, metadata, coverImageData, inlineImages, noMatterSections, inlineAudios, hasVnContent);
+  // Collect wallpaper metadata (sectionId → imageFilename) for wallpaper-chapter sections
+  const wallpaperMap: Record<string, string> = {};
+  for (const section of sections) {
+    if (section.type === 'wallpaper-chapter' && section.wallpaperImageId) {
+      wallpaperMap[section.id] = section.wallpaperImageId;
+    }
+  }
+
+  return generateEPUB(chapters, metadata, coverImageData, inlineImages, noMatterSections, inlineAudios, hasVnContent, wallpaperMap);
 }
 
 /**
@@ -270,7 +280,8 @@ async function generateEPUB(
   inlineImages?: Array<{filename: string, data: Uint8Array}>,
   noMatterSections?: Chapter[],
   inlineAudios?: Array<{filename: string, data: Uint8Array}>,
-  hasVnContent?: boolean
+  hasVnContent?: boolean,
+  wallpaperMap?: Record<string, string>
 ): Promise<Uint8Array> {
   const zip = new JSZip();
 
@@ -332,8 +343,9 @@ async function generateEPUB(
 
   // 7. Create chapter HTML files
   // Per-chapter VN detection: VN chapters get visual-narrative.css, others get style.css
+  // Wallpaper chapters always use VN CSS (parallax rules live there)
   chapters.forEach(chapter => {
-    const useVn = chapterHasVnContent(chapter.xhtml);
+    const useVn = chapterHasVnContent(chapter.xhtml) || !!chapter.wallpaperImageId;
     const chapterHTML = createChapterHTML(chapter, metadata, false, useVn);
     zip.file(`OEBPS/${chapter.id}.xhtml`, chapterHTML);
   });
@@ -342,7 +354,7 @@ async function generateEPUB(
   // Pass isNoMatter=true so CSS path uses "../css/" prefix (fixes RSC-007)
   if (noMatterSections && noMatterSections.length > 0) {
     noMatterSections.forEach(section => {
-      const useVn = chapterHasVnContent(section.xhtml);
+      const useVn = chapterHasVnContent(section.xhtml) || !!section.wallpaperImageId;
       const sectionHTML = createChapterHTML(section, metadata, true, useVn);
       zip.file(`OEBPS/nomatter/${section.id}.xhtml`, sectionHTML);
     });
@@ -356,7 +368,7 @@ async function generateEPUB(
 
   // 9. Create content.opf (EPUB 3.0 format) with all new items
   // Pass the shared UUID and cover image info for correct media-type
-  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections, bookUUID, coverImageInfo, inlineAudios, hasVnContent);
+  const contentOPF = createEpub3ContentOPF(chapters, metadata, hasCover ? 'cover-image' : null, inlineImages, noMatterSections, bookUUID, coverImageInfo, inlineAudios, hasVnContent, wallpaperMap);
   zip.file('OEBPS/content.opf', contentOPF);
 
   // 10. Create nav.xhtml (EPUB 3.0 navigation, includes No Matter sections)
@@ -761,6 +773,30 @@ function createChapterHTML(chapter: Chapter, _metadata: any, isNoMatter: boolean
 
   // No Matter sections are in nomatter/ folder, so need "../css/" prefix
   const cssPrefix = isNoMatter ? '../css/' : 'css/';
+  // Image path: chapters are at OEBPS/{id}.xhtml, images at OEBPS/images/{file}
+  const imagePrefix = isNoMatter ? '../images/' : 'images/';
+
+  // Wallpaper chapter → parallax wrapper (always uses VN CSS)
+  if (chapter.wallpaperImageId) {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>${escapeHtml(chapter.title)}</title>
+  <link rel="stylesheet" type="text/css" href="${cssPrefix}visual-narrative.css"/>
+</head>
+<body>
+  <div class="parallax" epub:type="chapter">
+    <div class="bg" style="background-image:url('${imagePrefix}${chapter.wallpaperImageId}')"></div>
+    <div class="dim"></div>
+    <div class="inner">
+      <h1 class="scene-title">${escapeHtml(chapter.title)}</h1>
+${bodyContent}
+    </div>
+  </div>
+</body>
+</html>`;
+  }
 
   if (useVnCss) {
     // VN chapters: use visual-narrative.css only (no style.css — its * reset would conflict)
@@ -906,7 +942,8 @@ function createEpub3ContentOPF(
   uuid?: string,
   coverImageInfo?: { extension: string; mediaType: string } | null,
   inlineAudios?: Array<{filename: string, data: Uint8Array}>,
-  hasVnContent?: boolean
+  hasVnContent?: boolean,
+  wallpaperMap?: Record<string, string>
 ): string {
   // Use provided UUID or generate a new one (for backwards compatibility)
   const bookId = uuid || generateUUID();
@@ -984,8 +1021,18 @@ function createEpub3ContentOPF(
     ...(noMatterSections ? noMatterSections.map(s => `    <itemref idref="${s.id}" linear="no"/>`) : [])
   ].join('\n');
 
+  // Build wallpaper meta entries and prefix extension
+  const hasWallpaper = wallpaperMap && Object.keys(wallpaperMap).length > 0;
+  const wallpaperPrefix = hasWallpaper ? ' proselenos: https://everythingebooks.org/ns#' : '';
+  const wallpaperMeta = hasWallpaper
+    ? Object.entries(wallpaperMap!)
+        .map(([sectionId, imageFilename]) =>
+          `    <meta property="proselenos:wallpaper" refines="#${sectionId}">${escapeHtml(imageFilename)}</meta>`)
+        .join('\n')
+    : '';
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" prefix="cc: http://creativecommons.org/ns#">
+<package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" prefix="cc: http://creativecommons.org/ns#${wallpaperPrefix}">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="BookId">${bookId}</dc:identifier>
     <dc:title>${escapeHtml(metadata.displayTitle)}</dc:title>
@@ -996,6 +1043,7 @@ function createEpub3ContentOPF(
     <dc:date>${date}</dc:date>
     <meta property="dcterms:modified">${modifiedDate}</meta>
 ${coverMeta}
+${wallpaperMeta}
   </metadata>
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>

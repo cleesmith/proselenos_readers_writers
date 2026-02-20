@@ -5,11 +5,77 @@
 
 import { VISUAL_NARRATIVE_CSS } from './visual-narrative-css';
 
+// ── Parallax Wallpaper CSS ──
+const PARALLAX_CSS = `/* ── Parallax Wallpaper styles ──────────────── */
+.parallax {
+  position: relative;
+  min-height: 100vh;
+  overflow: clip;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+}
+.parallax .bg {
+  position: absolute;
+  inset: -20%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(2px);
+  z-index: 0;
+  will-change: transform;
+}
+.parallax .dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1;
+}
+body.dark-mode .parallax .dim {
+  background: rgba(0, 0, 0, 0.55);
+}
+.parallax .inner {
+  position: relative;
+  z-index: 2;
+  padding: 3em 2em;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+.parallax .inner h1 {
+  color: #fff;
+}
+.parallax .inner p {
+  color: rgba(255,255,255,0.92);
+}`;
+
+// ── Parallax Wallpaper JS ──
+const PARALLAX_JS = `
+    // Parallax scroll effect for wallpaper chapters
+    (function() {
+      var bgs = document.querySelectorAll('.parallax .bg');
+      if (!bgs.length) return;
+      var ticking = false;
+      window.addEventListener('scroll', function() {
+        if (!ticking) {
+          requestAnimationFrame(function() {
+            var scrollY = window.scrollY || window.pageYOffset;
+            for (var i = 0; i < bgs.length; i++) {
+              var rect = bgs[i].parentElement.getBoundingClientRect();
+              var offset = (rect.top + scrollY) * 0.3;
+              bgs[i].style.transform = 'translate3d(0,' + (scrollY * 0.3 - offset) + 'px,0)';
+            }
+            ticking = false;
+          });
+          ticking = true;
+        }
+      });
+    })();`;
+
 export interface HtmlGeneratorOptions {
   title: string;
   author: string;
   year?: string;
-  sections: Array<{ title: string; content: string }>;
+  sections: Array<{ title: string; content: string; wallpaperImageDataUrl?: string }>;
   isDarkMode?: boolean;
   mediaDataUrls?: Record<string, string>; // "images/photo.jpg" → "data:image/jpeg;base64,..."
   coverImageDataUrl?: string;  // base64 data URL for cover image
@@ -651,6 +717,8 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
 
   // Track whether any section uses VN content (to include VN CSS)
   let hasAnyVnContent = false;
+  // Track whether any section has a wallpaper (to include parallax CSS/JS)
+  let hasAnyWallpaper = false;
 
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i]!;
@@ -676,6 +744,19 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
   <section class="copyright-page" id="section-${i}">
 ${contentHtml}
   </section>`);
+    } else if (section.wallpaperImageDataUrl) {
+      // Wallpaper+Chapter → parallax structure
+      hasAnyWallpaper = true;
+      if (sectionHasVnContent(contentHtml)) hasAnyVnContent = true;
+      sectionHtmls.push(`
+  <div class="parallax" id="section-${i}">
+    <div class="bg" style="background-image:url('${section.wallpaperImageDataUrl}')"></div>
+    <div class="dim"></div>
+    <div class="inner chapter">
+      <h1>${escapeHtml(section.title)}</h1>
+${contentHtml}
+    </div>
+  </div>`);
     } else if (sectionHasVnContent(contentHtml)) {
       // VN chapter → <article class="scene">
       hasAnyVnContent = true;
@@ -725,6 +806,8 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
 
   // Build combined CSS
   const vnCssBlock = hasAnyVnContent ? `\n/* ── Visual Narrative styles ──────────────── */\n${getVnClassRules()}` : '';
+  const parallaxCssBlock = hasAnyWallpaper ? `\n${PARALLAX_CSS}` : '';
+  const parallaxJsBlock = hasAnyWallpaper ? `\n${PARALLAX_JS}` : '';
 
   // Full HTML template
   const html = `<!DOCTYPE html>
@@ -736,6 +819,7 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
   <style>
 ${EPUB_BASE_CSS}
 ${vnCssBlock}
+${parallaxCssBlock}
 ${HTML_SPECIFIC_CSS}
   </style>
 </head>
@@ -814,6 +898,7 @@ ${allSectionsHtml}
       a.click();
       URL.revokeObjectURL(url);
     });
+${parallaxJsBlock}
   </script>
 </body>
 </html>`;

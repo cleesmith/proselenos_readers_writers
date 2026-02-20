@@ -403,6 +403,46 @@ body:has(.sticky-img-wrap input:checked) .sticky-img-wrap {
     width: 100%;
   }
 }
+
+/* ── Parallax Wallpaper ──────────────────── */
+
+.parallax {
+  position: relative;
+  min-height: 100vh;
+  overflow: clip;
+}
+
+.parallax .bg {
+  position: absolute;
+  inset: -20%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(2px);
+  z-index: 0;
+}
+
+.parallax .dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+
+.parallax .inner {
+  position: relative;
+  z-index: 2;
+  padding: 3em 2em;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.parallax .inner h1 {
+  color: #fff;
+}
+
+.parallax .inner p {
+  color: rgba(255,255,255,0.92);
+}
 `;
 
 /**

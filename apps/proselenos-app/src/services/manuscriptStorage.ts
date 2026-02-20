@@ -972,6 +972,7 @@ export interface WorkingCopySection {
   title: string;
   xhtml: string;        // XHTML body content (single source of truth)
   type: ElementType;
+  wallpaperImageId?: string;  // Wallpaper+Chapter: image filename for parallax background
 }
 
 // For backward compatibility during migration - OLD format
@@ -1006,6 +1007,7 @@ export interface SectionMeta {
   id: string;
   title: string;
   type: ElementType;
+  wallpaperImageId?: string;  // Wallpaper+Chapter: image filename for parallax background
 }
 
 // Meta functions
@@ -1102,6 +1104,7 @@ export async function loadSection(id: string): Promise<WorkingCopySection | null
         title: sectionMeta.title,
         xhtml,
         type: sectionMeta.type || inferSectionType(sectionMeta.title),
+        wallpaperImageId: sectionMeta.wallpaperImageId,
       };
     }
   }
@@ -1158,6 +1161,7 @@ export async function saveSection(section: WorkingCopySection): Promise<void> {
       id: section.id,
       title: section.title,
       type: section.type,
+      wallpaperImageId: section.wallpaperImageId,
     };
 
     if (existingIdx >= 0) {
@@ -1444,6 +1448,7 @@ export async function loadFullWorkingCopy(): Promise<FullWorkingCopy | null> {
           title: sectionMeta.title,
           xhtml,
           type: sectionMeta.type || inferSectionType(sectionMeta.title),
+          wallpaperImageId: sectionMeta.wallpaperImageId,
         });
       }
     }
@@ -1512,6 +1517,7 @@ export async function saveFullWorkingCopy(epub: {
     content?: string;
     plateValue?: any[];
     type?: ElementType;
+    wallpaperImageId?: string;
   }>;
 }): Promise<void> {
   // Normalize section IDs and convert to XHTML
@@ -1552,6 +1558,7 @@ export async function saveFullWorkingCopy(epub: {
       id: normalizedId,
       title: section.title,
       type: sectionType as ElementType,
+      wallpaperImageId: section.wallpaperImageId,
     });
   }
 

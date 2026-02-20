@@ -9,6 +9,7 @@ import Swal from 'sweetalert2';
 import AuthorsHeader from './AuthorsHeader';
 import ChapterSidebar from './ChapterSidebar';
 import EditorPanel, { EditorPanelRef } from './EditorPanel';
+import ImagePickerModal from './ImagePickerModal';
 import { ElementType, getDefaultTitle, PROTECTED_SECTION_IDS, PROTECTED_SECTION_COUNT, getSectionNumber, isFloatingType } from './elementTypes';
 
 // Treat 'section', undefined, and floating types as 'chapter' for boundary checks
@@ -237,6 +238,9 @@ export default function AuthorsLayout({
 
   // Audio files state (for Visual Narrative)
   const [manuscriptAudios, setManuscriptAudios] = useState<Array<{filename: string, blob: Blob}>>([]);
+
+  // Wallpaper picker state (for Wallpaper+Chapter)
+  const [wallpaperPickerOpen, setWallpaperPickerOpen] = useState(false);
 
   // Computed values
   // XHTML-Native: Extract plain text from XHTML for word counts
@@ -609,6 +613,7 @@ export default function AuthorsLayout({
                 href: `${s.id}.xhtml`,
                 xhtml: s.xhtml,
                 type: s.type,
+                wallpaperImageId: s.wallpaperImageId,
               }))
           ),
         };
@@ -647,6 +652,7 @@ export default function AuthorsLayout({
               href: `${s.id}.xhtml`,
               xhtml: s.xhtml,
               type: s.type,
+              wallpaperImageId: s.wallpaperImageId,
             })),
           };
           setEpub(newEpub);
@@ -690,6 +696,7 @@ export default function AuthorsLayout({
                 href: `${s.id}.xhtml`,
                 xhtml: s.xhtml,
                 type: s.type,
+                wallpaperImageId: s.wallpaperImageId,
               }))
           ),
         };
@@ -821,6 +828,31 @@ export default function AuthorsLayout({
     setManuscriptAudios(audios);
   }, []);
 
+  // Wallpaper+Chapter handlers
+  const handleChooseWallpaper = useCallback(() => {
+    setWallpaperPickerOpen(true);
+  }, []);
+
+  const handleWallpaperSelected = useCallback(async (filename: string) => {
+    if (!epub || !selectedSectionId) return;
+    // Update in-memory epub sections
+    const updatedSections = epub.sections.map(s =>
+      s.id === selectedSectionId ? { ...s, wallpaperImageId: filename } : s
+    );
+    setEpub({ ...epub, sections: updatedSections });
+    // Persist to ManuscriptMeta
+    const meta = await loadManuscriptMeta();
+    if (meta) {
+      const idx = meta.sections.findIndex(s => s.id === selectedSectionId);
+      const existing = meta.sections[idx];
+      if (idx >= 0 && existing) {
+        meta.sections[idx] = { ...existing, wallpaperImageId: filename };
+        await saveManuscriptMeta(meta);
+      }
+    }
+    setWallpaperPickerOpen(false);
+  }, [epub, selectedSectionId]);
+
   // Handle opening an epub file
   // XHTML-Native: Uses xhtml field from parsed sections
   const handleOpenEpub = async () => {
@@ -885,6 +917,7 @@ export default function AuthorsLayout({
                   href: `${s.id}.xhtml`,
                   xhtml: s.xhtml,
                   type: s.type,
+                  wallpaperImageId: s.wallpaperImageId,
                 })),
               images: parsed.images, // Pass through for immediate access
             };
@@ -960,6 +993,7 @@ export default function AuthorsLayout({
                   href: `${s.id}.xhtml`,
                   xhtml: s.xhtml,
                   type: s.type,
+                  wallpaperImageId: s.wallpaperImageId,
                 })),
             };
             setEpub(loadedEpub);
@@ -1229,6 +1263,7 @@ export default function AuthorsLayout({
                   href: `${s.id}.xhtml`,
                   xhtml: s.xhtml,
                   type: s.type,
+                  wallpaperImageId: s.wallpaperImageId,
                 })),
             };
             setEpub(loadedEpub);
@@ -1329,6 +1364,7 @@ export default function AuthorsLayout({
           href: `${s.id}.xhtml`,
           xhtml: s.xhtml,
           type: s.type,
+          wallpaperImageId: s.wallpaperImageId,
         })),
       };
       setEpub(newEpub);
@@ -1949,6 +1985,7 @@ export default function AuthorsLayout({
           .map(s => ({
             title: s.title,
             content: s.xhtml,
+            wallpaperImageDataUrl: s.wallpaperImageId ? mediaDataUrls[`images/${s.wallpaperImageId}`] : undefined,
           })),
         isDarkMode,
         mediaDataUrls,
@@ -2063,6 +2100,7 @@ export default function AuthorsLayout({
       title: titleToSave,
       xhtml: xhtmlToSave,
       type: selectedSection.type || 'section',
+      wallpaperImageId: selectedSection.wallpaperImageId,
     });
 
     // Update in-memory epub state so sidebar and subsequent comparisons work
@@ -2260,8 +2298,23 @@ export default function AuthorsLayout({
             audios={manuscriptAudios.map(a => ({ filename: a.filename, size: a.blob.size }))}
             onAudioUpload={handleAudioUpload}
             onAudioDelete={handleAudioDelete}
+            // Wallpaper+Chapter props
+            onChooseWallpaper={handleChooseWallpaper}
+            wallpaperImageId={selectedSection?.wallpaperImageId}
           />
         )}
+
+        {/* Wallpaper image picker modal */}
+        <ImagePickerModal
+          isOpen={wallpaperPickerOpen}
+          theme={theme}
+          isDarkMode={isDarkMode}
+          images={imageUrls}
+          onSelect={(filename) => handleWallpaperSelected(filename)}
+          onUpload={handleImageUpload}
+          onDelete={handleImageDelete}
+          onClose={() => setWallpaperPickerOpen(false)}
+        />
       </div>
     </div>
   );

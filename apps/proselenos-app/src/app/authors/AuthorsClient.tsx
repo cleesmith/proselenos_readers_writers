@@ -275,6 +275,7 @@ export default function AuthorsClient() {
             title: s.title,
             xhtml: s.xhtml,
             type: s.type,
+            wallpaperImageId: s.wallpaperImageId,
           })),
       });
 

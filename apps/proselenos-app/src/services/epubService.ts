@@ -14,6 +14,7 @@ export interface ParsedSection {
   href: string;
   xhtml: string;             // Raw XHTML from EPUB (single source of truth)
   type?: ElementType;
+  wallpaperImageId?: string;  // Wallpaper+Chapter: image filename for parallax background
 }
 
 export interface ParsedEpub {
@@ -77,7 +78,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     throw new Error(`Invalid epub: missing ${rootfilePath}`);
   }
 
-  const { title, author, language, publisher, manifest, spine, coverImageId } = parseContentOpf(contentOpf);
+  const { title, author, language, publisher, manifest, spine, coverImageId, wallpaperMap } = parseContentOpf(contentOpf);
 
   // Step 3: Extract cover image if present
   let coverImage: Blob | null = null;
@@ -145,17 +146,33 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     }
 
     // If linear="no", this is No Matter content (non-linear in reading flow)
-    // Otherwise, infer type from title
+    // Otherwise, check for wallpaper metadata, then infer type from title
+    const wallpaperImage = wallpaperMap[spineItem.idref];
     const sectionType: ElementType = spineItem.linear === false
       ? 'no-matter'
-      : inferSectionType(sectionTitle);
+      : wallpaperImage
+        ? 'wallpaper-chapter'
+        : inferSectionType(sectionTitle);
+
+    // For wallpaper chapters, unwrap the parallax structure.
+    // The EPUB xhtml has the full parallax wrapper (<div class="parallax">...<div class="inner">content</div>...),
+    // but html-generator will re-wrap it — so extract just the inner content.
+    let sectionXhtml = xhtml;
+    if (wallpaperImage) {
+      const wp = new DOMParser().parseFromString(`<body>${xhtml}</body>`, 'text/html');
+      const inner = wp.body.querySelector('.parallax .inner') || wp.body.querySelector('.inner');
+      if (inner) {
+        sectionXhtml = inner.innerHTML.trim() || '<p></p>';
+      }
+    }
 
     sections.push({
       id: spineItem.idref,
       title: sectionTitle,
       href: href,
-      xhtml: stripLeadingTitle(xhtml, sectionTitle),  // Remove duplicate title from content
+      xhtml: stripLeadingTitle(sectionXhtml, sectionTitle),  // Remove duplicate title from content
       type: sectionType,
+      wallpaperImageId: wallpaperImage,
     });
   }
 
@@ -252,6 +269,7 @@ function parseContentOpf(opfContent: string): {
   manifest: Map<string, { id: string; href: string; mediaType: string; properties: string }>;
   spine: { idref: string; linear: boolean }[];
   coverImageId: string | null;
+  wallpaperMap: Record<string, string>;
 } {
   const parser = new DOMParser();
   const doc = parser.parseFromString(opfContent, 'text/xml');
@@ -307,7 +325,20 @@ function parseContentOpf(opfContent: string): {
     }
   });
 
-  return { title, author, language, publisher, manifest, spine, coverImageId };
+  // Extract wallpaper metadata (proselenos:wallpaper custom meta)
+  const wallpaperMap: Record<string, string> = {};
+  const metaEls = doc.querySelectorAll('metadata > meta');
+  metaEls.forEach((el) => {
+    const property = el.getAttribute('property');
+    const refines = el.getAttribute('refines');
+    if (property === 'proselenos:wallpaper' && refines && el.textContent) {
+      // refines is "#sectionId" — strip the leading "#"
+      const sectionId = refines.startsWith('#') ? refines.slice(1) : refines;
+      wallpaperMap[sectionId] = el.textContent.trim();
+    }
+  });
+
+  return { title, author, language, publisher, manifest, spine, coverImageId, wallpaperMap };
 }
 
 /**
