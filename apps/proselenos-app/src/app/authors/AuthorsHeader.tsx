@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, /* PiFileHtml, */ PiFileDoc, /* PiFileText, */ PiImage, PiArrowRight, PiGear } from 'react-icons/pi';
 import { GiBoxUnpacking } from 'react-icons/gi';
 import { ThemeConfig } from '../shared/theme';
+import { showConfirm } from '../shared/alerts';
 import StyledSmallButton from '@/components/StyledSmallButton';
 import TrafficLightIcon from '@/components/TrafficLightIcon';
 
@@ -39,7 +40,7 @@ interface AuthorsHeaderProps {
   onDocxExportClick?: () => void;
   onFountainExportClick?: () => void;
   onXrayClick?: () => void;
-  onSaveWorkspace?: () => Promise<void>;
+  hasUnsavedChanges?: boolean;
   exportChangeCount?: number;
 }
 
@@ -72,7 +73,7 @@ export default function AuthorsHeader({
   onDocxExportClick,
   onFountainExportClick: _onFountainExportClick,
   onXrayClick,
-  onSaveWorkspace,
+  hasUnsavedChanges = false,
   exportChangeCount = 0,
 }: AuthorsHeaderProps) {
   const router = useRouter();
@@ -99,7 +100,16 @@ export default function AuthorsHeader({
   }, [menuOpen, openDropdownOpen]);
 
   const handleExitClick = async () => {
-    await onSaveWorkspace?.();
+    if (hasUnsavedChanges) {
+      const confirmed = await showConfirm(
+        'You have unsaved changes that will be lost. Continue?',
+        isDarkMode,
+        'Unsaved Changes',
+        'Exit anyway',
+        'Cancel'
+      );
+      if (!confirmed) return;
+    }
     if (window.opener && !window.opener.closed) {
       window.close();
     } else {
@@ -173,7 +183,16 @@ export default function AuthorsHeader({
             <StyledSmallButton
               theme={theme}
               onClick={async () => {
-                await onSaveWorkspace?.();
+                if (hasUnsavedChanges) {
+                  const confirmed = await showConfirm(
+                    'You have unsaved changes that will be lost. Continue?',
+                    isDarkMode,
+                    'Unsaved Changes',
+                    'Continue',
+                    'Cancel'
+                  );
+                  if (!confirmed) return;
+                }
                 onSearchClose?.();
                 setOpenDropdownOpen(!openDropdownOpen);
               }}
@@ -321,7 +340,7 @@ export default function AuthorsHeader({
         <div ref={menuRef} style={{ position: 'relative' }}>
           {/* Hamburger menu button */}
           <button
-            onClick={async () => { await onSaveWorkspace?.(); setMenuOpen(!menuOpen); }}
+            onClick={() => { setMenuOpen(!menuOpen); }}
             disabled={toolExecuting}
             title="Menu"
             style={{

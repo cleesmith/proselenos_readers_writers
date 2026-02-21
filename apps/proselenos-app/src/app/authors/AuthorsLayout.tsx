@@ -1410,11 +1410,6 @@ export default function AuthorsLayout({
   const handleAddElement = async (elementType: ElementType) => {
     if (!epub) return;
 
-    // Auto-save current section if there are pending changes (same as handleSelectSection)
-    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
-      await saveCurrentSection();
-    }
-
     const meta = await loadWorkingCopyMeta();
     if (!meta) return;
 
@@ -2055,14 +2050,9 @@ export default function AuthorsLayout({
     }
   };
 
-  // Handle section selection - auto-save current section before switching
+  // Handle section selection - user must explicitly Save before switching
   const handleSelectSection = async (sectionId: string) => {
     if (sectionId === selectedSectionId) return; // Same section, no action needed
-
-    // Auto-save current section if there are pending changes
-    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
-      await saveCurrentSection();
-    }
 
     // Reset state for new section
     setHasUnsavedChanges(false);
@@ -2164,7 +2154,7 @@ export default function AuthorsLayout({
         onDocxExportClick={handleDocxExport}
         onFountainExportClick={handleFountainExport}
         onXrayClick={onXrayClick}
-        onSaveWorkspace={saveCurrentSection}
+        hasUnsavedChanges={hasUnsavedChanges}
         exportChangeCount={modifiedSectionsSinceSend.size}
       />
 
