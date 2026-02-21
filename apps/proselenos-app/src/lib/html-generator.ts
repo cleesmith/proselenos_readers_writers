@@ -80,6 +80,16 @@ const PARALLAX_CONTROLS_CSS = `/* ── Parallax wallpaper controls ───�
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 1px solid #444;
+}
+
+.px-label {
+  font-size: 0.75em;
+  color: #888;
+  white-space: nowrap;
+  font-style: italic;
 }
 
 .px-slider {
@@ -126,6 +136,11 @@ const PARALLAX_CONTROLS_CSS = `/* ── Parallax wallpaper controls ───�
     width: 100%;
     justify-content: center;
     order: 3;
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+    border-top: 1px solid #444;
+    padding-top: 8px;
   }
 
   .px-slider input[type="range"] {
@@ -726,7 +741,7 @@ body.dark-mode .scene-audio {
   color: #ccc;
   padding: 12px 20px;
   display: flex;
-  justify-content: space-between;
+  gap: 12px;
   align-items: center;
   font-size: 0.9em;
   z-index: 1000;
@@ -988,12 +1003,19 @@ ${HTML_SPECIFIC_CSS}
 ${allSectionsHtml}
 
   <div class="footer"${hasAnyWallpaper ? ' style="flex-wrap:wrap;"' : ''}>
+    <div class="footer-buttons">
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#127769;' : '&#9728;&#65039;'}</button>
+      <button class="download-btn" id="downloadBtn" title="Download HTML file">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      </button>
+    </div>
     <div class="footer-info">
       <span class="footer-title">${escapeHtml(title)}</span>
       <span class="footer-author">by ${escapeHtml(author)}</span>
       <span class="footer-copyright">&copy; ${escapeHtml(year)}</span>
     </div>${hasAnyWallpaper ? `
     <div class="footer-controls">
+      <span class="px-label">Wallpaper:</span>
       <span class="px-slider"><label>Dim</label><input type="range" id="pxDim" min="0" max="0.9" step="0.05" value="${isDarkMode ? '0.55' : '0.35'}"></span>
       <span class="px-slider"><label>Blur</label><input type="range" id="pxBgBlur" min="0" max="20" step="1" value="2"></span>
       <span class="px-slider"><label>Frost</label><input type="range" id="pxBackdrop" min="0" max="30" step="1" value="12"></span>
@@ -1001,12 +1023,6 @@ ${allSectionsHtml}
       <span class="px-slider"><label>Speed</label><input type="range" id="pxSpeed" min="0" max="0.8" step="0.05" value="0.3"></span>
       <button class="px-reset" id="pxReset" title="Reset wallpaper settings">Reset</button>
     </div>` : ''}
-    <div class="footer-buttons">
-      <button class="download-btn" id="downloadBtn" title="Download HTML file">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-      </button>
-      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#127769;' : '&#9728;&#65039;'}</button>
-    </div>
   </div>
 
   <script>
