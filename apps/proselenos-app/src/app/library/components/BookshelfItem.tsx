@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { navigateToLibrary } from '@/utils/nav';
 import { useEnv } from '@/context/EnvContext';
@@ -89,6 +89,9 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   const { updateBook } = useLibraryStore();
   const { isDarkMode } = useThemeStore();
 
+  const isOpening = useRef(false);
+  const [opening, setOpening] = useState(false);
+
   const showBookDetailsModal = useCallback(async (book: Book) => {
     if (await makeBookAvailable(book)) {
       handleShowDetailsBook(book);
@@ -125,13 +128,19 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       if (isSelectMode) {
         toggleSelection(book.hash);
       } else {
+        if (isOpening.current) return;
         const available = await makeBookAvailable(book);
         if (!available) return;
+        isOpening.current = true;
+        setOpening(true);
         try {
           await openBookAsHtml(book, envConfig, isDarkMode);
         } catch (error) {
           console.error('Failed to open book as HTML:', error);
           alert(`Failed to open book: ${(error as Error).message || 'Unknown error'}`);
+        } finally {
+          isOpening.current = false;
+          setOpening(false);
         }
       }
     },
@@ -305,6 +314,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
           mode === 'list' && 'border-base-300 flex flex-col border-b py-2',
           appService?.isMobileApp && 'no-context-menu',
           pressing && mode === 'grid' ? 'scale-95' : 'scale-100',
+          opening && 'pointer-events-none cursor-wait opacity-60',
         )}
         role='button'
         title={'format' in item ? 'Read enhanced HTML' : item.name}
