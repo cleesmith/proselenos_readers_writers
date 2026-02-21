@@ -1,18 +1,18 @@
 // components/TrafficLightIcon.tsx
-// Shared traffic light indicator showing backup urgency: green (0 changes), yellow (1), red (2+)
+// Shared traffic light indicator showing backup urgency based on time since last export
 
 'use client';
 
 import React from 'react';
 
 interface TrafficLightIconProps {
-  changeCount: number;       // 0=green, 1=yellow, 2+=red
+  status: 'green' | 'yellow' | 'red';
   isDarkMode: boolean;
   onClick: () => void;
   tooltip: string;
 }
 
-export default function TrafficLightIcon({ changeCount, isDarkMode, onClick, tooltip }: TrafficLightIconProps) {
+export default function TrafficLightIcon({ status, isDarkMode, onClick, tooltip }: TrafficLightIconProps) {
   const housing = isDarkMode ? '#2a2a2a' : '#d0d0d0';
   const inactive = isDarkMode ? '#3a3a3a' : '#c0c0c0';
 
@@ -20,11 +20,7 @@ export default function TrafficLightIcon({ changeCount, isDarkMode, onClick, too
   const yellow = '#eab308';
   const red = '#ef4444';
 
-  // Determine which light is active
-  const activeLight: 'green' | 'yellow' | 'red' =
-    changeCount === 0 ? 'green' : changeCount === 1 ? 'yellow' : 'red';
-
-  const activeColor = activeLight === 'green' ? green : activeLight === 'yellow' ? yellow : red;
+  const activeColor = status === 'green' ? green : status === 'yellow' ? yellow : red;
   const filterId = 'traffic-glow';
 
   return (
@@ -54,24 +50,24 @@ export default function TrafficLightIcon({ changeCount, isDarkMode, onClick, too
         cx="6"
         cy="5"
         r="3"
-        fill={activeLight === 'red' ? activeColor : inactive}
-        filter={activeLight === 'red' ? `url(#${filterId})` : undefined}
+        fill={status === 'red' ? activeColor : inactive}
+        filter={status === 'red' ? `url(#${filterId})` : undefined}
       />
       {/* Yellow light (middle) */}
       <circle
         cx="6"
         cy="12"
         r="3"
-        fill={activeLight === 'yellow' ? activeColor : inactive}
-        filter={activeLight === 'yellow' ? `url(#${filterId})` : undefined}
+        fill={status === 'yellow' ? activeColor : inactive}
+        filter={status === 'yellow' ? `url(#${filterId})` : undefined}
       />
       {/* Green light (bottom) */}
       <circle
         cx="6"
         cy="19"
         r="3"
-        fill={activeLight === 'green' ? activeColor : inactive}
-        filter={activeLight === 'green' ? `url(#${filterId})` : undefined}
+        fill={status === 'green' ? activeColor : inactive}
+        filter={status === 'green' ? `url(#${filterId})` : undefined}
       />
     </svg>
   );

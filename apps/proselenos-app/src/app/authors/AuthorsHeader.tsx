@@ -41,7 +41,8 @@ interface AuthorsHeaderProps {
   onFountainExportClick?: () => void;
   onXrayClick?: () => void;
   hasUnsavedChanges?: boolean;
-  exportChangeCount?: number;
+  trafficLightStatus: 'green' | 'yellow' | 'red';
+  trafficTooltip: string;
 }
 
 export default function AuthorsHeader({
@@ -74,7 +75,8 @@ export default function AuthorsHeader({
   onFountainExportClick: _onFountainExportClick,
   onXrayClick,
   hasUnsavedChanges = false,
-  exportChangeCount = 0,
+  trafficLightStatus,
+  trafficTooltip,
 }: AuthorsHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -303,16 +305,10 @@ export default function AuthorsHeader({
           <span style={{ color: isDarkMode ? '#86efac' : '#16a34a', fontSize: '16px' }}>⇨</span>
           <StyledSmallButton onClick={handleLibraryClick} theme={theme} title="Go read ebooks">Library</StyledSmallButton>
           <TrafficLightIcon
-            changeCount={exportChangeCount}
+            status={trafficLightStatus}
             isDarkMode={isDarkMode}
             onClick={onStorageClick}
-            tooltip={
-              exportChangeCount === 0
-                ? 'All backed up'
-                : exportChangeCount === 1
-                  ? '1 section modified since last export'
-                  : `${exportChangeCount} sections modified since last export`
-            }
+            tooltip={trafficTooltip}
           />
         </div>
       </div>

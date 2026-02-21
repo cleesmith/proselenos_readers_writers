@@ -30,7 +30,8 @@ interface LibraryHeaderProps {
   onToggleSelectMode: () => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
-  exportChangeCount?: number;
+  trafficLightStatus: 'green' | 'yellow' | 'red';
+  trafficTooltip: string;
   onStorageClick?: () => void;
 }
 
@@ -43,7 +44,8 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   onToggleSelectMode: _onToggleSelectMode, // disabled: multi-select mode
   onSelectAll,
   onDeselectAll,
-  exportChangeCount = 0,
+  trafficLightStatus,
+  trafficTooltip,
   onStorageClick,
 }) => {
   const _ = useTranslation();
@@ -180,16 +182,10 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
           {onStorageClick && (
             <div className='mr-4 flex items-center'>
               <TrafficLightIcon
-                changeCount={exportChangeCount}
+                status={trafficLightStatus}
                 isDarkMode={themeMode === 'dark' || (themeMode === 'auto' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)}
                 onClick={onStorageClick}
-                tooltip={
-                  exportChangeCount === 0
-                    ? 'All backed up'
-                    : exportChangeCount === 1
-                      ? '1 book added since last export'
-                      : `${exportChangeCount} books added since last export`
-                }
+                tooltip={trafficTooltip}
               />
             </div>
           )}

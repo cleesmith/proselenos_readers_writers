@@ -79,26 +79,48 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   const [searchQuery, setSearchQuery] = useState('');
   const isInitiating = useRef(false);
 
-  // Traffic light: track books added since last export
-  const LS_KEY_BOOKS_ADDED = 'ee_library_books_added_since_export';
-  const [booksAddedSinceExport, setBooksAddedSinceExport] = useState<number>(() => {
-    if (typeof window === 'undefined') return 0;
-    try {
-      const stored = localStorage.getItem(LS_KEY_BOOKS_ADDED);
-      return stored ? JSON.parse(stored) as number : 0;
-    } catch { return 0; }
+  // Traffic light: date-based export reminder
+  function getExportTrafficLightStatus(): 'green' | 'yellow' | 'red' {
+    const stored = localStorage.getItem('last_export_date');
+    if (!stored) return 'green'; // New user, no data to export yet
+    const daysSince = (Date.now() - new Date(stored).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSince < 1) return 'green';
+    if (daysSince < 7) return 'yellow';
+    return 'red';
+  }
+  function getExportTooltip(): string {
+    const stored = localStorage.getItem('last_export_date');
+    if (!stored) return 'Welcome!';
+    const status = getExportTrafficLightStatus();
+    if (status === 'green') return `Exported on: ${new Date(stored).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    if (status === 'yellow') return 'Export needed';
+    return 'Export now';
+  }
+  const [trafficLightStatus, setTrafficLightStatus] = useState<'green' | 'yellow' | 'red'>(() => {
+    if (typeof window === 'undefined') return 'green';
+    localStorage.removeItem('ee_library_books_added_since_export');
+    return getExportTrafficLightStatus();
+  });
+  const [trafficTooltip, setTrafficTooltip] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'Welcome!';
+    return getExportTooltip();
   });
 
-  // Listen for export-complete from StorageWindow
+  // Re-check traffic light status every minute and on storage events (cross-tab)
   useEffect(() => {
-    const channel = new BroadcastChannel('everythingebooks-export-status');
-    channel.onmessage = (event) => {
-      if (event.data?.type === 'export-complete') {
-        setBooksAddedSinceExport(0);
-        localStorage.setItem(LS_KEY_BOOKS_ADDED, '0');
-      }
+    const update = () => {
+      setTrafficLightStatus(getExportTrafficLightStatus());
+      setTrafficTooltip(getExportTooltip());
     };
-    return () => channel.close();
+    const interval = setInterval(update, 60_000);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'last_export_date') update();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   const viewSettings = settings.globalViewSettings;
@@ -373,16 +395,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     setLibrary([...library]);
     appService?.saveLibraryBooks(library);
     setLoading(false);
-
-    // Track successful imports for traffic light indicator
-    const successCount = files.length - failedImports.length;
-    if (successCount > 0) {
-      setBooksAddedSinceExport(prev => {
-        const next = prev + successCount;
-        localStorage.setItem(LS_KEY_BOOKS_ADDED, JSON.stringify(next));
-        return next;
-      });
-    }
   };
 
   const handleBookDownload = useCallback(
@@ -556,7 +568,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           onToggleSelectMode={() => handleSetSelectMode(!isSelectMode)}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
-          exportChangeCount={booksAddedSinceExport}
+          trafficLightStatus={trafficLightStatus}
+          trafficTooltip={trafficTooltip}
           onStorageClick={handleStorageClick}
         />
       </div>
