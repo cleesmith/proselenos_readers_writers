@@ -51,6 +51,7 @@ body.dark-mode .parallax .dim {
 // ── Parallax Wallpaper JS ──
 const PARALLAX_JS = `
     // Parallax scroll effect for wallpaper chapters
+    window.parallaxSpeed = 0.3;
     (function() {
       var bgs = document.querySelectorAll('.parallax .bg');
       if (!bgs.length) return;
@@ -58,17 +59,174 @@ const PARALLAX_JS = `
       window.addEventListener('scroll', function() {
         if (!ticking) {
           requestAnimationFrame(function() {
+            var speed = window.parallaxSpeed;
             var scrollY = window.scrollY || window.pageYOffset;
             for (var i = 0; i < bgs.length; i++) {
               var rect = bgs[i].parentElement.getBoundingClientRect();
-              var offset = (rect.top + scrollY) * 0.3;
-              bgs[i].style.transform = 'translate3d(0,' + (scrollY * 0.3 - offset) + 'px,0)';
+              var offset = (rect.top + scrollY) * speed;
+              bgs[i].style.transform = 'translate3d(0,' + (scrollY * speed - offset) + 'px,0)';
             }
             ticking = false;
           });
           ticking = true;
         }
       });
+    })();`;
+
+// ── Parallax Controls CSS (embedded in footer) ──
+const PARALLAX_CONTROLS_CSS = `/* ── Parallax wallpaper controls ───────────── */
+.footer-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.px-slider {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.px-slider label {
+  font-size: 0.75em;
+  color: #999;
+  white-space: nowrap;
+  min-width: 28px;
+  text-align: right;
+}
+
+.px-slider input[type="range"] {
+  width: 70px;
+  height: 4px;
+  accent-color: #22c55e;
+  cursor: pointer;
+}
+
+.px-reset {
+  background: none;
+  border: 1px solid #555;
+  color: #aaa;
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+
+.px-reset:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .footer-controls {
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+    order: 3;
+  }
+
+  .px-slider input[type="range"] {
+    width: 50px;
+  }
+}`;
+
+// ── Parallax Controls JS (embedded in footer) ──
+const PARALLAX_CONTROLS_JS = `
+    // Parallax wallpaper controls
+    (function() {
+      var defaults = {
+        dim: document.body.classList.contains('dark-mode') ? 0.55 : 0.35,
+        bgBlur: 2,
+        backdropBlur: 12,
+        zoom: 100,
+        speed: 0.3
+      };
+
+      var keys = {
+        dim: 'px-dim',
+        bgBlur: 'px-bg-blur',
+        backdropBlur: 'px-backdrop-blur',
+        zoom: 'px-zoom',
+        speed: 'px-speed'
+      };
+
+      function load(key, fallback) {
+        var v = localStorage.getItem(key);
+        return v !== null ? parseFloat(v) : fallback;
+      }
+
+      function applyAll(vals) {
+        var bgs = document.querySelectorAll('.parallax .bg');
+        var dims = document.querySelectorAll('.parallax .dim');
+        for (var i = 0; i < bgs.length; i++) {
+          bgs[i].style.filter = 'blur(' + vals.bgBlur + 'px)';
+          bgs[i].style.backgroundSize = vals.zoom <= 100 ? 'cover' : vals.zoom + '%';
+        }
+        for (var j = 0; j < dims.length; j++) {
+          dims[j].style.background = 'rgba(0,0,0,' + vals.dim + ')';
+          dims[j].style.backdropFilter = 'blur(' + vals.backdropBlur + 'px)';
+          dims[j].style.webkitBackdropFilter = 'blur(' + vals.backdropBlur + 'px)';
+        }
+        window.parallaxSpeed = vals.speed;
+      }
+
+      var vals = {
+        dim: load(keys.dim, defaults.dim),
+        bgBlur: load(keys.bgBlur, defaults.bgBlur),
+        backdropBlur: load(keys.backdropBlur, defaults.backdropBlur),
+        zoom: load(keys.zoom, defaults.zoom),
+        speed: load(keys.speed, defaults.speed)
+      };
+
+      // Set initial slider values from localStorage
+      var sliderDim = document.getElementById('pxDim');
+      var sliderBgBlur = document.getElementById('pxBgBlur');
+      var sliderBackdrop = document.getElementById('pxBackdrop');
+      var sliderZoom = document.getElementById('pxZoom');
+      var sliderSpeed = document.getElementById('pxSpeed');
+
+      if (sliderDim) sliderDim.value = vals.dim;
+      if (sliderBgBlur) sliderBgBlur.value = vals.bgBlur;
+      if (sliderBackdrop) sliderBackdrop.value = vals.backdropBlur;
+      if (sliderZoom) sliderZoom.value = vals.zoom;
+      if (sliderSpeed) sliderSpeed.value = vals.speed;
+
+      applyAll(vals);
+
+      function bind(slider, prop, key) {
+        if (!slider) return;
+        slider.addEventListener('input', function() {
+          vals[prop] = parseFloat(this.value);
+          localStorage.setItem(key, this.value);
+          applyAll(vals);
+        });
+      }
+
+      bind(sliderDim, 'dim', keys.dim);
+      bind(sliderBgBlur, 'bgBlur', keys.bgBlur);
+      bind(sliderBackdrop, 'backdropBlur', keys.backdropBlur);
+      bind(sliderZoom, 'zoom', keys.zoom);
+      bind(sliderSpeed, 'speed', keys.speed);
+
+      // Reset button
+      var resetBtn = document.getElementById('pxReset');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+          // Recalculate dim default based on current theme
+          defaults.dim = document.body.classList.contains('dark-mode') ? 0.55 : 0.35;
+          vals = { dim: defaults.dim, bgBlur: defaults.bgBlur, backdropBlur: defaults.backdropBlur, zoom: defaults.zoom, speed: defaults.speed };
+          if (sliderDim) sliderDim.value = vals.dim;
+          if (sliderBgBlur) sliderBgBlur.value = vals.bgBlur;
+          if (sliderBackdrop) sliderBackdrop.value = vals.backdropBlur;
+          if (sliderZoom) sliderZoom.value = vals.zoom;
+          if (sliderSpeed) sliderSpeed.value = vals.speed;
+          Object.values(keys).forEach(function(k) { localStorage.removeItem(k); });
+          applyAll(vals);
+        });
+      }
     })();`;
 
 export interface HtmlGeneratorOptions {
@@ -807,7 +965,9 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
   // Build combined CSS
   const vnCssBlock = hasAnyVnContent ? `\n/* ── Visual Narrative styles ──────────────── */\n${getVnClassRules()}` : '';
   const parallaxCssBlock = hasAnyWallpaper ? `\n${PARALLAX_CSS}` : '';
+  const parallaxControlsCssBlock = hasAnyWallpaper ? `\n${PARALLAX_CONTROLS_CSS}` : '';
   const parallaxJsBlock = hasAnyWallpaper ? `\n${PARALLAX_JS}` : '';
+  const parallaxControlsJsBlock = hasAnyWallpaper ? `\n${PARALLAX_CONTROLS_JS}` : '';
 
   // Full HTML template
   const html = `<!DOCTYPE html>
@@ -820,18 +980,27 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
 ${EPUB_BASE_CSS}
 ${vnCssBlock}
 ${parallaxCssBlock}
+${parallaxControlsCssBlock}
 ${HTML_SPECIFIC_CSS}
   </style>
 </head>
 <body${isDarkMode ? ' class="dark-mode"' : ''}>
 ${allSectionsHtml}
 
-  <div class="footer">
+  <div class="footer"${hasAnyWallpaper ? ' style="flex-wrap:wrap;"' : ''}>
     <div class="footer-info">
       <span class="footer-title">${escapeHtml(title)}</span>
       <span class="footer-author">by ${escapeHtml(author)}</span>
       <span class="footer-copyright">&copy; ${escapeHtml(year)}</span>
-    </div>
+    </div>${hasAnyWallpaper ? `
+    <div class="footer-controls">
+      <span class="px-slider"><label>Dim</label><input type="range" id="pxDim" min="0" max="0.9" step="0.05" value="${isDarkMode ? '0.55' : '0.35'}"></span>
+      <span class="px-slider"><label>Blur</label><input type="range" id="pxBgBlur" min="0" max="20" step="1" value="2"></span>
+      <span class="px-slider"><label>Frost</label><input type="range" id="pxBackdrop" min="0" max="30" step="1" value="12"></span>
+      <span class="px-slider"><label>Zoom</label><input type="range" id="pxZoom" min="100" max="200" step="5" value="100"></span>
+      <span class="px-slider"><label>Speed</label><input type="range" id="pxSpeed" min="0" max="0.8" step="0.05" value="0.3"></span>
+      <button class="px-reset" id="pxReset" title="Reset wallpaper settings">Reset</button>
+    </div>` : ''}
     <div class="footer-buttons">
       <button class="download-btn" id="downloadBtn" title="Download HTML file">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -899,6 +1068,7 @@ ${allSectionsHtml}
       URL.revokeObjectURL(url);
     });
 ${parallaxJsBlock}
+${parallaxControlsJsBlock}
   </script>
 </body>
 </html>`;
