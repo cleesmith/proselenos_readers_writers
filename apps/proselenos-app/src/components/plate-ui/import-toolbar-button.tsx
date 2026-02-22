@@ -1,5 +1,6 @@
 'use client';
 
+import mammoth from 'mammoth';
 import { MarkdownPlugin } from '@platejs/markdown';
 
 import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
@@ -87,6 +88,18 @@ export function ImportToolbarButton(props: DropdownMenuProps) {
     },
   });
 
+  const { openFilePicker: openDocxFilePicker } = useFilePicker({
+    accept: ['.docx'],
+    multiple: false,
+    onFilesSelected: async ({ plainFiles }) => {
+      const arrayBuffer = await plainFiles[0].arrayBuffer();
+      const { value: text } = await mammoth.extractRawText({ arrayBuffer });
+      const nodes = getFileNodes(text, 'text');
+
+      editor.tf.insertNodes(nodes);
+    },
+  });
+
   return (
     <DropdownMenu modal={false} onOpenChange={setOpen} open={open} {...props}>
       <DropdownMenuTrigger asChild>
@@ -119,6 +132,14 @@ export function ImportToolbarButton(props: DropdownMenuProps) {
             }}
           >
             Import from .txt
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onSelect={() => {
+              openDocxFilePicker();
+            }}
+          >
+            Import from .docx
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
