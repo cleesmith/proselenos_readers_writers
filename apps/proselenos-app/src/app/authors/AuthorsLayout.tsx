@@ -9,7 +9,6 @@ import Swal from 'sweetalert2';
 import AuthorsHeader from './AuthorsHeader';
 import ChapterSidebar from './ChapterSidebar';
 import EditorPanel, { EditorPanelRef } from './EditorPanel';
-import ImagePickerModal from './ImagePickerModal';
 import { ElementType, getDefaultTitle, PROTECTED_SECTION_IDS, PROTECTED_SECTION_COUNT, getSectionNumber, isFloatingType } from './elementTypes';
 
 // Treat 'section', undefined, and floating types as 'chapter' for boundary checks
@@ -69,6 +68,8 @@ import {
   saveManuscriptAudio,
   deleteManuscriptAudio,
   getAllManuscriptAudios,
+  getManuscriptAudio,
+  SceneCraftConfig,
 } from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
 import { generateHtmlFromSections, openHtmlInNewTab } from '@/lib/html-generator';
@@ -260,8 +261,7 @@ export default function AuthorsLayout({
   // Audio files state (for Visual Narrative)
   const [manuscriptAudios, setManuscriptAudios] = useState<Array<{filename: string, blob: Blob}>>([]);
 
-  // Wallpaper picker state (for Wallpaper+Chapter)
-  const [wallpaperPickerOpen, setWallpaperPickerOpen] = useState(false);
+  // (wallpaper-chapter system removed — SceneCraft handles immersive backgrounds)
 
   // Computed values
   // XHTML-Native: Extract plain text from XHTML for word counts
@@ -634,7 +634,8 @@ export default function AuthorsLayout({
                 href: `${s.id}.xhtml`,
                 xhtml: s.xhtml,
                 type: s.type,
-                wallpaperImageId: s.wallpaperImageId,
+
+                sceneCraftConfig: s.sceneCraftConfig,
               }))
           ),
         };
@@ -673,7 +674,8 @@ export default function AuthorsLayout({
               href: `${s.id}.xhtml`,
               xhtml: s.xhtml,
               type: s.type,
-              wallpaperImageId: s.wallpaperImageId,
+
+              sceneCraftConfig: s.sceneCraftConfig,
             })),
           };
           setEpub(newEpub);
@@ -717,7 +719,8 @@ export default function AuthorsLayout({
                 href: `${s.id}.xhtml`,
                 xhtml: s.xhtml,
                 type: s.type,
-                wallpaperImageId: s.wallpaperImageId,
+
+                sceneCraftConfig: s.sceneCraftConfig,
               }))
           ),
         };
@@ -849,30 +852,40 @@ export default function AuthorsLayout({
     setManuscriptAudios(audios);
   }, []);
 
-  // Wallpaper+Chapter handlers
-  const handleChooseWallpaper = useCallback(() => {
-    setWallpaperPickerOpen(true);
+  // SceneCraft handlers
+  const getAudioUrl = useCallback(async (filename: string): Promise<string | null> => {
+    const blob = await getManuscriptAudio(filename);
+    if (!blob) return null;
+    return URL.createObjectURL(blob);
   }, []);
 
-  const handleWallpaperSelected = useCallback(async (filename: string) => {
+  const getImageUrlForSceneCraft = useCallback((filename: string): string | null => {
+    const img = imageUrls.find(i => i.filename === filename);
+    return img?.url ?? null;
+  }, [imageUrls]);
+
+  const handleSceneCraftConfigChange = useCallback(async (config: SceneCraftConfig) => {
     if (!epub || !selectedSectionId) return;
     // Update in-memory epub sections
     const updatedSections = epub.sections.map(s =>
-      s.id === selectedSectionId ? { ...s, wallpaperImageId: filename } : s
+      s.id === selectedSectionId ? { ...s, sceneCraftConfig: config } : s
     );
     setEpub({ ...epub, sections: updatedSections });
-    // Persist to ManuscriptMeta
+    // Persist to meta.json
     const meta = await loadManuscriptMeta();
     if (meta) {
       const idx = meta.sections.findIndex(s => s.id === selectedSectionId);
-      const existing = meta.sections[idx];
-      if (idx >= 0 && existing) {
-        meta.sections[idx] = { ...existing, wallpaperImageId: filename };
-        await saveManuscriptMeta(meta);
+      if (idx >= 0) {
+        const existing = meta.sections[idx];
+        if (existing) {
+          meta.sections[idx] = { ...existing, sceneCraftConfig: config };
+          await saveManuscriptMeta(meta);
+        }
       }
     }
-    setWallpaperPickerOpen(false);
   }, [epub, selectedSectionId]);
+
+  // (wallpaper handler removed — SceneCraft handles immersive backgrounds)
 
   // Handle opening an epub file
   // XHTML-Native: Uses xhtml field from parsed sections
@@ -938,7 +951,8 @@ export default function AuthorsLayout({
                   href: `${s.id}.xhtml`,
                   xhtml: s.xhtml,
                   type: s.type,
-                  wallpaperImageId: s.wallpaperImageId,
+  
+                  sceneCraftConfig: s.sceneCraftConfig,
                 })),
               images: parsed.images, // Pass through for immediate access
             };
@@ -1012,7 +1026,8 @@ export default function AuthorsLayout({
                   href: `${s.id}.xhtml`,
                   xhtml: s.xhtml,
                   type: s.type,
-                  wallpaperImageId: s.wallpaperImageId,
+  
+                  sceneCraftConfig: s.sceneCraftConfig,
                 })),
             };
             setEpub(loadedEpub);
@@ -1280,7 +1295,8 @@ export default function AuthorsLayout({
                   href: `${s.id}.xhtml`,
                   xhtml: s.xhtml,
                   type: s.type,
-                  wallpaperImageId: s.wallpaperImageId,
+  
+                  sceneCraftConfig: s.sceneCraftConfig,
                 })),
             };
             setEpub(loadedEpub);
@@ -1378,7 +1394,8 @@ export default function AuthorsLayout({
           href: `${s.id}.xhtml`,
           xhtml: s.xhtml,
           type: s.type,
-          wallpaperImageId: s.wallpaperImageId,
+
+          sceneCraftConfig: s.sceneCraftConfig,
         })),
       };
       setEpub(newEpub);
@@ -1502,7 +1519,8 @@ export default function AuthorsLayout({
         id: s.id,
         title: s.title,
         type: (s.type || 'chapter') as ElementType,
-        wallpaperImageId: s.wallpaperImageId,
+
+        sceneCraftConfig: s.sceneCraftConfig,
       }));
       await saveManuscriptMeta(manuscriptMeta);
     }
@@ -1677,7 +1695,6 @@ export default function AuthorsLayout({
       title: updatedSection.title,
       xhtml: updatedSection.xhtml || '<p></p>',
       type: newType,
-      wallpaperImageId: updatedSection.wallpaperImageId,
     });
 
     // Update meta.sectionIds to match reordered sections
@@ -1694,7 +1711,8 @@ export default function AuthorsLayout({
         id: s.id,
         title: s.title,
         type: (s.type || 'chapter') as ElementType,
-        wallpaperImageId: s.wallpaperImageId,
+
+        sceneCraftConfig: s.sceneCraftConfig,
       }));
       await saveManuscriptMeta(manuscriptMeta);
     }
@@ -1987,7 +2005,7 @@ export default function AuthorsLayout({
           .map(s => ({
             title: s.title,
             content: s.xhtml,
-            wallpaperImageDataUrl: s.wallpaperImageId ? mediaDataUrls[`images/${s.wallpaperImageId}`] : undefined,
+            sceneCraftConfig: s.sceneCraftConfig,
           })),
         isDarkMode,
         mediaDataUrls,
@@ -2097,7 +2115,6 @@ export default function AuthorsLayout({
       title: titleToSave,
       xhtml: xhtmlToSave,
       type: selectedSection.type || 'section',
-      wallpaperImageId: selectedSection.wallpaperImageId,
     });
 
     // Update in-memory epub state so sidebar and subsequent comparisons work
@@ -2296,23 +2313,14 @@ export default function AuthorsLayout({
             audios={manuscriptAudios.map(a => ({ filename: a.filename, size: a.blob.size }))}
             onAudioUpload={handleAudioUpload}
             onAudioDelete={handleAudioDelete}
-            // Wallpaper+Chapter props
-            onChooseWallpaper={handleChooseWallpaper}
-            wallpaperImageId={selectedSection?.wallpaperImageId}
+            // SceneCraft props
+            sceneCraftConfig={selectedSection?.sceneCraftConfig}
+            onSceneCraftConfigChange={handleSceneCraftConfigChange}
+            getImageUrl={getImageUrlForSceneCraft}
+            getAudioUrl={getAudioUrl}
           />
         )}
 
-        {/* Wallpaper image picker modal */}
-        <ImagePickerModal
-          isOpen={wallpaperPickerOpen}
-          theme={theme}
-          isDarkMode={isDarkMode}
-          images={imageUrls}
-          onSelect={(filename) => handleWallpaperSelected(filename)}
-          onUpload={handleImageUpload}
-          onDelete={handleImageDelete}
-          onClose={() => setWallpaperPickerOpen(false)}
-        />
       </div>
     </div>
   );

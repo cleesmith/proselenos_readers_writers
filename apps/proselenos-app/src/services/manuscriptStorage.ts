@@ -972,7 +972,7 @@ export interface WorkingCopySection {
   title: string;
   xhtml: string;        // XHTML body content (single source of truth)
   type: ElementType;
-  wallpaperImageId?: string;  // Wallpaper+Chapter: image filename for parallax background
+  sceneCraftConfig?: SceneCraftConfig;  // SceneCraft immersive scene config
 }
 
 // For backward compatibility during migration - OLD format
@@ -1002,12 +1002,38 @@ export interface ManuscriptMeta {
   fountainTitlePage?: Record<string, string>;  // Original Fountain title page fields (Credit, Contact, etc.)
 }
 
+// SceneCraft immersive scene config — stored per-section as pure JSON refs
+export interface SceneCraftConfig {
+  // Wallpaper
+  wallpaperFilename: string | null;  // ref to Image Library
+  wallpaperOpacity: number;          // 0-1
+  wallpaperPosition: string;         // "top" | "center" | "bottom"
+  // Ambient audio
+  ambientFilename: string | null;    // ref to Audio Library
+  ambientVolume: number;             // 0-1
+  ambientLoop: boolean;
+  // Scene transitions
+  fadeIn: number;                    // seconds
+  fadeOut: number;                   // seconds
+  // Voice mode
+  voiceMode: string;                 // "narration" | "dialogue"
+  // Narration
+  narrationFilename: string | null;  // ref to Audio Library
+  narrationVolume: number;
+  // Dialogue clips
+  dialogueClips: Record<number, {    // keyed by element idx
+    filename: string;                // ref to Audio Library
+    volume: number;
+  }>;
+  dialogueVolume: number;            // default volume for new clips
+}
+
 // NEW: SectionMeta - metadata only, content is in separate .xhtml file
 export interface SectionMeta {
   id: string;
   title: string;
   type: ElementType;
-  wallpaperImageId?: string;  // Wallpaper+Chapter: image filename for parallax background
+  sceneCraftConfig?: SceneCraftConfig;  // SceneCraft immersive scene config
 }
 
 // Meta functions
@@ -1104,7 +1130,8 @@ export async function loadSection(id: string): Promise<WorkingCopySection | null
         title: sectionMeta.title,
         xhtml,
         type: sectionMeta.type || inferSectionType(sectionMeta.title),
-        wallpaperImageId: sectionMeta.wallpaperImageId,
+
+        sceneCraftConfig: sectionMeta.sceneCraftConfig,
       };
     }
   }
@@ -1161,11 +1188,12 @@ export async function saveSection(section: WorkingCopySection): Promise<void> {
       id: section.id,
       title: section.title,
       type: section.type,
-      wallpaperImageId: section.wallpaperImageId,
     };
 
     if (existingIdx >= 0) {
-      meta.sections[existingIdx] = sectionMeta;
+      // Preserve fields managed outside saveSection (e.g. sceneCraftConfig)
+      const existing = meta.sections[existingIdx];
+      meta.sections[existingIdx] = { ...existing, ...sectionMeta };
     } else {
       meta.sections.push(sectionMeta);
     }
@@ -1448,7 +1476,8 @@ export async function loadFullWorkingCopy(): Promise<FullWorkingCopy | null> {
           title: sectionMeta.title,
           xhtml,
           type: sectionMeta.type || inferSectionType(sectionMeta.title),
-          wallpaperImageId: sectionMeta.wallpaperImageId,
+  
+          sceneCraftConfig: sectionMeta.sceneCraftConfig,
         });
       }
     }
@@ -1517,7 +1546,6 @@ export async function saveFullWorkingCopy(epub: {
     content?: string;
     plateValue?: any[];
     type?: ElementType;
-    wallpaperImageId?: string;
   }>;
 }): Promise<void> {
   // Normalize section IDs and convert to XHTML
@@ -1558,7 +1586,6 @@ export async function saveFullWorkingCopy(epub: {
       id: normalizedId,
       title: section.title,
       type: sectionType as ElementType,
-      wallpaperImageId: section.wallpaperImageId,
     });
   }
 

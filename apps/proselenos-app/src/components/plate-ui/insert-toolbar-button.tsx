@@ -6,7 +6,6 @@ import {
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
-  ImageIcon,
   MessageSquareQuoteIcon,
   MinusIcon,
   PilcrowIcon,
@@ -26,7 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/plate-ui/dropdown-menu';
-import { useWallpaper } from '@/contexts/WallpaperContext';
 
 import { ToolbarButton, ToolbarMenuGroup } from './toolbar';
 
@@ -129,33 +127,7 @@ const groups: Group[] = [
 export function InsertToolbarButton(props: DropdownMenuProps) {
   const editor = useEditorRef();
   const [open, setOpen] = React.useState(false);
-  const wallpaper = useWallpaper();
-
-  // Build dynamic groups: append "Choose Wallpaper" to VN group for wallpaper-chapter sections
-  const dynamicGroups = React.useMemo(() => {
-    if (wallpaper?.sectionType !== 'wallpaper-chapter') return groups;
-
-    return groups.map(g => {
-      if (g.group !== 'Visual Narrative') return g;
-      const wallpaperLabel = wallpaper.currentWallpaper
-        ? `Wallpaper: ${wallpaper.currentWallpaper}`
-        : 'Choose Wallpaper';
-      return {
-        ...g,
-        items: [
-          ...g.items,
-          {
-            icon: <ImageIcon />,
-            label: wallpaperLabel,
-            value: 'wallpaper_choose',
-            onSelect: () => {
-              wallpaper.chooseWallpaper();
-            },
-          } as Item,
-        ],
-      };
-    });
-  }, [wallpaper]);
+  // (wallpaper-chapter removed — SceneCraft handles immersive backgrounds)
 
   return (
     <DropdownMenu modal={false} onOpenChange={setOpen} open={open} {...props}>
@@ -169,7 +141,7 @@ export function InsertToolbarButton(props: DropdownMenuProps) {
         align="start"
         className="flex max-h-[500px] min-w-0 flex-col overflow-y-auto"
       >
-        {dynamicGroups.map(({ group, items: nestedItems }) => (
+        {groups.map(({ group, items: nestedItems }) => (
           <ToolbarMenuGroup key={group} label={group}>
             {nestedItems.map(({ icon, label, value, onSelect }) => (
               <DropdownMenuItem

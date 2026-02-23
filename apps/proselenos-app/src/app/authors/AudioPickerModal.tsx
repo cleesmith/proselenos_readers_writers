@@ -140,7 +140,7 @@ export default function AudioPickerModal({
       right: 0,
       bottom: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 1000,
+      zIndex: 10100,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',

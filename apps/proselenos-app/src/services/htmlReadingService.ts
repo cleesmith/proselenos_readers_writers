@@ -140,7 +140,7 @@ export async function openBookAsHtml(
     sections: parsed.sections.map(s => ({
       title: s.title,
       content: s.xhtml,
-      wallpaperImageDataUrl: s.wallpaperImageId ? mediaDataUrls[`images/${s.wallpaperImageId}`] : undefined,
+      sceneCraftConfig: s.sceneCraftConfig,
     })),
     isDarkMode,
     mediaDataUrls,

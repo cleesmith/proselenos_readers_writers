@@ -7,7 +7,6 @@
 export type ElementType =
   // Main content
   | 'chapter'
-  | 'wallpaper-chapter'
   // Cover (always first, cannot be deleted or moved)
   | 'cover'
   // Front Matter
@@ -55,7 +54,6 @@ export const ELEMENT_GROUPS: ElementGroup[] = [
     name: '', // No group header for Chapter (top item)
     elements: [
       { type: 'chapter', displayName: 'Chapter', defaultTitle: 'Chapter', description: 'Standard chapter' },
-      { type: 'wallpaper-chapter', displayName: 'Wallpaper+Chapter', defaultTitle: 'Chapter', description: 'Chapter with parallax background image in HTML' },
     ],
   },
   {
@@ -124,7 +122,7 @@ export const PROTECTED_SECTION_IDS = ['title-page', 'copyright'] as const;
 export const PROTECTED_SECTION_COUNT = PROTECTED_SECTION_IDS.length;
 
 // Types that can have multiple instances (all others are singletons)
-export const MULTI_INSTANCE_TYPES: ElementType[] = ['chapter', 'wallpaper-chapter', 'uncategorized', 'no-matter'];
+export const MULTI_INSTANCE_TYPES: ElementType[] = ['chapter', 'uncategorized', 'no-matter'];
 
 // Types hidden from "Add Section" UI (protected sections that always exist, or generated during publish)
 // Note: 'cover' kept in ElementType union for backward compat, but filtered out at state level
@@ -163,7 +161,7 @@ export const FRONT_MATTER_TYPES: ElementType[] = ['blurbs', 'half-title', 'dedic
 export const INTRODUCTORY_TYPES: ElementType[] = ['foreword', 'introduction', 'preface', 'prologue'];
 
 // Section 4: Chapters (min 1 required, reorder within only)
-export const CHAPTER_TYPES: ElementType[] = ['chapter', 'wallpaper-chapter'];
+export const CHAPTER_TYPES: ElementType[] = ['chapter'];
 
 // Section 5: Back Matter (optional, reorder within only)
 export const BACK_MATTER_TYPES: ElementType[] = ['epilogue', 'afterword', 'endnotes', 'bibliography', 'acknowledgments', 'about-the-author', 'also-by'];

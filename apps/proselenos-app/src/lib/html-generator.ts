@@ -2,253 +2,16 @@
 
 // Generates a single-page readable HTML file from manuscript sections
 // CSS matches the EPUB output (style.css + visual-narrative.css)
+// SceneCraft sections get scroll-driven immersive audio/visual rendering
 
 import { VISUAL_NARRATIVE_CSS } from './visual-narrative-css';
-
-// ── Parallax Wallpaper CSS ──
-const PARALLAX_CSS = `/* ── Parallax Wallpaper styles ──────────────── */
-.parallax {
-  position: relative;
-  min-height: 100vh;
-  overflow: clip;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-}
-.parallax .bg {
-  position: absolute;
-  inset: -20%;
-  background-size: cover;
-  background-position: center;
-  filter: blur(2px);
-  z-index: 0;
-  will-change: transform;
-}
-.parallax .dim {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 1;
-}
-body.dark-mode .parallax .dim {
-  background: rgba(0, 0, 0, 0.55);
-}
-.parallax .inner {
-  position: relative;
-  z-index: 2;
-  padding: 3em 2em;
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-}
-.parallax .inner h1 {
-  color: #fff;
-}
-.parallax .inner p {
-  color: rgba(255,255,255,0.92);
-}`;
-
-// ── Parallax Wallpaper JS ──
-const PARALLAX_JS = `
-    // Parallax scroll effect for wallpaper chapters
-    window.parallaxSpeed = 0.3;
-    (function() {
-      var bgs = document.querySelectorAll('.parallax .bg');
-      if (!bgs.length) return;
-      var ticking = false;
-      window.addEventListener('scroll', function() {
-        if (!ticking) {
-          requestAnimationFrame(function() {
-            var speed = window.parallaxSpeed;
-            var scrollY = window.scrollY || window.pageYOffset;
-            for (var i = 0; i < bgs.length; i++) {
-              var rect = bgs[i].parentElement.getBoundingClientRect();
-              var offset = (rect.top + scrollY) * speed;
-              bgs[i].style.transform = 'translate3d(0,' + (scrollY * speed - offset) + 'px,0)';
-            }
-            ticking = false;
-          });
-          ticking = true;
-        }
-      });
-    })();`;
-
-// ── Parallax Controls CSS (embedded in footer) ──
-const PARALLAX_CONTROLS_CSS = `/* ── Parallax wallpaper controls ───────────── */
-.footer-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-left: 8px;
-  padding-left: 16px;
-  border-left: 1px solid #444;
-}
-
-.px-label {
-  font-size: 0.75em;
-  color: #888;
-  white-space: nowrap;
-  font-style: italic;
-}
-
-.px-slider {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.px-slider label {
-  font-size: 0.75em;
-  color: #999;
-  white-space: nowrap;
-  min-width: 28px;
-  text-align: right;
-}
-
-.px-slider input[type="range"] {
-  width: 70px;
-  height: 4px;
-  accent-color: #22c55e;
-  cursor: pointer;
-}
-
-.px-reset {
-  background: none;
-  border: 1px solid #555;
-  color: #aaa;
-  font-size: 0.7em;
-  padding: 2px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, color 0.2s;
-}
-
-.px-reset:hover {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-}
-
-@media (max-width: 600px) {
-  .footer-controls {
-    gap: 6px;
-    width: 100%;
-    justify-content: center;
-    order: 3;
-    border-left: none;
-    margin-left: 0;
-    padding-left: 0;
-    border-top: 1px solid #444;
-    padding-top: 8px;
-  }
-
-  .px-slider input[type="range"] {
-    width: 50px;
-  }
-}`;
-
-// ── Parallax Controls JS (embedded in footer) ──
-const PARALLAX_CONTROLS_JS = `
-    // Parallax wallpaper controls
-    (function() {
-      var defaults = {
-        dim: document.body.classList.contains('dark-mode') ? 0.55 : 0.35,
-        bgBlur: 2,
-        backdropBlur: 12,
-        zoom: 100,
-        speed: 0.3
-      };
-
-      var keys = {
-        dim: 'px-dim',
-        bgBlur: 'px-bg-blur',
-        backdropBlur: 'px-backdrop-blur',
-        zoom: 'px-zoom',
-        speed: 'px-speed'
-      };
-
-      function load(key, fallback) {
-        var v = localStorage.getItem(key);
-        return v !== null ? parseFloat(v) : fallback;
-      }
-
-      function applyAll(vals) {
-        var bgs = document.querySelectorAll('.parallax .bg');
-        var dims = document.querySelectorAll('.parallax .dim');
-        for (var i = 0; i < bgs.length; i++) {
-          bgs[i].style.filter = 'blur(' + vals.bgBlur + 'px)';
-          bgs[i].style.backgroundSize = vals.zoom <= 100 ? 'cover' : vals.zoom + '%';
-        }
-        for (var j = 0; j < dims.length; j++) {
-          dims[j].style.background = 'rgba(0,0,0,' + vals.dim + ')';
-          dims[j].style.backdropFilter = 'blur(' + vals.backdropBlur + 'px)';
-          dims[j].style.webkitBackdropFilter = 'blur(' + vals.backdropBlur + 'px)';
-        }
-        window.parallaxSpeed = vals.speed;
-      }
-
-      var vals = {
-        dim: load(keys.dim, defaults.dim),
-        bgBlur: load(keys.bgBlur, defaults.bgBlur),
-        backdropBlur: load(keys.backdropBlur, defaults.backdropBlur),
-        zoom: load(keys.zoom, defaults.zoom),
-        speed: load(keys.speed, defaults.speed)
-      };
-
-      // Set initial slider values from localStorage
-      var sliderDim = document.getElementById('pxDim');
-      var sliderBgBlur = document.getElementById('pxBgBlur');
-      var sliderBackdrop = document.getElementById('pxBackdrop');
-      var sliderZoom = document.getElementById('pxZoom');
-      var sliderSpeed = document.getElementById('pxSpeed');
-
-      if (sliderDim) sliderDim.value = vals.dim;
-      if (sliderBgBlur) sliderBgBlur.value = vals.bgBlur;
-      if (sliderBackdrop) sliderBackdrop.value = vals.backdropBlur;
-      if (sliderZoom) sliderZoom.value = vals.zoom;
-      if (sliderSpeed) sliderSpeed.value = vals.speed;
-
-      applyAll(vals);
-
-      function bind(slider, prop, key) {
-        if (!slider) return;
-        slider.addEventListener('input', function() {
-          vals[prop] = parseFloat(this.value);
-          localStorage.setItem(key, this.value);
-          applyAll(vals);
-        });
-      }
-
-      bind(sliderDim, 'dim', keys.dim);
-      bind(sliderBgBlur, 'bgBlur', keys.bgBlur);
-      bind(sliderBackdrop, 'backdropBlur', keys.backdropBlur);
-      bind(sliderZoom, 'zoom', keys.zoom);
-      bind(sliderSpeed, 'speed', keys.speed);
-
-      // Reset button
-      var resetBtn = document.getElementById('pxReset');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
-          // Recalculate dim default based on current theme
-          defaults.dim = document.body.classList.contains('dark-mode') ? 0.55 : 0.35;
-          vals = { dim: defaults.dim, bgBlur: defaults.bgBlur, backdropBlur: defaults.backdropBlur, zoom: defaults.zoom, speed: defaults.speed };
-          if (sliderDim) sliderDim.value = vals.dim;
-          if (sliderBgBlur) sliderBgBlur.value = vals.bgBlur;
-          if (sliderBackdrop) sliderBackdrop.value = vals.backdropBlur;
-          if (sliderZoom) sliderZoom.value = vals.zoom;
-          if (sliderSpeed) sliderSpeed.value = vals.speed;
-          Object.values(keys).forEach(function(k) { localStorage.removeItem(k); });
-          applyAll(vals);
-        });
-      }
-    })();`;
+import type { SceneCraftConfig } from '@/services/manuscriptStorage';
 
 export interface HtmlGeneratorOptions {
   title: string;
   author: string;
   year?: string;
-  sections: Array<{ title: string; content: string; wallpaperImageDataUrl?: string }>;
+  sections: Array<{ title: string; content: string; sceneCraftConfig?: SceneCraftConfig }>;
   isDarkMode?: boolean;
   mediaDataUrls?: Record<string, string>; // "images/photo.jpg" → "data:image/jpeg;base64,..."
   coverImageDataUrl?: string;  // base64 data URL for cover image
@@ -704,6 +467,329 @@ nav a {
   color: inherit;
 }`;
 
+// ── SceneCraft CSS ─────────────────────────────────────────────────────────
+
+const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ──── */
+.sc-scene {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  background: #060608;
+  color: #c8c0b4;
+  overflow: hidden;
+}
+.sc-scene .sc-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+.sc-scene .sc-playhead {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 33%;
+  height: 1px;
+  background: rgba(255,120,68,0.15);
+  z-index: 10;
+  pointer-events: none;
+}
+.sc-scene .sc-playhead-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,120,68,0.4);
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  transform: translateX(-50%);
+}
+.sc-scene .sc-info {
+  position: fixed;
+  right: 16px;
+  top: calc(33% - 14px);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255,120,68,0.35);
+  z-index: 10;
+  pointer-events: none;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-content {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 50vh 2rem;
+  font-family: Georgia, 'EB Garamond', serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  line-height: 2;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-dead-zone {
+  height: 50vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+.sc-scene .sc-dead-zone span {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: #2a2620;
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-enter {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.25);
+  margin-bottom: 3em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-exit {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.15);
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid rgba(255,255,255,0.03);
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-dead-zone-after {
+  height: 70vh;
+}
+.sc-scene .sc-block {
+  margin-bottom: 1.6em;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block.sc-vis {
+  opacity: 1;
+  transform: translateY(0);
+}
+.sc-scene .sc-block.sc-past {
+  opacity: 0.3;
+}
+.sc-scene .sc-block-dialogue {
+  color: #d4c090;
+}
+.sc-scene .sc-block-dialogue .sc-speaker {
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 0.65em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a08040;
+  display: block;
+  margin-bottom: 0.3em;
+}
+.sc-scene .sc-block-emphasis {
+  font-style: italic;
+  color: #e0c8b0;
+}
+.sc-scene .sc-block-break {
+  text-align: center;
+  color: #3a3530;
+  letter-spacing: 0.3em;
+}`;
+
+// ── SceneCraft JS Engine ──────────────────────────────────────────────────
+
+const SCENECRAFT_JS = `
+    // SceneCraft scroll-driven immersive audio/visual engine
+    (function() {
+      var scenes = document.querySelectorAll('.sc-scene');
+      if (!scenes.length) return;
+
+      var DLG_FADE = 0.5;
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function createFadeIn(audioEl, vol, dur) {
+        audioEl.volume = 0;
+        audioEl.play().catch(function(){});
+        return { el: audioEl, state: 'in', start: Date.now(), dur: dur * 1000, targetVol: vol };
+      }
+      function createFadeOut(obj, dur) {
+        if (!obj || !obj.el) return null;
+        return { el: obj.el, state: 'out', start: Date.now(), dur: dur * 1000, startVol: obj.el.volume };
+      }
+      function tickFade(obj) {
+        if (!obj || !obj.el) return null;
+        var t = obj.dur > 0 ? clamp((Date.now() - obj.start) / obj.dur, 0, 1) : 1;
+        if (obj.state === 'in') {
+          obj.el.volume = t * (obj.targetVol || 1);
+          if (t >= 1) obj.state = 'playing';
+        } else if (obj.state === 'out') {
+          obj.el.volume = (1 - t) * (obj.startVol || 1);
+          if (t >= 1) { obj.el.pause(); return null; }
+        }
+        return obj;
+      }
+      function killAudio(obj) {
+        if (obj && obj.el) { obj.el.pause(); obj.el.src = ''; }
+        return null;
+      }
+
+      // Per-scene state
+      var sceneStates = [];
+      scenes.forEach(function(sceneEl, si) {
+        var cfg = null;
+        try { cfg = JSON.parse(sceneEl.dataset.scConfig || 'null'); } catch(e) {}
+        sceneStates.push({
+          el: sceneEl,
+          cfg: cfg,
+          inScene: false,
+          ambient: null,
+          ambientOut: null,
+          voice: null,
+          voiceOut: null,
+          activeDlg: -1,
+          dlgObj: null,
+          dlgOut: null,
+          blocks: sceneEl.querySelectorAll('.sc-block'),
+          enterEl: sceneEl.querySelector('.sc-enter'),
+          exitEl: sceneEl.querySelector('.sc-exit'),
+          bgEl: sceneEl.querySelector('.sc-bg'),
+          infoEl: sceneEl.querySelector('.sc-info'),
+        });
+      });
+
+      var playheadY = window.innerHeight * 0.33;
+      window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.33; });
+
+      function doEnter(s) {
+        if (s.inScene || !s.cfg) return;
+        s.inScene = true;
+        var c = s.cfg;
+        if (s.infoEl) s.infoEl.textContent = s.el.dataset.scTitle || '';
+
+        // Wallpaper
+        if (c.wallpaperFilename && s.bgEl) {
+          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (url) {
+            s.bgEl.style.backgroundImage = "url('" + url + "')";
+            s.bgEl.style.backgroundPosition = c.wallpaperPosition || 'center';
+            s.bgEl.style.opacity = String(c.wallpaperOpacity || 0.25);
+          }
+        }
+
+        // Ambient audio
+        s.ambientOut = killAudio(s.ambientOut);
+        if (c.ambientFilename) {
+          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (aUrl) {
+            var a = new Audio(aUrl);
+            a.loop = !!c.ambientLoop;
+            s.ambient = createFadeIn(a, c.ambientVolume || 0.5, c.fadeIn || 2);
+          }
+        }
+
+        // Narration voice
+        s.voiceOut = killAudio(s.voiceOut);
+        if (c.voiceMode === 'narration' && c.narrationFilename) {
+          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (nUrl) {
+            var n = new Audio(nUrl);
+            s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
+          }
+        }
+      }
+
+      function doExit(s) {
+        if (!s.inScene || !s.cfg) return;
+        s.inScene = false;
+        var c = s.cfg;
+        if (s.infoEl) s.infoEl.textContent = '';
+        if (s.bgEl) s.bgEl.style.opacity = '0';
+
+        if (s.ambient) { s.ambientOut = createFadeOut(s.ambient, c.fadeOut || 3); s.ambient = null; }
+        if (s.voice) { s.voiceOut = createFadeOut(s.voice, c.fadeOut || 3); s.voice = null; }
+        s.dlgObj = killAudio(s.dlgObj);
+        s.dlgOut = killAudio(s.dlgOut);
+        s.activeDlg = -1;
+      }
+
+      function tick() {
+        for (var si = 0; si < sceneStates.length; si++) {
+          var s = sceneStates[si];
+          if (!s.cfg) continue;
+          var c = s.cfg;
+
+          // Tick fades
+          s.ambientOut = tickFade(s.ambientOut);
+          s.voiceOut = tickFade(s.voiceOut);
+          if (s.ambient && s.ambient.state === 'in') tickFade(s.ambient);
+          if (s.voice && s.voice.state === 'in') tickFade(s.voice);
+          s.dlgObj = tickFade(s.dlgObj);
+          s.dlgOut = tickFade(s.dlgOut);
+
+          // Block visibility
+          for (var bi = 0; bi < s.blocks.length; bi++) {
+            var b = s.blocks[bi];
+            var rect = b.getBoundingClientRect();
+            var center = rect.top + rect.height / 2;
+            if (center < playheadY + 100) b.classList.add('sc-vis'); else b.classList.remove('sc-vis');
+            if (center < playheadY - window.innerHeight * 0.3) b.classList.add('sc-past'); else b.classList.remove('sc-past');
+          }
+
+          // Scene zone detection
+          var enterBottom = s.enterEl ? s.enterEl.getBoundingClientRect().bottom : 0;
+          var exitTop = s.exitEl ? s.exitEl.getBoundingClientRect().top : window.innerHeight;
+          if (enterBottom <= playheadY && exitTop > playheadY) {
+            doEnter(s);
+          } else {
+            doExit(s);
+          }
+
+          // Per-dialogue voice
+          if (s.inScene && c.voiceMode === 'dialogue') {
+            var currentDlg = -1;
+            for (var di = 0; di < s.blocks.length; di++) {
+              var db = s.blocks[di];
+              var dr = db.getBoundingClientRect();
+              var dataIdx = parseInt(db.dataset.idx || '-1', 10);
+              if (dr.top < playheadY && dr.bottom > playheadY && db.classList.contains('sc-block-dialogue')) {
+                currentDlg = dataIdx;
+              }
+            }
+            if (currentDlg !== s.activeDlg) {
+              if (s.dlgObj && s.dlgObj.el) {
+                s.dlgOut = killAudio(s.dlgOut);
+                s.dlgOut = createFadeOut(s.dlgObj, DLG_FADE);
+                s.dlgObj = null;
+              }
+              s.activeDlg = currentDlg;
+              if (currentDlg >= 0 && c.dialogueClips) {
+                var clip = c.dialogueClips[currentDlg];
+                if (clip && clip.filename) {
+                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (dUrl) {
+                    var da = new Audio(dUrl);
+                    s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();`;
+
 // ── HTML-specific CSS (dark mode, footer, responsive) ──────────────────────
 
 const HTML_SPECIFIC_CSS = `
@@ -839,6 +925,202 @@ body.dark-mode .scene-audio {
   }
 }`;
 
+// ── SceneCraft element types (mirrors SceneCraftModal parser) ──────────────
+
+interface ScElement {
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'break' | 'para';
+  text: string;
+  speaker?: string;
+  direction?: string;
+  alt?: string;
+  imgSrc?: string;
+  idx: number;
+}
+
+/**
+ * Parse XHTML into SceneCraft elements — same logic as SceneCraftModal.parseSceneXhtml().
+ * Used to generate the scroll-driven block structure in the enhanced HTML output.
+ */
+function parseSceneElements(xhtml: string): ScElement[] {
+  if (!xhtml || !xhtml.trim()) return [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${xhtml}</div>`, 'text/html');
+  const root = doc.body.firstElementChild;
+  if (!root) return [];
+  const elements: ScElement[] = [];
+  let idx = 0;
+
+  function walkChildren(parent: Element) {
+    for (let i = 0; i < parent.children.length; i++) {
+      const node = parent.children[i];
+      if (!node) continue;
+      const tag = node.tagName.toLowerCase();
+      const cls = node.className || '';
+
+      if (tag === 'div' && cls.includes('sticky-wrap')) {
+        const paragraphs: string[] = [];
+        for (let j = 0; j < node.children.length; j++) {
+          const child = node.children[j];
+          if (!child) continue;
+          if (child.tagName.toLowerCase() === 'p') {
+            const text = (child.textContent || '').trim();
+            if (text) paragraphs.push(text);
+          }
+        }
+        if (paragraphs.length > 0) {
+          elements.push({ type: 'sticky', text: paragraphs.join('\n\n'), idx: idx++ });
+        }
+        continue;
+      }
+      if (tag === 'figure') {
+        const img = node.querySelector('img');
+        const figcaption = node.querySelector('figcaption');
+        elements.push({
+          type: 'figure', text: figcaption?.textContent?.trim() || img?.getAttribute('alt') || 'Image',
+          alt: img?.getAttribute('alt') || undefined, imgSrc: img?.getAttribute('src') || undefined, idx: idx++,
+        });
+        continue;
+      }
+      if (tag === 'div' && cls.includes('dialogue')) {
+        const speakerEl = node.querySelector('.speaker, span[class*="speaker"]');
+        let speaker = 'unknown', direction = '';
+        if (speakerEl) {
+          const speakerText = (speakerEl.textContent || '').trim();
+          const match = speakerText.match(/^([^(]+?)(?:\s*\(([^)]+)\))?:?\s*$/);
+          if (match) { speaker = (match[1] || '').trim().toLowerCase(); direction = (match[2] || '').trim(); }
+          else speaker = speakerText.replace(/:$/, '').trim().toLowerCase();
+        }
+        let dialogueText = '';
+        for (let j = 0; j < node.childNodes.length; j++) {
+          const child = node.childNodes[j];
+          if (!child) continue;
+          if (child.nodeType === Node.ELEMENT_NODE && (child as Element).className?.includes('speaker')) continue;
+          dialogueText += child.textContent || '';
+        }
+        elements.push({ type: 'dialogue', text: dialogueText.trim(), speaker, direction: direction || undefined, idx: idx++ });
+        continue;
+      }
+      if (tag === 'p' && cls.includes('emphasis-line')) {
+        const text = (node.textContent || '').trim();
+        if (text) elements.push({ type: 'emphasis', text, idx: idx++ });
+        continue;
+      }
+      if (tag === 'p' && cls.includes('scene-break')) {
+        elements.push({ type: 'break', text: node.textContent?.trim() || '\u2022 \u2022 \u2022', idx: idx++ });
+        continue;
+      }
+      if (tag === 'p') {
+        const text = (node.textContent || '').trim();
+        if (text) elements.push({ type: 'para', text, idx: idx++ });
+        continue;
+      }
+      if (tag === 'br') continue;
+      if (tag === 'div' || tag === 'article' || tag === 'section') { walkChildren(node); continue; }
+      const text = (node.textContent || '').trim();
+      if (text) elements.push({ type: 'para', text, idx: idx++ });
+    }
+  }
+  walkChildren(root);
+  return elements;
+}
+
+/**
+ * Generate SceneCraft HTML for a section with immersive scroll-driven rendering.
+ * Produces the same structure as SceneCraftModal's preview.
+ */
+function generateSceneCraftHtml(
+  sectionTitle: string,
+  xhtml: string,
+  config: SceneCraftConfig,
+  sectionIndex: number,
+  mediaDataUrls?: Record<string, string>,
+): string {
+  const elements = parseSceneElements(xhtml);
+
+  // Build data attributes for media URLs (used by JS engine)
+  const dataAttrs: string[] = [];
+  dataAttrs.push(`data-sc-config='${escapeHtml(JSON.stringify(config))}'`);
+  dataAttrs.push(`data-sc-title="${escapeHtml(sectionTitle)}"`);
+
+  // Resolve media filenames to data URLs and store as data attributes
+  if (mediaDataUrls) {
+    if (config.wallpaperFilename) {
+      const url = mediaDataUrls[`images/${config.wallpaperFilename}`];
+      if (url) {
+        const safeKey = config.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_');
+        dataAttrs.push(`data-sc-img_${safeKey}="${url}"`);
+      }
+    }
+    const audioFiles = new Set<string>();
+    if (config.ambientFilename) audioFiles.add(config.ambientFilename);
+    if (config.narrationFilename) audioFiles.add(config.narrationFilename);
+    if (config.dialogueClips) {
+      Object.values(config.dialogueClips).forEach(clip => {
+        if (clip.filename) audioFiles.add(clip.filename);
+      });
+    }
+    audioFiles.forEach(fn => {
+      const url = mediaDataUrls[`audio/${fn}`];
+      if (url) {
+        const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_');
+        dataAttrs.push(`data-sc-aud_${safeKey}="${url}"`);
+      }
+    });
+  }
+
+  // Build content blocks
+  const blocksHtml = elements.map(item => {
+    const escapedText = convertNonAsciiToEntities(escapeHtml(item.text));
+    if (item.type === 'dialogue') {
+      const spk = item.direction ? `${item.speaker} (${item.direction})` : (item.speaker || 'unknown');
+      return `      <div class="sc-block sc-block-dialogue" data-idx="${item.idx}">
+        <span class="sc-speaker">${escapeHtml(spk)}</span>
+        ${escapedText}
+      </div>`;
+    }
+    if (item.type === 'sticky') {
+      return item.text.split('\n').filter(l => l.trim()).map(line =>
+        `      <div class="sc-block" data-idx="${item.idx}">${convertNonAsciiToEntities(escapeHtml(line))}</div>`
+      ).join('\n');
+    }
+    if (item.type === 'emphasis') {
+      return `      <div class="sc-block sc-block-emphasis" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'break') {
+      return `      <div class="sc-block sc-block-break" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'figure') {
+      let imgTag = '';
+      if (item.imgSrc && mediaDataUrls) {
+        const url = mediaDataUrls[item.imgSrc] || mediaDataUrls[`images/${item.imgSrc?.replace(/^(\.\.\/)?images\//, '')}`];
+        if (url) {
+          imgTag = `<img src="${url}" alt="${escapeHtml(item.alt || item.text)}" style="max-width:260px;border-radius:4px;opacity:0.9;display:block"/>
+          <span style="font-family:'SF Mono',monospace;font-size:0.55em;color:#5a554e;letter-spacing:0.06em;margin-top:0.4em;display:block">${escapeHtml(item.alt || item.text)}</span>`;
+        }
+      }
+      if (!imgTag) {
+        imgTag = `<span style="color:#5a554e;font-style:italic;font-size:0.8em">[${escapeHtml(item.alt || item.text)}]</span>`;
+      }
+      return `      <div class="sc-block" data-idx="${item.idx}" style="text-align:left">${imgTag}</div>`;
+    }
+    return `      <div class="sc-block" data-idx="${item.idx}">${escapedText}</div>`;
+  }).join('\n');
+
+  return `
+  <div class="sc-scene" id="section-${sectionIndex}" ${dataAttrs.join(' ')}>
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">${escapeHtml(sectionTitle)}</div>
+${blocksHtml}
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>`;
+}
+
 /**
  * Generate cover page HTML.
  * If a cover image data URL is available, show it centered.
@@ -890,8 +1172,8 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
 
   // Track whether any section uses VN content (to include VN CSS)
   let hasAnyVnContent = false;
-  // Track whether any section has a wallpaper (to include parallax CSS/JS)
-  let hasAnyWallpaper = false;
+  // Track whether any section has SceneCraft config (to include SC CSS/JS)
+  let hasAnySceneCraft = false;
 
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i]!;
@@ -901,6 +1183,15 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
     if (lower === 'contents' || lower === 'table of contents') continue;
     if (lower === 'cover') continue;
     if (lower === 'title page') continue;
+
+    // SceneCraft sections get immersive scroll-driven rendering
+    if (section.sceneCraftConfig) {
+      hasAnySceneCraft = true;
+      sectionHtmls.push(generateSceneCraftHtml(
+        section.title, section.content, section.sceneCraftConfig, i, mediaDataUrls
+      ));
+      continue;
+    }
 
     let contentHtml = processContent(section.content);
     if (mediaDataUrls && Object.keys(mediaDataUrls).length > 0) {
@@ -917,19 +1208,6 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
   <section class="copyright-page" id="section-${i}">
 ${contentHtml}
   </section>`);
-    } else if (section.wallpaperImageDataUrl) {
-      // Wallpaper+Chapter → parallax structure
-      hasAnyWallpaper = true;
-      if (sectionHasVnContent(contentHtml)) hasAnyVnContent = true;
-      sectionHtmls.push(`
-  <div class="parallax" id="section-${i}">
-    <div class="bg" style="background-image:url('${section.wallpaperImageDataUrl}')"></div>
-    <div class="dim"></div>
-    <div class="inner chapter">
-      <h1>${escapeHtml(section.title)}</h1>
-${contentHtml}
-    </div>
-  </div>`);
     } else if (sectionHasVnContent(contentHtml)) {
       // VN chapter → <article class="scene">
       hasAnyVnContent = true;
@@ -979,10 +1257,8 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
 
   // Build combined CSS
   const vnCssBlock = hasAnyVnContent ? `\n/* ── Visual Narrative styles ──────────────── */\n${getVnClassRules()}` : '';
-  const parallaxCssBlock = hasAnyWallpaper ? `\n${PARALLAX_CSS}` : '';
-  const parallaxControlsCssBlock = hasAnyWallpaper ? `\n${PARALLAX_CONTROLS_CSS}` : '';
-  const parallaxJsBlock = hasAnyWallpaper ? `\n${PARALLAX_JS}` : '';
-  const parallaxControlsJsBlock = hasAnyWallpaper ? `\n${PARALLAX_CONTROLS_JS}` : '';
+  const sceneCraftCssBlock = hasAnySceneCraft ? `\n${SCENECRAFT_CSS}` : '';
+  const sceneCraftJsBlock = hasAnySceneCraft ? `\n${SCENECRAFT_JS}` : '';
 
   // Full HTML template
   const html = `<!DOCTYPE html>
@@ -994,17 +1270,16 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
   <style>
 ${EPUB_BASE_CSS}
 ${vnCssBlock}
-${parallaxCssBlock}
-${parallaxControlsCssBlock}
+${sceneCraftCssBlock}
 ${HTML_SPECIFIC_CSS}
   </style>
 </head>
 <body${isDarkMode ? ' class="dark-mode"' : ''}>
 ${allSectionsHtml}
 
-  <div class="footer"${hasAnyWallpaper ? ' style="flex-wrap:wrap;"' : ''}>
+  <div class="footer">
     <div class="footer-buttons">
-      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#127769;' : '&#9728;&#65039;'}</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#9728;&#65039;' : '&#127769;'}</button>
       <button class="download-btn" id="downloadBtn" title="Download HTML file">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
       </button>
@@ -1013,16 +1288,7 @@ ${allSectionsHtml}
       <span class="footer-title">${escapeHtml(title)}</span>
       <span class="footer-author">by ${escapeHtml(author)}</span>
       <span class="footer-copyright">&copy; ${escapeHtml(year)}</span>
-    </div>${hasAnyWallpaper ? `
-    <div class="footer-controls">
-      <span class="px-label">Wallpaper:</span>
-      <span class="px-slider"><label>Dim</label><input type="range" id="pxDim" min="0" max="0.9" step="0.05" value="${isDarkMode ? '0.55' : '0.35'}"></span>
-      <span class="px-slider"><label>Blur</label><input type="range" id="pxBgBlur" min="0" max="20" step="1" value="2"></span>
-      <span class="px-slider"><label>Frost</label><input type="range" id="pxBackdrop" min="0" max="30" step="1" value="12"></span>
-      <span class="px-slider"><label>Zoom</label><input type="range" id="pxZoom" min="100" max="200" step="5" value="100"></span>
-      <span class="px-slider"><label>Speed</label><input type="range" id="pxSpeed" min="0" max="0.8" step="0.05" value="0.3"></span>
-      <button class="px-reset" id="pxReset" title="Reset wallpaper settings">Reset</button>
-    </div>` : ''}
+    </div>
   </div>
 
   <script>
@@ -1034,16 +1300,16 @@ ${allSectionsHtml}
     const savedTheme = localStorage.getItem('html-ebook-theme');
     if (savedTheme === 'light' && body.classList.contains('dark-mode')) {
       body.classList.remove('dark-mode');
-      themeToggle.textContent = '\u2600\uFE0F';
+      themeToggle.textContent = '\u{1F319}';
     } else if (savedTheme === 'dark' && !body.classList.contains('dark-mode')) {
       body.classList.add('dark-mode');
-      themeToggle.textContent = '\u{1F319}';
+      themeToggle.textContent = '\u2600\uFE0F';
     }
 
     themeToggle.addEventListener('click', () => {
       body.classList.toggle('dark-mode');
       const isDark = body.classList.contains('dark-mode');
-      themeToggle.textContent = isDark ? '\u{1F319}' : '\u2600\uFE0F';
+      themeToggle.textContent = isDark ? '\u2600\uFE0F' : '\u{1F319}';
       localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
     });
 
@@ -1083,8 +1349,7 @@ ${allSectionsHtml}
       a.click();
       URL.revokeObjectURL(url);
     });
-${parallaxJsBlock}
-${parallaxControlsJsBlock}
+${sceneCraftJsBlock}
   </script>
 </body>
 </html>`;

@@ -12,10 +12,11 @@ import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
 import AudioPickerModal from './AudioPickerModal';
 import SectionPreview from './SectionPreview';
+import SceneCraftModal from './SceneCraftModal';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { ImageLibraryProvider } from '@/contexts/ImageLibraryContext';
 import { AudioLibraryProvider } from '@/contexts/AudioLibraryContext';
-import { WallpaperProvider } from '@/contexts/WallpaperContext';
+import type { SceneCraftConfig } from '@/services/manuscriptStorage';
 
 
 // PlateJS imports
@@ -110,9 +111,11 @@ interface EditorPanelProps {
   audios?: AudioInfo[];
   onAudioUpload?: (file: File) => Promise<void>;
   onAudioDelete?: (filename: string) => void;
-  // Wallpaper+Chapter props
-  onChooseWallpaper?: () => void;
-  wallpaperImageId?: string;
+  // SceneCraft props
+  sceneCraftConfig?: SceneCraftConfig | null;
+  onSceneCraftConfigChange?: (config: SceneCraftConfig) => void;
+  getImageUrl?: (filename: string) => string | null;
+  getAudioUrl?: (filename: string) => Promise<string | null>;
 }
 
 // Ref handle for parent to control editor
@@ -181,9 +184,11 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   audios,
   onAudioUpload,
   onAudioDelete,
-  // Wallpaper+Chapter props
-  onChooseWallpaper,
-  wallpaperImageId,
+  // SceneCraft props
+  sceneCraftConfig,
+  onSceneCraftConfigChange,
+  getImageUrl,
+  getAudioUrl,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -218,6 +223,9 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Preview state
   const [showPreview, setShowPreview] = useState(false);
+
+  // SceneCraft modal state
+  const [showSceneCraft, setShowSceneCraft] = useState(false);
 
   // Save button state
   const [isSaving, setIsSaving] = useState(false);
@@ -515,11 +523,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         await onAudioUpload?.(file);
       },
     }}>
-    <WallpaperProvider value={{
-      sectionType,
-      chooseWallpaper: () => onChooseWallpaper?.(),
-      currentWallpaper: wallpaperImageId,
-    }}>
     <main
       style={{
         flex: 1,
@@ -612,6 +615,20 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           </svg>
         </StyledSmallButton>
 
+        {/* Manual Save button - turns red when unsaved changes exist */}
+        <StyledSmallButton
+          theme={theme}
+          onClick={handleSaveClick}
+          title={hasChanges ? "Unsaved changes - click to save (Ctrl+S)" : "Save current section (Ctrl+S)"}
+          disabled={toolExecuting || isSaving}
+          styleOverrides={{
+            backgroundColor: isSaving ? '#28a745' : hasChanges ? '#dc3545' : undefined,
+            color: (isSaving || hasChanges) ? 'white' : undefined,
+          }}
+        >
+          {isSaving ? 'Saved' : 'Save'}
+        </StyledSmallButton>
+
         {/* Preview button */}
         <StyledSmallButton
           theme={theme}
@@ -626,18 +643,19 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           {showPreview ? 'Edit' : 'Preview'}
         </StyledSmallButton>
 
-        {/* Manual Save button - turns red when unsaved changes exist */}
+        {/* SceneCraft button */}
         <StyledSmallButton
           theme={theme}
-          onClick={handleSaveClick}
-          title={hasChanges ? "Unsaved changes - click to save (Ctrl+S)" : "Save current section (Ctrl+S)"}
-          disabled={toolExecuting || isSaving}
+          onClick={() => setShowSceneCraft(true)}
+          title="Open Scenecraft immersive editor"
+          disabled={toolExecuting}
           styleOverrides={{
-            backgroundColor: isSaving ? '#28a745' : hasChanges ? '#dc3545' : undefined,
-            color: (isSaving || hasChanges) ? 'white' : undefined,
+            backgroundColor: 'rgba(255, 120, 68, 0.15)',
+            borderColor: 'rgba(255, 120, 68, 0.25)',
+            color: '#ff7844',
           }}
         >
-          {isSaving ? 'Saved' : 'Save'}
+          Scenecraft
         </StyledSmallButton>
 
         {/* AI Section with green background */}
@@ -780,7 +798,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
             onClose={() => setShowPreview(false)}
             theme={theme}
             isDarkMode={isDarkMode}
-            wallpaperImageId={wallpaperImageId}
             sectionType={sectionType}
           />
         ) : (
@@ -870,8 +887,32 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         onDelete={onAudioDelete ?? (() => {})}
         onClose={() => setShowAudioPicker(false)}
       />
+
+      {/* SceneCraft immersive editor modal */}
+      <SceneCraftModal
+        isOpen={showSceneCraft}
+        onClose={() => setShowSceneCraft(false)}
+        sectionId={sectionId || ''}
+        sectionTitle={chapterTitle}
+        sectionXhtml={(() => {
+          if (!editor) return sectionXhtml;
+          const plateValue = editor.children as Value;
+          return plateToXhtml(plateValue);
+        })()}
+        sceneCraftConfig={sceneCraftConfig ?? null}
+        onConfigChange={onSceneCraftConfigChange ?? (() => {})}
+        images={images ?? []}
+        audios={audios ?? []}
+        onImageUpload={onImageUpload ?? (async () => {})}
+        onImageDelete={onImageDelete ?? (() => {})}
+        onAudioUpload={onAudioUpload ?? (async () => {})}
+        onAudioDelete={onAudioDelete ?? (() => {})}
+        getImageUrl={getImageUrl ?? (() => null)}
+        getAudioUrl={getAudioUrl ?? (async () => null)}
+        theme={theme}
+        isDarkMode={isDarkMode}
+      />
     </main>
-    </WallpaperProvider>
     </AudioLibraryProvider>
     </ImageLibraryProvider>
   );
