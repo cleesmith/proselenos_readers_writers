@@ -476,7 +476,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   margin-left: calc(-50vw + 50%);
   background: #060608;
   color: #c8c0b4;
-  overflow: hidden;
+  overflow: clip;
 }
 .sc-scene .sc-bg {
   position: fixed;
@@ -604,6 +604,41 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   text-align: center;
   color: #3a3530;
   letter-spacing: 0.3em;
+}
+.sc-scene .sc-block-sticky {
+  display: flex;
+  gap: 1.5em;
+  align-items: flex-start;
+  min-height: 300px;
+  margin-bottom: 1.6em;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block-sticky .sc-block {
+  margin-bottom: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img {
+  position: sticky;
+  top: 33vh;
+  width: 40%;
+  flex-shrink: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input[type="checkbox"] {
+  display: none;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input:checked ~ .sc-enlarge-overlay {
+  display: block !important;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img img {
+  width: 100%;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+.sc-scene .sc-block-sticky .sc-sticky-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
 }`;
 
 // ── SceneCraft JS Engine ──────────────────────────────────────────────────
@@ -959,16 +994,20 @@ function parseSceneElements(xhtml: string): ScElement[] {
 
       if (tag === 'div' && cls.includes('sticky-wrap')) {
         const paragraphs: string[] = [];
-        for (let j = 0; j < node.children.length; j++) {
-          const child = node.children[j];
+        const textDiv = node.querySelector('.sticky-text');
+        const pSource = textDiv || node;
+        for (let j = 0; j < pSource.children.length; j++) {
+          const child = pSource.children[j];
           if (!child) continue;
           if (child.tagName.toLowerCase() === 'p') {
             const text = (child.textContent || '').trim();
             if (text) paragraphs.push(text);
           }
         }
-        if (paragraphs.length > 0) {
-          elements.push({ type: 'sticky', text: paragraphs.join('\n\n'), idx: idx++ });
+        const img = node.querySelector('img.sticky-img');
+        const imgSrc = img?.getAttribute('src') || undefined;
+        if (paragraphs.length > 0 || imgSrc) {
+          elements.push({ type: 'sticky', text: paragraphs.join('\n\n'), imgSrc, idx: idx++ });
         }
         continue;
       }
@@ -1079,9 +1118,21 @@ function generateSceneCraftHtml(
       </div>`;
     }
     if (item.type === 'sticky') {
-      return item.text.split('\n').filter(l => l.trim()).map(line =>
-        `      <div class="sc-block" data-idx="${item.idx}">${convertNonAsciiToEntities(escapeHtml(line))}</div>`
+      let imgHtml = '';
+      if (item.imgSrc && mediaDataUrls) {
+        const url = mediaDataUrls[item.imgSrc] || mediaDataUrls[`images/${item.imgSrc?.replace(/^(\.\.\/)?images\//, '')}`];
+        if (url) {
+          imgHtml = `\n        <div class="sc-sticky-img" data-idx="${item.idx}"><input type="checkbox" id="sc-enlarge-${item.idx}"/><label for="sc-enlarge-${item.idx}" style="cursor:zoom-in;display:block"><img src="${url}" alt="${escapeHtml(item.alt || 'Sticky image')}"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-${item.idx}" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('${url}');background-color:#000;cursor:zoom-out"></label></div>`;
+        }
+      }
+      const textLines = item.text.split('\n').filter(l => l.trim()).map(line =>
+        `          <div class="sc-block" data-idx="${item.idx}">${convertNonAsciiToEntities(escapeHtml(line))}</div>`
       ).join('\n');
+      return `      <div class="sc-block-sticky" data-idx="${item.idx}">${imgHtml}
+        <div class="sc-sticky-text">
+${textLines}
+        </div>
+      </div>`;
     }
     if (item.type === 'emphasis') {
       return `      <div class="sc-block sc-block-emphasis" data-idx="${item.idx}">${escapedText}</div>`;

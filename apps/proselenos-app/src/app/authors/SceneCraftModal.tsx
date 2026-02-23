@@ -87,23 +87,26 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
       // Sticky wrap
       if (tag === 'div' && cls.includes('sticky-wrap')) {
         const paragraphs: string[] = [];
-        let caption = '';
-        for (let j = 0; j < node.children.length; j++) {
-          const child = node.children[j];
+        const textDiv = node.querySelector('.sticky-text');
+        const pSource = textDiv || node;
+        for (let j = 0; j < pSource.children.length; j++) {
+          const child = pSource.children[j];
           if (!child) continue;
           if (child.tagName.toLowerCase() === 'p') {
             const text = (child.textContent || '').trim();
             if (text) paragraphs.push(text);
           }
-          if (child.className?.includes('caption')) {
-            caption = (child.textContent || '').trim();
-          }
         }
-        if (paragraphs.length > 0) {
+        const img = node.querySelector('img.sticky-img');
+        const imgSrc = img?.getAttribute('src') || undefined;
+        const captionEl = node.querySelector('.sticky-caption');
+        const caption = captionEl?.textContent?.trim() || undefined;
+        if (paragraphs.length > 0 || imgSrc) {
           elements.push({
             type: 'sticky',
             text: paragraphs.join('\n\n'),
-            caption: caption || undefined,
+            imgSrc,
+            caption,
             idx: idx++,
           });
         }
@@ -291,10 +294,18 @@ export default function SceneCraftModal({
   // Asset picker state (reuse existing modals)
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showAudioPicker, setShowAudioPicker] = useState(false);
+  const [enlargedImg, setEnlargedImg] = useState<string | null>(null);
   const [audioPickerTarget, setAudioPickerTarget] = useState<string>(''); // 'ambient' | 'narration' | 'dialogue-N'
 
   // ── Parse elements from XHTML ──────────────────────────────
   const elements = useMemo(() => parseSceneXhtml(sectionXhtml), [sectionXhtml]);
+
+  // Resolve inline image src (e.g. "images/photo.jpg") to blob URL via getImageUrl
+  const resolveImgSrc = (src: string | undefined): string | undefined => {
+    if (!src) return src;
+    const fn = src.replace(/^(\.\.\/)?images\//, '');
+    return getImageUrl(fn) || src;
+  };
 
   // ── Restore config from props on open / sectionId change ───
   useEffect(() => {
@@ -1061,6 +1072,12 @@ export default function SceneCraftModal({
 
         {item.type === 'sticky' && (
           <>
+            {item.imgSrc && (
+              <div style={{ marginBottom: '10px', textAlign: 'center' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={resolveImgSrc(item.imgSrc)} alt={item.caption || 'Sticky image'} style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', opacity: 0.9 }} />
+              </div>
+            )}
             <div style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: 'var(--sc-prose-d)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '8px' }}>
               {item.text}
             </div>
@@ -1075,7 +1092,7 @@ export default function SceneCraftModal({
             {item.imgSrc && (
               <div style={{ marginBottom: '10px', textAlign: 'center' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.imgSrc} alt={item.alt || item.text} style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', opacity: 0.9 }} />
+                <img src={resolveImgSrc(item.imgSrc)} alt={item.alt || item.text} style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', opacity: 0.9 }} />
               </div>
             )}
             <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic' }}>
@@ -1234,14 +1251,42 @@ export default function SceneCraftModal({
                 );
               }
               if (item.type === 'sticky') {
-                return item.text.split('\n').filter(l => l.trim()).map((line, li) => (
-                  <div key={`${i}-${li}`} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                const lines = item.text.split('\n').filter(l => l.trim());
+                return (
+                  <div key={i} style={{
+                    display: 'flex', gap: '1.5em', alignItems: 'flex-start',
+                    minHeight: '300px', marginBottom: '1.6em',
+                    position: 'relative', zIndex: 2,
                   }}>
-                    {line}
+                    {item.imgSrc && (
+                      <div style={{
+                        position: 'sticky', top: '33vh',
+                        width: '40%', flexShrink: 0,
+                        cursor: 'zoom-in',
+                      }} onClick={() => setEnlargedImg(resolveImgSrc(item.imgSrc!) || null)}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={resolveImgSrc(item.imgSrc)} alt={item.caption || 'Sticky image'}
+                             style={{ width: '100%', borderRadius: '4px', opacity: 0.9, display: 'block' }} />
+                        {item.caption && (
+                          <p style={{ fontSize: '0.75em', textAlign: 'center',
+                                      fontStyle: 'italic', opacity: 0.6, margin: '0.4em 0 0' }}>
+                            {item.caption}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em' }}>
+                      {lines.map((line, li) => (
+                        <div key={li} className="sc-pv-block" data-idx={i} style={{
+                          opacity: 0, transform: 'translateY(16px)',
+                          transition: 'opacity 0.8s ease, transform 0.8s ease',
+                        }}>
+                          {line}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ));
+                );
               }
               if (item.type === 'emphasis') {
                 return (
@@ -1275,7 +1320,7 @@ export default function SceneCraftModal({
                     {item.imgSrc ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.imgSrc} alt={item.alt || item.text} style={{ maxWidth: '260px', borderRadius: '4px', opacity: 0.9, display: 'block' }} />
+                        <img src={resolveImgSrc(item.imgSrc)} alt={item.alt || item.text} style={{ maxWidth: '260px', borderRadius: '4px', opacity: 0.9, display: 'block' }} />
                         <span style={{ fontFamily: "'SF Mono', monospace", fontSize: '0.55em', color: '#5a554e', letterSpacing: '0.06em', marginTop: '0.4em', display: 'block' }}>
                           {item.alt || item.text}
                         </span>
@@ -1451,6 +1496,20 @@ export default function SceneCraftModal({
         onDelete={onAudioDelete}
         onClose={() => setShowAudioPicker(false)}
       />
+
+      {/* Click-to-enlarge overlay */}
+      {enlargedImg && (
+        <div onClick={() => setEnlargedImg(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: '#000', cursor: 'zoom-out',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={enlargedImg} alt="Enlarged" style={{
+            maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain',
+          }} />
+        </div>
+      )}
     </>
   );
 }
