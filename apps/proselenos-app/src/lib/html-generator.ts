@@ -639,6 +639,16 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   display: flex;
   flex-direction: column;
   gap: 1em;
+}
+body.sc-overlay-hidden .sc-playhead,
+body.sc-overlay-hidden .sc-playhead-dot,
+body.sc-overlay-hidden .sc-info,
+body.sc-overlay-hidden .sc-dead-zone span {
+  display: none !important;
+}
+body.sc-overlay-hidden .sc-enter,
+body.sc-overlay-hidden .sc-exit {
+  visibility: hidden !important;
 }`;
 
 // ── SceneCraft JS Engine ──────────────────────────────────────────────────
@@ -925,6 +935,29 @@ body.dark-mode .scene-audio {
 
 .download-btn:hover svg {
   fill: #22c55e;
+}
+
+.playhead-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+}
+.playhead-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.playhead-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: #ff7844;
+  transition: opacity 0.2s;
+}
+.playhead-toggle.sc-off svg {
+  opacity: 0.35;
 }
 
 .footer-buttons {
@@ -1331,6 +1364,7 @@ ${allSectionsHtml}
   <div class="footer">
     <div class="footer-buttons">
       <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#9728;&#65039;' : '&#127769;'}</button>
+${hasAnySceneCraft ? '      <button class="playhead-toggle" id="playheadToggle" title="Toggle Scenecraft overlays"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 2H6c-1.2 0-2 .9-2 2v16c0 1.1.8 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h6v16z"/></svg></button>' : ''}
       <button class="download-btn" id="downloadBtn" title="Download HTML file">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
       </button>
@@ -1363,6 +1397,22 @@ ${allSectionsHtml}
       themeToggle.textContent = isDark ? '\u2600\uFE0F' : '\u{1F319}';
       localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
     });
+
+    // Playhead overlay toggle
+    const playheadToggle = document.getElementById('playheadToggle');
+    if (playheadToggle) {
+      const savedPlayhead = localStorage.getItem('html-ebook-playhead');
+      if (savedPlayhead === 'hidden') {
+        body.classList.add('sc-overlay-hidden');
+        playheadToggle.classList.add('sc-off');
+      }
+      playheadToggle.addEventListener('click', () => {
+        body.classList.toggle('sc-overlay-hidden');
+        const isHidden = body.classList.contains('sc-overlay-hidden');
+        playheadToggle.classList.toggle('sc-off', isHidden);
+        localStorage.setItem('html-ebook-playhead', isHidden ? 'hidden' : 'visible');
+      });
+    }
 
     // Convert non-ASCII to HTML entities in visible text only.
     // Leaves HTML tags, attributes, <script>, and <style> untouched.
