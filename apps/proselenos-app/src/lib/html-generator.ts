@@ -605,6 +605,32 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   color: #3a3530;
   letter-spacing: 0.3em;
 }
+.sc-scene .sc-block-h1 {
+  font-size: 1.8em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h2 {
+  font-size: 1.4em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h3 {
+  font-size: 1.15em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-divider {
+  border-top: 1px solid rgba(200,192,180,0.15);
+  margin: 1.6em 0;
+}
+.sc-scene .sc-block-linebreak {
+  height: 1.2em;
+  margin: 0;
+}
 .sc-scene .sc-block-sticky {
   display: flex;
   gap: 1.5em;
@@ -996,7 +1022,7 @@ body.dark-mode .scene-audio {
 // ── SceneCraft element types (mirrors SceneCraftModal parser) ──────────────
 
 interface ScElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'break' | 'para';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
   text: string;
   speaker?: string;
   direction?: string;
@@ -1081,12 +1107,24 @@ function parseSceneElements(xhtml: string): ScElement[] {
         elements.push({ type: 'break', text: node.textContent?.trim() || '\u2022 \u2022 \u2022', idx: idx++ });
         continue;
       }
+      if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
+        const text = (node.textContent || '').trim();
+        if (text) elements.push({ type: tag as 'h1' | 'h2' | 'h3', text, idx: idx++ });
+        continue;
+      }
+      if (tag === 'hr') {
+        elements.push({ type: 'divider', text: '', idx: idx++ });
+        continue;
+      }
       if (tag === 'p') {
         const text = (node.textContent || '').trim();
         if (text) elements.push({ type: 'para', text, idx: idx++ });
         continue;
       }
-      if (tag === 'br') continue;
+      if (tag === 'br') {
+        elements.push({ type: 'linebreak', text: '', idx: idx++ });
+        continue;
+      }
       if (tag === 'div' || tag === 'article' || tag === 'section') { walkChildren(node); continue; }
       const text = (node.textContent || '').trim();
       if (text) elements.push({ type: 'para', text, idx: idx++ });
@@ -1172,6 +1210,15 @@ ${textLines}
     }
     if (item.type === 'break') {
       return `      <div class="sc-block sc-block-break" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'h1' || item.type === 'h2' || item.type === 'h3') {
+      return `      <div class="sc-block sc-block-${item.type}" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'divider') {
+      return `      <div class="sc-block sc-block-divider" data-idx="${item.idx}"></div>`;
+    }
+    if (item.type === 'linebreak') {
+      return `      <div class="sc-block sc-block-linebreak" data-idx="${item.idx}"></div>`;
     }
     if (item.type === 'figure') {
       let imgTag = '';

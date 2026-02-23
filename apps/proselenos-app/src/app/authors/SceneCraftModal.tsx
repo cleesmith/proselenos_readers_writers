@@ -16,7 +16,7 @@ import { ThemeConfig } from '../shared/theme';
 // ============================================================
 
 interface SceneCraftElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'break' | 'para';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
   text: string;
   speaker?: string;
   direction?: string;
@@ -176,6 +176,21 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
         continue;
       }
 
+      // Headings
+      if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
+        const text = (node.textContent || '').trim();
+        if (text) {
+          elements.push({ type: tag as 'h1' | 'h2' | 'h3', text, idx: idx++ });
+        }
+        continue;
+      }
+
+      // Divider (horizontal rule)
+      if (tag === 'hr') {
+        elements.push({ type: 'divider', text: '', idx: idx++ });
+        continue;
+      }
+
       // Plain paragraph
       if (tag === 'p') {
         const text = (node.textContent || '').trim();
@@ -185,8 +200,11 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
         continue;
       }
 
-      // Skip br tags
-      if (tag === 'br') continue;
+      // Line break
+      if (tag === 'br') {
+        elements.push({ type: 'linebreak', text: '', idx: idx++ });
+        continue;
+      }
 
       // Recurse into other div containers that aren't dialogue/sticky
       if (tag === 'div') {
@@ -1329,6 +1347,36 @@ export default function SceneCraftModal({
                       <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>[{item.alt || item.text}]</span>
                     )}
                   </div>
+                );
+              }
+              if (item.type === 'h1' || item.type === 'h2' || item.type === 'h3') {
+                const sizes = { h1: '1.8em', h2: '1.4em', h3: '1.15em' };
+                return (
+                  <div key={i} className="sc-pv-block" data-idx={i} style={{
+                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                    fontSize: sizes[item.type], fontWeight: 'bold', fontFamily: 'Georgia, "Times New Roman", serif',
+                    color: '#c8c0b4',
+                  }}>
+                    {item.text}
+                  </div>
+                );
+              }
+              if (item.type === 'divider') {
+                return (
+                  <div key={i} className="sc-pv-block" data-idx={i} style={{
+                    margin: '1.6em 0', opacity: 0, transform: 'translateY(16px)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                    borderTop: '1px solid rgba(200,192,180,0.2)',
+                  }} />
+                );
+              }
+              if (item.type === 'linebreak') {
+                return (
+                  <div key={i} className="sc-pv-block" data-idx={i} style={{
+                    height: '1.2em', margin: 0, opacity: 0, transform: 'translateY(16px)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                  }} />
                 );
               }
               if (item.type === 'para') {
