@@ -684,6 +684,16 @@ body.sc-overlay-hidden .sc-dead-zone span {
 body.sc-overlay-hidden .sc-enter,
 body.sc-overlay-hidden .sc-exit {
   visibility: hidden !important;
+}
+/* ── Sticky-image enlarge: collapse stacking contexts so overlay reaches root ── */
+body:has(.sc-sticky-img input:checked) .sc-scene .sc-content {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-block-sticky {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-sticky-img {
+  position: static;
 }`;
 
 // ── SceneCraft JS Engine ──────────────────────────────────────────────────
