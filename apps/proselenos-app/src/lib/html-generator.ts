@@ -1108,8 +1108,8 @@ function parseSceneElements(xhtml: string): ScElement[] {
           const child = pSource.children[j];
           if (!child) continue;
           if (child.tagName.toLowerCase() === 'p') {
-            const text = (child.innerHTML || '').trim();
-            if (text) paragraphs.push(text);
+            const hasContent = (child.textContent || '').trim();
+            if (hasContent) paragraphs.push((child.innerHTML || '').trim());
           }
         }
         const img = node.querySelector('img.sticky-img');
@@ -1152,18 +1152,13 @@ function parseSceneElements(xhtml: string): ScElement[] {
         continue;
       }
       if (tag === 'p' && cls.includes('emphasis-line')) {
-        const text = (node.innerHTML || '').trim();
-        if (text) elements.push({ type: 'emphasis', text, idx: idx++ });
+        const hasContent = (node.textContent || '').trim();
+        if (hasContent) elements.push({ type: 'emphasis', text: (node.innerHTML || '').trim(), idx: idx++ });
         continue;
       }
       if (tag === 'p' && cls.includes('internal')) {
-        const text = (node.innerHTML || '').trim();
-        if (text) elements.push({ type: 'internal', text, idx: idx++ });
-        continue;
-      }
-      if (tag === 'blockquote') {
-        const text = (node.innerHTML || '').trim();
-        if (text) elements.push({ type: 'quote', text, idx: idx++ });
+        const hasContent = (node.textContent || '').trim();
+        if (hasContent) elements.push({ type: 'internal', text: (node.innerHTML || '').trim(), idx: idx++ });
         continue;
       }
       if (tag === 'p' && cls.includes('scene-break')) {
@@ -1171,18 +1166,23 @@ function parseSceneElements(xhtml: string): ScElement[] {
         continue;
       }
       if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
-        const text = (node.innerHTML || '').trim();
-        if (text) elements.push({ type: tag as 'h1' | 'h2' | 'h3', text, idx: idx++ });
+        const hasContent = (node.textContent || '').trim();
+        if (hasContent) elements.push({ type: tag as 'h1' | 'h2' | 'h3', text: (node.innerHTML || '').trim(), idx: idx++ });
         continue;
       }
       if (tag === 'hr') {
         elements.push({ type: 'divider', text: '', idx: idx++ });
         continue;
       }
+      if (tag === 'blockquote') {
+        const hasContent = (node.textContent || '').trim();
+        if (hasContent) elements.push({ type: 'quote', text: (node.innerHTML || '').trim(), idx: idx++ });
+        continue;
+      }
       if (tag === 'p') {
-        const text = (node.innerHTML || '').trim();
+        const hasContent = (node.textContent || '').trim();
         const style = node.getAttribute('style') || undefined;
-        if (text) elements.push({ type: 'para', text, style, idx: idx++ });
+        if (hasContent) elements.push({ type: 'para', text: (node.innerHTML || '').trim(), style, idx: idx++ });
         continue;
       }
       if (tag === 'br') {
@@ -1190,8 +1190,8 @@ function parseSceneElements(xhtml: string): ScElement[] {
         continue;
       }
       if (tag === 'div' || tag === 'article' || tag === 'section') { walkChildren(node); continue; }
-      const text = (node.innerHTML || '').trim();
-      if (text) elements.push({ type: 'para', text, idx: idx++ });
+      const hasContent = (node.textContent || '').trim();
+      if (hasContent) elements.push({ type: 'para', text: (node.innerHTML || '').trim(), idx: idx++ });
     }
   }
   walkChildren(root);
