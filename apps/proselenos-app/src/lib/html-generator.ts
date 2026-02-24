@@ -92,15 +92,6 @@ function processContent(text: string): string {
 }
 
 /**
- * Convert non-ASCII characters to numeric HTML entities.
- * Ensures HTML displays correctly regardless of browser encoding settings,
- * critical when sharing standalone .html files without a web server.
- */
-function convertNonAsciiToEntities(html: string): string {
-  return html.replace(/[^\x00-\x7F]/g, (char) => `&#${char.codePointAt(0)};`);
-}
-
-/**
  * Strip all media elements (images, audio) from HTML content.
  * The HTML export focuses on text + styling; binary media would appear as
  * broken references since the data isn't embedded.
@@ -465,6 +456,21 @@ nav li {
 nav a {
   text-decoration: none;
   color: inherit;
+}
+
+.chapter a,
+.scene a,
+.copyright-page a {
+  color: #1a6fb5;
+  text-decoration: underline;
+  text-decoration-color: rgba(26, 111, 181, 0.4);
+}
+
+.chapter a:hover,
+.scene a:hover,
+.copyright-page a:hover {
+  color: #155a94;
+  text-decoration-color: rgba(21, 90, 148, 0.8);
 }`;
 
 // ── SceneCraft CSS ─────────────────────────────────────────────────────────
@@ -694,6 +700,15 @@ body:has(.sc-sticky-img input:checked) .sc-block-sticky {
 }
 body:has(.sc-sticky-img input:checked) .sc-sticky-img {
   position: static;
+}
+.sc-scene a {
+  color: #e8c078;
+  text-decoration: underline;
+  text-decoration-color: rgba(232, 192, 120, 0.4);
+}
+.sc-scene a:hover {
+  color: #f0d898;
+  text-decoration-color: rgba(240, 216, 152, 0.7);
 }`;
 
 // ── SceneCraft JS Engine ──────────────────────────────────────────────────
@@ -906,6 +921,20 @@ body.dark-mode .scene-audio {
   border-color: rgba(200, 200, 200, 0.15);
 }
 
+body.dark-mode .chapter a,
+body.dark-mode .scene a,
+body.dark-mode .copyright-page a {
+  color: #5bb8f5;
+  text-decoration-color: rgba(91, 184, 245, 0.4);
+}
+
+body.dark-mode .chapter a:hover,
+body.dark-mode .scene a:hover,
+body.dark-mode .copyright-page a:hover {
+  color: #7dcaff;
+  text-decoration-color: rgba(125, 202, 255, 0.8);
+}
+
 /* ── Sticky Footer ─────────────────────────── */
 
 .footer {
@@ -1047,6 +1076,7 @@ interface ScElement {
   direction?: string;
   alt?: string;
   imgSrc?: string;
+  style?: string;
   idx: number;
 }
 
@@ -1078,7 +1108,7 @@ function parseSceneElements(xhtml: string): ScElement[] {
           const child = pSource.children[j];
           if (!child) continue;
           if (child.tagName.toLowerCase() === 'p') {
-            const text = (child.textContent || '').trim();
+            const text = (child.innerHTML || '').trim();
             if (text) paragraphs.push(text);
           }
         }
@@ -1112,32 +1142,36 @@ function parseSceneElements(xhtml: string): ScElement[] {
           const child = node.childNodes[j];
           if (!child) continue;
           if (child.nodeType === Node.ELEMENT_NODE && (child as Element).className?.includes('speaker')) continue;
-          dialogueText += child.textContent || '';
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            dialogueText += (child as Element).innerHTML || '';
+          } else {
+            dialogueText += child.textContent || '';
+          }
         }
         elements.push({ type: 'dialogue', text: dialogueText.trim(), speaker, direction: direction || undefined, idx: idx++ });
         continue;
       }
       if (tag === 'p' && cls.includes('emphasis-line')) {
-        const text = (node.textContent || '').trim();
+        const text = (node.innerHTML || '').trim();
         if (text) elements.push({ type: 'emphasis', text, idx: idx++ });
         continue;
       }
       if (tag === 'p' && cls.includes('internal')) {
-        const text = (node.textContent || '').trim();
+        const text = (node.innerHTML || '').trim();
         if (text) elements.push({ type: 'internal', text, idx: idx++ });
         continue;
       }
       if (tag === 'blockquote') {
-        const text = (node.textContent || '').trim();
+        const text = (node.innerHTML || '').trim();
         if (text) elements.push({ type: 'quote', text, idx: idx++ });
         continue;
       }
       if (tag === 'p' && cls.includes('scene-break')) {
-        elements.push({ type: 'break', text: node.textContent?.trim() || '\u2022 \u2022 \u2022', idx: idx++ });
+        elements.push({ type: 'break', text: node.innerHTML?.trim() || '\u2022 \u2022 \u2022', idx: idx++ });
         continue;
       }
       if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
-        const text = (node.textContent || '').trim();
+        const text = (node.innerHTML || '').trim();
         if (text) elements.push({ type: tag as 'h1' | 'h2' | 'h3', text, idx: idx++ });
         continue;
       }
@@ -1146,8 +1180,9 @@ function parseSceneElements(xhtml: string): ScElement[] {
         continue;
       }
       if (tag === 'p') {
-        const text = (node.textContent || '').trim();
-        if (text) elements.push({ type: 'para', text, idx: idx++ });
+        const text = (node.innerHTML || '').trim();
+        const style = node.getAttribute('style') || undefined;
+        if (text) elements.push({ type: 'para', text, style, idx: idx++ });
         continue;
       }
       if (tag === 'br') {
@@ -1155,7 +1190,7 @@ function parseSceneElements(xhtml: string): ScElement[] {
         continue;
       }
       if (tag === 'div' || tag === 'article' || tag === 'section') { walkChildren(node); continue; }
-      const text = (node.textContent || '').trim();
+      const text = (node.innerHTML || '').trim();
       if (text) elements.push({ type: 'para', text, idx: idx++ });
     }
   }
@@ -1209,7 +1244,7 @@ function generateSceneCraftHtml(
 
   // Build content blocks
   const blocksHtml = elements.map(item => {
-    const escapedText = convertNonAsciiToEntities(escapeHtml(item.text));
+    const escapedText = addTargetBlank(item.text);
     if (item.type === 'dialogue') {
       const spk = item.direction ? `${item.speaker} (${item.direction})` : (item.speaker || 'unknown');
       return `      <div class="sc-block sc-block-dialogue" data-idx="${item.idx}">
@@ -1226,7 +1261,7 @@ function generateSceneCraftHtml(
         }
       }
       const textLines = item.text.split('\n').filter(l => l.trim()).map(line =>
-        `          <div class="sc-block" data-idx="${item.idx}">${convertNonAsciiToEntities(escapeHtml(line))}</div>`
+        `          <div class="sc-block" data-idx="${item.idx}">${addTargetBlank(line)}</div>`
       ).join('\n');
       return `      <div class="sc-block-sticky" data-idx="${item.idx}">${imgHtml}
         <div class="sc-sticky-text">
@@ -1269,7 +1304,8 @@ ${textLines}
       }
       return `      <div class="sc-block" data-idx="${item.idx}" style="text-align:left">${imgTag}</div>`;
     }
-    return `      <div class="sc-block" data-idx="${item.idx}">${escapedText}</div>`;
+    const styleAttr = item.style ? ` style="${escapeHtml(item.style)}"` : '';
+    return `      <div class="sc-block" data-idx="${item.idx}"${styleAttr}>${escapedText}</div>`;
   }).join('\n');
 
   return `
@@ -1366,7 +1402,7 @@ export function generateHtmlFromSections(options: HtmlGeneratorOptions): string 
       contentHtml = stripMediaElements(contentHtml);
     }
     contentHtml = deduplicateEnlargeIds(contentHtml, i);
-    contentHtml = convertNonAsciiToEntities(contentHtml);
+    contentHtml = addTargetBlank(contentHtml);
 
     if (lower === 'copyright') {
       // Copyright → <section class="copyright-page">
@@ -1549,8 +1585,14 @@ function escapeHtml(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-    .replace(/[^\x00-\x7F]/g, (char) => `&#${char.codePointAt(0)};`);
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Add target="_blank" and rel="noopener" to <a> tags that don't already have a target attribute.
+ */
+function addTargetBlank(html: string): string {
+  return html.replace(/<a\s+(?![^>]*\btarget=)/gi, '<a target="_blank" rel="noopener" ');
 }
 
 /**
