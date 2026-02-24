@@ -80,7 +80,7 @@ nav ol li a {
 
 .scene {
   padding: 1.5em;
-  max-width: 750px;
+  max-width: min(92%, 1200px);
   margin: 0 auto;
 }
 
@@ -301,7 +301,6 @@ figcaption {
 
 @media (min-width: 1000px) {
   .scene {
-    max-width: 800px;
     font-size: 1.05em;
   }
 }
@@ -311,7 +310,7 @@ figcaption {
 .sticky-wrap {
   display: flex;
   gap: 1.5em;
-  max-width: 750px;
+  max-width: min(92%, 1200px);
   margin: 2em auto;
   min-height: 300px;
   align-items: flex-start;

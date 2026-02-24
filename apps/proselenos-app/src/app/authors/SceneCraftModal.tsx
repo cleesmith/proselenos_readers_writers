@@ -16,7 +16,7 @@ import { ThemeConfig } from '../shared/theme';
 // ============================================================
 
 interface SceneCraftElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
   text: string;
   speaker?: string;
   direction?: string;
@@ -170,6 +170,15 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
         continue;
       }
 
+      // Internal thought paragraph
+      if (tag === 'p' && cls.includes('internal')) {
+        const text = (node.textContent || '').trim();
+        if (text) {
+          elements.push({ type: 'internal', text, idx: idx++ });
+        }
+        continue;
+      }
+
       // Scene break
       if (tag === 'p' && cls.includes('scene-break')) {
         elements.push({ type: 'break', text: node.textContent?.trim() || '• • •', idx: idx++ });
@@ -188,6 +197,15 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
       // Divider (horizontal rule)
       if (tag === 'hr') {
         elements.push({ type: 'divider', text: '', idx: idx++ });
+        continue;
+      }
+
+      // Blockquote (Quote block)
+      if (tag === 'blockquote') {
+        const text = (node.textContent || '').trim();
+        if (text) {
+          elements.push({ type: 'quote', text, idx: idx++ });
+        }
         continue;
       }
 
@@ -672,6 +690,8 @@ export default function SceneCraftModal({
       figure: { background: 'rgba(100,150,200,0.15)', color: '#6a9ac8' },
       dialogue: { background: 'rgba(200,150,80,0.15)', color: '#c8a050' },
       emphasis: { background: 'rgba(200,100,100,0.15)', color: '#c87060' },
+      quote: { background: 'rgba(150,130,200,0.15)', color: '#a090c8' },
+      internal: { background: 'rgba(120,180,200,0.15)', color: '#70b0c8' },
       break: { background: 'rgba(255,255,255,0.03)', color: 'var(--sc-tddd)' },
       para: { background: 'rgba(255,255,255,0.04)', color: 'var(--sc-tdd)' },
     };
@@ -737,6 +757,33 @@ export default function SceneCraftModal({
         )}
         {item.type === 'break' && (
           <div style={{ textAlign: 'center', color: 'var(--sc-tdd)', fontSize: '11px' }}>{item.text}</div>
+        )}
+        {item.type === 'emphasis' && (
+          <div style={{
+            fontFamily: 'Georgia, serif', fontSize: '11px', lineHeight: 1.5, color: 'var(--sc-prose-d)',
+            fontStyle: 'italic', textAlign: 'center',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>
+            {item.text}
+          </div>
+        )}
+        {item.type === 'quote' && (
+          <div style={{
+            fontFamily: 'Georgia, serif', fontSize: '11px', lineHeight: 1.5, color: 'var(--sc-prose-d)',
+            borderLeft: '2px solid rgba(255,255,255,0.15)', paddingLeft: '8px',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>
+            {item.text}
+          </div>
+        )}
+        {item.type === 'internal' && (
+          <div style={{
+            fontFamily: 'Georgia, serif', fontSize: '11px', lineHeight: 1.5, color: 'var(--sc-prose-d)',
+            fontStyle: 'italic', opacity: 0.7, paddingLeft: '16px',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>
+            {item.text}
+          </div>
         )}
         {item.type === 'para' && (
           <div style={{
@@ -1125,6 +1172,18 @@ export default function SceneCraftModal({
           </div>
         )}
 
+        {item.type === 'quote' && (
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'var(--sc-prose-d)', lineHeight: 1.6, borderLeft: '2px solid rgba(255,255,255,0.15)', paddingLeft: '10px', marginBottom: '8px' }}>
+            {item.text}
+          </div>
+        )}
+
+        {item.type === 'internal' && (
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'var(--sc-prose-d)', lineHeight: 1.6, fontStyle: 'italic', opacity: 0.7, paddingLeft: '20px', marginBottom: '8px' }}>
+            {item.text}
+          </div>
+        )}
+
         {item.type === 'break' && (
           <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic' }}>
             Scene break marker.
@@ -1311,7 +1370,30 @@ export default function SceneCraftModal({
                   <div key={i} className="sc-pv-block" data-idx={i} style={{
                     marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
                     transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                    textAlign: 'center', fontSize: '1.2em', letterSpacing: '0.08em',
                     fontStyle: 'italic', color: '#e0c8b0',
+                  }}>
+                    {item.text}
+                  </div>
+                );
+              }
+              if (item.type === 'quote') {
+                return (
+                  <div key={i} className="sc-pv-block" data-idx={i} style={{
+                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                    borderLeft: '2px solid rgba(200,192,180,0.3)', paddingLeft: '1.5em',
+                  }}>
+                    {item.text}
+                  </div>
+                );
+              }
+              if (item.type === 'internal') {
+                return (
+                  <div key={i} className="sc-pv-block" data-idx={i} style={{
+                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                    fontStyle: 'italic', paddingLeft: '2em',
                   }}>
                     {item.text}
                   </div>

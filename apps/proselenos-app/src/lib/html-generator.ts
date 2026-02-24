@@ -200,10 +200,10 @@ body {
   font-family: serif;
   line-height: 1.6;
   margin: 1em auto;
-  padding: 0;
+  padding: 0 1.5rem;
   padding-bottom: 70px;
   text-align: left;
-  max-width: 900px;
+  max-width: min(92%, 1400px);
   background: #fffaf5;
   color: #222;
   transition: background 0.3s, color 0.3s;
@@ -520,7 +520,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   font-family: 'SF Mono','Fira Code',monospace;
 }
 .sc-scene .sc-content {
-  max-width: 34rem;
+  max-width: min(88%, 52rem);
   margin: 0 auto;
   padding: 50vh 2rem;
   font-family: Georgia, 'EB Garamond', serif;
@@ -599,6 +599,15 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
 .sc-scene .sc-block-emphasis {
   font-style: italic;
   color: #e0c8b0;
+  text-align: center;
+}
+.sc-scene .sc-block-quote {
+  border-left: 2px solid rgba(200,192,180,0.3);
+  padding-left: 1.5em;
+}
+.sc-scene .sc-block-internal {
+  font-style: italic;
+  padding-left: 2em;
 }
 .sc-scene .sc-block-break {
   text-align: center;
@@ -1022,7 +1031,7 @@ body.dark-mode .scene-audio {
 // ── SceneCraft element types (mirrors SceneCraftModal parser) ──────────────
 
 interface ScElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
   text: string;
   speaker?: string;
   direction?: string;
@@ -1101,6 +1110,16 @@ function parseSceneElements(xhtml: string): ScElement[] {
       if (tag === 'p' && cls.includes('emphasis-line')) {
         const text = (node.textContent || '').trim();
         if (text) elements.push({ type: 'emphasis', text, idx: idx++ });
+        continue;
+      }
+      if (tag === 'p' && cls.includes('internal')) {
+        const text = (node.textContent || '').trim();
+        if (text) elements.push({ type: 'internal', text, idx: idx++ });
+        continue;
+      }
+      if (tag === 'blockquote') {
+        const text = (node.textContent || '').trim();
+        if (text) elements.push({ type: 'quote', text, idx: idx++ });
         continue;
       }
       if (tag === 'p' && cls.includes('scene-break')) {
@@ -1207,6 +1226,12 @@ ${textLines}
     }
     if (item.type === 'emphasis') {
       return `      <div class="sc-block sc-block-emphasis" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'quote') {
+      return `      <div class="sc-block sc-block-quote" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'internal') {
+      return `      <div class="sc-block sc-block-internal" data-idx="${item.idx}">${escapedText}</div>`;
     }
     if (item.type === 'break') {
       return `      <div class="sc-block sc-block-break" data-idx="${item.idx}">${escapedText}</div>`;
