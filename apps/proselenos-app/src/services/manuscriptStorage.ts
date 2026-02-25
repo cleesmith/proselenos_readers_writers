@@ -1546,6 +1546,7 @@ export async function saveFullWorkingCopy(epub: {
     content?: string;
     plateValue?: any[];
     type?: ElementType;
+    sceneCraftConfig?: SceneCraftConfig;
   }>;
 }): Promise<void> {
   // Normalize section IDs and convert to XHTML
@@ -1586,6 +1587,7 @@ export async function saveFullWorkingCopy(epub: {
       id: normalizedId,
       title: section.title,
       type: sectionType as ElementType,
+      sceneCraftConfig: section.sceneCraftConfig,
     });
   }
 

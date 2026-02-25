@@ -27,6 +27,7 @@ export interface ParsedEpub {
   coverImage: Blob | null;
   sections: ParsedSection[];
   images?: Array<{filename: string, blob: Blob}>;  // Inline images (not cover), optional for backwards compatibility
+  audios?: Array<{filename: string, blob: Blob}>;  // Audio files (ambient, narration, dialogue clips)
 }
 
 /**
@@ -126,6 +127,23 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     } catch {
       // Skip images that fail to load
       console.warn(`Failed to extract image: ${item.href}`);
+    }
+  }
+
+  // Step 3c: Extract audio files (ambient, narration, dialogue clips)
+  const audios: Array<{filename: string, blob: Blob}> = [];
+  for (const [, item] of manifest) {
+    if (!item.mediaType.startsWith('audio/')) continue;
+    try {
+      const audioPath = baseDir + item.href;
+      const audioData = await zip.file(audioPath)?.async('blob');
+      if (audioData) {
+        const filename = item.href.split('/').pop() || item.href;
+        const blob = new Blob([audioData], { type: item.mediaType });
+        audios.push({ filename, blob });
+      }
+    } catch {
+      console.warn(`Failed to extract audio: ${item.href}`);
     }
   }
 
@@ -245,6 +263,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     coverImage,
     sections: orderedSections,
     images,
+    audios,
   };
 }
 

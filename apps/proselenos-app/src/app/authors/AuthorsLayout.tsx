@@ -910,6 +910,13 @@ export default function AuthorsLayout({
             }
           }
 
+          // Save extracted audio files to IndexedDB
+          if (parsed.audios && parsed.audios.length > 0) {
+            for (const aud of parsed.audios) {
+              await saveManuscriptAudio(aud.filename, aud.blob);
+            }
+          }
+
           // Save to IndexedDB with normalization (section-001, section-002, etc.)
           // Filter out table-of-contents - it gets auto-generated on "send Ebook"
           // XHTML-Native: Use xhtml field directly from parsed sections
@@ -925,6 +932,7 @@ export default function AuthorsLayout({
                 title: s.title,
                 xhtml: s.xhtml,
                 type: s.type,
+                sceneCraftConfig: s.sceneCraftConfig,
               })),
           });
 

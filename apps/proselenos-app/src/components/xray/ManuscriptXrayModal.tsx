@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GiBoxUnpacking } from 'react-icons/gi';
-import { ManuscriptXrayEntry, loadManuscriptXrayEntries } from '@/services/manuscriptStorage';
+import { ManuscriptXrayEntry, loadManuscriptXrayEntries, loadManuscriptMeta } from '@/services/manuscriptStorage';
 import { ContentResult } from '@/services/xrayService';
 import ManuscriptXrayFileList from './ManuscriptXrayFileList';
 import XrayContentViewer from './XrayContentViewer';
@@ -34,8 +34,23 @@ const ManuscriptXrayModal: React.FC<ManuscriptXrayModalProps> = ({
     const load = async () => {
       setIsLoading(true);
       try {
-        const result = await loadManuscriptXrayEntries();
-        setEntries(result);
+        const [xhtmlEntries, meta] = await Promise.all([
+          loadManuscriptXrayEntries(),
+          loadManuscriptMeta(),
+        ]);
+        const allEntries = [...xhtmlEntries];
+        if (meta) {
+          const jsonStr = JSON.stringify(meta, null, 2);
+          const metaEntry: ManuscriptXrayEntry = {
+            key: 'meta.json',
+            title: 'meta.json',
+            type: 'metadata',
+            content: jsonStr,
+            size: new Blob([jsonStr]).size,
+          };
+          allEntries.unshift(metaEntry);
+        }
+        setEntries(allEntries);
       } catch (err) {
         console.error('Failed to load manuscript xray entries:', err);
         setEntries([]);
@@ -80,7 +95,7 @@ const ManuscriptXrayModal: React.FC<ManuscriptXrayModalProps> = ({
             {displayTitle} - X-Ray
           </h1>
           <span className="text-xs text-base-content/50">
-            ({entries.length} {entries.length === 1 ? 'section' : 'sections'})
+            ({entries.length} {entries.length === 1 ? 'file' : 'files'})
           </span>
         </div>
         <button onClick={onClose} className="btn btn-sm rounded-full">

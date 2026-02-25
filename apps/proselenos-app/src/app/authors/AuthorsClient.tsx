@@ -20,7 +20,7 @@ import LibraryBooksModal from './LibraryBooksModal';
 import CoverModal from './CoverModal';
 import ManuscriptXrayModal from '@/components/xray/ManuscriptXrayModal';
 import PromptEditorModal from '@/components/PromptEditorModal';
-import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
+import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveManuscriptAudio, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
 import { parseEpub } from '@/services/epubService';
 import { Book } from '@/types/book';
 import { getLocalBookFilename } from '@/utils/book';
@@ -262,6 +262,13 @@ export default function AuthorsClient() {
         }
       }
 
+      // Save extracted audio files to IndexedDB
+      if (parsed.audios && parsed.audios.length > 0) {
+        for (const aud of parsed.audios) {
+          await saveManuscriptAudio(aud.filename, aud.blob);
+        }
+      }
+
       // Filter out table-of-contents - it gets auto-generated on "send Ebook"
       await saveFullWorkingCopy({
         title: parsed.title,
@@ -275,6 +282,7 @@ export default function AuthorsClient() {
             title: s.title,
             xhtml: s.xhtml,
             type: s.type,
+            sceneCraftConfig: s.sceneCraftConfig,
           })),
       });
 
