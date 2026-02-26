@@ -120,6 +120,7 @@ interface EditorPanelProps {
   // Book metadata (for preview display)
   bookTitle?: string;
   bookAuthor?: string;
+  bookCopyright?: string;
 }
 
 // Ref handle for parent to control editor
@@ -196,6 +197,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   // Book metadata
   bookTitle,
   bookAuthor,
+  bookCopyright,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -948,6 +950,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         getAudioUrl={getAudioUrl ?? (async () => null)}
         bookTitle={bookTitle ?? ''}
         bookAuthor={bookAuthor ?? ''}
+        bookCopyright={bookCopyright ?? ''}
         theme={theme}
       />
     </main>

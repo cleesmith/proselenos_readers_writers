@@ -40,6 +40,7 @@ interface SingleChapterViewProps {
   getAudioUrl: (filename: string) => Promise<string | null>;
   bookTitle?: string;
   bookAuthor?: string;
+  bookCopyright?: string;
   theme: ThemeConfig;
 }
 
@@ -303,8 +304,20 @@ export default function SingleChapterView({
   getAudioUrl,
   bookTitle,
   bookAuthor,
+  bookCopyright,
   theme,
 }: SingleChapterViewProps) {
+  // ── Preview toggles ────────────────────────────────────────
+  const [pvLight, setPvLight] = useState(false);          // false=dark, true=light
+  const [showScOrange, setShowScOrange] = useState(true); // show SceneCraft orange visuals
+
+  // ── Derived colors based on pvLight ────────────────────────
+  const pvBg = pvLight ? '#f5f5f0' : '#060608';
+  const pvText = pvLight ? '#3a3530' : '#c8c0b4';
+  const pvMuted = pvLight ? '#7a756e' : '#5a554e';
+  const pvTopbarBg = pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.5)';
+  const pvTopbarBorder = pvLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)';
+
   // ── Parse elements from XHTML ──────────────────────────────
   const elements = useMemo(() => parseSceneXhtml(sectionXhtml), [sectionXhtml]);
 
@@ -568,21 +581,42 @@ export default function SingleChapterView({
       `}} />
 
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 10001, background: '#060608',
+        position: 'fixed', inset: 0, zIndex: 10001, background: pvBg,
         display: 'flex', flexDirection: 'column',
       }}>
         {/* Topbar */}
         <div style={{
           height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 16px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,255,255,0.06)', zIndex: 10,
+          padding: '0 16px', background: pvTopbarBg, borderBottom: `1px solid ${pvTopbarBorder}`, zIndex: 10,
         }}>
-          <span style={{ fontSize: '10px', letterSpacing: '0.15em', color: '#5a554e' }}>
-            {bookTitle || 'Untitled'}{bookAuthor ? ` — ${bookAuthor}` : ''}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Dark/Light toggle */}
+            <button onClick={() => setPvLight(v => !v)} title={pvLight ? 'Dark mode' : 'Light mode'}
+              style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '4px' }}>
+              {pvLight ? '\u{1F319}' : '\u{2600}\u{FE0F}'}
+            </button>
+            {/* SceneCraft orange toggle — only shown when sceneCraftConfig exists */}
+            {sceneCraftConfig && (
+              <button onClick={() => setShowScOrange(v => !v)}
+                title={showScOrange ? 'Hide SceneCraft visuals' : 'Show SceneCraft visuals'}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                  style={{ width: '22px', height: '22px', fill: '#ff7844', opacity: showScOrange ? 1 : 0.35,
+                    transition: 'opacity 0.2s' }}>
+                  <path d="M19 2H6c-1.2 0-2 .9-2 2v16c0 1.1.8 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h6v16z"/>
+                </svg>
+              </button>
+            )}
+          </div>
+          {/* Book metadata */}
+          <span style={{ fontSize: '13px', color: pvMuted, letterSpacing: '0.05em' }}>
+            <span style={{ fontStyle: 'italic' }}>{bookTitle || 'Untitled'}</span>
+            {bookAuthor ? <span>{'  '}by {bookAuthor}</span> : null}
+            {bookCopyright ? <span>{'  '}{bookCopyright}</span> : null}
           </span>
+          {/* Close button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <StyledSmallButton onClick={handleClose} theme={theme}>
-              Close
-            </StyledSmallButton>
+            <StyledSmallButton onClick={handleClose} theme={theme}>Close</StyledSmallButton>
           </div>
         </div>
 
@@ -590,6 +624,7 @@ export default function SingleChapterView({
         <div style={{
           position: 'fixed', left: 0, right: 0, top: '33%', height: '1px',
           background: 'rgba(255,120,68,0.15)', zIndex: 10, pointerEvents: 'none',
+          display: showScOrange ? undefined : 'none',
         }}>
           <div style={{
             width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,120,68,0.4)',
@@ -601,6 +636,7 @@ export default function SingleChapterView({
         <div id="scv-pv-info" style={{
           position: 'fixed', right: '16px', top: 'calc(33% - 14px)', fontSize: '9px',
           letterSpacing: '0.12em', color: 'rgba(255,120,68,0.35)', zIndex: 10, pointerEvents: 'none',
+          display: showScOrange ? undefined : 'none',
         }}></div>
 
         {/* Background wallpaper */}
@@ -614,18 +650,19 @@ export default function SingleChapterView({
           <div ref={pvContentRef} style={{
             maxWidth: '34rem', margin: '0 auto', padding: '50vh 2rem',
             fontFamily: "Georgia, 'EB Garamond', serif",
-            fontSize: 'clamp(1.1rem, 2.2vw, 1.35rem)', lineHeight: 2, color: '#c8c0b4',
+            fontSize: 'clamp(1.1rem, 2.2vw, 1.35rem)', lineHeight: 2, color: pvText,
           }}>
             {/* Dead zone before */}
             <div style={{ height: '50vh', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '2rem' }}>
-              <span style={{ fontSize: '10px', letterSpacing: '0.15em', color: '#2a2620', fontStyle: 'italic' }}>— silence —</span>
+              <span style={{ fontSize: '10px', letterSpacing: '0.15em', color: pvLight ? '#bab5ae' : '#2a2620', fontStyle: 'italic' }}>— silence —</span>
             </div>
 
             {/* Scene label */}
             <div id="scv-pv-enter" style={{
               textAlign: 'center', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
               color: 'rgba(255,120,68,0.25)', marginBottom: '3em', paddingBottom: '1em',
-              borderBottom: '1px solid rgba(255,255,255,0.03)',
+              borderBottom: `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}`,
+              display: showScOrange ? undefined : 'none',
             }}>
               {sectionTitle}
             </div>
@@ -638,11 +675,11 @@ export default function SingleChapterView({
                   <div key={i} className="sc-pv-block" data-idx={i} style={{
                     marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
                     transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    color: '#d4c090',
+                    color: pvLight ? '#5a4520' : '#d4c090',
                   }}>
                     <span style={{
                       fontFamily: "'SF Mono','Fira Code',monospace", fontSize: '0.65em',
-                      letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a08040',
+                      letterSpacing: '0.1em', textTransform: 'uppercase', color: pvLight ? '#8a6530' : '#a08040',
                       display: 'block', marginBottom: '0.3em',
                     }}>{spk}</span>
                     {item.text}
@@ -760,7 +797,7 @@ export default function SingleChapterView({
                     marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
                     transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
                     fontSize: sizes[item.type], fontWeight: 'bold', fontFamily: 'Georgia, "Times New Roman", serif',
-                    color: '#c8c0b4',
+                    color: pvText,
                   }}>
                     {item.text}
                   </div>
@@ -799,8 +836,9 @@ export default function SingleChapterView({
             {/* Exit marker */}
             <div id="scv-pv-exit" style={{
               textAlign: 'center', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
-              color: 'rgba(255,120,68,0.15)', marginTop: '3em', paddingTop: '1em',
-              borderTop: '1px solid rgba(255,255,255,0.03)', fontStyle: 'italic',
+              color: showScOrange ? 'rgba(255,120,68,0.15)' : (pvLight ? '#bab5ae' : '#2a2620'),
+              marginTop: '3em', paddingTop: '1em',
+              borderTop: `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}`, fontStyle: 'italic',
             }}>
               — silence —
             </div>
