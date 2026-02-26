@@ -16,13 +16,14 @@ import { ThemeConfig } from '@/app/shared/theme';
 // ============================================================
 
 interface SceneCraftElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak' | 'audio';
   text: string;
   speaker?: string;
   direction?: string;
   alt?: string;
   imgSrc?: string;
   caption?: string;
+  audioSrc?: string;
   idx: number;
 }
 
@@ -204,6 +205,16 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
         continue;
       }
 
+      // Audio block (author-inserted or VN scene-audio)
+      if (tag === 'div' && (cls.includes('audio-block') || cls.includes('scene-audio'))) {
+        const sourceEl = node.querySelector('audio source');
+        const audioSrc = sourceEl?.getAttribute('src') || '';
+        const captionEl = node.querySelector('.caption, .audio-label');
+        const caption = captionEl?.textContent?.trim() || '';
+        elements.push({ type: 'audio', text: caption, audioSrc, idx: idx++ });
+        continue;
+      }
+
       // Recurse into other div containers that aren't dialogue/sticky
       if (tag === 'div') {
         walkChildren(node);
@@ -316,6 +327,14 @@ function buildStandaloneHtml(p: BuildHtmlParams): string {
         blocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}"><img src="${imgSrc}" alt="${esc(el.alt || el.text)}" class="figure-img" onclick="openLightbox(this.src)" /><span class="figure-caption">${esc(el.alt || el.text)}</span></div>\n`;
       } else {
         blocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}"><span class="figure-missing">[${esc(el.alt || el.text)}]</span></div>\n`;
+      }
+    } else if (el.type === 'audio') {
+      const fn = el.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || '';
+      const audioDataUri = fn ? (p.audioMap.get(fn) || '') : '';
+      if (audioDataUri) {
+        blocksHtml += `<div class="sc-pv-block audio-block-pv" data-idx="${idx}"><audio controls preload="none" style="width:100%;max-width:400px"><source src="${audioDataUri}"></audio></div>\n`;
+      } else {
+        blocksHtml += `<div class="sc-pv-block audio-block-pv" data-idx="${idx}"><span style="color:#5a554e;font-style:italic;font-size:0.8em">[audio: ${esc(fn || 'unknown')}]</span></div>\n`;
       }
     } else if (el.type === 'h1' || el.type === 'h2' || el.type === 'h3') {
       blocksHtml += `<div class="sc-pv-block heading-block ${el.type}-block" data-idx="${idx}">${esc(el.text)}</div>\n`;
@@ -723,6 +742,7 @@ export default function SingleChapterView({
 
   // Resolved audio URL cache
   const audioUrlCache = useRef<Map<string, string>>(new Map());
+  const [_audioCacheKey, setAudioCacheKey] = useState(0);
 
   // ── Open: pre-resolve audio URLs ──────────────────────────
   useEffect(() => {
@@ -739,6 +759,14 @@ export default function SingleChapterView({
         if (clip.filename) toResolve.push(clip.filename);
       });
 
+      // Also resolve inline audio-block audio
+      for (const el of elements) {
+        if (el.type === 'audio' && el.audioSrc) {
+          const fn = el.audioSrc.replace(/^(\.\.\/)?audio\//, '');
+          if (fn && !toResolve.includes(fn)) toResolve.push(fn);
+        }
+      }
+
       for (const fn of toResolve) {
         if (cancelled) return;
         if (!cache.has(fn)) {
@@ -749,6 +777,7 @@ export default function SingleChapterView({
 
       if (!cancelled) {
         audioUrlCache.current = cache;
+        setAudioCacheKey(k => k + 1);
         pvAmbient.current = null;
         pvAmbientOut.current = null;
         pvVoice.current = null;
@@ -761,7 +790,7 @@ export default function SingleChapterView({
 
     resolveAudio();
     return () => { cancelled = true; };
-  }, [isOpen, config, getAudioUrl]);
+  }, [isOpen, config, getAudioUrl, elements]);
 
   // ── Close handler ─────────────────────────────────────────
   const handleClose = useCallback(() => {
@@ -818,6 +847,19 @@ export default function SingleChapterView({
           const blobUrl = await getAudioUrl(fn);
           if (blobUrl) {
             try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+          }
+        }
+      }
+
+      // Also resolve inline audio-block audio
+      for (const el of elements) {
+        if (el.type === 'audio' && el.audioSrc) {
+          const fn = el.audioSrc.replace(/^(\.\.\/)?audio\//, '');
+          if (fn && !audioMap.has(fn)) {
+            const blobUrl = await getAudioUrl(fn);
+            if (blobUrl) {
+              try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+            }
           }
         }
       }
@@ -1240,6 +1282,28 @@ export default function SingleChapterView({
                     ) : (
                       <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>[{item.alt || item.text}]</span>
                     )}
+                  </div>
+                );
+              }
+              if (item.type === 'audio') {
+                const fn = item.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || '';
+                const resolvedSrc = fn ? audioUrlCache.current.get(fn) : undefined;
+                return (
+                  <div key={i} className="sc-pv-block" data-idx={i} style={{
+                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                  }}>
+                    {resolvedSrc ? (
+                      /* eslint-disable-next-line jsx-a11y/media-has-caption */
+                      <audio controls preload="none" style={{ width: '100%', maxWidth: '400px' }}>
+                        <source src={resolvedSrc} />
+                      </audio>
+                    ) : (
+                      <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>
+                        [audio: {fn || 'unknown'}]
+                      </span>
+                    )}
+                    {item.text && <div style={{ fontSize: '0.75em', color: '#5a554e', marginTop: '0.3em' }}>{item.text}</div>}
                   </div>
                 );
               }

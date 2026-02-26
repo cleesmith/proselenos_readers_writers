@@ -16,13 +16,14 @@ import { ThemeConfig } from '../shared/theme';
 // ============================================================
 
 interface SceneCraftElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak' | 'audio';
   text: string;
   speaker?: string;
   direction?: string;
   alt?: string;
   imgSrc?: string;
   caption?: string;
+  audioSrc?: string;
   idx: number;
 }
 
@@ -221,6 +222,16 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
       // Line break
       if (tag === 'br') {
         elements.push({ type: 'linebreak', text: '', idx: idx++ });
+        continue;
+      }
+
+      // Audio block (author-inserted or VN scene-audio)
+      if (tag === 'div' && (cls.includes('audio-block') || cls.includes('scene-audio'))) {
+        const sourceEl = node.querySelector('audio source');
+        const audioSrc = sourceEl?.getAttribute('src') || '';
+        const captionEl = node.querySelector('.caption, .audio-label');
+        const caption = captionEl?.textContent?.trim() || '';
+        elements.push({ type: 'audio', text: caption, audioSrc, idx: idx++ });
         continue;
       }
 
@@ -472,6 +483,14 @@ export default function SceneCraftModal({
       if (clip.filename) toResolve.push(clip.filename);
     });
 
+    // Also resolve inline audio-block audio
+    for (const el of elements) {
+      if (el.type === 'audio' && el.audioSrc) {
+        const fn = el.audioSrc.replace(/^(\.\.\/)?audio\//, '');
+        if (fn && !toResolve.includes(fn)) toResolve.push(fn);
+      }
+    }
+
     for (const fn of toResolve) {
       if (!cache.has(fn)) {
         const url = await getAudioUrl(fn);
@@ -489,7 +508,7 @@ export default function SceneCraftModal({
     dlgFadeOut.current = null;
 
     setShowPreview(true);
-  }, [config, getAudioUrl]);
+  }, [config, getAudioUrl, elements]);
 
   const closePreview = useCallback(() => {
     if (pvRAF.current) cancelAnimationFrame(pvRAF.current);
@@ -688,6 +707,7 @@ export default function SceneCraftModal({
     const styles: Record<string, React.CSSProperties> = {
       sticky: { background: 'rgba(100,180,120,0.15)', color: '#6ab47a' },
       figure: { background: 'rgba(100,150,200,0.15)', color: '#6a9ac8' },
+      audio: { background: 'rgba(100,200,150,0.15)', color: '#6ac890' },
       dialogue: { background: 'rgba(200,150,80,0.15)', color: '#c8a050' },
       emphasis: { background: 'rgba(200,100,100,0.15)', color: '#c87060' },
       quote: { background: 'rgba(150,130,200,0.15)', color: '#a090c8' },
@@ -753,6 +773,11 @@ export default function SceneCraftModal({
         {item.type === 'figure' && (
           <div style={{ fontSize: '9px', color: 'var(--sc-td)', fontStyle: 'italic' }}>
             [{item.alt || item.text}]
+          </div>
+        )}
+        {item.type === 'audio' && (
+          <div style={{ fontSize: '9px', color: '#6ac890', fontStyle: 'italic' }}>
+            {item.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || 'audio'}
           </div>
         )}
         {item.type === 'break' && (
@@ -1166,6 +1191,12 @@ export default function SceneCraftModal({
           </>
         )}
 
+        {item.type === 'audio' && (
+          <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic' }}>
+            Inline audio: {item.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || 'unknown'}
+          </div>
+        )}
+
         {item.type === 'emphasis' && (
           <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'var(--sc-prose-d)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '8px' }}>
             {item.text}
@@ -1428,6 +1459,28 @@ export default function SceneCraftModal({
                     ) : (
                       <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>[{item.alt || item.text}]</span>
                     )}
+                  </div>
+                );
+              }
+              if (item.type === 'audio') {
+                const fn = item.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || '';
+                const resolvedSrc = fn ? audioUrlCache.current.get(fn) : undefined;
+                return (
+                  <div key={i} className="sc-pv-block" data-idx={i} style={{
+                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
+                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                  }}>
+                    {resolvedSrc ? (
+                      /* eslint-disable-next-line jsx-a11y/media-has-caption */
+                      <audio controls preload="none" style={{ width: '100%', maxWidth: '400px' }}>
+                        <source src={resolvedSrc} />
+                      </audio>
+                    ) : (
+                      <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>
+                        [audio: {fn || 'unknown'}]
+                      </span>
+                    )}
+                    {item.text && <div style={{ fontSize: '0.75em', color: '#5a554e', marginTop: '0.3em' }}>{item.text}</div>}
                   </div>
                 );
               }

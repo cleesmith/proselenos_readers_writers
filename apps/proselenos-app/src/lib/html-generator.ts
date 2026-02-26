@@ -1070,12 +1070,13 @@ body.dark-mode .copyright-page a:hover {
 // ── SceneCraft element types (mirrors SceneCraftModal parser) ──────────────
 
 interface ScElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak' | 'audio';
   text: string;
   speaker?: string;
   direction?: string;
   alt?: string;
   imgSrc?: string;
+  audioSrc?: string;
   style?: string;
   idx: number;
 }
@@ -1187,6 +1188,15 @@ function parseSceneElements(xhtml: string): ScElement[] {
       }
       if (tag === 'br') {
         elements.push({ type: 'linebreak', text: '', idx: idx++ });
+        continue;
+      }
+      // Audio block (author-inserted or VN scene-audio)
+      if (tag === 'div' && ((node.className || '').includes('audio-block') || (node.className || '').includes('scene-audio'))) {
+        const sourceEl = node.querySelector('audio source');
+        const audioSrc = sourceEl?.getAttribute('src') || '';
+        const captionEl = node.querySelector('.caption, .audio-label');
+        const caption = captionEl?.textContent?.trim() || '';
+        elements.push({ type: 'audio', text: caption, audioSrc, idx: idx++ });
         continue;
       }
       if (tag === 'div' || tag === 'article' || tag === 'section') { walkChildren(node); continue; }
@@ -1303,6 +1313,20 @@ ${textLines}
         imgTag = `<span style="color:#5a554e;font-style:italic;font-size:0.8em">[${escapeHtml(item.alt || item.text)}]</span>`;
       }
       return `      <div class="sc-block" data-idx="${item.idx}" style="text-align:left">${imgTag}</div>`;
+    }
+    if (item.type === 'audio') {
+      let audioTag = '';
+      if (item.audioSrc && mediaDataUrls) {
+        const fn = item.audioSrc.replace(/^(\.\.\/)?audio\//, '');
+        const url = mediaDataUrls[item.audioSrc] || mediaDataUrls[`audio/${fn}`];
+        if (url) {
+          audioTag = `<audio controls preload="none" style="width:100%;max-width:400px"><source src="${url}"></audio>`;
+        }
+      }
+      if (!audioTag) {
+        audioTag = `<span style="color:#5a554e;font-style:italic;font-size:0.8em">[audio]</span>`;
+      }
+      return `      <div class="sc-block" data-idx="${item.idx}">${audioTag}</div>`;
     }
     const styleAttr = item.style ? ` style="${escapeHtml(item.style)}"` : '';
     return `      <div class="sc-block" data-idx="${item.idx}"${styleAttr}>${escapedText}</div>`;

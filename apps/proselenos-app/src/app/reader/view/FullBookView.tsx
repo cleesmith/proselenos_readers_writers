@@ -17,13 +17,14 @@ import Swal from 'sweetalert2';
 // ============================================================
 
 interface SceneCraftElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak';
+  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak' | 'audio';
   text: string;
   speaker?: string;
   direction?: string;
   alt?: string;
   imgSrc?: string;
   caption?: string;
+  audioSrc?: string;
   idx: number;
 }
 
@@ -203,6 +204,16 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
         continue;
       }
 
+      // Audio block (author-inserted or VN scene-audio)
+      if (tag === 'div' && (cls.includes('audio-block') || cls.includes('scene-audio'))) {
+        const sourceEl = node.querySelector('audio source');
+        const audioSrc = sourceEl?.getAttribute('src') || '';
+        const captionEl = node.querySelector('.caption, .audio-label');
+        const caption = captionEl?.textContent?.trim() || '';
+        elements.push({ type: 'audio', text: caption, audioSrc, idx: idx++ });
+        continue;
+      }
+
       // Recurse into container elements (div + HTML5 semantic wrappers)
       if (tag === 'div' || tag === 'section' || tag === 'article' || tag === 'main' || tag === 'aside' || tag === 'nav' || tag === 'header' || tag === 'footer') {
         walkChildren(node);
@@ -308,6 +319,14 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
           allBlocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}" data-sec="${si}"><img src="${imgSrc}" alt="${esc(el.alt || el.text)}" class="figure-img" onclick="openLightbox(this.src)" /><span class="figure-caption">${esc(el.alt || el.text)}</span></div>\n`;
         } else {
           allBlocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}" data-sec="${si}"><span class="figure-missing">[${esc(el.alt || el.text)}]</span></div>\n`;
+        }
+      } else if (el.type === 'audio') {
+        const fn = el.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || '';
+        const audioDataUri = fn ? (p.audioMap.get(fn) || '') : '';
+        if (audioDataUri) {
+          allBlocksHtml += `<div class="sc-pv-block audio-block-pv" data-idx="${idx}" data-sec="${si}"><audio controls preload="none" style="width:100%;max-width:400px"><source src="${audioDataUri}"></audio></div>\n`;
+        } else {
+          allBlocksHtml += `<div class="sc-pv-block audio-block-pv" data-idx="${idx}" data-sec="${si}"><span style="color:#5a554e;font-style:italic;font-size:0.8em">[audio: ${esc(fn || 'unknown')}]</span></div>\n`;
         }
       } else if (el.type === 'h1' || el.type === 'h2' || el.type === 'h3') {
         allBlocksHtml += `<div class="sc-pv-block heading-block ${el.type}-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
@@ -806,6 +825,21 @@ export default function FullBookView({
         }
       }
 
+      // Also resolve inline audio-block audio from elements
+      for (const section of parsedSections) {
+        for (const el of section.elements) {
+          if (el.type === 'audio' && el.audioSrc) {
+            const fn = el.audioSrc.replace(/^(\.\.\/)?audio\//, '');
+            if (fn && !audioMap.has(fn)) {
+              const blobUrl = audioUrls.get(fn);
+              if (blobUrl) {
+                try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+              }
+            }
+          }
+        }
+      }
+
       const html = buildFullBookHtml({
         sections: parsedSections,
         bookTitle: bookTitle || 'Untitled',
@@ -1284,6 +1318,28 @@ export default function FullBookView({
                         ) : (
                           <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>[{item.alt || item.text}]</span>
                         )}
+                      </div>
+                    );
+                  }
+                  if (item.type === 'audio') {
+                    const fn = item.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || '';
+                    const resolvedSrc = fn ? audioUrls.get(fn) : undefined;
+                    return (
+                      <div key={i} className="sc-pv-block" data-idx={item.idx} data-sec={si} style={{
+                        marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
+                        transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                      }}>
+                        {resolvedSrc ? (
+                          /* eslint-disable-next-line jsx-a11y/media-has-caption */
+                          <audio controls preload="none" style={{ width: '100%', maxWidth: '400px' }}>
+                            <source src={resolvedSrc} />
+                          </audio>
+                        ) : (
+                          <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>
+                            [audio: {fn || 'unknown'}]
+                          </span>
+                        )}
+                        {item.text && <div style={{ fontSize: '0.75em', color: '#5a554e', marginTop: '0.3em' }}>{item.text}</div>}
                       </div>
                     );
                   }
