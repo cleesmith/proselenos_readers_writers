@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, /* PiFileHtml, */ PiFileDoc, /* PiFileText, */ PiImage, PiArrowRight, PiGear } from 'react-icons/pi';
+import { PiKey, PiCpu, PiChatCircle, PiFolderOpen, PiNotePencil, PiDatabase, PiInfo, PiFileDoc, /* PiFileText, */ PiImage, PiArrowRight, PiGear } from 'react-icons/pi';
 import { GiBoxUnpacking } from 'react-icons/gi';
 import { ThemeConfig } from '../shared/theme';
 import { showConfirm } from '../shared/alerts';
@@ -36,7 +36,6 @@ interface AuthorsHeaderProps {
   toolExecuting?: boolean; // When true, disable all buttons except Exit
   onSearchClose?: () => void;
   onCoverClick?: () => void;
-  onHtmlExportClick?: () => void;
   onDocxExportClick?: () => void;
   onFountainExportClick?: () => void;
   onXrayClick?: () => void;
@@ -70,7 +69,6 @@ export default function AuthorsHeader({
   toolExecuting = false,
   onSearchClose,
   onCoverClick,
-  onHtmlExportClick: _onHtmlExportClick,
   onDocxExportClick,
   onFountainExportClick: _onFountainExportClick,
   onXrayClick,
@@ -522,27 +520,6 @@ export default function AuthorsHeader({
               <PiImage size={16} />
               Cover
             </button>
-            {/* HTML export temporarily hidden — may return in future
-            <button
-              onClick={() => { onHtmlExportClick?.(); setMenuOpen(false); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                width: '100%',
-                padding: '8px 12px',
-                background: 'rgba(184, 134, 11, 0.15)',
-                border: 'none',
-                textAlign: 'left',
-                cursor: 'pointer',
-                color: '#b8860b',
-                fontSize: '13px',
-              }}
-            >
-              <PiFileHtml size={16} />
-              HTML
-            </button>
-            */}
             <button
               onClick={() => { onDocxExportClick?.(); setMenuOpen(false); }}
               style={{

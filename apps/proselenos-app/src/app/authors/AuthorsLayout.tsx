@@ -72,7 +72,6 @@ import {
   SceneCraftConfig,
 } from '@/services/manuscriptStorage';
 import { generateEpubFromWorkingCopy } from '@/lib/epub-generator';
-import { generateHtmlFromSections, openHtmlInNewTab } from '@/lib/html-generator';
 import { exportWorkspaceToDocx } from '@/lib/workspace-to-docx';
 import { exportWorkspaceToFountain } from '@/lib/fountain-generator';
 import { xhtmlToPlainText } from '@/lib/plateXhtml';
@@ -1917,120 +1916,6 @@ export default function AuthorsLayout({
     }
   };
 
-  // Handle HTML export - download manuscript as single-page HTML
-  const handleHtmlExport = async () => {
-    // 1. Save any pending editor changes first
-    if (hasUnsavedChanges && selectedSection && selectedSectionId) {
-      await saveCurrentSection();
-    }
-
-    // 2. Load full working copy
-    const workingCopy = await loadFullWorkingCopy();
-    if (!workingCopy) {
-      showAlert('No manuscript to export. Please create or load a manuscript first.', 'warning', undefined, isDarkMode);
-      return;
-    }
-
-    // 3. Load metadata for author info
-    const meta = await loadWorkingCopyMeta();
-
-    try {
-      // 4. Load all media from IndexedDB and convert to base64 data URIs
-      const [images, audios] = await Promise.all([
-        getAllManuscriptImages(),
-        getAllManuscriptAudios(),
-      ]);
-
-      const mediaDataUrls: Record<string, string> = {};
-
-      // Convert images to base64 data URIs
-      for (const img of images) {
-        const arrayBuffer = await img.blob.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        let binary = '';
-        const chunkSize = 8192;
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-        }
-        const base64 = btoa(binary);
-        const ext = img.filename.split('.').pop()?.toLowerCase() || 'jpg';
-        const mimeMap: Record<string, string> = {
-          png: 'image/png', gif: 'image/gif', webp: 'image/webp',
-          svg: 'image/svg+xml', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-        };
-        const mime = mimeMap[ext] || 'image/jpeg';
-        mediaDataUrls[`images/${img.filename}`] = `data:${mime};base64,${base64}`;
-      }
-
-      // Convert audio to base64 data URIs
-      for (const aud of audios) {
-        const arrayBuffer = await aud.blob.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        let binary = '';
-        const chunkSize = 8192;
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-        }
-        const base64 = btoa(binary);
-        const ext = aud.filename.split('.').pop()?.toLowerCase() || 'wav';
-        const mimeMap: Record<string, string> = {
-          mp3: 'audio/mpeg', ogg: 'audio/ogg', m4a: 'audio/mp4',
-          aac: 'audio/aac', webm: 'audio/webm', wav: 'audio/wav',
-        };
-        const mime = mimeMap[ext] || 'audio/wav';
-        mediaDataUrls[`audio/${aud.filename}`] = `data:${mime};base64,${base64}`;
-      }
-
-      // 5. Load cover image and convert to base64 data URI
-      let coverImageDataUrl: string | undefined;
-      if (meta?.coverImageId) {
-        const coverBlob = await loadCoverImage();
-        if (coverBlob) {
-          const arrayBuffer = await coverBlob.arrayBuffer();
-          const bytes = new Uint8Array(arrayBuffer);
-          let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-          }
-          const base64 = btoa(binary);
-          const ext = meta.coverImageId.split('.').pop()?.toLowerCase() || 'jpg';
-          const mimeMap: Record<string, string> = {
-            png: 'image/png', gif: 'image/gif', webp: 'image/webp',
-            svg: 'image/svg+xml', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-          };
-          const mime = mimeMap[ext] || 'image/jpeg';
-          coverImageDataUrl = `data:${mime};base64,${base64}`;
-        }
-      }
-
-      // 6. Generate HTML with embedded media
-      const html = generateHtmlFromSections({
-        title: workingCopy.title || 'Untitled',
-        author: workingCopy.author || meta?.author || 'Unknown Author',
-        year: new Date().getFullYear().toString(),
-        sections: workingCopy.sections
-          .map(s => ({
-            title: s.title,
-            content: s.xhtml,
-            sceneCraftConfig: s.sceneCraftConfig,
-          })),
-        isDarkMode,
-        mediaDataUrls,
-        coverImageDataUrl,
-        subtitle: meta?.subtitle,
-        publisher: meta?.publisher,
-      });
-
-      // 7. Open in new tab
-      await openHtmlInNewTab(html);
-
-      showAlert('HTML opened in new tab!', 'success', undefined, isDarkMode);
-    } catch (error) {
-      console.error('Error exporting HTML:', error);
-      showAlert(`Error exporting HTML: ${(error as Error).message}`, 'error', undefined, isDarkMode);
-    }
-  };
 
   // Handle DOCX export - download manuscript for Vellum/Atticus import
   const handleDocxExport = async () => {
@@ -2178,7 +2063,6 @@ export default function AuthorsLayout({
         toolExecuting={toolExecuting}
         onSearchClose={handleSearchClose}
         onCoverClick={onCoverClick}
-        onHtmlExportClick={handleHtmlExport}
         onDocxExportClick={handleDocxExport}
         onFountainExportClick={handleFountainExport}
         onXrayClick={onXrayClick}
