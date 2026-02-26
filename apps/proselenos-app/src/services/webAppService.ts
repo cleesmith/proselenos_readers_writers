@@ -44,7 +44,7 @@ const resolvePath = (path: string, base: BaseDir): ResolvedPath => {
 };
 
 const dbName = 'AppFileSystem';
-const dbVersion = 1;
+const dbVersion = 2;
 
 async function openIndexedDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -54,6 +54,9 @@ async function openIndexedDB(): Promise<IDBDatabase> {
       const db = request.result;
       if (!db.objectStoreNames.contains('files')) {
         db.createObjectStore('files', { keyPath: 'path' });
+      }
+      if (!db.objectStoreNames.contains('manuscript')) {
+        db.createObjectStore('manuscript', { keyPath: 'key' });
       }
     };
 

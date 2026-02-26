@@ -5,7 +5,7 @@ export default function ReaderViewPage() {
   useEffect(() => {
     (async () => {
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open('AppFileSystem', 1);
+        const request = indexedDB.open('AppFileSystem', 2);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });

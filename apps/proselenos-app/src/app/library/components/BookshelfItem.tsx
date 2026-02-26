@@ -7,6 +7,9 @@ import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeStore } from '@/store/themeStore';
 import { openBookAsHtml } from '@/services/htmlReadingService';
+import { parseEpub } from '@/services/epubService';
+import { saveLibraryManuscript } from '@/services/libraryManuscriptService';
+import { getLocalBookFilename } from '@/utils/book';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLongPress } from '@/hooks/useLongPress';
 import { Menu, MenuItem, revealItemInDir } from '@/utils/desktop-stubs';
@@ -134,6 +137,16 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         isOpening.current = true;
         setOpening(true);
         try {
+          // Extract manuscript for enhanced reading (overwrite any previous)
+          try {
+            const appService = await envConfig.getAppService();
+            const epubFile = await appService.openFile(getLocalBookFilename(book), 'Books');
+            const parsed = await parseEpub(epubFile);
+            await saveLibraryManuscript(parsed);
+          } catch (err) {
+            console.error('Failed to extract manuscript:', err);
+            // Non-blocking — still open the HTML reader
+          }
           await openBookAsHtml(book, envConfig, isDarkMode);
         } catch (error) {
           console.error('Failed to open book as HTML:', error);

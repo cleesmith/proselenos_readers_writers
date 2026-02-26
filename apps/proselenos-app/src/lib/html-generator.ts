@@ -1602,7 +1602,7 @@ function addTargetBlank(html: string): string {
  */
 export async function openHtmlInNewTab(html: string): Promise<void> {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open('AppFileSystem', 1);
+    const request = indexedDB.open('AppFileSystem', 2);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });

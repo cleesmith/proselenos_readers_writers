@@ -8,7 +8,7 @@ import JSZip from 'jszip';
 // ============================================
 
 const EREADER_DB_NAME = 'AppFileSystem';
-const EREADER_DB_VERSION = 1;
+const EREADER_DB_VERSION = 2;
 
 const AUTHORS_DB_NAME = 'ProselenosLocal';
 const AUTHORS_DB_VERSION = 1;
@@ -61,6 +61,30 @@ async function exportEreaderData(): Promise<Array<{ path: string; content: strin
     });
   } catch {
     // Database doesn't exist or is empty
+    return [];
+  }
+}
+
+// ============================================
+// Export E-Reader Manuscript Store
+// ============================================
+
+async function exportEreaderManuscript(): Promise<Array<{ key: string; value: string | ArrayBuffer | Blob }>> {
+  try {
+    const db = await openDB(EREADER_DB_NAME, EREADER_DB_VERSION);
+    if (!db.objectStoreNames.contains('manuscript')) return [];
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('manuscript', 'readonly');
+      const store = tx.objectStore('manuscript');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const entries = request.result || [];
+        resolve(entries);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
     return [];
   }
 }
@@ -156,6 +180,32 @@ export async function exportAllData(): Promise<Blob> {
         } else {
           // JSON serialize anything else
           ereaderFolder.file(cleanPath, JSON.stringify(content, null, 2));
+        }
+      }
+    }
+  }
+
+  // 3b. Export E-Reader manuscript store
+  const ereaderManuscript = await exportEreaderManuscript();
+  if (ereaderManuscript.length > 0) {
+    const manuscriptFolder = zip.folder('ereader-manuscript');
+    if (manuscriptFolder) {
+      for (const entry of ereaderManuscript) {
+        const { key, value } = entry;
+        const filename = key.endsWith('.json') || key.endsWith('.xhtml') ||
+          key.endsWith('.png') || key.endsWith('.jpg') || key.endsWith('.jpeg')
+          ? key
+          : `${key}.bin`;
+
+        if (value instanceof Blob) {
+          const arrayBuffer = await blobToArrayBuffer(value);
+          manuscriptFolder.file(filename, new Uint8Array(arrayBuffer));
+        } else if (value instanceof ArrayBuffer) {
+          manuscriptFolder.file(filename, new Uint8Array(value));
+        } else if (typeof value === 'string') {
+          manuscriptFolder.file(filename, value);
+        } else {
+          manuscriptFolder.file(filename, JSON.stringify(value, null, 2));
         }
       }
     }
@@ -279,13 +329,24 @@ function clearLocalStorage(): void {
 async function clearEreaderDB(): Promise<void> {
   try {
     const db = await openDB(EREADER_DB_NAME, EREADER_DB_VERSION);
-    return new Promise((resolve, reject) => {
+    // Clear files store
+    await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('files', 'readwrite');
       const store = tx.objectStore('files');
       const request = store.clear();
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
+    // Clear manuscript store
+    if (db.objectStoreNames.contains('manuscript')) {
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('manuscript', 'readwrite');
+        const store = tx.objectStore('manuscript');
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
   } catch {
     // Database might not exist, that's fine
   }
@@ -332,13 +393,16 @@ async function importEreaderData(zip: JSZip): Promise<void> {
   if (!ereaderFolder) return;
 
   try {
-    // Ensure database and store exist
+    // Ensure database and stores exist
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(EREADER_DB_NAME, EREADER_DB_VERSION);
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains('files')) {
           db.createObjectStore('files', { keyPath: 'path' });
+        }
+        if (!db.objectStoreNames.contains('manuscript')) {
+          db.createObjectStore('manuscript', { keyPath: 'key' });
         }
       };
       request.onsuccess = () => resolve(request.result);
@@ -377,6 +441,45 @@ async function importEreaderData(zip: JSZip): Promise<void> {
     }
   } catch (err) {
     console.error('Failed to import E-Reader data:', err);
+  }
+}
+
+// Import E-Reader manuscript store from ZIP
+async function importEreaderManuscript(zip: JSZip): Promise<void> {
+  const manuscriptFolder = zip.folder('ereader-manuscript');
+  if (!manuscriptFolder) return;
+
+  try {
+    const db = await openDB(EREADER_DB_NAME, EREADER_DB_VERSION);
+    if (!db.objectStoreNames.contains('manuscript')) return;
+
+    const files: Array<{ relativePath: string; file: JSZip.JSZipObject }> = [];
+    manuscriptFolder.forEach((relativePath, file) => {
+      if (!file.dir) {
+        files.push({ relativePath, file });
+      }
+    });
+
+    for (const { relativePath, file } of files) {
+      const key = relativePath;
+
+      let value: string | ArrayBuffer;
+      if (relativePath.endsWith('.xhtml') || relativePath.endsWith('.json')) {
+        value = await file.async('string');
+      } else {
+        value = await file.async('arraybuffer');
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('manuscript', 'readwrite');
+        const store = tx.objectStore('manuscript');
+        store.put({ key, value });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to import E-Reader manuscript data:', err);
   }
 }
 
@@ -481,6 +584,7 @@ export async function performImport(zip: JSZip): Promise<{ success: boolean; err
     // Import from ZIP
     await importLocalStorage(zip);
     await importEreaderData(zip);
+    await importEreaderManuscript(zip);
     await importAuthorsData(zip);
 
     return { success: true };
