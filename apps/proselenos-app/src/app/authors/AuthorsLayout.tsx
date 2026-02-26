@@ -2256,6 +2256,8 @@ export default function AuthorsLayout({
             ref={editorPanelRef}
             theme={theme}
             isDarkMode={isDarkMode}
+            bookTitle={epub?.title ?? ''}
+            bookAuthor={epub?.author ?? ''}
             onToggleSidebar={onToggleSidebar}
             onSave={saveCurrentSection}
             onAIWritingClick={async () => { await saveCurrentSection(); onAIWritingClick(); }}

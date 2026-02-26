@@ -11,8 +11,9 @@ import OneByOnePanel from './OneByOnePanel';
 import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
 import AudioPickerModal from './AudioPickerModal';
-import SectionPreview from './SectionPreview';
+// import SectionPreview from './SectionPreview';  // replaced by SingleChapterView
 import SceneCraftModal from './SceneCraftModal';
+import SingleChapterView from './SingleChapterView';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { ImageLibraryProvider } from '@/contexts/ImageLibraryContext';
 import { AudioLibraryProvider } from '@/contexts/AudioLibraryContext';
@@ -116,6 +117,9 @@ interface EditorPanelProps {
   onSceneCraftConfigChange?: (config: SceneCraftConfig) => void;
   getImageUrl?: (filename: string) => string | null;
   getAudioUrl?: (filename: string) => Promise<string | null>;
+  // Book metadata (for preview display)
+  bookTitle?: string;
+  bookAuthor?: string;
 }
 
 // Ref handle for parent to control editor
@@ -136,7 +140,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   sectionId,
   sectionTitle,
   sectionXhtml,
-  sectionType,
+  sectionType: _sectionType,
   sectionWordCount,
   onContentChange,
   onTitleChange,
@@ -189,6 +193,9 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   onSceneCraftConfigChange,
   getImageUrl,
   getAudioUrl,
+  // Book metadata
+  bookTitle,
+  bookAuthor,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -221,8 +228,11 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   // Audio picker state
   const [showAudioPicker, setShowAudioPicker] = useState(false);
 
-  // Preview state
-  const [showPreview, setShowPreview] = useState(false);
+  // Preview state (old inline SectionPreview — replaced by SingleChapterView)
+  // const [showPreview, setShowPreview] = useState(false);
+
+  // SingleChapterView immersive preview state
+  const [showChapterView, setShowChapterView] = useState(false);
 
   // SceneCraft modal state
   const [showSceneCraft, setShowSceneCraft] = useState(false);
@@ -629,8 +639,8 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           {isSaving ? 'Saved' : 'Save'}
         </StyledSmallButton>
 
-        {/* Preview button */}
-        <StyledSmallButton
+        {/* OLD Preview button (inline SectionPreview) — replaced by SingleChapterView */}
+        {/* <StyledSmallButton
           theme={theme}
           onClick={() => setShowPreview(!showPreview)}
           title={showPreview ? "Close preview" : "Preview section as EPUB"}
@@ -641,6 +651,16 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           }}
         >
           {showPreview ? 'Edit' : 'Preview'}
+        </StyledSmallButton> */}
+
+        {/* NEW: Preview via SingleChapterView */}
+        <StyledSmallButton
+          theme={theme}
+          onClick={() => setShowChapterView(true)}
+          title="Immersive chapter preview"
+          disabled={toolExecuting}
+        >
+          Preview
         </StyledSmallButton>
 
         {/* SceneCraft button */}
@@ -778,15 +798,16 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         </div>
       </div>
 
-      {/* Editor content area - PlateJS editor OR Preview */}
+      {/* Editor content area - PlateJS editor (always visible; preview is now a full-screen overlay) */}
       <div
         style={{
           flex: 1,
           overflow: 'hidden',
-          padding: showPreview ? '0' : '4px',
+          padding: '4px',
         }}
       >
-        {showPreview ? (
+        {/* OLD: SectionPreview ternary — replaced by SingleChapterView overlay */}
+        {/* {showPreview ? (
           <SectionPreview
             xhtml={(() => {
               if (!editor) return '';
@@ -800,34 +821,33 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
             isDarkMode={isDarkMode}
             sectionType={sectionType}
           />
-        ) : (
-          <Plate
-            editor={editor}
-            onChange={handleEditorChange}
+        ) : ( ... )} */}
+        <Plate
+          editor={editor}
+          onChange={handleEditorChange}
+        >
+          <EditorContainer
+            className={cn(
+              'h-full rounded border',
+              isDarkMode ? 'bg-[#343a40] border-gray-600' : 'bg-[#f8f9fa] border-gray-300'
+            )}
+            style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: '14px',
+              lineHeight: '1.6',
+              color: theme.text,
+            }}
           >
-            <EditorContainer
+            <Editor
+              variant="default"
+              placeholder="Type here..."
               className={cn(
-                'h-full rounded border',
-                isDarkMode ? 'bg-[#343a40] border-gray-600' : 'bg-[#f8f9fa] border-gray-300'
+                'min-h-full',
+                isDarkMode && 'placeholder:text-gray-500'
               )}
-              style={{
-                fontFamily: 'Georgia, serif',
-                fontSize: '14px',
-                lineHeight: '1.6',
-                color: theme.text,
-              }}
-            >
-              <Editor
-                variant="default"
-                placeholder="Type here..."
-                className={cn(
-                  'min-h-full',
-                  isDarkMode && 'placeholder:text-gray-500'
-                )}
-              />
-            </EditorContainer>
-          </Plate>
-        )}
+            />
+          </EditorContainer>
+        </Plate>
       </div>
 
       {/* One-by-one inline panel */}
@@ -911,6 +931,24 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         getAudioUrl={getAudioUrl ?? (async () => null)}
         theme={theme}
         isDarkMode={isDarkMode}
+      />
+
+      {/* SingleChapterView immersive preview overlay */}
+      <SingleChapterView
+        isOpen={showChapterView}
+        onClose={() => setShowChapterView(false)}
+        sectionTitle={chapterTitle}
+        sectionXhtml={(() => {
+          if (!editor) return '';
+          const plateValue = editor.children as Value;
+          return plateToXhtml(plateValue);
+        })()}
+        sceneCraftConfig={sceneCraftConfig ?? null}
+        getImageUrl={getImageUrl ?? (() => null)}
+        getAudioUrl={getAudioUrl ?? (async () => null)}
+        bookTitle={bookTitle ?? ''}
+        bookAuthor={bookAuthor ?? ''}
+        theme={theme}
       />
     </main>
     </AudioLibraryProvider>
