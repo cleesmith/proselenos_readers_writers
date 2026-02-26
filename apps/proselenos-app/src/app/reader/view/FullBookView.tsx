@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { SceneCraftConfig } from '@/services/manuscriptStorage';
+import Swal from 'sweetalert2';
 
 // ============================================================
 //  Types
@@ -221,6 +222,418 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
 }
 
 // ============================================================
+//  Download helpers
+// ============================================================
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;').replace(/`/g,'&#96;').replace(/\$/g,'&#36;');
+}
+
+async function blobUrlToDataUri(blobUrl: string): Promise<string> {
+  const resp = await fetch(blobUrl);
+  const blob = await resp.blob();
+  const buf = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+  return `data:${blob.type};base64,${btoa(binary)}`;
+}
+
+interface BuildFullBookHtmlParams {
+  sections: Array<{
+    title: string;
+    elements: SceneCraftElement[];
+    config: SceneCraftConfig | null;
+  }>;
+  bookTitle: string;
+  bookAuthor: string;
+  imageMap: Map<string, string>;
+  audioMap: Map<string, string>;
+  wallpaperUris: Map<number, string>;
+  hasAnySceneCraft: boolean;
+  isDark: boolean;
+}
+
+function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
+  const esc = escapeHtml;
+
+  // Build content blocks for ALL sections and per-section JS config data
+  let allBlocksHtml = '';
+  const sectionsJsData: Array<{
+    title: string;
+    wallpaperUri: string;
+    config: Record<string, unknown> | null;
+    dialogueElements: Record<number, { type: string; speaker?: string }>;
+  }> = [];
+
+  for (let si = 0; si < p.sections.length; si++) {
+    const section = p.sections[si]!;
+
+    // Section enter marker
+    allBlocksHtml += `<div class="section-enter" id="section-enter-${si}">${esc(section.title)}</div>\n`;
+
+    // Content blocks for this section
+    for (const el of section.elements) {
+      const idx = el.idx;
+      if (el.type === 'dialogue') {
+        const spk = el.direction ? `${el.speaker} (${el.direction})` : (el.speaker || '');
+        allBlocksHtml += `<div class="sc-pv-block dialogue-block" data-idx="${idx}" data-sec="${si}"><span class="speaker-label">${esc(spk || '')}</span>${esc(el.text)}</div>\n`;
+      } else if (el.type === 'sticky') {
+        const lines = el.text.split('\n').filter((l: string) => l.trim());
+        const imgSrc = el.imgSrc ? (p.imageMap.get(el.imgSrc) || el.imgSrc) : '';
+        let stickyInner = '';
+        if (imgSrc) {
+          stickyInner += `<div class="sticky-img-wrap" onclick="openLightbox('${imgSrc.replace(/'/g, "\\'")}')"><img src="${imgSrc}" alt="${esc(el.caption || 'Sticky image')}" class="sticky-img" />`;
+          if (el.caption) stickyInner += `<p class="sticky-caption">${esc(el.caption)}</p>`;
+          stickyInner += `</div>`;
+        }
+        stickyInner += `<div class="sticky-text-col">`;
+        for (const line of lines) {
+          stickyInner += `<div class="sc-pv-block" data-idx="${idx}" data-sec="${si}">${esc(line)}</div>\n`;
+        }
+        stickyInner += `</div>`;
+        allBlocksHtml += `<div class="sticky-wrap">${stickyInner}</div>\n`;
+      } else if (el.type === 'emphasis') {
+        allBlocksHtml += `<div class="sc-pv-block emphasis-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+      } else if (el.type === 'quote') {
+        allBlocksHtml += `<div class="sc-pv-block quote-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+      } else if (el.type === 'internal') {
+        allBlocksHtml += `<div class="sc-pv-block internal-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+      } else if (el.type === 'break') {
+        allBlocksHtml += `<div class="sc-pv-block break-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+      } else if (el.type === 'figure') {
+        const imgSrc = el.imgSrc ? (p.imageMap.get(el.imgSrc) || el.imgSrc) : '';
+        if (imgSrc) {
+          allBlocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}" data-sec="${si}"><img src="${imgSrc}" alt="${esc(el.alt || el.text)}" class="figure-img" onclick="openLightbox(this.src)" /><span class="figure-caption">${esc(el.alt || el.text)}</span></div>\n`;
+        } else {
+          allBlocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}" data-sec="${si}"><span class="figure-missing">[${esc(el.alt || el.text)}]</span></div>\n`;
+        }
+      } else if (el.type === 'h1' || el.type === 'h2' || el.type === 'h3') {
+        allBlocksHtml += `<div class="sc-pv-block heading-block ${el.type}-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+      } else if (el.type === 'divider') {
+        allBlocksHtml += `<div class="sc-pv-block divider-block" data-idx="${idx}" data-sec="${si}"></div>\n`;
+      } else if (el.type === 'linebreak') {
+        allBlocksHtml += `<div class="sc-pv-block linebreak-block" data-idx="${idx}" data-sec="${si}"></div>\n`;
+      } else if (el.type === 'para') {
+        allBlocksHtml += `<div class="sc-pv-block para-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+      }
+    }
+
+    // Section exit marker
+    allBlocksHtml += `<div class="section-exit" id="section-exit-${si}">&mdash; silence &mdash;</div>\n`;
+
+    // Build per-section JS config data
+    const dialogueElements: Record<number, { type: string; speaker?: string }> = {};
+    for (const el of section.elements) {
+      if (el.type === 'dialogue') {
+        dialogueElements[el.idx] = { type: 'dialogue', speaker: el.speaker };
+      }
+    }
+    const c = section.config;
+    sectionsJsData.push({
+      title: section.title,
+      wallpaperUri: p.wallpaperUris.get(si) || '',
+      config: c ? {
+        wallpaperOpacity: c.wallpaperOpacity,
+        wallpaperPosition: c.wallpaperPosition,
+        ambientFilename: c.ambientFilename,
+        ambientVolume: c.ambientVolume,
+        ambientLoop: c.ambientLoop,
+        fadeIn: c.fadeIn,
+        fadeOut: c.fadeOut,
+        voiceMode: c.voiceMode,
+        narrationFilename: c.narrationFilename,
+        narrationVolume: c.narrationVolume,
+        dialogueClips: c.dialogueClips,
+        dialogueVolume: c.dialogueVolume,
+      } : null,
+      dialogueElements,
+    });
+  }
+
+  const scToggleBtn = p.hasAnySceneCraft ? `<button id="sc-toggle" onclick="toggleScOrange()" title="Toggle SceneCraft visuals" style="background:none;border:none;cursor:pointer;padding:4px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:22px;height:22px;fill:#ff7844;opacity:1;transition:opacity 0.2s"><path d="M19 2H6c-1.2 0-2 .9-2 2v16c0 1.1.8 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h6v16z"/></svg></button>` : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(p.bookTitle)} - Full Book</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35rem);line-height:2;transition:background 0.3s,color 0.3s}
+#topbar{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:10;position:relative;transition:background 0.3s,border-color 0.3s}
+#topbar .left{display:flex;align-items:center;gap:10px}
+#topbar .meta{font-size:13px;letter-spacing:0.05em;transition:color 0.3s}
+#topbar .meta .title{font-style:italic}
+#playhead{position:fixed;left:0;right:0;top:33%;height:1px;background:rgba(255,120,68,0.15);z-index:10;pointer-events:none}
+#playhead .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,120,68,0.4);position:absolute;left:50%;top:-3px;transform:translateX(-50%)}
+#scene-info{position:fixed;right:16px;top:calc(33% - 14px);font-size:9px;letter-spacing:0.12em;color:rgba(255,120,68,0.35);z-index:10;pointer-events:none}
+#bg-wall{position:fixed;inset:0;background-size:cover;background-repeat:no-repeat;opacity:0;transition:opacity 1.5s ease;z-index:0;pointer-events:none}
+#scroll-wrap{flex:1;overflow-y:auto;position:relative}
+#content{max-width:34rem;margin:0 auto;padding:50vh 2rem}
+.dead-zone-top{height:50vh;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2rem}
+.silence{font-size:10px;letter-spacing:0.15em;font-style:italic;transition:color 0.3s}
+.section-enter{text-align:center;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,120,68,0.25);margin-bottom:3em;padding-bottom:1em;transition:border-color 0.3s}
+.section-exit{text-align:center;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;margin-top:3em;padding-top:1em;font-style:italic;transition:border-color 0.3s,color 0.3s}
+.dead-zone-bottom{height:70vh}
+.sc-pv-block{margin-bottom:1.6em;opacity:0;transform:translateY(16px);transition:opacity 0.8s ease,transform 0.8s ease;position:relative;z-index:2}
+.sc-pv-block.sc-pv-vis{opacity:1!important;transform:translateY(0)!important}
+.sc-pv-block.sc-pv-past{opacity:0.3!important}
+.dialogue-block .speaker-label{font-family:'SF Mono','Fira Code',monospace;font-size:0.65em;letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:0.3em;transition:color 0.3s}
+.sticky-wrap{display:flex;gap:1.5em;align-items:flex-start;min-height:300px;margin-bottom:1.6em;position:relative;z-index:2}
+.sticky-img-wrap{position:sticky;top:33vh;width:40%;flex-shrink:0;cursor:zoom-in}
+.sticky-img{width:100%;border-radius:4px;opacity:0.9;display:block}
+.sticky-caption{font-size:0.75em;text-align:center;font-style:italic;opacity:0.6;margin:0.4em 0 0}
+.sticky-text-col{flex:1;display:flex;flex-direction:column;gap:1em}
+.emphasis-block{text-align:center;font-size:1.2em;letter-spacing:0.08em;font-style:italic;color:#e0c8b0}
+.quote-block{border-left:2px solid rgba(200,192,180,0.3);padding-left:1.5em}
+.internal-block{font-style:italic;padding-left:2em}
+.break-block{text-align:center;letter-spacing:0.3em;color:#3a3530}
+.figure-img{max-width:260px;border-radius:4px;opacity:0.9;display:block;cursor:zoom-in}
+.figure-caption{font-family:'SF Mono',monospace;font-size:0.55em;letter-spacing:0.06em;margin-top:0.4em;display:block;transition:color 0.3s}
+.figure-missing{font-style:italic;font-size:0.8em;transition:color 0.3s}
+.heading-block{font-weight:bold;font-family:Georgia,"Times New Roman",serif;transition:color 0.3s}
+.h1-block{font-size:1.8em}
+.h2-block{font-size:1.4em}
+.h3-block{font-size:1.15em}
+.divider-block{margin:1.6em 0;border-top:1px solid rgba(200,192,180,0.2)}
+.linebreak-block{height:1.2em;margin:0}
+#lightbox{position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;cursor:zoom-out}
+#lightbox img{max-width:90vw;max-height:90vh;border-radius:6px}
+.theme-toggle-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px}
+</style>
+</head>
+<body>
+<div id="app" style="position:fixed;inset:0;display:flex;flex-direction:column">
+  <div id="topbar">
+    <div class="left">
+      <button class="theme-toggle-btn" id="theme-btn" onclick="toggleTheme()"></button>
+      ${scToggleBtn}
+    </div>
+    <span class="meta">
+      <span class="title">${esc(p.bookTitle || 'Untitled')}</span>${p.bookAuthor ? `  by ${esc(p.bookAuthor)}` : ''}
+    </span>
+    <div></div>
+  </div>
+  <div id="playhead"><div class="dot"></div></div>
+  <div id="scene-info"></div>
+  <div id="bg-wall"></div>
+  <div id="scroll-wrap">
+    <div id="content">
+      <div class="dead-zone-top"><span class="silence">&mdash; silence &mdash;</span></div>
+      ${allBlocksHtml}
+      <div class="dead-zone-bottom"></div>
+    </div>
+  </div>
+</div>
+<div id="lightbox" onclick="closeLightbox()"><img id="lb-img" src="" alt="Enlarged" /></div>
+
+<script>
+// -- Config data --
+var AUDIO_MAP = ${JSON.stringify(Object.fromEntries(p.audioMap))};
+var SECTIONS = ${JSON.stringify(sectionsJsData)};
+var HAS_SCENECRAFT = ${p.hasAnySceneCraft ? 'true' : 'false'};
+
+// -- Themes --
+var THEMES = {
+  dark: { bg:'#060608', text:'#c8c0b4', muted:'#5a554e', topbarBg:'rgba(0,0,0,0.5)', topbarBorder:'rgba(255,255,255,0.06)', dialogueText:'#d4c090', speakerText:'#a08040', silence:'#2a2620', sceneBorder:'rgba(255,255,255,0.03)' },
+  light: { bg:'#f5f5f0', text:'#3a3530', muted:'#7a756e', topbarBg:'rgba(0,0,0,0.05)', topbarBorder:'rgba(0,0,0,0.1)', dialogueText:'#5a4520', speakerText:'#8a6530', silence:'#bab5ae', sceneBorder:'rgba(0,0,0,0.05)' }
+};
+var isDark = ${p.isDark ? 'true' : 'false'};
+
+function applyTheme() {
+  var t = isDark ? THEMES.dark : THEMES.light;
+  document.body.style.background = t.bg;
+  document.body.style.color = t.text;
+  var topbar = document.getElementById('topbar');
+  topbar.style.background = t.topbarBg;
+  topbar.style.borderBottom = '1px solid ' + t.topbarBorder;
+  var meta = topbar.querySelector('.meta');
+  if (meta) meta.style.color = t.muted;
+  document.getElementById('theme-btn').textContent = isDark ? '\\u2600\\uFE0F' : '\\uD83C\\uDF19';
+  document.querySelectorAll('.dialogue-block').forEach(function(b) { b.style.color = t.dialogueText; });
+  document.querySelectorAll('.speaker-label').forEach(function(s) { s.style.color = t.speakerText; });
+  document.querySelectorAll('.silence').forEach(function(s) { s.style.color = t.silence; });
+  document.querySelectorAll('.section-enter').forEach(function(en) { en.style.borderBottom = '1px solid ' + t.sceneBorder; });
+  document.querySelectorAll('.section-exit').forEach(function(ex) { ex.style.borderTop = '1px solid ' + t.sceneBorder; ex.style.color = scOrangeOn ? 'rgba(255,120,68,0.15)' : t.silence; });
+  document.querySelectorAll('.figure-caption,.figure-missing').forEach(function(el) { el.style.color = t.muted; });
+  document.querySelectorAll('.heading-block').forEach(function(el) { el.style.color = t.text; });
+}
+
+function toggleTheme() { isDark = !isDark; applyTheme(); }
+
+// -- SceneCraft toggle --
+var scOrangeOn = true;
+function toggleScOrange() {
+  scOrangeOn = !scOrangeOn;
+  var ph = document.getElementById('playhead');
+  var si = document.getElementById('scene-info');
+  var sc = document.getElementById('sc-toggle');
+  if (ph) ph.style.display = scOrangeOn ? '' : 'none';
+  if (si) si.style.display = scOrangeOn ? '' : 'none';
+  document.querySelectorAll('.section-enter').forEach(function(en) { en.style.display = scOrangeOn ? '' : 'none'; });
+  if (sc) { var svg = sc.querySelector('svg'); if (svg) svg.style.opacity = scOrangeOn ? '1' : '0.35'; }
+  var t = isDark ? THEMES.dark : THEMES.light;
+  document.querySelectorAll('.section-exit').forEach(function(ex) { ex.style.color = scOrangeOn ? 'rgba(255,120,68,0.15)' : t.silence; });
+}
+
+// -- Lightbox --
+function openLightbox(src) { var lb = document.getElementById('lightbox'); document.getElementById('lb-img').src = src; lb.style.display = 'flex'; }
+function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
+
+// -- Fade engine --
+var DLG_FADE = 0.5;
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function createFadeIn(url, vol, dur, loop) {
+  var a = new Audio(url); a.loop = !!loop; a.volume = 0; a.play().catch(function(){});
+  return { el: a, fadeState: 'in', startTime: Date.now(), duration: dur * 1000, targetVol: vol };
+}
+function createFadeOut(obj, dur) {
+  if (!obj || !obj.el) return null;
+  return { el: obj.el, fadeState: 'out', startTime: Date.now(), duration: dur * 1000, startVol: obj.el.volume };
+}
+function tickFade(obj) {
+  if (!obj || !obj.el) return null;
+  var t = obj.duration > 0 ? clamp((Date.now() - obj.startTime) / obj.duration, 0, 1) : 1;
+  if (obj.fadeState === 'in') { obj.el.volume = t * (obj.targetVol || 1); if (t >= 1) obj.fadeState = 'playing'; }
+  else if (obj.fadeState === 'out') { obj.el.volume = (1 - t) * (obj.startVol || 1); if (t >= 1) { obj.el.pause(); return null; } }
+  return obj;
+}
+function killAudio(obj) { if (obj && obj.el) { obj.el.pause(); obj.el.src = ''; } return null; }
+
+// -- Multi-section animation loop --
+var ambient = null, ambientOut = null, voice = null, voiceOut = null;
+var dlgObj = null, dlgOut = null, activeDlgIdx = -1;
+var activeSectionIdx = -1;
+var playheadY = window.innerHeight * 0.33;
+window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.33; });
+
+var scrollEl = document.getElementById('scroll-wrap');
+var contentEl = document.getElementById('content');
+var blocks = contentEl.querySelectorAll('.sc-pv-block');
+var infoEl = document.getElementById('scene-info');
+var bgEl = document.getElementById('bg-wall');
+
+// Cache section zone elements
+var sectionZones = [];
+for (var i = 0; i < SECTIONS.length; i++) {
+  sectionZones.push({
+    enterEl: document.getElementById('section-enter-' + i),
+    exitEl: document.getElementById('section-exit-' + i)
+  });
+}
+
+function doEnter(si) {
+  if (activeSectionIdx === si) return;
+  if (activeSectionIdx >= 0) doExitCurrent();
+  activeSectionIdx = si;
+  var sec = SECTIONS[si];
+  if (!sec) return;
+  if (infoEl) infoEl.textContent = sec.title;
+  var c = sec.config;
+  if (!c) return;
+  if (sec.wallpaperUri && bgEl) {
+    bgEl.style.backgroundImage = "url('" + sec.wallpaperUri + "')";
+    bgEl.style.backgroundPosition = c.wallpaperPosition;
+    bgEl.style.opacity = String(c.wallpaperOpacity);
+  }
+  ambientOut = killAudio(ambientOut);
+  if (c.ambientFilename && AUDIO_MAP[c.ambientFilename]) {
+    ambient = createFadeIn(AUDIO_MAP[c.ambientFilename], c.ambientVolume, c.fadeIn, c.ambientLoop);
+  }
+  voiceOut = killAudio(voiceOut);
+  if (c.voiceMode === 'narration' && c.narrationFilename && AUDIO_MAP[c.narrationFilename]) {
+    voice = createFadeIn(AUDIO_MAP[c.narrationFilename], c.narrationVolume, c.fadeIn, false);
+  }
+}
+
+function doExitCurrent() {
+  if (activeSectionIdx < 0) return;
+  var sec = SECTIONS[activeSectionIdx];
+  var c = sec ? sec.config : null;
+  var fadeOutDur = c ? c.fadeOut : 3;
+  if (infoEl) infoEl.textContent = '';
+  if (bgEl) bgEl.style.opacity = '0';
+  if (ambient) { ambientOut = createFadeOut(ambient, fadeOutDur); ambient = null; }
+  if (voice) { voiceOut = createFadeOut(voice, fadeOutDur); voice = null; }
+  dlgObj = killAudio(dlgObj);
+  dlgOut = killAudio(dlgOut);
+  activeDlgIdx = -1;
+  activeSectionIdx = -1;
+}
+
+function tick() {
+  ambientOut = tickFade(ambientOut);
+  voiceOut = tickFade(voiceOut);
+  if (ambient && ambient.fadeState === 'in') tickFade(ambient);
+  if (voice && voice.fadeState === 'in') tickFade(voice);
+  dlgObj = tickFade(dlgObj);
+  dlgOut = tickFade(dlgOut);
+
+  blocks.forEach(function(b) {
+    var rect = b.getBoundingClientRect();
+    if (rect.top < playheadY + 100) b.classList.add('sc-pv-vis'); else b.classList.remove('sc-pv-vis');
+    var center = rect.top + rect.height / 2;
+    if (center < playheadY - window.innerHeight * 0.3) b.classList.add('sc-pv-past'); else b.classList.remove('sc-pv-past');
+  });
+
+  var foundSection = -1;
+  for (var si = 0; si < sectionZones.length; si++) {
+    var zone = sectionZones[si];
+    var enterBottom = zone.enterEl ? zone.enterEl.getBoundingClientRect().bottom : 0;
+    var exitTop = zone.exitEl ? zone.exitEl.getBoundingClientRect().top : window.innerHeight;
+    if (enterBottom <= playheadY && exitTop > playheadY) {
+      foundSection = si;
+      break;
+    }
+  }
+
+  if (foundSection >= 0) {
+    doEnter(foundSection);
+  } else if (activeSectionIdx >= 0) {
+    doExitCurrent();
+  }
+
+  if (activeSectionIdx >= 0) {
+    var sec = SECTIONS[activeSectionIdx];
+    var c = sec ? sec.config : null;
+    if (c && c.voiceMode === 'dialogue') {
+      var currentDlg = -1;
+      blocks.forEach(function(b) {
+        var r = b.getBoundingClientRect();
+        var di = parseInt(b.dataset.idx || '-1', 10);
+        var ds = parseInt(b.dataset.sec || '-1', 10);
+        if (ds === activeSectionIdx && r.top < playheadY && r.bottom > playheadY && sec.dialogueElements[di]) currentDlg = di;
+      });
+      if (currentDlg !== activeDlgIdx) {
+        if (dlgObj && dlgObj.el) { dlgOut = killAudio(dlgOut); dlgOut = createFadeOut(dlgObj, DLG_FADE); dlgObj = null; }
+        activeDlgIdx = currentDlg;
+        if (currentDlg >= 0 && c.dialogueClips && c.dialogueClips[currentDlg]) {
+          var clip = c.dialogueClips[currentDlg];
+          if (clip.filename && AUDIO_MAP[clip.filename]) {
+            dlgObj = createFadeIn(AUDIO_MAP[clip.filename], clip.volume || c.dialogueVolume, DLG_FADE, false);
+          }
+        }
+      }
+    }
+  }
+
+  requestAnimationFrame(tick);
+}
+
+// -- Init --
+scrollEl.scrollTop = 0;
+applyTheme();
+requestAnimationFrame(tick);
+<\/script>
+</body>
+</html>`;
+}
+
+// ============================================================
 //  Default config factory
 // ============================================================
 
@@ -330,6 +743,94 @@ export default function FullBookView({
 
   // Enlarged image lightbox
   const [enlargedImg, setEnlargedImg] = useState<string | null>(null);
+
+  // ── Download state ────────────────────────────────────────
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = useCallback(async () => {
+    setDownloading(true);
+    Swal.fire({
+      title: 'Processing...',
+      text: 'Preparing standalone HTML download...',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => { Swal.showLoading(); },
+    });
+    try {
+      // Resolve inline images to data URIs
+      const imageMap = new Map<string, string>();
+      for (const section of parsedSections) {
+        for (const el of section.elements) {
+          if (el.imgSrc && !imageMap.has(el.imgSrc)) {
+            const fn = el.imgSrc.replace(/^(\.\.\/)*images\//, '');
+            const blobUrl = imageUrls.get(fn) || imageUrls.get(el.imgSrc);
+            if (blobUrl) {
+              try { imageMap.set(el.imgSrc, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+            }
+          }
+        }
+      }
+
+      // Resolve wallpapers to data URIs
+      const wallpaperUris = new Map<number, string>();
+      for (let si = 0; si < parsedSections.length; si++) {
+        const c = parsedSections[si]!.config;
+        if (c?.wallpaperFilename) {
+          const blobUrl = imageUrls.get(c.wallpaperFilename);
+          if (blobUrl) {
+            try { wallpaperUris.set(si, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+          }
+        }
+      }
+
+      // Resolve audio to data URIs
+      const audioMap = new Map<string, string>();
+      for (const section of parsedSections) {
+        const c = section.config;
+        if (!c) continue;
+        const audioFiles: string[] = [];
+        if (c.ambientFilename) audioFiles.push(c.ambientFilename);
+        if (c.narrationFilename) audioFiles.push(c.narrationFilename);
+        if (c.dialogueClips) {
+          Object.values(c.dialogueClips).forEach(clip => {
+            if (clip.filename) audioFiles.push(clip.filename);
+          });
+        }
+        for (const fn of audioFiles) {
+          if (!audioMap.has(fn)) {
+            const blobUrl = audioUrls.get(fn);
+            if (blobUrl) {
+              try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+            }
+          }
+        }
+      }
+
+      const html = buildFullBookHtml({
+        sections: parsedSections,
+        bookTitle: bookTitle || 'Untitled',
+        bookAuthor: bookAuthor || '',
+        imageMap,
+        audioMap,
+        wallpaperUris,
+        hasAnySceneCraft,
+        isDark: !pvLight,
+      });
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(bookTitle || 'book').replace(/[^a-zA-Z0-9_\- ]/g, '').trim()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      Swal.close();
+      setDownloading(false);
+    }
+  }, [parsedSections, imageUrls, audioUrls, bookTitle, bookAuthor, hasAnySceneCraft, pvLight]);
 
   // Resolve inline image src (e.g. "images/photo.jpg") to blob URL
   const resolveImgSrc = useCallback((src: string | undefined): string | undefined => {
@@ -596,6 +1097,13 @@ export default function FullBookView({
                 </svg>
               </button>
             )}
+            {/* Download button */}
+            <button onClick={handleDownload} disabled={downloading}
+              title="Download as standalone HTML"
+              style={{ background: 'none', border: 'none', fontSize: '11px', cursor: downloading ? 'default' : 'pointer',
+                padding: '4px 8px', color: downloading ? '#666' : pvMuted, letterSpacing: '0.05em' }}>
+              {downloading ? 'Preparing...' : 'Download'}
+            </button>
           </div>
           {/* Book metadata */}
           <span style={{ fontSize: '13px', color: pvMuted, letterSpacing: '0.05em' }}>
