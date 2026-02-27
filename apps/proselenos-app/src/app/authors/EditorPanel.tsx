@@ -11,7 +11,6 @@ import OneByOnePanel from './OneByOnePanel';
 import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
 import AudioPickerModal from './AudioPickerModal';
-// import SectionPreview from './SectionPreview';  // replaced by SingleChapterView
 import SceneCraftModal from './SceneCraftModal';
 import SingleChapterView from './SingleChapterView';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
@@ -229,9 +228,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Audio picker state
   const [showAudioPicker, setShowAudioPicker] = useState(false);
-
-  // Preview state (old inline SectionPreview — replaced by SingleChapterView)
-  // const [showPreview, setShowPreview] = useState(false);
 
   // SingleChapterView immersive preview state
   const [showChapterView, setShowChapterView] = useState(false);
@@ -641,21 +637,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           {isSaving ? 'Saved' : 'Save'}
         </StyledSmallButton>
 
-        {/* OLD Preview button (inline SectionPreview) — replaced by SingleChapterView */}
-        {/* <StyledSmallButton
-          theme={theme}
-          onClick={() => setShowPreview(!showPreview)}
-          title={showPreview ? "Close preview" : "Preview section as EPUB"}
-          disabled={toolExecuting}
-          styleOverrides={{
-            backgroundColor: showPreview ? '#6366f1' : undefined,
-            color: showPreview ? 'white' : undefined,
-          }}
-        >
-          {showPreview ? 'Edit' : 'Preview'}
-        </StyledSmallButton> */}
-
-        {/* NEW: Preview via SingleChapterView */}
+        {/* Preview via SingleChapterView */}
         <StyledSmallButton
           theme={theme}
           onClick={() => setShowChapterView(true)}
@@ -808,22 +790,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           padding: '4px',
         }}
       >
-        {/* OLD: SectionPreview ternary — replaced by SingleChapterView overlay */}
-        {/* {showPreview ? (
-          <SectionPreview
-            xhtml={(() => {
-              if (!editor) return '';
-              const plateValue = editor.children as Value;
-              return plateToXhtml(plateValue);
-            })()}
-            sectionId={sectionId}
-            sectionTitle={chapterTitle}
-            onClose={() => setShowPreview(false)}
-            theme={theme}
-            isDarkMode={isDarkMode}
-            sectionType={sectionType}
-          />
-        ) : ( ... )} */}
         <Plate
           editor={editor}
           onChange={handleEditorChange}
