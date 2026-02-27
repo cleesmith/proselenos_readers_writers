@@ -354,18 +354,39 @@ export default function SceneCraftModal({
     return getImageUrl(fn) || src;
   };
 
-  // ── Restore config from props on open / sectionId change ───
+  // ── Reset selection on open / section change (not on config round-trips) ──
   useEffect(() => {
     if (isOpen) {
-      if (sceneCraftConfig) {
-        setConfig({ ...createDefaultConfig(), ...sceneCraftConfig });
-      } else {
-        setConfig(createDefaultConfig());
-      }
       setSelectedIdx(-1);
       setShowPreview(false);
     }
-  }, [isOpen, sectionId, sceneCraftConfig]);
+  }, [isOpen, sectionId]);
+
+  // ── Restore config from props + clean stale clips ─────────
+  useEffect(() => {
+    if (isOpen) {
+      const restored = sceneCraftConfig
+        ? { ...createDefaultConfig(), ...sceneCraftConfig }
+        : createDefaultConfig();
+      // Clean stale dialogueClips whose index no longer points to a dialogue element
+      if (restored.dialogueClips && Object.keys(restored.dialogueClips).length > 0) {
+        const cleaned = { ...restored.dialogueClips };
+        let changed = false;
+        for (const key of Object.keys(cleaned)) {
+          const idx = Number(key);
+          if (elements[idx]?.type !== 'dialogue') {
+            delete cleaned[idx];
+            changed = true;
+          }
+        }
+        if (changed) {
+          restored.dialogueClips = cleaned;
+          onConfigChange(restored);
+        }
+      }
+      setConfig(restored);
+    }
+  }, [isOpen, sectionId, sceneCraftConfig, elements, onConfigChange]);
 
   // ── Config updater (updates state + notifies parent) ──────
   const updateConfig = useCallback((partial: Partial<SceneCraftConfig>) => {
@@ -405,14 +426,14 @@ export default function SceneCraftModal({
       updateConfig({ narrationFilename: filename });
     } else if (audioPickerTarget.startsWith('dialogue-')) {
       const idx = parseInt(audioPickerTarget.replace('dialogue-', ''), 10);
-      if (!isNaN(idx)) {
+      if (!isNaN(idx) && elements[idx]?.type === 'dialogue') {
         const newClips = { ...config.dialogueClips };
         newClips[idx] = { filename, volume: config.dialogueVolume };
         updateConfig({ dialogueClips: newClips });
       }
     }
     setShowAudioPicker(false);
-  }, [audioPickerTarget, config.dialogueClips, config.dialogueVolume, updateConfig]);
+  }, [audioPickerTarget, config.dialogueClips, config.dialogueVolume, elements, updateConfig]);
 
   // ── Preview refs (imperative audio) ───────────────────────
   const pvRAF = useRef<number | null>(null);
@@ -721,7 +742,7 @@ export default function SceneCraftModal({
   // ── Render: Structure Panel items ─────────────────────────
   function renderStructureItem(item: SceneCraftElement, i: number) {
     const isSel = selectedIdx === i;
-    const hasClip = config.voiceMode === 'dialogue' && !!config.dialogueClips[i];
+    const hasClip = config.voiceMode === 'dialogue' && item.type === 'dialogue' && !!config.dialogueClips[i];
 
     return (
       <div
