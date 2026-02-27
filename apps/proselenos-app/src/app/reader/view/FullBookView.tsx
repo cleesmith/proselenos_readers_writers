@@ -1134,8 +1134,13 @@ export default function FullBookView({
             {/* Download button */}
             <button onClick={handleDownload} disabled={downloading}
               title="Download as standalone HTML"
-              style={{ background: 'none', border: 'none', fontSize: '11px', cursor: downloading ? 'default' : 'pointer',
-                padding: '4px 8px', color: downloading ? '#666' : pvMuted, letterSpacing: '0.05em' }}>
+              style={{
+                fontSize: '11px', cursor: downloading ? 'default' : 'pointer',
+                padding: '4px 8px', letterSpacing: '0.05em', borderRadius: '4px',
+                backgroundColor: downloading ? '#6c757d' : 'rgba(34,197,94,0.15)',
+                border: `1px solid ${downloading ? '#6c757d' : 'rgba(34,197,94,0.3)'}`,
+                color: downloading ? '#999' : '#22c55e',
+              }}>
               {downloading ? 'Preparing...' : 'Download'}
             </button>
           </div>
