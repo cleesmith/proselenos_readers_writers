@@ -760,6 +760,22 @@ export default function FullBookView({
     [parsedSections],
   );
 
+  // ── Title → section-index lookup (for clickable TOC entries) ──
+  const titleToSectionIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let si = 0; si < parsedSections.length; si++) {
+      const t = parsedSections[si]!.title.trim();
+      if (t) map.set(t, si);
+    }
+    return map;
+  }, [parsedSections]);
+
+  // ── Scroll to a section by index ──
+  const scrollToSection = useCallback((sectionIndex: number) => {
+    const el = document.getElementById(`section-enter-${sectionIndex}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   // Enlarged image lightbox
   const [enlargedImg, setEnlargedImg] = useState<string | null>(null);
 
@@ -1195,9 +1211,12 @@ export default function FullBookView({
                 {/* Section enter label */}
                 <div id={`section-enter-${si}`} style={{
                   textAlign: 'center', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
-                  color: 'rgba(255,120,68,0.25)', marginBottom: '3em', paddingBottom: '1em',
-                  borderBottom: `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}`,
-                  display: showScOrange ? undefined : 'none',
+                  color: 'rgba(255,120,68,0.25)',
+                  marginBottom: showScOrange ? '3em' : 0,
+                  paddingBottom: showScOrange ? '1em' : 0,
+                  borderBottom: showScOrange ? `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}` : 'none',
+                  height: showScOrange ? undefined : 0,
+                  overflow: showScOrange ? undefined : 'hidden',
                 }}>
                   {section.title}
                 </div>
@@ -1379,6 +1398,22 @@ export default function FullBookView({
                     );
                   }
                   if (item.type === 'para') {
+                    const tocTarget = titleToSectionIndex.get(item.text.trim());
+                    if (tocTarget !== undefined) {
+                      return (
+                        <div key={i} className="sc-pv-block" data-idx={item.idx} data-sec={si}
+                          onClick={() => scrollToSection(tocTarget)}
+                          style={{
+                            marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
+                            transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
+                            cursor: 'pointer', textDecoration: 'underline', textDecorationColor: pvMuted,
+                            textUnderlineOffset: '3px',
+                          }}
+                        >
+                          {item.text}
+                        </div>
+                      );
+                    }
                     return (
                       <div key={i} className="sc-pv-block" data-idx={item.idx} data-sec={si} style={{
                         marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
