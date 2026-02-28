@@ -25,6 +25,7 @@ interface SceneCraftElement {
   imgSrc?: string;
   caption?: string;
   audioSrc?: string;
+  width?: string;
   idx: number;
 }
 
@@ -99,11 +100,14 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
       if (tag === 'figure') {
         const img = node.querySelector('img');
         const figcaption = node.querySelector('figcaption');
+        const styleAttr = node.getAttribute('style') || '';
+        const widthMatch = styleAttr.match(/(?:^|;)\s*width\s*:\s*([^;]+)/);
         elements.push({
           type: 'figure',
           text: figcaption?.textContent?.trim() || img?.getAttribute('alt') || 'Image',
           alt: img?.getAttribute('alt') || undefined,
           imgSrc: img?.getAttribute('src') || undefined,
+          width: widthMatch?.[1]?.trim() || undefined,
           idx: idx++,
         });
         continue;
@@ -278,6 +282,13 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
     dialogueElements: Record<number, { type: string; speaker?: string }>;
   }> = [];
 
+  // Title → section-index lookup for TOC links (mirrors React titleToSectionIndex)
+  const titleToSectionMap = new Map<string, number>();
+  for (let i = 0; i < p.sections.length; i++) {
+    const t = p.sections[i]!.title.trim();
+    if (t) titleToSectionMap.set(t, i);
+  }
+
   for (let si = 0; si < p.sections.length; si++) {
     const section = p.sections[si]!;
 
@@ -316,7 +327,7 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
       } else if (el.type === 'figure') {
         const imgSrc = el.imgSrc ? (p.imageMap.get(el.imgSrc) || el.imgSrc) : '';
         if (imgSrc) {
-          allBlocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}" data-sec="${si}"><img src="${imgSrc}" alt="${esc(el.alt || el.text)}" class="figure-img" onclick="openLightbox(this.src)" /><span class="figure-caption">${esc(el.alt || el.text)}</span></div>\n`;
+          allBlocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}" data-sec="${si}"><img src="${imgSrc}" alt="${esc(el.alt || el.text)}" class="figure-img" style="width:100%${el.width ? `;max-width:${el.width}` : ''}" onclick="openLightbox(this.src)" /><span class="figure-caption">${esc(el.alt || el.text)}</span></div>\n`;
         } else {
           allBlocksHtml += `<div class="sc-pv-block figure-block" data-idx="${idx}" data-sec="${si}"><span class="figure-missing">[${esc(el.alt || el.text)}]</span></div>\n`;
         }
@@ -335,7 +346,12 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
       } else if (el.type === 'linebreak') {
         allBlocksHtml += `<div class="sc-pv-block linebreak-block" data-idx="${idx}" data-sec="${si}"></div>\n`;
       } else if (el.type === 'para') {
-        allBlocksHtml += `<div class="sc-pv-block para-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+        const tocTarget = titleToSectionMap.get(el.text.trim());
+        if (tocTarget !== undefined) {
+          allBlocksHtml += `<a class="sc-pv-block para-block toc-link" href="#section-enter-${tocTarget}" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</a>\n`;
+        } else {
+          allBlocksHtml += `<div class="sc-pv-block para-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+        }
       }
     }
 
@@ -392,7 +408,7 @@ body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35re
 #scene-info{position:fixed;right:16px;top:calc(33% - 14px);font-size:9px;letter-spacing:0.12em;color:rgba(255,120,68,0.35);z-index:10;pointer-events:none}
 #bg-wall{position:fixed;inset:0;background-size:cover;background-repeat:no-repeat;opacity:0;transition:opacity 1.5s ease;z-index:0;pointer-events:none}
 #scroll-wrap{flex:1;overflow-y:auto;position:relative}
-#content{max-width:34rem;margin:0 auto;padding:50vh 2rem}
+#content{padding:50vh 10vw}
 .dead-zone-top{height:50vh;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2rem}
 .silence{font-size:10px;letter-spacing:0.15em;font-style:italic;transition:color 0.3s}
 .section-enter{text-align:center;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,120,68,0.25);margin-bottom:3em;padding-bottom:1em;transition:border-color 0.3s}
@@ -411,7 +427,8 @@ body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35re
 .quote-block{border-left:2px solid rgba(200,192,180,0.3);padding-left:1.5em}
 .internal-block{font-style:italic;padding-left:2em}
 .break-block{text-align:center;letter-spacing:0.3em;color:#3a3530}
-.figure-img{max-width:260px;border-radius:4px;opacity:0.9;display:block;cursor:zoom-in}
+.toc-link{display:block;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:inherit}
+.figure-img{width:100%;border-radius:4px;opacity:0.9;display:block;cursor:zoom-in}
 .figure-caption{font-family:'SF Mono',monospace;font-size:0.55em;letter-spacing:0.06em;margin-top:0.4em;display:block;transition:color 0.3s}
 .figure-missing{font-style:italic;font-size:0.8em;transition:color 0.3s}
 .heading-block{font-weight:bold;font-family:Georgia,"Times New Roman",serif;transition:color 0.3s}
@@ -1196,7 +1213,7 @@ export default function FullBookView({
         {/* Scrollable content */}
         <div ref={pvScrollRef} style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
           <div ref={pvContentRef} style={{
-            maxWidth: '34rem', margin: '0 auto', padding: '50vh 2rem',
+            padding: '50vh 10vw',
             fontFamily: "Georgia, 'EB Garamond', serif",
             fontSize: 'clamp(1.1rem, 2.2vw, 1.35rem)', lineHeight: 2, color: pvText,
           }}>
@@ -1333,7 +1350,7 @@ export default function FullBookView({
                         {item.imgSrc ? (
                           <>
                             {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/no-noninteractive-element-interactions */}
-                            <img src={resolveImgSrc(item.imgSrc)} alt={item.alt || item.text} style={{ maxWidth: '260px', borderRadius: '4px', opacity: 0.9, display: 'block', cursor: 'zoom-in' }}
+                            <img src={resolveImgSrc(item.imgSrc)} alt={item.alt || item.text} style={{ width: '100%', ...(item.width ? { maxWidth: item.width } : {}), borderRadius: '4px', opacity: 0.9, display: 'block', cursor: 'zoom-in' }}
                               onClick={() => setEnlargedImg(resolveImgSrc(item.imgSrc!) || null)} />
                             <span style={{ fontFamily: "'SF Mono', monospace", fontSize: '0.55em', color: '#5a554e', letterSpacing: '0.06em', marginTop: '0.4em', display: 'block' }}>
                               {item.alt || item.text}

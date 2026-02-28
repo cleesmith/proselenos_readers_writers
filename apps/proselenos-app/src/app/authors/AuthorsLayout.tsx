@@ -2140,16 +2140,6 @@ export default function AuthorsLayout({
             ref={editorPanelRef}
             theme={theme}
             isDarkMode={isDarkMode}
-            bookTitle={epub?.title ?? ''}
-            bookAuthor={epub?.author ?? ''}
-            bookCopyright={(() => {
-              const crSection = epub?.sections.find(s => s.type === 'copyright');
-              if (crSection?.xhtml) {
-                const m = crSection.xhtml.match(/©\s*([\d]{4}(?:\s*[-–]\s*\d{4})?)/);
-                if (m) return `© ${m[1]}`;
-              }
-              return `© ${new Date().getFullYear()}`;
-            })()}
             onToggleSidebar={onToggleSidebar}
             onSave={saveCurrentSection}
             onAIWritingClick={async () => { await saveCurrentSection(); onAIWritingClick(); }}

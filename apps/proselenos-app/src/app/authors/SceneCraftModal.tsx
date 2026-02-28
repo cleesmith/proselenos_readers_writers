@@ -24,6 +24,7 @@ interface SceneCraftElement {
   imgSrc?: string;
   caption?: string;
   audioSrc?: string;
+  width?: string;
   idx: number;
 }
 
@@ -118,11 +119,14 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
       if (tag === 'figure') {
         const img = node.querySelector('img');
         const figcaption = node.querySelector('figcaption');
+        const styleAttr = node.getAttribute('style') || '';
+        const widthMatch = styleAttr.match(/(?:^|;)\s*width\s*:\s*([^;]+)/);
         elements.push({
           type: 'figure',
           text: figcaption?.textContent?.trim() || img?.getAttribute('alt') || 'Image',
           alt: img?.getAttribute('alt') || undefined,
           imgSrc: img?.getAttribute('src') || undefined,
+          width: widthMatch?.[1]?.trim() || undefined,
           idx: idx++,
         });
         continue;
@@ -794,6 +798,11 @@ export default function SceneCraftModal({
         {item.type === 'figure' && (
           <div style={{ fontSize: '9px', color: 'var(--sc-td)', fontStyle: 'italic' }}>
             [{item.alt || item.text}]
+            {item.width && (
+              <>{' '}<span style={{ color: '#6a9ac8', fontStyle: 'normal' }}>
+                w:{item.width}
+              </span></>
+            )}
           </div>
         )}
         {item.type === 'audio' && (
@@ -1342,7 +1351,7 @@ export default function SceneCraftModal({
         {/* Scrollable content */}
         <div ref={pvScrollRef} style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
           <div ref={pvContentRef} style={{
-            maxWidth: '34rem', margin: '0 auto', padding: '50vh 2rem',
+            padding: '50vh 10vw',
             fontFamily: "Georgia, 'EB Garamond', serif",
             fontSize: 'clamp(1.1rem, 2.2vw, 1.35rem)', lineHeight: 2, color: '#c8c0b4',
           }}>
@@ -1472,7 +1481,7 @@ export default function SceneCraftModal({
                     {item.imgSrc ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={resolveImgSrc(item.imgSrc)} alt={item.alt || item.text} style={{ maxWidth: '260px', borderRadius: '4px', opacity: 0.9, display: 'block' }} />
+                        <img src={resolveImgSrc(item.imgSrc)} alt={item.alt || item.text} style={{ width: '100%', ...(item.width ? { maxWidth: item.width } : {}), borderRadius: '4px', opacity: 0.9, display: 'block' }} />
                         <span style={{ fontFamily: "'SF Mono', monospace", fontSize: '0.55em', color: '#5a554e', letterSpacing: '0.06em', marginTop: '0.4em', display: 'block' }}>
                           {item.alt || item.text}
                         </span>

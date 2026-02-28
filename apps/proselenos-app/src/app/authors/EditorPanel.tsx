@@ -12,7 +12,6 @@ import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
 import AudioPickerModal from './AudioPickerModal';
 import SceneCraftModal from './SceneCraftModal';
-import SingleChapterView from './SingleChapterView';
 import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { ImageLibraryProvider } from '@/contexts/ImageLibraryContext';
 import { AudioLibraryProvider } from '@/contexts/AudioLibraryContext';
@@ -117,9 +116,6 @@ interface EditorPanelProps {
   getImageUrl?: (filename: string) => string | null;
   getAudioUrl?: (filename: string) => Promise<string | null>;
   // Book metadata (for preview display)
-  bookTitle?: string;
-  bookAuthor?: string;
-  bookCopyright?: string;
 }
 
 // Ref handle for parent to control editor
@@ -193,10 +189,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   onSceneCraftConfigChange,
   getImageUrl,
   getAudioUrl,
-  // Book metadata
-  bookTitle,
-  bookAuthor,
-  bookCopyright,
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
@@ -228,9 +220,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 
   // Audio picker state
   const [showAudioPicker, setShowAudioPicker] = useState(false);
-
-  // SingleChapterView immersive preview state
-  const [showChapterView, setShowChapterView] = useState(false);
 
   // SceneCraft modal state
   const [showSceneCraft, setShowSceneCraft] = useState(false);
@@ -637,16 +626,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           {isSaving ? 'Saved' : 'Save'}
         </StyledSmallButton>
 
-        {/* Preview via SingleChapterView */}
-        <StyledSmallButton
-          theme={theme}
-          onClick={() => setShowChapterView(true)}
-          title="Immersive chapter preview"
-          disabled={toolExecuting}
-        >
-          Preview
-        </StyledSmallButton>
-
         {/* SceneCraft button */}
         <StyledSmallButton
           theme={theme}
@@ -901,24 +880,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         isDarkMode={isDarkMode}
       />
 
-      {/* SingleChapterView immersive preview overlay */}
-      <SingleChapterView
-        isOpen={showChapterView}
-        onClose={() => setShowChapterView(false)}
-        sectionTitle={chapterTitle}
-        sectionXhtml={(() => {
-          if (!editor) return '';
-          const plateValue = editor.children as Value;
-          return plateToXhtml(plateValue);
-        })()}
-        sceneCraftConfig={sceneCraftConfig ?? null}
-        getImageUrl={getImageUrl ?? (() => null)}
-        getAudioUrl={getAudioUrl ?? (async () => null)}
-        bookTitle={bookTitle ?? ''}
-        bookAuthor={bookAuthor ?? ''}
-        bookCopyright={bookCopyright ?? ''}
-        theme={theme}
-      />
     </main>
     </AudioLibraryProvider>
     </ImageLibraryProvider>

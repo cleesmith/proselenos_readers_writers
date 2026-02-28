@@ -1078,6 +1078,7 @@ interface ScElement {
   imgSrc?: string;
   audioSrc?: string;
   style?: string;
+  width?: string;
   idx: number;
 }
 
@@ -1123,9 +1124,12 @@ function parseSceneElements(xhtml: string): ScElement[] {
       if (tag === 'figure') {
         const img = node.querySelector('img');
         const figcaption = node.querySelector('figcaption');
+        const styleAttr = node.getAttribute('style') || '';
+        const widthMatch = styleAttr.match(/(?:^|;)\s*width\s*:\s*([^;]+)/);
         elements.push({
           type: 'figure', text: figcaption?.textContent?.trim() || img?.getAttribute('alt') || 'Image',
-          alt: img?.getAttribute('alt') || undefined, imgSrc: img?.getAttribute('src') || undefined, idx: idx++,
+          alt: img?.getAttribute('alt') || undefined, imgSrc: img?.getAttribute('src') || undefined,
+          width: widthMatch?.[1]?.trim() || undefined, idx: idx++,
         });
         continue;
       }
@@ -1305,7 +1309,7 @@ ${textLines}
       if (item.imgSrc && mediaDataUrls) {
         const url = mediaDataUrls[item.imgSrc] || mediaDataUrls[`images/${item.imgSrc?.replace(/^(\.\.\/)?images\//, '')}`];
         if (url) {
-          imgTag = `<img src="${url}" alt="${escapeHtml(item.alt || item.text)}" style="max-width:260px;border-radius:4px;opacity:0.9;display:block"/>
+          imgTag = `<img src="${url}" alt="${escapeHtml(item.alt || item.text)}" style="max-width:${item.width || '260px'};border-radius:4px;opacity:0.9;display:block"/>
           <span style="font-family:'SF Mono',monospace;font-size:0.55em;color:#5a554e;letter-spacing:0.06em;margin-top:0.4em;display:block">${escapeHtml(item.alt || item.text)}</span>`;
         }
       }
