@@ -334,9 +334,9 @@ export default function SceneCraftPreview({
           let currentStickyIdx = -1;
           const stickyContainers = pvScrollRef.current?.querySelectorAll('.sc-pv-sticky') ?? [];
           stickyContainers.forEach((sc: Element) => {
-            const r = sc.getBoundingClientRect();
             const dataIdx = parseInt((sc as HTMLElement).dataset.stickyIdx || '-1', 10);
-            if (r.top < playheadY && r.bottom > playheadY) {
+            // Only trigger audio when at least one text block inside is visible
+            if (sc.querySelector('.sc-pv-block.sc-pv-vis')) {
               currentStickyIdx = dataIdx;
             }
           });

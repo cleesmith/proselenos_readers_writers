@@ -423,7 +423,7 @@ body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35re
 .sc-pv-block.sc-pv-past{opacity:0.3!important}
 .dialogue-block .speaker-label{font-family:'SF Mono','Fira Code',monospace;font-size:0.65em;letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:0.3em;transition:color 0.3s}
 .sticky-wrap{display:flex;gap:1.5em;align-items:flex-start;min-height:300px;margin-bottom:1.6em;position:relative;z-index:2}
-.sticky-img-wrap{position:sticky;top:33vh;width:40%;flex-shrink:0;cursor:zoom-in}
+.sticky-img-wrap{position:sticky;top:0;width:40%;flex-shrink:0;cursor:zoom-in}
 .sticky-img{width:100%;border-radius:4px;opacity:0.9;display:block}
 .sticky-caption{font-size:0.75em;text-align:center;font-style:italic;opacity:0.6;margin:0.4em 0 0}
 .sticky-text-col{flex:1;display:flex;flex-direction:column;gap:1em}
@@ -1228,10 +1228,10 @@ export default function FullBookView({
             let currentStickyIdx = -1;
             const stickyContainers = contentEl!.querySelectorAll('.sc-pv-sticky');
             stickyContainers.forEach((sc: Element) => {
-              const r = sc.getBoundingClientRect();
               const dataIdx = parseInt((sc as HTMLElement).dataset.stickyIdx || '-1', 10);
               const dataSec = parseInt((sc as HTMLElement).dataset.sec || '-1', 10);
-              if (dataSec === activeSectionIdx && r.top < playheadY && r.bottom > playheadY) {
+              // Only trigger audio when section matches and at least one text block is visible
+              if (dataSec === activeSectionIdx && sc.querySelector('.sc-pv-block.sc-pv-vis')) {
                 currentStickyIdx = dataIdx;
               }
             });
@@ -1449,7 +1449,7 @@ export default function FullBookView({
                       }}>
                         {item.imgSrc && (
                           <div style={{
-                            position: 'sticky', top: '33vh',
+                            position: 'sticky', top: 0,
                             width: '40%', flexShrink: 0,
                             cursor: 'zoom-in',
                           }} onClick={() => setEnlargedImg(resolveImgSrc(item.imgSrc!) || null)}>
@@ -1464,7 +1464,7 @@ export default function FullBookView({
                             )}
                           </div>
                         )}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em', paddingTop: '30vh' }}>
                           {lines.map((line, li) => (
                             <div key={li} className="sc-pv-block" data-idx={item.idx} data-sec={si} style={{
                               opacity: 0, transform: 'translateY(16px)',

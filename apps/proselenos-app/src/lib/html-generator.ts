@@ -660,7 +660,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
 }
 .sc-scene .sc-block-sticky .sc-sticky-img {
   position: sticky;
-  top: 33vh;
+  top: 0;
   width: 40%;
   flex-shrink: 0;
 }
@@ -680,6 +680,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   display: flex;
   flex-direction: column;
   gap: 1em;
+  padding-top: 30vh;
 }
 body.sc-overlay-hidden .sc-playhead,
 body.sc-overlay-hidden .sc-playhead-dot,
@@ -912,9 +913,9 @@ const SCENECRAFT_JS = `
             var currentStk = -1;
             for (var swi = 0; swi < s.stickyWraps.length; swi++) {
               var sw = s.stickyWraps[swi];
-              var sr = sw.getBoundingClientRect();
               var sIdx = parseInt(sw.dataset.idx || '-1', 10);
-              if (sr.top < playheadY && sr.bottom > playheadY) {
+              // Only trigger audio when at least one text block inside is visible
+              if (sw.querySelector('.sc-block.sc-vis')) {
                 currentStk = sIdx;
               }
             }
