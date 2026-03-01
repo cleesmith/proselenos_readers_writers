@@ -1,32 +1,24 @@
 // app/authors/SceneCraftModal.tsx
+
 // SceneCraft — scroll-driven immersive storytelling editor
+
 // Full-viewport modal that parses scene XHTML into elements, lets authors
-// attach audio/images/voice, and provides a scroll-driven preview.
+// attach audio/images/voice. Preview rendering is in SceneCraftPreview.
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { SceneCraftConfig } from '@/services/manuscriptStorage';
 import ImagePickerModal from './ImagePickerModal';
 import AudioPickerModal from './AudioPickerModal';
 import { ThemeConfig } from '../shared/theme';
+import SceneCraftPreview from '@/components/SceneCraftPreview';
+import type { SceneCraftElement } from '@/components/SceneCraftPreview';
+import { parseSceneXhtml } from '@/components/HtmlRenderEngine';
 
 // ============================================================
 //  Types
 // ============================================================
-
-interface SceneCraftElement {
-  type: 'sticky' | 'figure' | 'dialogue' | 'emphasis' | 'quote' | 'internal' | 'break' | 'para' | 'h1' | 'h2' | 'h3' | 'divider' | 'linebreak' | 'audio';
-  text: string;
-  speaker?: string;
-  direction?: string;
-  alt?: string;
-  imgSrc?: string;
-  caption?: string;
-  audioSrc?: string;
-  width?: string;
-  idx: number;
-}
 
 interface ImageInfo {
   filename: string;
@@ -64,200 +56,6 @@ interface SceneCraftModalProps {
 }
 
 // ============================================================
-//  HTML Parser: XHTML → SceneCraftElement[]
-// ============================================================
-
-function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
-  if (!xhtml || !xhtml.trim()) return [];
-
-  const parser = new DOMParser();
-  // Wrap in a root so DOMParser can handle fragments
-  const doc = parser.parseFromString(`<div>${xhtml}</div>`, 'text/html');
-  const root = doc.body.firstElementChild;
-  if (!root) return [];
-
-  const elements: SceneCraftElement[] = [];
-  let idx = 0;
-
-  function walkChildren(parent: Element) {
-    for (let i = 0; i < parent.children.length; i++) {
-      const node = parent.children[i];
-      if (!node) continue;
-      const tag = node.tagName.toLowerCase();
-      const cls = node.className || '';
-
-      // Sticky wrap
-      if (tag === 'div' && cls.includes('sticky-wrap')) {
-        const paragraphs: string[] = [];
-        const textDiv = node.querySelector('.sticky-text');
-        const pSource = textDiv || node;
-        for (let j = 0; j < pSource.children.length; j++) {
-          const child = pSource.children[j];
-          if (!child) continue;
-          if (child.tagName.toLowerCase() === 'p') {
-            const text = (child.textContent || '').trim();
-            if (text) paragraphs.push(text);
-          }
-        }
-        const img = node.querySelector('img.sticky-img');
-        const imgSrc = img?.getAttribute('src') || undefined;
-        const captionEl = node.querySelector('.sticky-caption');
-        const caption = captionEl?.textContent?.trim() || undefined;
-        if (paragraphs.length > 0 || imgSrc) {
-          elements.push({
-            type: 'sticky',
-            text: paragraphs.join('\n\n'),
-            imgSrc,
-            caption,
-            idx: idx++,
-          });
-        }
-        continue;
-      }
-
-      // Figure
-      if (tag === 'figure') {
-        const img = node.querySelector('img');
-        const figcaption = node.querySelector('figcaption');
-        const styleAttr = node.getAttribute('style') || '';
-        const widthMatch = styleAttr.match(/(?:^|;)\s*width\s*:\s*([^;]+)/);
-        elements.push({
-          type: 'figure',
-          text: figcaption?.textContent?.trim() || img?.getAttribute('alt') || 'Image',
-          alt: img?.getAttribute('alt') || undefined,
-          imgSrc: img?.getAttribute('src') || undefined,
-          width: widthMatch?.[1]?.trim() || undefined,
-          idx: idx++,
-        });
-        continue;
-      }
-
-      // Dialogue div
-      if (tag === 'div' && cls.includes('dialogue')) {
-        const speakerEl = node.querySelector('.speaker, span[class*="speaker"]');
-        let speaker = 'unknown';
-        let direction = '';
-        if (speakerEl) {
-          const speakerText = (speakerEl.textContent || '').trim();
-          // Parse "VAPO (retrospective)" pattern
-          const match = speakerText.match(/^([^(]+?)(?:\s*\(([^)]+)\))?:?\s*$/);
-          if (match) {
-            speaker = (match[1] || '').trim().toLowerCase();
-            direction = (match[2] || '').trim();
-          } else {
-            speaker = speakerText.replace(/:$/, '').trim().toLowerCase();
-          }
-        }
-        // Get dialogue text (everything except the speaker span)
-        let dialogueText = '';
-        for (let j = 0; j < node.childNodes.length; j++) {
-          const child = node.childNodes[j];
-          if (!child) continue;
-          if (child.nodeType === Node.ELEMENT_NODE && (child as Element).className?.includes('speaker')) continue;
-          dialogueText += child.textContent || '';
-        }
-        elements.push({
-          type: 'dialogue',
-          text: dialogueText.trim(),
-          speaker,
-          direction: direction || undefined,
-          idx: idx++,
-        });
-        continue;
-      }
-
-      // Emphasis paragraph
-      if (tag === 'p' && cls.includes('emphasis-line')) {
-        const text = (node.textContent || '').trim();
-        if (text) {
-          elements.push({ type: 'emphasis', text, idx: idx++ });
-        }
-        continue;
-      }
-
-      // Internal thought paragraph
-      if (tag === 'p' && cls.includes('internal')) {
-        const text = (node.textContent || '').trim();
-        if (text) {
-          elements.push({ type: 'internal', text, idx: idx++ });
-        }
-        continue;
-      }
-
-      // Scene break
-      if (tag === 'p' && cls.includes('scene-break')) {
-        elements.push({ type: 'break', text: node.textContent?.trim() || '• • •', idx: idx++ });
-        continue;
-      }
-
-      // Headings
-      if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
-        const text = (node.textContent || '').trim();
-        if (text) {
-          elements.push({ type: tag as 'h1' | 'h2' | 'h3', text, idx: idx++ });
-        }
-        continue;
-      }
-
-      // Divider (horizontal rule)
-      if (tag === 'hr') {
-        elements.push({ type: 'divider', text: '', idx: idx++ });
-        continue;
-      }
-
-      // Blockquote (Quote block)
-      if (tag === 'blockquote') {
-        const text = (node.textContent || '').trim();
-        if (text) {
-          elements.push({ type: 'quote', text, idx: idx++ });
-        }
-        continue;
-      }
-
-      // Plain paragraph
-      if (tag === 'p') {
-        const text = (node.textContent || '').trim();
-        if (text) {
-          elements.push({ type: 'para', text, idx: idx++ });
-        }
-        continue;
-      }
-
-      // Line break
-      if (tag === 'br') {
-        elements.push({ type: 'linebreak', text: '', idx: idx++ });
-        continue;
-      }
-
-      // Audio block (author-inserted or VN scene-audio)
-      if (tag === 'div' && (cls.includes('audio-block') || cls.includes('scene-audio'))) {
-        const sourceEl = node.querySelector('audio source');
-        const audioSrc = sourceEl?.getAttribute('src') || '';
-        const captionEl = node.querySelector('.caption, .audio-label');
-        const caption = captionEl?.textContent?.trim() || '';
-        elements.push({ type: 'audio', text: caption, audioSrc, idx: idx++ });
-        continue;
-      }
-
-      // Recurse into other div containers that aren't dialogue/sticky
-      if (tag === 'div') {
-        walkChildren(node);
-        continue;
-      }
-
-      // Any other element with text content → para
-      const text = (node.textContent || '').trim();
-      if (text) {
-        elements.push({ type: 'para', text, idx: idx++ });
-      }
-    }
-  }
-
-  walkChildren(root);
-  return elements;
-}
-
-// ============================================================
 //  Default config factory
 // ============================================================
 
@@ -276,6 +74,8 @@ function createDefaultConfig(): SceneCraftConfig {
     narrationVolume: 0.7,
     dialogueClips: {},
     dialogueVolume: 0.8,
+    stickyClips: {},
+    stickyVolume: 0.8,
   };
 }
 
@@ -345,7 +145,6 @@ export default function SceneCraftModal({
   // Asset picker state (reuse existing modals)
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showAudioPicker, setShowAudioPicker] = useState(false);
-  const [enlargedImg, setEnlargedImg] = useState<string | null>(null);
   const [audioPickerTarget, setAudioPickerTarget] = useState<string>(''); // 'ambient' | 'narration' | 'dialogue-N'
 
   // ── Parse elements from XHTML ──────────────────────────────
@@ -385,6 +184,22 @@ export default function SceneCraftModal({
         }
         if (changed) {
           restored.dialogueClips = cleaned;
+          onConfigChange(restored);
+        }
+      }
+      // Clean stale stickyClips whose index no longer points to a sticky element
+      if (restored.stickyClips && Object.keys(restored.stickyClips).length > 0) {
+        const cleaned = { ...restored.stickyClips };
+        let changed2 = false;
+        for (const key of Object.keys(cleaned)) {
+          const idx = Number(key);
+          if (elements[idx]?.type !== 'sticky') {
+            delete cleaned[idx];
+            changed2 = true;
+          }
+        }
+        if (changed2) {
+          restored.stickyClips = cleaned;
           onConfigChange(restored);
         }
       }
@@ -435,294 +250,16 @@ export default function SceneCraftModal({
         newClips[idx] = { filename, volume: config.dialogueVolume };
         updateConfig({ dialogueClips: newClips });
       }
+    } else if (audioPickerTarget.startsWith('sticky-')) {
+      const idx = parseInt(audioPickerTarget.replace('sticky-', ''), 10);
+      if (!isNaN(idx) && elements[idx]?.type === 'sticky') {
+        const newClips = { ...config.stickyClips };
+        newClips[idx] = { filename, volume: config.stickyVolume };
+        updateConfig({ stickyClips: newClips });
+      }
     }
     setShowAudioPicker(false);
-  }, [audioPickerTarget, config.dialogueClips, config.dialogueVolume, elements, updateConfig]);
-
-  // ── Preview refs (imperative audio) ───────────────────────
-  const pvRAF = useRef<number | null>(null);
-  const pvAmbient = useRef<FadeObj | null>(null);
-  const pvAmbientOut = useRef<FadeObj | null>(null);
-  const pvVoice = useRef<FadeObj | null>(null);
-  const pvVoiceOut = useRef<FadeObj | null>(null);
-  const pvActiveDialogue = useRef(-1);
-  const dlgFadeObj = useRef<FadeObj | null>(null);
-  const dlgFadeOut = useRef<FadeObj | null>(null);
-  const pvScrollRef = useRef<HTMLDivElement>(null);
-  const pvContentRef = useRef<HTMLDivElement>(null);
-
-  // Resolved audio URL cache for preview
-  const audioUrlCache = useRef<Map<string, string>>(new Map());
-
-  // ── Fade engine (verbatim from demo) ──────────────────────
-  type FadeObj = {
-    el: HTMLAudioElement;
-    fadeState: 'in' | 'out' | 'playing';
-    startTime: number;
-    duration: number;
-    targetVol?: number;
-    startVol?: number;
-  };
-
-  const DLG_FADE = 0.5;
-
-  function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
-
-  function fadeIn(audioEl: HTMLAudioElement, vol: number, dur: number): FadeObj {
-    audioEl.volume = 0;
-    audioEl.play().catch(() => {});
-    return { el: audioEl, fadeState: 'in', startTime: Date.now(), duration: dur * 1000, targetVol: vol };
-  }
-
-  function fadeOut(obj: FadeObj | null, dur: number): FadeObj | null {
-    if (!obj || !obj.el) return null;
-    return { el: obj.el, fadeState: 'out', startTime: Date.now(), duration: dur * 1000, startVol: obj.el.volume };
-  }
-
-  function tickFade(obj: FadeObj | null): FadeObj | null {
-    if (!obj || !obj.el) return null;
-    const t = obj.duration > 0 ? clamp((Date.now() - obj.startTime) / obj.duration, 0, 1) : 1;
-    if (obj.fadeState === 'in') {
-      obj.el.volume = t * (obj.targetVol || 1);
-      if (t >= 1) obj.fadeState = 'playing';
-    } else if (obj.fadeState === 'out') {
-      obj.el.volume = (1 - t) * (obj.startVol || 1);
-      if (t >= 1) { obj.el.pause(); return null; }
-    }
-    return obj;
-  }
-
-  function killAudio(obj: FadeObj | null): null {
-    if (obj && obj.el) { obj.el.pause(); obj.el.src = ''; }
-    return null;
-  }
-
-  // ── Preview open/close ────────────────────────────────────
-  const openPreview = useCallback(async () => {
-    // Pre-resolve audio URLs
-    const cache = new Map<string, string>();
-    const toResolve: string[] = [];
-    if (config.ambientFilename) toResolve.push(config.ambientFilename);
-    if (config.narrationFilename) toResolve.push(config.narrationFilename);
-    Object.values(config.dialogueClips).forEach(clip => {
-      if (clip.filename) toResolve.push(clip.filename);
-    });
-
-    // Also resolve inline audio-block audio
-    for (const el of elements) {
-      if (el.type === 'audio' && el.audioSrc) {
-        const fn = el.audioSrc.replace(/^(\.\.\/)?audio\//, '');
-        if (fn && !toResolve.includes(fn)) toResolve.push(fn);
-      }
-    }
-
-    for (const fn of toResolve) {
-      if (!cache.has(fn)) {
-        const url = await getAudioUrl(fn);
-        if (url) cache.set(fn, url);
-      }
-    }
-    audioUrlCache.current = cache;
-
-    pvAmbient.current = null;
-    pvAmbientOut.current = null;
-    pvVoice.current = null;
-    pvVoiceOut.current = null;
-    pvActiveDialogue.current = -1;
-    dlgFadeObj.current = null;
-    dlgFadeOut.current = null;
-
-    setShowPreview(true);
-  }, [config, getAudioUrl, elements]);
-
-  const closePreview = useCallback(() => {
-    if (pvRAF.current) cancelAnimationFrame(pvRAF.current);
-    pvAmbient.current = killAudio(pvAmbient.current);
-    pvAmbientOut.current = killAudio(pvAmbientOut.current);
-    pvVoice.current = killAudio(pvVoice.current);
-    pvVoiceOut.current = killAudio(pvVoiceOut.current);
-    dlgFadeObj.current = killAudio(dlgFadeObj.current);
-    dlgFadeOut.current = killAudio(dlgFadeOut.current);
-    pvActiveDialogue.current = -1;
-    // Revoke cached audio URLs
-    audioUrlCache.current.forEach(url => URL.revokeObjectURL(url));
-    audioUrlCache.current.clear();
-    setShowPreview(false);
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (pvRAF.current) cancelAnimationFrame(pvRAF.current);
-      pvAmbient.current = killAudio(pvAmbient.current);
-      pvAmbientOut.current = killAudio(pvAmbientOut.current);
-      pvVoice.current = killAudio(pvVoice.current);
-      pvVoiceOut.current = killAudio(pvVoiceOut.current);
-      dlgFadeObj.current = killAudio(dlgFadeObj.current);
-      dlgFadeOut.current = killAudio(dlgFadeOut.current);
-      audioUrlCache.current.forEach(url => URL.revokeObjectURL(url));
-      audioUrlCache.current.clear();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Preview animation loop ────────────────────────────────
-  useEffect(() => {
-    if (!showPreview) return;
-
-    const scrollEl = pvScrollRef.current;
-    const contentEl = pvContentRef.current;
-    if (!scrollEl || !contentEl) return;
-
-    // Wait for DOM to render
-    const timer = setTimeout(() => {
-      scrollEl.scrollTop = 0;
-      const playheadY = window.innerHeight * 0.33;
-      const blocks = contentEl.querySelectorAll('.sc-pv-block');
-      const enterEl = document.getElementById('sc-pv-enter');
-      const exitEl = document.getElementById('sc-pv-exit');
-      const infoEl = document.getElementById('sc-pv-info');
-      const fadeEl = document.getElementById('sc-pv-fade');
-      const bgEl = document.getElementById('sc-pv-bg');
-      const c = config;
-      let inScene = false;
-
-      function doEnter() {
-        if (inScene) return;
-        inScene = true;
-        if (infoEl) infoEl.textContent = sectionTitle;
-
-        // Wallpaper
-        if (c.wallpaperFilename && bgEl) {
-          const url = getImageUrl(c.wallpaperFilename);
-          if (url) {
-            bgEl.style.backgroundImage = `url('${url}')`;
-            bgEl.style.backgroundPosition = c.wallpaperPosition;
-            bgEl.style.opacity = String(c.wallpaperOpacity);
-          }
-        }
-
-        // Ambient audio
-        pvAmbientOut.current = killAudio(pvAmbientOut.current);
-        if (c.ambientFilename) {
-          const url = audioUrlCache.current.get(c.ambientFilename);
-          if (url) {
-            const a = new Audio(url);
-            a.loop = !!c.ambientLoop;
-            pvAmbient.current = fadeIn(a, c.ambientVolume, c.fadeIn);
-          }
-        }
-
-        // Narration voice
-        pvVoiceOut.current = killAudio(pvVoiceOut.current);
-        if (c.voiceMode === 'narration' && c.narrationFilename) {
-          const url = audioUrlCache.current.get(c.narrationFilename);
-          if (url) {
-            const a = new Audio(url);
-            pvVoice.current = fadeIn(a, c.narrationVolume, c.fadeIn);
-          }
-        }
-      }
-
-      function doExit() {
-        if (!inScene) return;
-        inScene = false;
-        if (infoEl) infoEl.textContent = '';
-        if (bgEl) bgEl.style.opacity = '0';
-
-        // Ambient fade out
-        if (pvAmbient.current) { pvAmbientOut.current = fadeOut(pvAmbient.current, c.fadeOut); pvAmbient.current = null; }
-        // Narration fade out
-        if (pvVoice.current) { pvVoiceOut.current = fadeOut(pvVoice.current, c.fadeOut); pvVoice.current = null; }
-        // Stop all dialogue
-        dlgFadeObj.current = killAudio(dlgFadeObj.current);
-        dlgFadeOut.current = killAudio(dlgFadeOut.current);
-        pvActiveDialogue.current = -1;
-      }
-
-      function tick() {
-        // Tick scene-level fades
-        pvAmbientOut.current = tickFade(pvAmbientOut.current);
-        pvVoiceOut.current = tickFade(pvVoiceOut.current);
-        if (pvAmbient.current && pvAmbient.current.fadeState === 'in') tickFade(pvAmbient.current);
-        if (pvVoice.current && pvVoice.current.fadeState === 'in') tickFade(pvVoice.current);
-
-        // Tick dialogue fades
-        dlgFadeObj.current = tickFade(dlgFadeObj.current);
-        dlgFadeOut.current = tickFade(dlgFadeOut.current);
-
-        // Fade indicator
-        const isFading = pvAmbientOut.current || pvVoiceOut.current || dlgFadeObj.current || dlgFadeOut.current ||
-          (pvAmbient.current && pvAmbient.current.fadeState === 'in') ||
-          (pvVoice.current && pvVoice.current.fadeState === 'in');
-        if (fadeEl) {
-          fadeEl.textContent = isFading ? '\u2922 fading' : '';
-          fadeEl.style.opacity = isFading ? '1' : '0';
-        }
-
-        // Block visibility
-        blocks.forEach(b => {
-          const rect = b.getBoundingClientRect();
-          const center = rect.top + rect.height / 2;
-          if (center < playheadY + 100) b.classList.add('sc-pv-vis'); else b.classList.remove('sc-pv-vis');
-          if (center < playheadY - window.innerHeight * 0.3) b.classList.add('sc-pv-past'); else b.classList.remove('sc-pv-past');
-        });
-
-        // Scene zone detection
-        const enterBottom = enterEl?.getBoundingClientRect().bottom ?? 0;
-        const exitTop = exitEl?.getBoundingClientRect().top ?? window.innerHeight;
-        if (enterBottom <= playheadY && exitTop > playheadY) {
-          doEnter();
-        } else {
-          doExit();
-        }
-
-        // Per-dialogue voice
-        if (inScene && c.voiceMode === 'dialogue') {
-          let currentDialogueIdx = -1;
-          blocks.forEach(b => {
-            const r = b.getBoundingClientRect();
-            const dataIdx = parseInt((b as HTMLElement).dataset.idx || '-1', 10);
-            if (r.top < playheadY && r.bottom > playheadY && elements[dataIdx] && elements[dataIdx]!.type === 'dialogue') {
-              currentDialogueIdx = dataIdx;
-            }
-          });
-
-          if (currentDialogueIdx !== pvActiveDialogue.current) {
-            // Fade out previous
-            if (dlgFadeObj.current && dlgFadeObj.current.el) {
-              dlgFadeOut.current = killAudio(dlgFadeOut.current);
-              dlgFadeOut.current = fadeOut(dlgFadeObj.current, DLG_FADE);
-              dlgFadeObj.current = null;
-            }
-            pvActiveDialogue.current = currentDialogueIdx;
-
-            // Fade in new
-            if (currentDialogueIdx >= 0) {
-              const clip = c.dialogueClips[currentDialogueIdx];
-              if (clip?.filename) {
-                const url = audioUrlCache.current.get(clip.filename);
-                if (url) {
-                  const a = new Audio(url);
-                  dlgFadeObj.current = fadeIn(a, clip.volume || c.dialogueVolume, DLG_FADE);
-                }
-              }
-            }
-          }
-        }
-
-        pvRAF.current = requestAnimationFrame(tick);
-      }
-
-      pvRAF.current = requestAnimationFrame(tick);
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      if (pvRAF.current) cancelAnimationFrame(pvRAF.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPreview]);
+  }, [audioPickerTarget, config.dialogueClips, config.dialogueVolume, config.stickyClips, config.stickyVolume, elements, updateConfig]);
 
   // ── Don't render if closed ────────────────────────────────
   if (!isOpen) return null;
@@ -746,7 +283,8 @@ export default function SceneCraftModal({
   // ── Render: Structure Panel items ─────────────────────────
   function renderStructureItem(item: SceneCraftElement, i: number) {
     const isSel = selectedIdx === i;
-    const hasClip = config.voiceMode === 'dialogue' && item.type === 'dialogue' && !!config.dialogueClips[i];
+    const hasClip = (config.voiceMode === 'dialogue' && item.type === 'dialogue' && !!config.dialogueClips[i])
+      || (item.type === 'sticky' && !!config.stickyClips[i]);
 
     return (
       <div
@@ -851,7 +389,7 @@ export default function SceneCraftModal({
 
         {hasClip && (
           <div style={{ fontSize: '7px', color: 'rgba(100,200,150,0.7)', letterSpacing: '0.06em', marginTop: '2px' }}>
-            ♫ {config.dialogueClips[i]?.filename}
+            ♫ {config.dialogueClips[i]?.filename || config.stickyClips[i]?.filename}
           </div>
         )}
       </div>
@@ -1198,6 +736,34 @@ export default function SceneCraftModal({
                 <img src={resolveImgSrc(item.imgSrc)} alt={item.caption || 'Sticky image'} style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', opacity: 0.9 }} />
               </div>
             )}
+            <div style={{ fontSize: '8px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--sc-tdd)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              audio clip<span style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+            </div>
+            {renderFileSlot('Audio', '.mp3', config.stickyClips[idx]?.filename || null,
+              () => openAudioPicker(`sticky-${idx}`),
+              () => {
+                const newClips = { ...config.stickyClips };
+                delete newClips[idx];
+                updateConfig({ stickyClips: newClips });
+              }
+            )}
+            {config.stickyClips[idx] && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', marginBottom: '8px' }}>
+                <span style={{ fontSize: '9px', color: 'var(--sc-td)', letterSpacing: '0.04em' }}>Volume</span>
+                <input type="range" min="0" max="100"
+                  value={Math.round((config.stickyClips[idx]!.volume || config.stickyVolume) * 100)}
+                  onChange={e => {
+                    const newClips = { ...config.stickyClips };
+                    newClips[idx] = { ...newClips[idx]!, volume: parseInt(e.target.value, 10) / 100 };
+                    updateConfig({ stickyClips: newClips });
+                  }}
+                  style={{ width: '80px', height: '4px', accentColor: 'var(--sc-acc)' }}
+                />
+                <span style={{ fontSize: '9px', color: 'var(--sc-td)', width: '28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {Math.round((config.stickyClips[idx]!.volume || config.stickyVolume) * 100)}%
+                </span>
+              </div>
+            )}
             <div style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: 'var(--sc-prose-d)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '8px' }}>
               {item.text}
             </div>
@@ -1295,293 +861,10 @@ export default function SceneCraftModal({
     );
   }
 
-  // ── Render: Preview overlay ───────────────────────────────
-  function renderPreview() {
-    if (!showPreview) return null;
-
-    return (
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 10001, background: '#060608',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        {/* Preview topbar */}
-        <div style={{
-          height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 16px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,255,255,0.06)', zIndex: 10,
-        }}>
-          <span style={{ fontSize: '10px', letterSpacing: '0.15em', color: '#5a554e' }}>PREVIEW</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span id="sc-pv-fade" style={{
-              fontSize: '9px', letterSpacing: '0.1em', color: 'rgba(255,120,68,0.6)', opacity: 0,
-              transition: 'opacity 0.5s',
-            }}></span>
-            <button
-              onClick={closePreview}
-              style={{
-                fontSize: '11px', color: 'var(--sc-acc)', opacity: 0.7, cursor: 'pointer',
-                background: 'none', border: 'none', fontFamily: 'inherit', letterSpacing: '0.08em',
-              }}
-            >✕ close</button>
-          </div>
-        </div>
-
-        {/* Playhead line at 33% */}
-        <div style={{
-          position: 'fixed', left: 0, right: 0, top: '33%', height: '1px',
-          background: 'rgba(255,120,68,0.15)', zIndex: 10, pointerEvents: 'none',
-        }}>
-          <div style={{
-            width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,120,68,0.4)',
-            position: 'absolute', left: '50%', top: '-3px', transform: 'translateX(-50%)',
-          }} />
-        </div>
-
-        {/* Scene info */}
-        <div id="sc-pv-info" style={{
-          position: 'fixed', right: '16px', top: 'calc(33% - 14px)', fontSize: '9px',
-          letterSpacing: '0.12em', color: 'rgba(255,120,68,0.35)', zIndex: 10, pointerEvents: 'none',
-        }}></div>
-
-        {/* Background wallpaper */}
-        <div id="sc-pv-bg" style={{
-          position: 'fixed', inset: 0, backgroundSize: 'cover', backgroundRepeat: 'no-repeat',
-          opacity: 0, transition: 'opacity 1.5s ease', zIndex: 0, pointerEvents: 'none',
-        }}></div>
-
-        {/* Scrollable content */}
-        <div ref={pvScrollRef} style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
-          <div ref={pvContentRef} style={{
-            padding: '50vh 10vw',
-            fontFamily: "Georgia, 'EB Garamond', serif",
-            fontSize: 'clamp(1.1rem, 2.2vw, 1.35rem)', lineHeight: 2, color: '#c8c0b4',
-          }}>
-            {/* Dead zone before */}
-            <div style={{ height: '50vh', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '2rem' }}>
-              <span style={{ fontSize: '10px', letterSpacing: '0.15em', color: '#2a2620', fontStyle: 'italic' }}>— silence —</span>
-            </div>
-
-            {/* Scene label */}
-            <div id="sc-pv-enter" style={{
-              textAlign: 'center', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
-              color: 'rgba(255,120,68,0.25)', marginBottom: '3em', paddingBottom: '1em',
-              borderBottom: '1px solid rgba(255,255,255,0.03)',
-            }}>
-              {sectionTitle}
-            </div>
-
-            {/* Content blocks */}
-            {elements.map((item, i) => {
-              if (item.type === 'dialogue') {
-                const spk = item.direction ? `${item.speaker} (${item.direction})` : item.speaker;
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    color: '#d4c090',
-                  }}>
-                    <span style={{
-                      fontFamily: "'SF Mono','Fira Code',monospace", fontSize: '0.65em',
-                      letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a08040',
-                      display: 'block', marginBottom: '0.3em',
-                    }}>{spk}</span>
-                    {item.text}
-                  </div>
-                );
-              }
-              if (item.type === 'sticky') {
-                const lines = item.text.split('\n').filter(l => l.trim());
-                return (
-                  <div key={i} style={{
-                    display: 'flex', gap: '1.5em', alignItems: 'flex-start',
-                    minHeight: '300px', marginBottom: '1.6em',
-                    position: 'relative', zIndex: 2,
-                  }}>
-                    {item.imgSrc && (
-                      <div style={{
-                        position: 'sticky', top: '33vh',
-                        width: '40%', flexShrink: 0,
-                        cursor: 'zoom-in',
-                      }} onClick={() => setEnlargedImg(resolveImgSrc(item.imgSrc!) || null)}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={resolveImgSrc(item.imgSrc)} alt={item.caption || 'Sticky image'}
-                             style={{ width: '100%', borderRadius: '4px', opacity: 0.9, display: 'block' }} />
-                        {item.caption && (
-                          <p style={{ fontSize: '0.75em', textAlign: 'center',
-                                      fontStyle: 'italic', opacity: 0.6, margin: '0.4em 0 0' }}>
-                            {item.caption}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em' }}>
-                      {lines.map((line, li) => (
-                        <div key={li} className="sc-pv-block" data-idx={i} style={{
-                          opacity: 0, transform: 'translateY(16px)',
-                          transition: 'opacity 0.8s ease, transform 0.8s ease',
-                        }}>
-                          {line}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-              if (item.type === 'emphasis') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    textAlign: 'center', fontSize: '1.2em', letterSpacing: '0.08em',
-                    fontStyle: 'italic', color: '#e0c8b0',
-                  }}>
-                    {item.text}
-                  </div>
-                );
-              }
-              if (item.type === 'quote') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    borderLeft: '2px solid rgba(200,192,180,0.3)', paddingLeft: '1.5em',
-                  }}>
-                    {item.text}
-                  </div>
-                );
-              }
-              if (item.type === 'internal') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    fontStyle: 'italic', paddingLeft: '2em',
-                  }}>
-                    {item.text}
-                  </div>
-                );
-              }
-              if (item.type === 'break') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    textAlign: 'center', color: '#3a3530', letterSpacing: '0.3em',
-                  }}>
-                    {item.text}
-                  </div>
-                );
-              }
-              if (item.type === 'figure') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    textAlign: 'left',
-                  }}>
-                    {item.imgSrc ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={resolveImgSrc(item.imgSrc)} alt={item.alt || item.text} style={{ width: '100%', ...(item.width ? { maxWidth: item.width } : {}), borderRadius: '4px', opacity: 0.9, display: 'block' }} />
-                        <span style={{ fontFamily: "'SF Mono', monospace", fontSize: '0.55em', color: '#5a554e', letterSpacing: '0.06em', marginTop: '0.4em', display: 'block' }}>
-                          {item.alt || item.text}
-                        </span>
-                      </>
-                    ) : (
-                      <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>[{item.alt || item.text}]</span>
-                    )}
-                  </div>
-                );
-              }
-              if (item.type === 'audio') {
-                const fn = item.audioSrc?.replace(/^(\.\.\/)?audio\//, '') || '';
-                const resolvedSrc = fn ? audioUrlCache.current.get(fn) : undefined;
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                  }}>
-                    {resolvedSrc ? (
-                      /* eslint-disable-next-line jsx-a11y/media-has-caption */
-                      <audio controls preload="none" style={{ width: '100%', maxWidth: '400px' }}>
-                        <source src={resolvedSrc} />
-                      </audio>
-                    ) : (
-                      <span style={{ color: '#5a554e', fontStyle: 'italic', fontSize: '0.8em' }}>
-                        [audio: {fn || 'unknown'}]
-                      </span>
-                    )}
-                    {item.text && <div style={{ fontSize: '0.75em', color: '#5a554e', marginTop: '0.3em' }}>{item.text}</div>}
-                  </div>
-                );
-              }
-              if (item.type === 'h1' || item.type === 'h2' || item.type === 'h3') {
-                const sizes = { h1: '1.8em', h2: '1.4em', h3: '1.15em' };
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    fontSize: sizes[item.type], fontWeight: 'bold', fontFamily: 'Georgia, "Times New Roman", serif',
-                    color: '#c8c0b4',
-                  }}>
-                    {item.text}
-                  </div>
-                );
-              }
-              if (item.type === 'divider') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    margin: '1.6em 0', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                    borderTop: '1px solid rgba(200,192,180,0.2)',
-                  }} />
-                );
-              }
-              if (item.type === 'linebreak') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    height: '1.2em', margin: 0, opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                  }} />
-                );
-              }
-              if (item.type === 'para') {
-                return (
-                  <div key={i} className="sc-pv-block" data-idx={i} style={{
-                    marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
-                    transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                  }}>
-                    {item.text}
-                  </div>
-                );
-              }
-              return null;
-            })}
-
-            {/* Exit marker */}
-            <div id="sc-pv-exit" style={{
-              textAlign: 'center', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
-              color: 'rgba(255,120,68,0.15)', marginTop: '3em', paddingTop: '1em',
-              borderTop: '1px solid rgba(255,255,255,0.03)', fontStyle: 'italic',
-            }}>
-              — silence —
-            </div>
-
-            {/* Dead zone after */}
-            <div style={{ height: '70vh' }}></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // ── Main render ───────────────────────────────────────────
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: SC_STYLES }} />
-      <style dangerouslySetInnerHTML={{ __html: `
-        .sc-pv-block.sc-pv-vis { opacity: 1 !important; transform: translateY(0) !important; }
-        .sc-pv-block.sc-pv-past { opacity: 0.3 !important; }
-      `}} />
 
       {/* Main SceneCraft modal */}
       <div
@@ -1604,7 +887,7 @@ export default function SceneCraftModal({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <button
-              onClick={openPreview}
+              onClick={() => setShowPreview(true)}
               style={{
                 padding: '5px 12px', fontSize: '10px', fontFamily: 'inherit', letterSpacing: '0.08em',
                 borderRadius: '4px', cursor: 'pointer',
@@ -1684,7 +967,17 @@ export default function SceneCraftModal({
       </div>
 
       {/* Preview overlay */}
-      {renderPreview()}
+      <SceneCraftPreview
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        sectionTitle={sectionTitle}
+        elements={elements}
+        config={config}
+        resolveImgSrc={resolveImgSrc}
+        getAudioUrl={getAudioUrl}
+        getImageUrl={getImageUrl}
+        isDarkMode={isDarkMode}
+      />
 
       {/* Reuse existing Image Picker */}
       <ImagePickerModal
@@ -1710,19 +1003,6 @@ export default function SceneCraftModal({
         onClose={() => setShowAudioPicker(false)}
       />
 
-      {/* Click-to-enlarge overlay */}
-      {enlargedImg && (
-        <div onClick={() => setEnlargedImg(null)} style={{
-          position: 'fixed', inset: 0, zIndex: 99999,
-          background: '#000', cursor: 'zoom-out',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={enlargedImg} alt="Enlarged" style={{
-            maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain',
-          }} />
-        </div>
-      )}
     </>
   );
 }

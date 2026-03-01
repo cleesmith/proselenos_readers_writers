@@ -688,6 +688,8 @@ function createDefaultConfig(): SceneCraftConfig {
     narrationVolume: 0.7,
     dialogueClips: {},
     dialogueVolume: 0.8,
+    stickyClips: {},
+    stickyVolume: 0.8,
   };
 }
 

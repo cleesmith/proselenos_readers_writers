@@ -1,6 +1,6 @@
 // src/services/manuscriptStorage.ts
+
 // Client-side only - IndexedDB for Authors mode (ProselenosLocal database)
-// SEPARATE from E-Reader's Proselenosebooks database
 //
 // XHTML-Native Storage:
 // - Single source of truth: XHTML files
@@ -1026,6 +1026,12 @@ export interface SceneCraftConfig {
     volume: number;
   }>;
   dialogueVolume: number;            // default volume for new clips
+  // Sticky image clips
+  stickyClips: Record<number, {     // keyed by element idx
+    filename: string;               // ref to Audio Library
+    volume: number;
+  }>;
+  stickyVolume: number;             // default volume for new clips
 }
 
 // NEW: SectionMeta - metadata only, content is in separate .xhtml file
