@@ -433,6 +433,6 @@ foliate-view {
 
 /* SweetAlert2 z-index fix - ensure alerts appear above modals */
 .swal-above-modal {
-  z-index: 10000 !important;
+  z-index: 10200 !important;
 }
 

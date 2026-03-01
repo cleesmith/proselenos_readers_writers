@@ -43,7 +43,7 @@ export const showAlert = (
   if (!document.getElementById('swal-high-z-style')) {
     const style = document.createElement('style');
     style.id = 'swal-high-z-style';
-    style.textContent = '.swal-above-modal { z-index: 10000 !important; }';
+    style.textContent = '.swal-above-modal { z-index: 10200 !important; }';
     document.head.appendChild(style);
   }
 
@@ -93,7 +93,7 @@ export const showUrlInput = async (
   if (!document.getElementById('swal-high-z-style')) {
     const style = document.createElement('style');
     style.id = 'swal-high-z-style';
-    style.textContent = '.swal-above-modal { z-index: 10000 !important; }';
+    style.textContent = '.swal-above-modal { z-index: 10200 !important; }';
     document.head.appendChild(style);
   }
 
@@ -147,10 +147,13 @@ export const showConfirm = async (
     color: isDarkMode ? '#fff' : '#333',
     confirmButtonColor: '#d33',
     cancelButtonColor: '#6c757d',
-    // Ensure dialog appears above high z-index modals (like One-by-one at z-index 4000)
+    customClass: {
+      container: 'swal-above-modal'
+    },
+    // Ensure dialog appears above high z-index modals (like Image/Audio Library at z-index 10100)
     didOpen: () => {
       const container = document.querySelector('.swal2-container') as HTMLElement;
-      if (container) container.style.zIndex = '5000';
+      if (container) container.style.zIndex = '10200';
     }
   });
 
@@ -268,7 +271,7 @@ export function showTimeoutModal(isDarkMode: boolean, timeoutMs: number): void {
   if (!document.getElementById('swal-high-z-style')) {
     const style = document.createElement('style');
     style.id = 'swal-high-z-style';
-    style.textContent = '.swal-above-modal { z-index: 10000 !important; }';
+    style.textContent = '.swal-above-modal { z-index: 10200 !important; }';
     document.head.appendChild(style);
   }
 
