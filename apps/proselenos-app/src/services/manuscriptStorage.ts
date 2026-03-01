@@ -1032,6 +1032,12 @@ export interface SceneCraftConfig {
     volume: number;
   }>;
   stickyVolume: number;             // default volume for new clips
+  // Para clips
+  paraClips: Record<number, {      // keyed by element idx
+    filename: string;              // ref to Audio Library
+    volume: number;
+  }>;
+  paraVolume: number;              // default volume for new clips
 }
 
 // NEW: SectionMeta - metadata only, content is in separate .xhtml file

@@ -64,6 +64,9 @@ export default function SceneCraftPreview({
   const pvActiveSticky = useRef(-1);
   const stkFadeObj = useRef<FadeObj | null>(null);
   const stkFadeOut = useRef<FadeObj | null>(null);
+  const pvActivePara = useRef(-1);
+  const paraFadeObj = useRef<FadeObj | null>(null);
+  const paraFadeOut = useRef<FadeObj | null>(null);
   const pvScrollRef = useRef<HTMLDivElement>(null);
   const pvContentRef = useRef<HTMLDivElement>(null);
   const audioUrlCache = useRef<Map<string, string>>(new Map());
@@ -80,8 +83,11 @@ export default function SceneCraftPreview({
     dlgFadeOut.current = killAudio(dlgFadeOut.current);
     stkFadeObj.current = killAudio(stkFadeObj.current);
     stkFadeOut.current = killAudio(stkFadeOut.current);
+    paraFadeObj.current = killAudio(paraFadeObj.current);
+    paraFadeOut.current = killAudio(paraFadeOut.current);
     pvActiveDialogue.current = -1;
     pvActiveSticky.current = -1;
+    pvActivePara.current = -1;
     audioUrlCache.current.forEach(url => URL.revokeObjectURL(url));
     audioUrlCache.current.clear();
   }, []);
@@ -107,6 +113,9 @@ export default function SceneCraftPreview({
         if (clip.filename) toResolve.push(clip.filename);
       });
       Object.values(config.stickyClips).forEach(clip => {
+        if (clip.filename) toResolve.push(clip.filename);
+      });
+      Object.values(config.paraClips).forEach(clip => {
         if (clip.filename) toResolve.push(clip.filename);
       });
 
@@ -141,6 +150,9 @@ export default function SceneCraftPreview({
     pvActiveSticky.current = -1;
     stkFadeObj.current = null;
     stkFadeOut.current = null;
+    pvActivePara.current = -1;
+    paraFadeObj.current = null;
+    paraFadeOut.current = null;
 
     return () => {
       cancelled = true;
@@ -232,6 +244,10 @@ export default function SceneCraftPreview({
         stkFadeObj.current = killAudio(stkFadeObj.current);
         stkFadeOut.current = killAudio(stkFadeOut.current);
         pvActiveSticky.current = -1;
+        // Stop all para audio
+        paraFadeObj.current = killAudio(paraFadeObj.current);
+        paraFadeOut.current = killAudio(paraFadeOut.current);
+        pvActivePara.current = -1;
       }
 
       function tick() {
@@ -249,8 +265,12 @@ export default function SceneCraftPreview({
         stkFadeObj.current = tickFade(stkFadeObj.current);
         stkFadeOut.current = tickFade(stkFadeOut.current);
 
+        // Tick para fades
+        paraFadeObj.current = tickFade(paraFadeObj.current);
+        paraFadeOut.current = tickFade(paraFadeOut.current);
+
         // Fade indicator
-        const isFading = pvAmbientOut.current || pvVoiceOut.current || dlgFadeObj.current || dlgFadeOut.current || stkFadeObj.current || stkFadeOut.current ||
+        const isFading = pvAmbientOut.current || pvVoiceOut.current || dlgFadeObj.current || dlgFadeOut.current || stkFadeObj.current || stkFadeOut.current || paraFadeObj.current || paraFadeOut.current ||
           (pvAmbient.current && pvAmbient.current.fadeState === 'in') ||
           (pvVoice.current && pvVoice.current.fadeState === 'in');
         if (fadeEl) {
@@ -336,6 +356,38 @@ export default function SceneCraftPreview({
                 if (url) {
                   const a = new Audio(url);
                   stkFadeObj.current = fadeIn(a, clip.volume || c.stickyVolume, DLG_FADE);
+                }
+              }
+            }
+          }
+        }
+
+        // Per-para audio (plays regardless of voiceMode, like sticky)
+        if (inScene) {
+          let currentParaIdx = -1;
+          blocks.forEach(b => {
+            const r = b.getBoundingClientRect();
+            const dataIdx = parseInt((b as HTMLElement).dataset.idx || '-1', 10);
+            if (r.top < playheadY && r.bottom > playheadY && elements[dataIdx] && elements[dataIdx]!.type === 'para') {
+              currentParaIdx = dataIdx;
+            }
+          });
+
+          if (currentParaIdx !== pvActivePara.current) {
+            if (paraFadeObj.current && paraFadeObj.current.el) {
+              paraFadeOut.current = killAudio(paraFadeOut.current);
+              paraFadeOut.current = fadeOut(paraFadeObj.current, DLG_FADE);
+              paraFadeObj.current = null;
+            }
+            pvActivePara.current = currentParaIdx;
+
+            if (currentParaIdx >= 0) {
+              const clip = c.paraClips[currentParaIdx];
+              if (clip?.filename) {
+                const url = audioUrlCache.current.get(clip.filename);
+                if (url) {
+                  const a = new Audio(url);
+                  paraFadeObj.current = fadeIn(a, clip.volume || c.paraVolume, DLG_FADE);
                 }
               }
             }

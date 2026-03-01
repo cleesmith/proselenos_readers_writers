@@ -690,6 +690,8 @@ function createDefaultConfig(): SceneCraftConfig {
     dialogueVolume: 0.8,
     stickyClips: {},
     stickyVolume: 0.8,
+    paraClips: {},
+    paraVolume: 0.8,
   };
 }
 

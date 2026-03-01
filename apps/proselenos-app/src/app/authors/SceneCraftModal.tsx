@@ -76,6 +76,8 @@ function createDefaultConfig(): SceneCraftConfig {
     dialogueVolume: 0.8,
     stickyClips: {},
     stickyVolume: 0.8,
+    paraClips: {},
+    paraVolume: 0.8,
   };
 }
 
@@ -203,6 +205,22 @@ export default function SceneCraftModal({
           onConfigChange(restored);
         }
       }
+      // Clean stale paraClips whose index no longer points to a para element
+      if (restored.paraClips && Object.keys(restored.paraClips).length > 0) {
+        const cleaned = { ...restored.paraClips };
+        let changed3 = false;
+        for (const key of Object.keys(cleaned)) {
+          const idx = Number(key);
+          if (elements[idx]?.type !== 'para') {
+            delete cleaned[idx];
+            changed3 = true;
+          }
+        }
+        if (changed3) {
+          restored.paraClips = cleaned;
+          onConfigChange(restored);
+        }
+      }
       setConfig(restored);
     }
   }, [isOpen, sectionId, sceneCraftConfig, elements, onConfigChange]);
@@ -257,9 +275,16 @@ export default function SceneCraftModal({
         newClips[idx] = { filename, volume: config.stickyVolume };
         updateConfig({ stickyClips: newClips });
       }
+    } else if (audioPickerTarget.startsWith('para-')) {
+      const idx = parseInt(audioPickerTarget.replace('para-', ''), 10);
+      if (!isNaN(idx) && elements[idx]?.type === 'para') {
+        const newClips = { ...config.paraClips };
+        newClips[idx] = { filename, volume: config.paraVolume };
+        updateConfig({ paraClips: newClips });
+      }
     }
     setShowAudioPicker(false);
-  }, [audioPickerTarget, config.dialogueClips, config.dialogueVolume, config.stickyClips, config.stickyVolume, elements, updateConfig]);
+  }, [audioPickerTarget, config.dialogueClips, config.dialogueVolume, config.stickyClips, config.stickyVolume, config.paraClips, config.paraVolume, elements, updateConfig]);
 
   // ── Don't render if closed ────────────────────────────────
   if (!isOpen) return null;
@@ -284,7 +309,8 @@ export default function SceneCraftModal({
   function renderStructureItem(item: SceneCraftElement, i: number) {
     const isSel = selectedIdx === i;
     const hasClip = (config.voiceMode === 'dialogue' && item.type === 'dialogue' && !!config.dialogueClips[i])
-      || (item.type === 'sticky' && !!config.stickyClips[i]);
+      || (item.type === 'sticky' && !!config.stickyClips[i])
+      || (item.type === 'para' && !!config.paraClips[i]);
 
     return (
       <div
@@ -389,7 +415,7 @@ export default function SceneCraftModal({
 
         {hasClip && (
           <div style={{ fontSize: '7px', color: 'rgba(100,200,150,0.7)', letterSpacing: '0.06em', marginTop: '2px' }}>
-            ♫ {config.dialogueClips[i]?.filename || config.stickyClips[i]?.filename}
+            ♫ {config.dialogueClips[i]?.filename || config.stickyClips[i]?.filename || config.paraClips[i]?.filename}
           </div>
         )}
       </div>
@@ -818,9 +844,42 @@ export default function SceneCraftModal({
         )}
 
         {item.type === 'para' && (
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: 'var(--sc-prose-d)', lineHeight: 1.6, marginBottom: '8px' }}>
-            {item.text}
-          </div>
+          <>
+            <div style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: 'var(--sc-prose-d)', lineHeight: 1.6, marginBottom: '12px' }}>
+              {item.text}
+            </div>
+            <div style={{ fontSize: '8px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--sc-tdd)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              audio clip<span style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+            </div>
+            {renderFileSlot('Audio', '.mp3', config.paraClips[idx]?.filename || null,
+              () => openAudioPicker(`para-${idx}`),
+              () => {
+                const newClips = { ...config.paraClips };
+                delete newClips[idx];
+                updateConfig({ paraClips: newClips });
+              }
+            )}
+            {config.paraClips[idx] && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', marginBottom: '8px' }}>
+                <span style={{ fontSize: '9px', color: 'var(--sc-td)', letterSpacing: '0.04em' }}>Volume</span>
+                <input type="range" min="0" max="100"
+                  value={Math.round((config.paraClips[idx]!.volume || config.paraVolume) * 100)}
+                  onChange={e => {
+                    const newClips = { ...config.paraClips };
+                    newClips[idx] = { ...newClips[idx]!, volume: parseInt(e.target.value, 10) / 100 };
+                    updateConfig({ paraClips: newClips });
+                  }}
+                  style={{ width: '80px', height: '4px', accentColor: 'var(--sc-acc)' }}
+                />
+                <span style={{ fontSize: '9px', color: 'var(--sc-td)', width: '28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {Math.round((config.paraClips[idx]!.volume || config.paraVolume) * 100)}%
+                </span>
+              </div>
+            )}
+            <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic' }}>
+              Paragraph audio — fades in when scrolled to, fades out when scrolled past.
+            </div>
+          </>
         )}
       </div>
     );

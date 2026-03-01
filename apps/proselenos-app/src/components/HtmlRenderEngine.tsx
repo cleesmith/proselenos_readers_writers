@@ -497,6 +497,9 @@ export class SectionAudioEngine {
   private stkFade: FadeObj | null = null;
   private stkFadeOut: FadeObj | null = null;
   private activeStickyIdx = -1;
+  private paraFade: FadeObj | null = null;
+  private paraFadeOut: FadeObj | null = null;
+  private activeParaIdx = -1;
 
   constructor(
     private config: SceneCraftConfig | null,
@@ -563,6 +566,10 @@ export class SectionAudioEngine {
     this.stkFade = killAudio(this.stkFade);
     this.stkFadeOut = killAudio(this.stkFadeOut);
     this.activeStickyIdx = -1;
+    // Stop para
+    this.paraFade = killAudio(this.paraFade);
+    this.paraFadeOut = killAudio(this.paraFadeOut);
+    this.activeParaIdx = -1;
   }
 
   /** Tick all ongoing fades (ambient, voice, dialogue, sticky). Call every RAF frame. */
@@ -575,11 +582,13 @@ export class SectionAudioEngine {
     this.dlgFadeOut = tickFade(this.dlgFadeOut);
     this.stkFade = tickFade(this.stkFade);
     this.stkFadeOut = tickFade(this.stkFadeOut);
+    this.paraFade = tickFade(this.paraFade);
+    this.paraFadeOut = tickFade(this.paraFadeOut);
   }
 
   /** Returns true if this engine still has fading-out audio that needs ticking. */
   hasPendingFades(): boolean {
-    return !!(this.ambientOut || this.voiceOut || this.dlgFadeOut || this.stkFadeOut);
+    return !!(this.ambientOut || this.voiceOut || this.dlgFadeOut || this.stkFadeOut || this.paraFadeOut);
   }
 
   /** Manage dialogue clip for the given element index. */
@@ -638,6 +647,34 @@ export class SectionAudioEngine {
     }
   }
 
+  /** Manage para clip for the given element index. */
+  tickPara(currentIdx: number): void {
+    const c = this.config;
+    if (!c || !c.paraClips) return;
+
+    if (currentIdx !== this.activeParaIdx) {
+      // Fade out previous
+      if (this.paraFade && this.paraFade.el) {
+        this.paraFadeOut = killAudio(this.paraFadeOut);
+        this.paraFadeOut = fadeOut(this.paraFade, DLG_FADE);
+        this.paraFade = null;
+      }
+      this.activeParaIdx = currentIdx;
+
+      // Fade in new
+      if (currentIdx >= 0) {
+        const clip = c.paraClips[currentIdx];
+        if (clip?.filename) {
+          const url = this.audioUrls.get(clip.filename);
+          if (url) {
+            const a = new Audio(url);
+            this.paraFade = fadeIn(a, clip.volume || c.paraVolume, DLG_FADE);
+          }
+        }
+      }
+    }
+  }
+
   /** Kill all audio immediately (for unmount). */
   cleanup(): void {
     this.ambient = killAudio(this.ambient);
@@ -648,7 +685,10 @@ export class SectionAudioEngine {
     this.dlgFadeOut = killAudio(this.dlgFadeOut);
     this.stkFade = killAudio(this.stkFade);
     this.stkFadeOut = killAudio(this.stkFadeOut);
+    this.paraFade = killAudio(this.paraFade);
+    this.paraFadeOut = killAudio(this.paraFadeOut);
     this.activeDialogueIdx = -1;
     this.activeStickyIdx = -1;
+    this.activeParaIdx = -1;
   }
 }
