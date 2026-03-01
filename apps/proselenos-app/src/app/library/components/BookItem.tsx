@@ -118,6 +118,7 @@ const BookItem: React.FC<BookItemProps> = ({
             )}
             <button
               aria-label={_('Show Ebook Details')}
+              title={_('Ebook Details')}
               className='show-detail-button -m-2 p-2'
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => {
