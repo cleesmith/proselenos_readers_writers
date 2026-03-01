@@ -315,7 +315,7 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
           stickyInner += `<div class="sc-pv-block" data-idx="${idx}" data-sec="${si}">${esc(line)}</div>\n`;
         }
         stickyInner += `</div>`;
-        allBlocksHtml += `<div class="sticky-wrap">${stickyInner}</div>\n`;
+        allBlocksHtml += `<div class="sticky-wrap" data-sticky-idx="${idx}" data-sec="${si}">${stickyInner}</div>\n`;
       } else if (el.type === 'emphasis') {
         allBlocksHtml += `<div class="sc-pv-block emphasis-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
       } else if (el.type === 'quote') {
@@ -382,6 +382,10 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
         narrationVolume: c.narrationVolume,
         dialogueClips: c.dialogueClips,
         dialogueVolume: c.dialogueVolume,
+        stickyClips: c.stickyClips,
+        stickyVolume: c.stickyVolume,
+        paraClips: c.paraClips,
+        paraVolume: c.paraVolume,
       } : null,
       dialogueElements,
     });
@@ -543,6 +547,8 @@ function killAudio(obj) { if (obj && obj.el) { obj.el.pause(); obj.el.src = ''; 
 // -- Multi-section animation loop --
 var ambient = null, ambientOut = null, voice = null, voiceOut = null;
 var dlgObj = null, dlgOut = null, activeDlgIdx = -1;
+var stkObj = null, stkOut = null, activeStkIdx = -1;
+var paraObj = null, paraOut = null, activeParaIdx = -1;
 var activeSectionIdx = -1;
 var playheadY = window.innerHeight * 0.33;
 window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.33; });
@@ -598,6 +604,12 @@ function doExitCurrent() {
   dlgObj = killAudio(dlgObj);
   dlgOut = killAudio(dlgOut);
   activeDlgIdx = -1;
+  stkObj = killAudio(stkObj);
+  stkOut = killAudio(stkOut);
+  activeStkIdx = -1;
+  paraObj = killAudio(paraObj);
+  paraOut = killAudio(paraOut);
+  activeParaIdx = -1;
   activeSectionIdx = -1;
 }
 
@@ -608,6 +620,10 @@ function tick() {
   if (voice && voice.fadeState === 'in') tickFade(voice);
   dlgObj = tickFade(dlgObj);
   dlgOut = tickFade(dlgOut);
+  stkObj = tickFade(stkObj);
+  stkOut = tickFade(stkOut);
+  paraObj = tickFade(paraObj);
+  paraOut = tickFade(paraOut);
 
   blocks.forEach(function(b) {
     var rect = b.getBoundingClientRect();
@@ -651,6 +667,57 @@ function tick() {
           var clip = c.dialogueClips[currentDlg];
           if (clip.filename && AUDIO_MAP[clip.filename]) {
             dlgObj = createFadeIn(AUDIO_MAP[clip.filename], clip.volume || c.dialogueVolume, DLG_FADE, false);
+          }
+        }
+      }
+    }
+  }
+
+  // Sticky audio (plays regardless of voiceMode)
+  if (activeSectionIdx >= 0) {
+    var secStk = SECTIONS[activeSectionIdx];
+    var cStk = secStk ? secStk.config : null;
+    if (cStk) {
+      var currentStk = -1;
+      var stickyWraps = contentEl.querySelectorAll('.sticky-wrap');
+      stickyWraps.forEach(function(sw) {
+        var r = sw.getBoundingClientRect();
+        var si = parseInt(sw.dataset.stickyIdx || '-1', 10);
+        var ds = parseInt(sw.dataset.sec || '-1', 10);
+        if (ds === activeSectionIdx && r.top < playheadY && r.bottom > playheadY) currentStk = si;
+      });
+      if (currentStk !== activeStkIdx) {
+        if (stkObj && stkObj.el) { stkOut = killAudio(stkOut); stkOut = createFadeOut(stkObj, DLG_FADE); stkObj = null; }
+        activeStkIdx = currentStk;
+        if (currentStk >= 0 && cStk.stickyClips && cStk.stickyClips[currentStk]) {
+          var sClip = cStk.stickyClips[currentStk];
+          if (sClip.filename && AUDIO_MAP[sClip.filename]) {
+            stkObj = createFadeIn(AUDIO_MAP[sClip.filename], sClip.volume || cStk.stickyVolume, DLG_FADE, false);
+          }
+        }
+      }
+    }
+  }
+
+  // Para audio (plays regardless of voiceMode)
+  if (activeSectionIdx >= 0) {
+    var secPara = SECTIONS[activeSectionIdx];
+    var cPara = secPara ? secPara.config : null;
+    if (cPara) {
+      var currentPara = -1;
+      blocks.forEach(function(b) {
+        var r = b.getBoundingClientRect();
+        var pi = parseInt(b.dataset.idx || '-1', 10);
+        var ps = parseInt(b.dataset.sec || '-1', 10);
+        if (ps === activeSectionIdx && r.top < playheadY && r.bottom > playheadY && b.classList.contains('para-block')) currentPara = pi;
+      });
+      if (currentPara !== activeParaIdx) {
+        if (paraObj && paraObj.el) { paraOut = killAudio(paraOut); paraOut = createFadeOut(paraObj, DLG_FADE); paraObj = null; }
+        activeParaIdx = currentPara;
+        if (currentPara >= 0 && cPara.paraClips && cPara.paraClips[currentPara]) {
+          var pClip = cPara.paraClips[currentPara];
+          if (pClip.filename && AUDIO_MAP[pClip.filename]) {
+            paraObj = createFadeIn(AUDIO_MAP[pClip.filename], pClip.volume || cPara.paraVolume, DLG_FADE, false);
           }
         }
       }
@@ -852,6 +919,16 @@ export default function FullBookView({
             if (clip.filename) audioFiles.push(clip.filename);
           });
         }
+        if (c.stickyClips) {
+          Object.values(c.stickyClips).forEach(clip => {
+            if (clip.filename) audioFiles.push(clip.filename);
+          });
+        }
+        if (c.paraClips) {
+          Object.values(c.paraClips).forEach(clip => {
+            if (clip.filename) audioFiles.push(clip.filename);
+          });
+        }
         for (const fn of audioFiles) {
           if (!audioMap.has(fn)) {
             const blobUrl = audioUrls.get(fn);
@@ -919,6 +996,12 @@ export default function FullBookView({
   const pvActiveDialogue = useRef(-1);
   const dlgFadeObj = useRef<FadeObj | null>(null);
   const dlgFadeOut = useRef<FadeObj | null>(null);
+  const pvActiveSticky = useRef(-1);
+  const stkFadeObj = useRef<FadeObj | null>(null);
+  const stkFadeOut = useRef<FadeObj | null>(null);
+  const pvActivePara = useRef(-1);
+  const paraFadeObj = useRef<FadeObj | null>(null);
+  const paraFadeOut = useRef<FadeObj | null>(null);
   const pvScrollRef = useRef<HTMLDivElement>(null);
   const pvContentRef = useRef<HTMLDivElement>(null);
 
@@ -932,6 +1015,10 @@ export default function FullBookView({
       pvVoiceOut.current = killAudio(pvVoiceOut.current);
       dlgFadeObj.current = killAudio(dlgFadeObj.current);
       dlgFadeOut.current = killAudio(dlgFadeOut.current);
+      stkFadeObj.current = killAudio(stkFadeObj.current);
+      stkFadeOut.current = killAudio(stkFadeOut.current);
+      paraFadeObj.current = killAudio(paraFadeObj.current);
+      paraFadeOut.current = killAudio(paraFadeOut.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1036,6 +1123,14 @@ export default function FullBookView({
         dlgFadeObj.current = killAudio(dlgFadeObj.current);
         dlgFadeOut.current = killAudio(dlgFadeOut.current);
         pvActiveDialogue.current = -1;
+        // Stop all sticky audio
+        stkFadeObj.current = killAudio(stkFadeObj.current);
+        stkFadeOut.current = killAudio(stkFadeOut.current);
+        pvActiveSticky.current = -1;
+        // Stop all para audio
+        paraFadeObj.current = killAudio(paraFadeObj.current);
+        paraFadeOut.current = killAudio(paraFadeOut.current);
+        pvActivePara.current = -1;
 
         activeSectionIdx = -1;
       }
@@ -1050,6 +1145,11 @@ export default function FullBookView({
         // Tick dialogue fades
         dlgFadeObj.current = tickFade(dlgFadeObj.current);
         dlgFadeOut.current = tickFade(dlgFadeOut.current);
+        // Tick sticky/para fades
+        stkFadeObj.current = tickFade(stkFadeObj.current);
+        stkFadeOut.current = tickFade(stkFadeOut.current);
+        paraFadeObj.current = tickFade(paraFadeObj.current);
+        paraFadeOut.current = tickFade(paraFadeOut.current);
 
         // Block visibility — use top edge so tall blocks appear as soon as
         // their top crosses the playhead; keep center for "past" dimming
@@ -1113,6 +1213,84 @@ export default function FullBookView({
                   if (url) {
                     const a = new Audio(url);
                     dlgFadeObj.current = fadeIn(a, clip.volume || c.dialogueVolume, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Per-sticky-image audio (plays regardless of voiceMode)
+        if (activeSectionIdx >= 0) {
+          const zone = sectionZones[activeSectionIdx];
+          const c = zone?.config;
+          if (c) {
+            let currentStickyIdx = -1;
+            const stickyContainers = contentEl!.querySelectorAll('.sc-pv-sticky');
+            stickyContainers.forEach((sc: Element) => {
+              const r = sc.getBoundingClientRect();
+              const dataIdx = parseInt((sc as HTMLElement).dataset.stickyIdx || '-1', 10);
+              const dataSec = parseInt((sc as HTMLElement).dataset.sec || '-1', 10);
+              if (dataSec === activeSectionIdx && r.top < playheadY && r.bottom > playheadY) {
+                currentStickyIdx = dataIdx;
+              }
+            });
+
+            if (currentStickyIdx !== pvActiveSticky.current) {
+              if (stkFadeObj.current && stkFadeObj.current.el) {
+                stkFadeOut.current = killAudio(stkFadeOut.current);
+                stkFadeOut.current = fadeOut(stkFadeObj.current, DLG_FADE);
+                stkFadeObj.current = null;
+              }
+              pvActiveSticky.current = currentStickyIdx;
+
+              if (currentStickyIdx >= 0 && c.stickyClips) {
+                const clip = c.stickyClips[currentStickyIdx];
+                if (clip?.filename) {
+                  const url = audioUrls.get(clip.filename);
+                  if (url) {
+                    const a = new Audio(url);
+                    stkFadeObj.current = fadeIn(a, clip.volume || c.stickyVolume, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Per-para audio (plays regardless of voiceMode)
+        if (activeSectionIdx >= 0) {
+          const zone = sectionZones[activeSectionIdx];
+          const c = zone?.config;
+          if (c) {
+            let currentParaIdx = -1;
+            blocks.forEach(b => {
+              const r = b.getBoundingClientRect();
+              const dataIdx = parseInt((b as HTMLElement).dataset.idx || '-1', 10);
+              const dataSec = parseInt((b as HTMLElement).dataset.sec || '-1', 10);
+              if (dataSec === activeSectionIdx && r.top < playheadY && r.bottom > playheadY) {
+                const sectionElements = zone?.elements;
+                if (sectionElements && sectionElements[dataIdx] && sectionElements[dataIdx]!.type === 'para') {
+                  currentParaIdx = dataIdx;
+                }
+              }
+            });
+
+            if (currentParaIdx !== pvActivePara.current) {
+              if (paraFadeObj.current && paraFadeObj.current.el) {
+                paraFadeOut.current = killAudio(paraFadeOut.current);
+                paraFadeOut.current = fadeOut(paraFadeObj.current, DLG_FADE);
+                paraFadeObj.current = null;
+              }
+              pvActivePara.current = currentParaIdx;
+
+              if (currentParaIdx >= 0 && c.paraClips) {
+                const clip = c.paraClips[currentParaIdx];
+                if (clip?.filename) {
+                  const url = audioUrls.get(clip.filename);
+                  if (url) {
+                    const a = new Audio(url);
+                    paraFadeObj.current = fadeIn(a, clip.volume || c.paraVolume, DLG_FADE);
                   }
                 }
               }
@@ -1264,7 +1442,7 @@ export default function FullBookView({
                   if (item.type === 'sticky') {
                     const lines = item.text.split('\n').filter(l => l.trim());
                     return (
-                      <div key={i} style={{
+                      <div key={i} className="sc-pv-sticky" data-sticky-idx={item.idx} data-sec={si} style={{
                         display: 'flex', gap: '1.5em', alignItems: 'flex-start',
                         minHeight: '300px', marginBottom: '1.6em',
                         position: 'relative', zIndex: 2,

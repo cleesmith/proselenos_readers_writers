@@ -764,7 +764,14 @@ const SCENECRAFT_JS = `
           activeDlg: -1,
           dlgObj: null,
           dlgOut: null,
+          activeStk: -1,
+          stkObj: null,
+          stkOut: null,
+          activePara: -1,
+          paraObj: null,
+          paraOut: null,
           blocks: sceneEl.querySelectorAll('.sc-block'),
+          stickyWraps: sceneEl.querySelectorAll('.sc-block-sticky'),
           enterEl: sceneEl.querySelector('.sc-enter'),
           exitEl: sceneEl.querySelector('.sc-exit'),
           bgEl: sceneEl.querySelector('.sc-bg'),
@@ -825,6 +832,12 @@ const SCENECRAFT_JS = `
         s.dlgObj = killAudio(s.dlgObj);
         s.dlgOut = killAudio(s.dlgOut);
         s.activeDlg = -1;
+        s.stkObj = killAudio(s.stkObj);
+        s.stkOut = killAudio(s.stkOut);
+        s.activeStk = -1;
+        s.paraObj = killAudio(s.paraObj);
+        s.paraOut = killAudio(s.paraOut);
+        s.activePara = -1;
       }
 
       function tick() {
@@ -840,6 +853,10 @@ const SCENECRAFT_JS = `
           if (s.voice && s.voice.state === 'in') tickFade(s.voice);
           s.dlgObj = tickFade(s.dlgObj);
           s.dlgOut = tickFade(s.dlgOut);
+          s.stkObj = tickFade(s.stkObj);
+          s.stkOut = tickFade(s.stkOut);
+          s.paraObj = tickFade(s.paraObj);
+          s.paraOut = tickFade(s.paraOut);
 
           // Block visibility
           for (var bi = 0; bi < s.blocks.length; bi++) {
@@ -884,6 +901,68 @@ const SCENECRAFT_JS = `
                   if (dUrl) {
                     var da = new Audio(dUrl);
                     s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-sticky audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentStk = -1;
+            for (var swi = 0; swi < s.stickyWraps.length; swi++) {
+              var sw = s.stickyWraps[swi];
+              var sr = sw.getBoundingClientRect();
+              var sIdx = parseInt(sw.dataset.idx || '-1', 10);
+              if (sr.top < playheadY && sr.bottom > playheadY) {
+                currentStk = sIdx;
+              }
+            }
+            if (currentStk !== s.activeStk) {
+              if (s.stkObj && s.stkObj.el) {
+                s.stkOut = killAudio(s.stkOut);
+                s.stkOut = createFadeOut(s.stkObj, DLG_FADE);
+                s.stkObj = null;
+              }
+              s.activeStk = currentStk;
+              if (currentStk >= 0 && c.stickyClips) {
+                var sClip = c.stickyClips[currentStk];
+                if (sClip && sClip.filename) {
+                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (sUrl) {
+                    var sa = new Audio(sUrl);
+                    s.stkObj = createFadeIn(sa, sClip.volume || c.stickyVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-para audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentPara = -1;
+            for (var pi = 0; pi < s.blocks.length; pi++) {
+              var pb = s.blocks[pi];
+              var pr = pb.getBoundingClientRect();
+              var pIdx = parseInt(pb.dataset.idx || '-1', 10);
+              if (pr.top < playheadY && pr.bottom > playheadY && !pb.classList.contains('sc-block-dialogue') && pb.classList.contains('sc-block-para')) {
+                currentPara = pIdx;
+              }
+            }
+            if (currentPara !== s.activePara) {
+              if (s.paraObj && s.paraObj.el) {
+                s.paraOut = killAudio(s.paraOut);
+                s.paraOut = createFadeOut(s.paraObj, DLG_FADE);
+                s.paraObj = null;
+              }
+              s.activePara = currentPara;
+              if (currentPara >= 0 && c.paraClips) {
+                var pClip = c.paraClips[currentPara];
+                if (pClip && pClip.filename) {
+                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (pUrl) {
+                    var pa = new Audio(pUrl);
+                    s.paraObj = createFadeIn(pa, pClip.volume || c.paraVolume || 0.8, DLG_FADE);
                   }
                 }
               }
@@ -1247,6 +1326,16 @@ function generateSceneCraftHtml(
         if (clip.filename) audioFiles.add(clip.filename);
       });
     }
+    if (config.stickyClips) {
+      Object.values(config.stickyClips).forEach(clip => {
+        if (clip.filename) audioFiles.add(clip.filename);
+      });
+    }
+    if (config.paraClips) {
+      Object.values(config.paraClips).forEach(clip => {
+        if (clip.filename) audioFiles.add(clip.filename);
+      });
+    }
     audioFiles.forEach(fn => {
       const url = mediaDataUrls[`audio/${fn}`];
       if (url) {
@@ -1331,6 +1420,10 @@ ${textLines}
         audioTag = `<span style="color:#5a554e;font-style:italic;font-size:0.8em">[audio]</span>`;
       }
       return `      <div class="sc-block" data-idx="${item.idx}">${audioTag}</div>`;
+    }
+    if (item.type === 'para') {
+      const styleAttr = item.style ? ` style="${escapeHtml(item.style)}"` : '';
+      return `      <div class="sc-block sc-block-para" data-idx="${item.idx}"${styleAttr}>${escapedText}</div>`;
     }
     const styleAttr = item.style ? ` style="${escapeHtml(item.style)}"` : '';
     return `      <div class="sc-block" data-idx="${item.idx}"${styleAttr}>${escapedText}</div>`;
