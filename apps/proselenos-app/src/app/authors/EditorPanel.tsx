@@ -252,6 +252,20 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
       value = createEmptyValue();
     }
 
+    // Prepend 2 empty paragraphs so the user can always click above the first block element.
+    // Skip if the content already starts with an empty paragraph.
+    const firstNode = value[0] as { type?: string; children?: { text?: string }[] } | undefined;
+    const isFirstEmpty = firstNode?.type === 'p'
+      && firstNode.children?.length === 1
+      && firstNode.children[0]?.text === '';
+    if (!isFirstEmpty) {
+      value = [
+        { type: 'p', children: [{ text: '' }] },
+        { type: 'p', children: [{ text: '' }] },
+        ...value,
+      ] as Value;
+    }
+
     // Reset editor with new value
     editor.tf.reset();
     editor.tf.setValue(value);

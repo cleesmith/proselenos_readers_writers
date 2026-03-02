@@ -110,6 +110,10 @@ const insertBlockMap: Record<
       { select: true }
     );
   },
+  'prepend_top': (editor) => {
+    const emptyPara = { type: 'p', children: [{ text: '' }] };
+    editor.tf.insertNodes([emptyPara, { ...emptyPara }], { at: [0], select: true });
+  },
 };
 
 const insertInlineMap: Record<

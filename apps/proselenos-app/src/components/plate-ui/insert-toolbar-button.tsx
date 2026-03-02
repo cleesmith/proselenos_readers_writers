@@ -2,6 +2,7 @@
 
 import type { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
 import {
+  ArrowUpToLineIcon,
   CornerDownLeftIcon,
   Heading1Icon,
   Heading2Icon,
@@ -79,6 +80,11 @@ const groups: Group[] = [
         icon: <MinusIcon />,
         label: 'Divider',
         value: KEYS.hr,
+      },
+      {
+        icon: <ArrowUpToLineIcon />,
+        label: 'Prepend top',
+        value: 'prepend_top',
       },
     ].map((item) => ({
       ...item,
