@@ -179,7 +179,7 @@ export default function SceneCraftPreview({
 
     const timer = setTimeout(() => {
       scrollEl.scrollTop = 0;
-      const playheadY = window.innerHeight * 0.33;
+      const playheadY = window.innerHeight * 0.5;
       const blocks = contentEl.querySelectorAll('.sc-pv-block');
       const enterEl = document.getElementById('sc-pv-enter');
       const exitEl = document.getElementById('sc-pv-exit');
@@ -443,9 +443,9 @@ export default function SceneCraftPreview({
           </div>
         </div>
 
-        {/* Playhead line at 33% */}
+        {/* Playhead line at 50% */}
         <div style={{
-          position: 'fixed', left: 0, right: 0, top: '33%', height: '1px',
+          position: 'fixed', left: 0, right: 0, top: '50%', height: '1px',
           background: 'rgba(255,120,68,0.15)', zIndex: 10, pointerEvents: 'none',
         }}>
           <div style={{
@@ -456,7 +456,7 @@ export default function SceneCraftPreview({
 
         {/* Scene info */}
         <div id="sc-pv-info" style={{
-          position: 'fixed', right: '16px', top: 'calc(33% - 14px)', fontSize: '9px',
+          position: 'fixed', right: '16px', top: 'calc(50% - 14px)', fontSize: '9px',
           letterSpacing: '0.12em', color: 'rgba(255,120,68,0.35)', zIndex: 10, pointerEvents: 'none',
         }}></div>
 

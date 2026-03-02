@@ -407,9 +407,9 @@ body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35re
 #topbar .left{display:flex;align-items:center;gap:10px}
 #topbar .meta{font-size:13px;letter-spacing:0.05em;transition:color 0.3s}
 #topbar .meta .title{font-style:italic}
-#playhead{position:fixed;left:0;right:0;top:33%;height:1px;background:rgba(255,120,68,0.15);z-index:10;pointer-events:none}
+#playhead{position:fixed;left:0;right:0;top:50%;height:1px;background:rgba(255,120,68,0.15);z-index:10;pointer-events:none}
 #playhead .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,120,68,0.4);position:absolute;left:50%;top:-3px;transform:translateX(-50%)}
-#scene-info{position:fixed;right:16px;top:calc(33% - 14px);font-size:9px;letter-spacing:0.12em;color:rgba(255,120,68,0.35);z-index:10;pointer-events:none}
+#scene-info{position:fixed;right:16px;top:calc(50% - 14px);font-size:9px;letter-spacing:0.12em;color:rgba(255,120,68,0.35);z-index:10;pointer-events:none}
 #bg-wall{position:fixed;inset:0;background-size:cover;background-repeat:no-repeat;opacity:0;transition:opacity 1.5s ease;z-index:0;pointer-events:none}
 #scroll-wrap{flex:1;overflow-y:auto;position:relative}
 #content{padding:50vh 10vw}
@@ -550,8 +550,8 @@ var dlgObj = null, dlgOut = null, activeDlgIdx = -1;
 var stkObj = null, stkOut = null, activeStkIdx = -1;
 var paraObj = null, paraOut = null, activeParaIdx = -1;
 var activeSectionIdx = -1;
-var playheadY = window.innerHeight * 0.33;
-window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.33; });
+var playheadY = window.innerHeight * 0.5;
+window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.5; });
 
 var scrollEl = document.getElementById('scroll-wrap');
 var contentEl = document.getElementById('content');
@@ -1031,7 +1031,7 @@ export default function FullBookView({
 
     const timer = setTimeout(() => {
       scrollEl.scrollTop = 0;
-      const playheadY = window.innerHeight * 0.33;
+      const playheadY = window.innerHeight * 0.5;
       const blocks = contentEl.querySelectorAll('.sc-pv-block');
 
       // Collect enter/exit DOM elements for each section
@@ -1367,9 +1367,9 @@ export default function FullBookView({
           <div></div>
         </div>
 
-        {/* Playhead line at 33% */}
+        {/* Playhead line at 50% */}
         <div style={{
-          position: 'fixed', left: 0, right: 0, top: '33%', height: '1px',
+          position: 'fixed', left: 0, right: 0, top: '50%', height: '1px',
           background: 'rgba(255,120,68,0.15)', zIndex: 10, pointerEvents: 'none',
           display: showScOrange ? undefined : 'none',
         }}>
@@ -1381,7 +1381,7 @@ export default function FullBookView({
 
         {/* Scene info */}
         <div id="fbv-pv-info" style={{
-          position: 'fixed', right: '16px', top: 'calc(33% - 14px)', fontSize: '9px',
+          position: 'fixed', right: '16px', top: 'calc(50% - 14px)', fontSize: '9px',
           letterSpacing: '0.12em', color: 'rgba(255,120,68,0.35)', zIndex: 10, pointerEvents: 'none',
           display: showScOrange ? undefined : 'none',
         }}></div>

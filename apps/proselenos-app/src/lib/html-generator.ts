@@ -498,7 +498,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   position: fixed;
   left: 0;
   right: 0;
-  top: 33%;
+  top: 50%;
   height: 1px;
   background: rgba(255,120,68,0.15);
   z-index: 10;
@@ -517,7 +517,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
 .sc-scene .sc-info {
   position: fixed;
   right: 16px;
-  top: calc(33% - 14px);
+  top: calc(50% - 14px);
   font-size: 9px;
   letter-spacing: 0.12em;
   color: rgba(255,120,68,0.35);
@@ -780,8 +780,8 @@ const SCENECRAFT_JS = `
         });
       });
 
-      var playheadY = window.innerHeight * 0.33;
-      window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.33; });
+      var playheadY = window.innerHeight * 0.5;
+      window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.5; });
 
       function doEnter(s) {
         if (s.inScene || !s.cfg) return;
