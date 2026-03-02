@@ -195,7 +195,7 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
 
       // Plain paragraph
       if (tag === 'p') {
-        const text = (node.textContent || '').trim();
+        const text = (node.innerHTML || '').trim();
         if (text) {
           elements.push({ type: 'para', text, idx: idx++ });
         }
@@ -244,6 +244,8 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#039;').replace(/`/g,'&#96;').replace(/\$/g,'&#36;');
 }
+
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
 async function blobUrlToDataUri(blobUrl: string): Promise<string> {
   const resp = await fetch(blobUrl);
@@ -346,11 +348,11 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
       } else if (el.type === 'linebreak') {
         allBlocksHtml += `<div class="sc-pv-block linebreak-block" data-idx="${idx}" data-sec="${si}"></div>\n`;
       } else if (el.type === 'para') {
-        const tocTarget = titleToSectionMap.get(el.text.trim());
+        const tocTarget = titleToSectionMap.get(stripHtml(el.text).trim());
         if (tocTarget !== undefined) {
-          allBlocksHtml += `<a class="sc-pv-block para-block toc-link" href="#section-enter-${tocTarget}" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</a>\n`;
+          allBlocksHtml += `<a class="sc-pv-block para-block toc-link" href="#section-enter-${tocTarget}" data-idx="${idx}" data-sec="${si}">${esc(stripHtml(el.text))}</a>\n`;
         } else {
-          allBlocksHtml += `<div class="sc-pv-block para-block" data-idx="${idx}" data-sec="${si}">${esc(el.text)}</div>\n`;
+          allBlocksHtml += `<div class="sc-pv-block para-block" data-idx="${idx}" data-sec="${si}">${el.text.replace(/<a\s+(?![^>]*\btarget=)/gi, '<a target="_blank" rel="noopener" ')}</div>\n`;
         }
       }
     }
@@ -441,6 +443,8 @@ body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35re
 .h3-block{font-size:1.15em}
 .divider-block{margin:1.6em 0;border-top:1px solid rgba(200,192,180,0.2)}
 .linebreak-block{height:1.2em;margin:0}
+.sc-pv-block a{color:#e8c078;text-decoration:underline;text-decoration-color:rgba(232,192,120,0.4)}
+.sc-pv-block a:hover{color:#f0d898;text-decoration-color:rgba(240,216,152,0.7)}
 #lightbox{position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;cursor:zoom-out}
 #lightbox img{max-width:90vw;max-height:90vh;border-radius:6px}
 .theme-toggle-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px}
@@ -1597,7 +1601,7 @@ export default function FullBookView({
                     );
                   }
                   if (item.type === 'para') {
-                    const tocTarget = titleToSectionIndex.get(item.text.trim());
+                    const tocTarget = titleToSectionIndex.get(stripHtml(item.text).trim());
                     if (tocTarget !== undefined) {
                       return (
                         <div key={i} className="sc-pv-block" data-idx={item.idx} data-sec={si}
@@ -1609,7 +1613,7 @@ export default function FullBookView({
                             textUnderlineOffset: '3px',
                           }}
                         >
-                          {item.text}
+                          {stripHtml(item.text)}
                         </div>
                       );
                     }
@@ -1617,9 +1621,9 @@ export default function FullBookView({
                       <div key={i} className="sc-pv-block" data-idx={item.idx} data-sec={si} style={{
                         marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
                         transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-                      }}>
-                        {item.text}
-                      </div>
+                      }}
+                        dangerouslySetInnerHTML={{ __html: item.text.replace(/<a\s+(?![^>]*\btarget=)/gi, '<a target="_blank" rel="noopener" ') }}
+                      />
                     );
                   }
                   return null;

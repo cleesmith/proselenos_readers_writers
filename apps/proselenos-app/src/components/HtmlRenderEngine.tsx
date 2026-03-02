@@ -224,7 +224,7 @@ export function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
 
       // Plain paragraph
       if (tag === 'p') {
-        const text = (node.textContent || '').trim();
+        const text = (node.innerHTML || '').trim();
         if (text) {
           elements.push({ type: 'para', text, idx: idx++ });
         }
@@ -280,6 +280,7 @@ export interface ContentBlocksProps {
 export function ContentBlocks({ elements, resolveImgSrc, resolveAudioSrc, onEnlargeImage, sectionIndex }: ContentBlocksProps) {
   return (
     <>
+      <style>{`.sc-pv-block a{color:#e8c078;text-decoration:underline;text-decoration-color:rgba(232,192,120,0.4)}.sc-pv-block a:hover{color:#f0d898;text-decoration-color:rgba(240,216,152,0.7)}`}</style>
       {elements.map((item, i) => {
         if (item.type === 'dialogue') {
           const spk = item.direction ? `${item.speaker} (${item.direction})` : item.speaker;
@@ -470,9 +471,7 @@ export function ContentBlocks({ elements, resolveImgSrc, resolveAudioSrc, onEnla
             <div key={i} className="sc-pv-block" data-idx={item.idx} data-sec={sectionIndex} style={{
               marginBottom: '1.6em', opacity: 0, transform: 'translateY(16px)',
               transition: 'opacity 0.8s ease, transform 0.8s ease', position: 'relative', zIndex: 2,
-            }}>
-              {item.text}
-            </div>
+            }} dangerouslySetInnerHTML={{ __html: item.text.replace(/<a\s+(?![^>]*\btarget=)/gi, '<a target="_blank" rel="noopener" ') }} />
           );
         }
         return null;
