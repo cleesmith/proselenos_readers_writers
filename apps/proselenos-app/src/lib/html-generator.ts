@@ -680,7 +680,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   display: flex;
   flex-direction: column;
   gap: 1em;
-  padding-top: 30vh;
+  padding-top: 15vh;
 }
 body.sc-overlay-hidden .sc-playhead,
 body.sc-overlay-hidden .sc-playhead-dot,

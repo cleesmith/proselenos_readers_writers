@@ -1468,7 +1468,7 @@ export default function FullBookView({
                             )}
                           </div>
                         )}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em', paddingTop: '30vh' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em', paddingTop: '15vh' }}>
                           {lines.map((line, li) => (
                             <div key={li} className="sc-pv-block" data-idx={item.idx} data-sec={si} style={{
                               opacity: 0, transform: 'translateY(16px)',

@@ -327,7 +327,7 @@ export function ContentBlocks({ elements, resolveImgSrc, resolveAudioSrc, onEnla
                   )}
                 </div>
               )}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em', paddingTop: '30vh' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1em', paddingTop: '15vh' }}>
                 {lines.map((line, li) => (
                   <div key={li} className="sc-pv-block" data-idx={item.idx} data-sec={sectionIndex} style={{
                     opacity: 0, transform: 'translateY(16px)',
