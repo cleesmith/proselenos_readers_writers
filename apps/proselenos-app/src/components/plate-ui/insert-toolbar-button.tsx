@@ -72,14 +72,19 @@ const groups: Group[] = [
         value: KEYS.blockquote,
       },
       {
+        icon: <MinusIcon />,
+        label: 'Divider',
+        value: KEYS.hr,
+      },
+      {
         icon: <CornerDownLeftIcon />,
         label: 'Line break',
         value: 'line_break',
       },
       {
-        icon: <MinusIcon />,
-        label: 'Divider',
-        value: KEYS.hr,
+        icon: <CornerDownLeftIcon />,
+        label: '3 line breaks',
+        value: 'three_line_breaks',
       },
       {
         icon: <ArrowUpToLineIcon />,

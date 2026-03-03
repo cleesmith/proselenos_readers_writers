@@ -92,6 +92,16 @@ const insertBlockMap: Record<
       { select: true }
     );
   },
+  'three_line_breaks': (editor) => {
+    editor.tf.insertNodes(
+      [
+        { type: 'line_break', children: [{ text: '' }] },
+        { type: 'line_break', children: [{ text: '' }] },
+        { type: 'line_break', children: [{ text: '' }] },
+      ],
+      { select: true }
+    );
+  },
   'vn_scene_break': (editor) => {
     editor.tf.insertNodes(
       { type: 'hr', vnType: 'scene_break', children: [{ text: '' }] },
