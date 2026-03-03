@@ -12,6 +12,7 @@ import {
   PilcrowIcon,
   QuoteIcon,
   SparklesIcon,
+  Trash2Icon,
   TypeIcon,
 } from 'lucide-react';
 import type { TElement } from 'platejs';
@@ -22,7 +23,9 @@ import { getBlockType, setBlockType } from '@/components/plate-editor/transforms
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/plate-ui/dropdown-menu';
 
@@ -138,6 +141,31 @@ export function TurnIntoToolbarButton(props: DropdownMenuProps) {
             </DropdownMenuRadioItem>
           ))}
         </ToolbarMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="min-w-[180px]"
+          variant="destructive"
+          onSelect={() => {
+            const entry = editor.api.block();
+            if (entry) {
+              const [, path] = entry;
+              let deletePath = path;
+              // If nested, check if the top-level parent is a VN wrapper
+              // (sticky_image, dialogue, etc.) and delete the whole wrapper
+              if (path.length > 1) {
+                const topNode = editor.children[path[0]] as any;
+                if (topNode?.vnType) {
+                  deletePath = [path[0]];
+                }
+              }
+              editor.tf.removeNodes({ at: deletePath });
+            }
+            setOpen(false);
+          }}
+        >
+          <Trash2Icon />
+          Delete
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
