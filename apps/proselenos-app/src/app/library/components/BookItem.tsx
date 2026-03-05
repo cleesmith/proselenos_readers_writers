@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { MdCheckCircle, MdCheckCircleOutline, MdOutlineAutoStories } from 'react-icons/md';
+import { MdCheckCircle, MdCheckCircleOutline, MdOutlineAutoStories, MdOutlineStorefront } from 'react-icons/md';
 import { LiaInfoCircleSolid } from 'react-icons/lia';
 
 import { Book } from '@/types/book';
@@ -20,6 +20,7 @@ interface BookItemProps {
   transferProgress: number | null;
   showBookDetailsModal: (book: Book) => void;
   onReadBook?: (book: Book) => void;
+  onReadBookseller?: (book: Book) => void;
 }
 
 const BookItem: React.FC<BookItemProps> = ({
@@ -31,6 +32,7 @@ const BookItem: React.FC<BookItemProps> = ({
   transferProgress,
   showBookDetailsModal,
   onReadBook,
+  onReadBookseller,
 }) => {
   const _ = useTranslation();
   const { appService } = useEnv();
@@ -113,6 +115,21 @@ const BookItem: React.FC<BookItemProps> = ({
               >
                 <div className='pt-[2px] sm:pt-[1px]'>
                   <MdOutlineAutoStories size={iconSize15} className='fill-blue-500' />
+                </div>
+              </button>
+            )}
+            {onReadBookseller && (
+              <button
+                aria-label={_('Read Bookseller Ebook')}
+                title={_('Read Bookseller Ebook')}
+                className='-m-2 p-2'
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => {
+                  onReadBookseller(book);
+                }}
+              >
+                <div className='pt-[2px] sm:pt-[1px]'>
+                  <MdOutlineStorefront size={iconSize15} className='fill-orange-500' />
                 </div>
               </button>
             )}

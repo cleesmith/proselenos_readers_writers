@@ -9,7 +9,9 @@ import { useThemeStore } from '@/store/themeStore';
 import { parseEpub } from '@/services/epubService';
 import { saveLibraryManuscript } from '@/services/libraryManuscriptService';
 import Swal from 'sweetalert2';
+import JSZip from 'jszip';
 import { getLocalBookFilename } from '@/utils/book';
+import { stripEpubForBookseller } from '@/lib/bookseller-strip';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLongPress } from '@/hooks/useLongPress';
 import { Menu, MenuItem, revealItemInDir } from '@/utils/desktop-stubs';
@@ -25,9 +27,12 @@ import GroupItem from './GroupItem';
 
 export type BookshelfItem = Book | BooksGroup;
 
+const BOOKSELLER_TEMP_HASH = '__bookseller_temp__';
+
 export const generateBookshelfItems = (books: Book[]): (Book | BooksGroup)[] => {
   const groups: BooksGroup[] = books.reduce((acc: BooksGroup[], book: Book) => {
     if (book.deletedAt) return acc;
+    if (book.hash === BOOKSELLER_TEMP_HASH) return acc;
     book.groupId = book.groupId || BOOK_UNGROUPED_ID;
     book.groupName = book.groupName || BOOK_UNGROUPED_NAME;
     const groupIndex = acc.findIndex((group) => group.id === book.groupId);
@@ -101,6 +106,44 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleReadBookseller = useCallback(async (book: Book) => {
+    if (!onOpenReader) return;
+    try {
+      const appService = await envConfig.getAppService();
+      const epubFile = await appService.openFile(getLocalBookFilename(book), 'Books');
+      const arrayBuffer = await epubFile.arrayBuffer();
+
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      await stripEpubForBookseller(zip);
+
+      const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
+      const tempFilePath = `${BOOKSELLER_TEMP_HASH}/bookseller.epub`;
+
+      // Write modified epub to IndexedDB
+      await appService.writeFile(tempFilePath, 'Books', new File([blob], 'bookseller.epub'));
+
+      // Upsert temp book in library store (in-memory only, not persisted)
+      const { library } = useLibraryStore.getState();
+      const tempBook: Book = {
+        hash: BOOKSELLER_TEMP_HASH,
+        format: 'EPUB',
+        title: `${book.title} (Bookseller)`,
+        sourceTitle: 'bookseller',
+        author: book.author,
+        coverImageUrl: book.coverImageUrl,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      const filtered = library.filter(b => b.hash !== BOOKSELLER_TEMP_HASH);
+      useLibraryStore.setState({ library: [...filtered, tempBook] });
+
+      onOpenReader(BOOKSELLER_TEMP_HASH);
+    } catch (error) {
+      console.error('Failed to open bookseller epub:', error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [envConfig, onOpenReader]);
 
   const makeBookAvailable = async (book: Book) => {
     if (book.uploadedAt && !book.downloadedAt) {
@@ -360,6 +403,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
               transferProgress={transferProgress}
               showBookDetailsModal={showBookDetailsModal}
               onReadBook={onOpenReader ? (book: Book) => onOpenReader(book.hash) : undefined}
+              onReadBookseller={onOpenReader ? handleReadBookseller : undefined}
             />
           ) : (
             <GroupItem

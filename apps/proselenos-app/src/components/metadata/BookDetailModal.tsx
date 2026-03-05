@@ -18,7 +18,7 @@ import BookDetailView from './BookDetailView';
 import BookDetailEdit from './BookDetailEdit';
 import { XrayModal } from '@/components/xray';
 import JSZip from 'jszip';
-import { VISUAL_NARRATIVE_CSS_BOOKSELLER } from '@/lib/visual-narrative-css';
+import { stripEpubForBookseller } from '@/lib/bookseller-strip';
 
 interface BookDetailModalProps {
   book: Book;
@@ -184,11 +184,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     const arrayBuffer = await epubFile.arrayBuffer();
 
     const zip = await JSZip.loadAsync(arrayBuffer);
-    const vnCssPath = 'OEBPS/css/visual-narrative.css';
-
-    if (zip.file(vnCssPath)) {
-      zip.file(vnCssPath, VISUAL_NARRATIVE_CSS_BOOKSELLER);
-    }
+    await stripEpubForBookseller(zip);
 
     const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
     const url = URL.createObjectURL(blob);
@@ -261,9 +257,9 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onDelete={handleBookDelete ? handleDelete : undefined}
                 onDownload={undefined}
                 onUpload={handleBookUpload ? handleReupload : undefined}
-                onDownloadLocal={handleDownloadLocal}
-                onDownloadBookseller={handleDownloadBookseller}
-                onXray={handleXray}
+                onDownloadLocal={book.hash === '__bookseller_temp__' ? undefined : handleDownloadLocal}
+                onDownloadBookseller={book.hash === '__bookseller_temp__' ? undefined : handleDownloadBookseller}
+                onXray={book.hash === '__bookseller_temp__' ? undefined : handleXray}
                 onReadEpub={onReadEpub ? handleReadEpub : undefined}
               />
             )}

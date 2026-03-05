@@ -745,4 +745,14 @@ figcaption {
     font-size: 1.05em;
   }
 }
+
+/* ── Sticky Image (hide-only, no :has()) ──── */
+
+.sticky-img-wrap input[type="checkbox"] {
+  display: none;
+}
+
+.sticky-img-wrap label.enlarge-overlay {
+  display: none;
+}
 `;
