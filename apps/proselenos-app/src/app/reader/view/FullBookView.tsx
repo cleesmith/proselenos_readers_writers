@@ -448,6 +448,7 @@ body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35re
 #lightbox{position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;cursor:zoom-out}
 #lightbox img{max-width:90vw;max-height:90vh;border-radius:6px}
 .theme-toggle-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px}
+#scroll-hint{position:fixed;left:0;right:0;top:calc(25% + 20px);text-align:center;z-index:5;pointer-events:none;transition:opacity 0.6s ease;font-size:11px;letter-spacing:0.15em;font-style:italic;font-family:'SF Mono','Fira Code',monospace}
 </style>
 </head>
 <body>
@@ -465,6 +466,7 @@ body{font-family:Georgia,'EB Garamond',serif;font-size:clamp(1.1rem,2.2vw,1.35re
   <div id="playhead"><div class="dot"></div></div>
   <div id="scene-info"></div>
   <div id="bg-wall"></div>
+  <div id="scroll-hint">scroll to begin...</div>
   <div id="scroll-wrap">
     <div id="content">
       <div class="dead-zone-top"><span class="silence">&mdash; silence &mdash;</span></div>
@@ -505,6 +507,8 @@ function applyTheme() {
   document.querySelectorAll('.section-exit').forEach(function(ex) { ex.style.borderTop = '1px solid ' + t.sceneBorder; ex.style.color = scOrangeOn ? 'rgba(255,120,68,0.15)' : t.silence; });
   document.querySelectorAll('.figure-caption,.figure-missing').forEach(function(el) { el.style.color = t.muted; });
   document.querySelectorAll('.heading-block').forEach(function(el) { el.style.color = t.text; });
+  var hintEl = document.getElementById('scroll-hint');
+  if (hintEl) hintEl.style.color = isDark ? '#3a3530' : '#bab5ae';
 }
 
 function toggleTheme() { isDark = !isDark; applyTheme(); }
@@ -727,6 +731,9 @@ function tick() {
       }
     }
   }
+
+  var hintEl = document.getElementById('scroll-hint');
+  if (hintEl) hintEl.style.opacity = scrollEl.scrollTop > 10 ? '0' : '1';
 
   requestAnimationFrame(tick);
 }
@@ -1302,6 +1309,10 @@ export default function FullBookView({
           }
         }
 
+        // Fade out scroll hint once user scrolls
+        const hintEl = document.getElementById('fbv-scroll-hint');
+        if (hintEl) hintEl.style.opacity = (scrollEl?.scrollTop ?? 0) > 10 ? '0' : '1';
+
         pvRAF.current = requestAnimationFrame(tick);
       }
 
@@ -1395,6 +1406,19 @@ export default function FullBookView({
           position: 'fixed', inset: 0, backgroundSize: 'cover', backgroundRepeat: 'no-repeat',
           opacity: 0, transition: 'opacity 1.5s ease', zIndex: 0, pointerEvents: 'none',
         }}></div>
+
+        {/* Scroll hint */}
+        <div id="fbv-scroll-hint" style={{
+          position: 'fixed', left: 0, right: 0, top: 'calc(25% + 20px)',
+          textAlign: 'center', zIndex: 5, pointerEvents: 'none',
+          transition: 'opacity 0.6s ease',
+        }}>
+          <span style={{
+            fontSize: '11px', letterSpacing: '0.15em', fontStyle: 'italic',
+            color: pvLight ? '#bab5ae' : '#3a3530',
+            fontFamily: "'SF Mono','Fira Code',monospace",
+          }}>scroll to begin...</span>
+        </div>
 
         {/* Scrollable content */}
         <div ref={pvScrollRef} style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
