@@ -1,4 +1,5 @@
 // app/reader/view/FullBookView.tsx
+
 // Full-book scroll-driven immersive reader.
 // Cloned from SingleChapterView.tsx — renders ALL sections as one continuous
 // scroll with per-section SceneCraft support (wallpaper, ambient audio,

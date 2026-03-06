@@ -6,6 +6,7 @@ import {
   MdOutlineDelete,
   MdOutlineEdit,
   MdOutlineFileDownload,
+  MdOutlineLanguage,
   MdOutlineStorefront,
 } from 'react-icons/md';
 import { GiBoxUnpacking } from 'react-icons/gi';
@@ -33,6 +34,7 @@ interface BookDetailViewProps {
   onUpload?: () => void;
   onDownloadLocal?: () => void;
   onDownloadBookseller?: () => void;
+  onDownloadWebReady?: () => void;
   onXray?: () => void;
   onReadEpub?: () => void;
 }
@@ -47,6 +49,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onUpload,
   onDownloadLocal,
   onDownloadBookseller,
+  onDownloadWebReady,
   onXray,
   onReadEpub,
 }) => {
@@ -96,6 +99,11 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
             {onDownloadBookseller && (
               <button onClick={onDownloadBookseller} title={_('Download for booksellers (EPUBCheck-clean)')}>
                 <MdOutlineStorefront className='fill-base-content hover:fill-orange-500' />
+              </button>
+            )}
+            {onDownloadWebReady && (
+              <button onClick={onDownloadWebReady} title={_('Download web ready (zip)')}>
+                <MdOutlineLanguage className='fill-base-content hover:fill-teal-500' />
               </button>
             )}
             {onXray && (

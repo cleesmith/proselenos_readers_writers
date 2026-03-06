@@ -19,6 +19,7 @@ import BookDetailEdit from './BookDetailEdit';
 import { XrayModal } from '@/components/xray';
 import JSZip from 'jszip';
 import { stripEpubForBookseller } from '@/lib/bookseller-strip';
+import { downloadBookAsWebReady } from '@/services/webReadyService';
 
 interface BookDetailModalProps {
   book: Book;
@@ -195,6 +196,11 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadWebReady = async () => {
+    const { isDarkMode } = useThemeStore.getState();
+    await downloadBookAsWebReady(book, envConfig, isDarkMode);
+  };
+
   const handleXray = () => {
     setShowXray(true);
   };
@@ -259,6 +265,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onUpload={handleBookUpload ? handleReupload : undefined}
                 onDownloadLocal={book.hash === '__bookseller_temp__' ? undefined : handleDownloadLocal}
                 onDownloadBookseller={book.hash === '__bookseller_temp__' ? undefined : handleDownloadBookseller}
+                onDownloadWebReady={book.hash === '__bookseller_temp__' ? undefined : handleDownloadWebReady}
                 onXray={book.hash === '__bookseller_temp__' ? undefined : handleXray}
                 onReadEpub={onReadEpub ? handleReadEpub : undefined}
               />
