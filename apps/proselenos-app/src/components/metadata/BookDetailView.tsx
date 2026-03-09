@@ -8,6 +8,7 @@ import {
   MdOutlineFileDownload,
   MdOutlineHeadphones,
   MdOutlineLanguage,
+  MdOutlinePictureAsPdf,
   MdOutlineStorefront,
 } from 'react-icons/md';
 import { GiBoxUnpacking } from 'react-icons/gi';
@@ -36,6 +37,7 @@ interface BookDetailViewProps {
   onDownloadLocal?: () => void;
   onDownloadBookseller?: () => void;
   onDownloadWebReady?: () => void;
+  onDownloadPdf?: () => void;
   onXray?: () => void;
   onAudiobook?: () => void;
   onReadEpub?: () => void;
@@ -52,6 +54,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onDownloadLocal,
   onDownloadBookseller,
   onDownloadWebReady,
+  onDownloadPdf,
   onXray,
   onAudiobook,
   onReadEpub,
@@ -107,6 +110,11 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
             {onDownloadWebReady && (
               <button onClick={onDownloadWebReady} title={_('Download web ready (zip)')}>
                 <MdOutlineLanguage className='fill-base-content hover:fill-teal-500' />
+              </button>
+            )}
+            {onDownloadPdf && (
+              <button onClick={onDownloadPdf} title={_('Download PDF (print ready)')}>
+                <MdOutlinePictureAsPdf className='fill-base-content hover:fill-red-500' />
               </button>
             )}
             {onAudiobook && (

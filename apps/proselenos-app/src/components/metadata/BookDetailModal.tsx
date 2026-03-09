@@ -21,6 +21,7 @@ import { AudiobookModal } from '@/components/audiobook';
 import JSZip from 'jszip';
 import { stripEpubForBookseller } from '@/lib/bookseller-strip';
 import { downloadBookAsWebReady } from '@/services/webReadyService';
+import { generatePdfFromEpub } from '@/lib/epub-to-pdf';
 
 interface BookDetailModalProps {
   book: Book;
@@ -204,6 +205,19 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     await downloadBookAsWebReady(book, envConfig, isDarkMode);
   };
 
+  const handleDownloadPdf = async () => {
+    const appService = await envConfig.getAppService();
+    const epubFilename = getLocalBookFilename(book);
+    const epubFile = await appService.openFile(epubFilename, 'Books');
+    const arrayBuffer = await epubFile.arrayBuffer();
+
+    await generatePdfFromEpub(arrayBuffer, {
+      title: book.title || 'Untitled',
+      author: book.author || 'Unknown',
+      publisher: bookMeta?.publisher || undefined,
+    });
+  };
+
   const handleXray = () => {
     setShowXray(true);
   };
@@ -277,6 +291,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onDownloadLocal={book.hash === '__bookseller_temp__' ? undefined : handleDownloadLocal}
                 onDownloadBookseller={book.hash === '__bookseller_temp__' ? undefined : handleDownloadBookseller}
                 onDownloadWebReady={book.hash === '__bookseller_temp__' ? undefined : handleDownloadWebReady}
+                onDownloadPdf={book.hash === '__bookseller_temp__' ? undefined : handleDownloadPdf}
                 onXray={book.hash === '__bookseller_temp__' ? undefined : handleXray}
                 onAudiobook={book.hash === '__bookseller_temp__' ? undefined : handleAudiobook}
                 onReadEpub={onReadEpub ? handleReadEpub : undefined}
