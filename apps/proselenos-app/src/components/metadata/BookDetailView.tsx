@@ -6,6 +6,7 @@ import {
   MdOutlineDelete,
   MdOutlineEdit,
   MdOutlineFileDownload,
+  MdOutlineHeadphones,
   MdOutlineLanguage,
   MdOutlineStorefront,
 } from 'react-icons/md';
@@ -36,6 +37,7 @@ interface BookDetailViewProps {
   onDownloadBookseller?: () => void;
   onDownloadWebReady?: () => void;
   onXray?: () => void;
+  onAudiobook?: () => void;
   onReadEpub?: () => void;
 }
 
@@ -51,6 +53,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onDownloadBookseller,
   onDownloadWebReady,
   onXray,
+  onAudiobook,
   onReadEpub,
 }) => {
   const _ = useTranslation();
@@ -106,14 +109,19 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
                 <MdOutlineLanguage className='fill-base-content hover:fill-teal-500' />
               </button>
             )}
-            {onXray && (
-              <button onClick={onXray} title={_('X-ray: View epub structure')}>
-                <GiBoxUnpacking className='fill-base-content hover:fill-purple-500' />
+            {onAudiobook && (
+              <button onClick={onAudiobook} title={_('Audiobook: Build and play')}>
+                <MdOutlineHeadphones className='fill-base-content hover:fill-amber-500' />
               </button>
             )}
             {onReadEpub && (
               <button onClick={onReadEpub} title={_('Read Ebook')}>
                 <MdOutlineAutoStories className='fill-base-content hover:fill-blue-500' />
+              </button>
+            )}
+            {onXray && (
+              <button onClick={onXray} title={_('X-ray: View epub structure')}>
+                <GiBoxUnpacking className='fill-base-content hover:fill-purple-500' />
               </button>
             )}
           </div>

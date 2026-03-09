@@ -14,6 +14,8 @@ const PRECACHE_URLS = [
   '/library',
   '/authors',
   '/reader/view',
+  '/ffmpeg/ffmpeg-core.js',
+  '/ffmpeg/ffmpeg-core.wasm',
 ];
 
 // Install: pre-cache critical pages

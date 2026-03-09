@@ -17,6 +17,7 @@ import Spinner from '@/components/Spinner';
 import BookDetailView from './BookDetailView';
 import BookDetailEdit from './BookDetailEdit';
 import { XrayModal } from '@/components/xray';
+import { AudiobookModal } from '@/components/audiobook';
 import JSZip from 'jszip';
 import { stripEpubForBookseller } from '@/lib/bookseller-strip';
 import { downloadBookAsWebReady } from '@/services/webReadyService';
@@ -54,6 +55,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [bookMeta, setBookMeta] = useState<BookMetadata | null>(null);
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [showXray, setShowXray] = useState(false);
+  const [showAudiobook, setShowAudiobook] = useState(false);
   const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
 
@@ -115,6 +117,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     setEditMode(false);
     setActiveDeleteAction(null);
     setShowXray(false);
+    setShowAudiobook(false);
     onClose();
   };
 
@@ -214,6 +217,14 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     setShowXray(false);
   };
 
+  const handleAudiobook = () => {
+    setShowAudiobook(true);
+  };
+
+  const handleCloseAudiobook = () => {
+    setShowAudiobook(false);
+  };
+
   const currentDeleteConfig = activeDeleteAction ? deleteConfigs[activeDeleteAction] : null;
 
   if (!bookMeta)
@@ -267,6 +278,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onDownloadBookseller={book.hash === '__bookseller_temp__' ? undefined : handleDownloadBookseller}
                 onDownloadWebReady={book.hash === '__bookseller_temp__' ? undefined : handleDownloadWebReady}
                 onXray={book.hash === '__bookseller_temp__' ? undefined : handleXray}
+                onAudiobook={book.hash === '__bookseller_temp__' ? undefined : handleAudiobook}
                 onReadEpub={onReadEpub ? handleReadEpub : undefined}
               />
             )}
@@ -294,6 +306,12 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
         book={book}
         isOpen={showXray}
         onClose={handleCloseXray}
+      />
+
+      <AudiobookModal
+        book={book}
+        isOpen={showAudiobook}
+        onClose={handleCloseAudiobook}
       />
     </>
   );
