@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What I Learned from Birds</title>
+  <style>
+/* EverythingEbooks — EPUB-matching base styles */
+
+html {
+  font-size: 100%;
+}
+
+body {
+  font-family: serif;
+  line-height: 1.6;
+  margin: 1em auto;
+  padding: 0 1.5rem;
+  padding-bottom: 70px;
+  text-align: left;
+  max-width: min(92%, 1400px);
+  background: #fffaf5;
+  color: #222;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Title page */
+.title-page {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.title-page p {
+  text-indent: 0;
+  text-align: center;
+}
+
+.book-title {
+  text-align: center;
+  font-size: 1.8em;
+  font-weight: bold;
+  margin: 0;
+  padding-top: 25%;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.book-subtitle {
+  text-align: center;
+  font-size: 1.1em;
+  font-style: italic;
+  margin: 0;
+  padding-top: 5%;
+}
+
+.book-author {
+  text-align: center;
+  font-size: 1.3em;
+  margin: 0;
+  padding-top: 20%;
+  font-weight: normal;
+}
+
+.book-publisher {
+  text-align: center;
+  font-size: 1em;
+  margin: 0;
+  padding-top: 20%;
+  font-weight: normal;
+}
+
+/* Copyright page */
+.copyright-page {
+  margin: 2em 0;
+}
+
+.copyright-page p {
+  text-align: left;
+  margin: 0.8em 0;
+  text-indent: 0;
+  font-size: 0.9em;
+}
+
+/* Contents page */
+.contents-page {
+  margin: 2em 0;
+}
+
+.toc-title {
+  text-align: center;
+  font-size: 1.5em;
+  margin: 2em 0;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.toc-contents {
+  margin: 1em 0;
+  padding: 0;
+}
+
+.toc-item {
+  margin: 1em 0;
+  text-align: left;
+}
+
+.toc-content {
+  margin: 0;
+  text-indent: 0;
+}
+
+.toc-content a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s;
+}
+
+.toc-content a:hover {
+  text-decoration: underline;
+}
+
+.toc-item-title {
+  display: inline;
+}
+
+.toc-section-header {
+  margin: 2em 0 0.5em 0;
+}
+
+.toc-section-title {
+  font-weight: bold;
+  font-style: italic;
+  margin: 0;
+  text-indent: 0;
+}
+
+/* Chapter styles */
+.chapter {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 3em 0 2em 0;
+  text-align: center;
+}
+
+p {
+  margin: 0 0 1em 0;
+  text-indent: 1.5em;
+  text-align: justify;
+  line-height: 1.6;
+}
+
+pre {
+  margin: 1em 0;
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  font-family: monospace;
+}
+
+/* First paragraph after chapter heading */
+.chapter p:first-of-type {
+  text-indent: 0;
+  margin-top: 1.5em;
+}
+
+/* Inline images */
+.image-container {
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+.image-container img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Figures (resized images from editor) */
+figure {
+  text-align: center;
+  margin: 1.5em auto;
+  max-width: 100%;
+}
+
+figure img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+figure[data-align="left"] {
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+figure[data-align="right"] {
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+}
+
+figcaption {
+  font-size: 0.85em;
+  text-align: center;
+  margin-top: 0.5em;
+  font-style: italic;
+}
+
+/* Audio blocks (non-VN) */
+.audio-block {
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+.audio-block audio {
+  width: 80%;
+  max-width: 400px;
+}
+
+.audio-block .caption {
+  font-size: 0.85em;
+  font-style: italic;
+  margin-top: 0.5em;
+}
+
+/* Scene overrides — no indent, left-aligned */
+.scene p {
+  text-indent: 0;
+  text-align: left;
+}
+
+/* About author page */
+.about-author-page {
+  margin: 2em 0;
+}
+
+.about-author-page h1 {
+  text-align: center;
+  font-size: 1.5em;
+  margin: 2em 0;
+  font-weight: bold;
+}
+
+.about-author-page p {
+  text-align: left;
+  text-indent: 1.5em;
+  margin: 0 0 1em 0;
+}
+
+.about-author-page p:first-of-type {
+  text-indent: 0;
+}
+
+/* Navigation styles */
+nav h1 {
+  text-align: center;
+  font-size: 1.5em;
+  margin: 2em 0;
+  font-weight: bold;
+}
+
+nav ol {
+  list-style: none;
+  margin: 1em 0;
+  padding: 0;
+}
+
+nav li {
+  margin: 1em 0;
+  text-align: left;
+}
+
+nav a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.chapter a,
+.scene a,
+.copyright-page a {
+  color: #1a6fb5;
+  text-decoration: underline;
+  text-decoration-color: rgba(26, 111, 181, 0.4);
+}
+
+.chapter a:hover,
+.scene a:hover,
+.copyright-page a:hover {
+  color: #155a94;
+  text-decoration-color: rgba(21, 90, 148, 0.8);
+}
+
+
+/* ── SceneCraft immersive scroll-driven styles ──── */
+.sc-scene {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  background: #060608;
+  color: #c8c0b4;
+  overflow: clip;
+}
+.sc-scene .sc-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+.sc-scene .sc-playhead {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(255,120,68,0.15);
+  z-index: 10;
+  pointer-events: none;
+}
+.sc-scene .sc-playhead-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,120,68,0.4);
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  transform: translateX(-50%);
+}
+.sc-scene .sc-info {
+  position: fixed;
+  right: 16px;
+  top: calc(50% - 14px);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(255,120,68,0.35);
+  z-index: 10;
+  pointer-events: none;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-content {
+  max-width: min(88%, 52rem);
+  margin: 0 auto;
+  padding: 50vh 2rem;
+  font-family: Georgia, 'EB Garamond', serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  line-height: 2;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-dead-zone {
+  height: 50vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+.sc-scene .sc-dead-zone span {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: #2a2620;
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-enter {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.25);
+  margin-bottom: 3em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-exit {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.15);
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid rgba(255,255,255,0.03);
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-dead-zone-after {
+  height: 70vh;
+}
+.sc-scene .sc-block {
+  margin-bottom: 1.6em;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block.sc-vis {
+  opacity: 1;
+  transform: translateY(0);
+}
+.sc-scene .sc-block.sc-past {
+  opacity: 0.3;
+}
+.sc-scene .sc-block-dialogue {
+  color: #d4c090;
+}
+.sc-scene .sc-block-dialogue .sc-speaker {
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 0.65em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a08040;
+  display: block;
+  margin-bottom: 0.3em;
+}
+.sc-scene .sc-block-emphasis {
+  font-style: italic;
+  color: #e0c8b0;
+  text-align: center;
+}
+.sc-scene .sc-block-quote {
+  border-left: 2px solid rgba(200,192,180,0.3);
+  padding-left: 1.5em;
+}
+.sc-scene .sc-block-internal {
+  font-style: italic;
+  padding-left: 2em;
+}
+.sc-scene .sc-block-break {
+  text-align: center;
+  color: #3a3530;
+  letter-spacing: 0.3em;
+}
+.sc-scene .sc-block-h1 {
+  font-size: 1.8em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h2 {
+  font-size: 1.4em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h3 {
+  font-size: 1.15em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-divider {
+  border-top: 1px solid rgba(200,192,180,0.15);
+  margin: 1.6em 0;
+}
+.sc-scene .sc-block-linebreak {
+  height: 1.2em;
+  margin: 0;
+}
+.sc-scene .sc-block-sticky {
+  display: flex;
+  gap: 1.5em;
+  align-items: flex-start;
+  min-height: 300px;
+  margin-bottom: 1.6em;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block-sticky .sc-block {
+  margin-bottom: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img {
+  position: sticky;
+  top: 0;
+  width: 40%;
+  flex-shrink: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input[type="checkbox"] {
+  display: none;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input:checked ~ .sc-enlarge-overlay {
+  display: block !important;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img img {
+  width: 100%;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+.sc-scene .sc-block-sticky .sc-sticky-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding-top: 15vh;
+}
+body.sc-overlay-hidden .sc-playhead,
+body.sc-overlay-hidden .sc-playhead-dot,
+body.sc-overlay-hidden .sc-info,
+body.sc-overlay-hidden .sc-dead-zone span {
+  display: none !important;
+}
+body.sc-overlay-hidden .sc-enter,
+body.sc-overlay-hidden .sc-exit {
+  visibility: hidden !important;
+}
+/* ── Sticky-image enlarge: collapse stacking contexts so overlay reaches root ── */
+body:has(.sc-sticky-img input:checked) .sc-scene .sc-content {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-block-sticky {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-sticky-img {
+  position: static;
+}
+.sc-scene a {
+  color: #e8c078;
+  text-decoration: underline;
+  text-decoration-color: rgba(232, 192, 120, 0.4);
+}
+.sc-scene a:hover {
+  color: #f0d898;
+  text-decoration-color: rgba(240, 216, 152, 0.7);
+}
+
+/* ── Dark mode ─────────────────────────────── */
+
+body.dark-mode {
+  background: #121212;
+  color: #e0e0e0;
+}
+
+body.dark-mode .dialogue {
+  border-left-color: rgba(200, 200, 200, 0.25);
+}
+
+body.dark-mode .toc-content a:hover {
+  color: #ccc;
+}
+
+body.dark-mode img {
+  opacity: 0.9;
+}
+
+body.dark-mode .scene-audio {
+  border-color: rgba(200, 200, 200, 0.15);
+}
+
+body.dark-mode .chapter a,
+body.dark-mode .scene a,
+body.dark-mode .copyright-page a {
+  color: #5bb8f5;
+  text-decoration-color: rgba(91, 184, 245, 0.4);
+}
+
+body.dark-mode .chapter a:hover,
+body.dark-mode .scene a:hover,
+body.dark-mode .copyright-page a:hover {
+  color: #7dcaff;
+  text-decoration-color: rgba(125, 202, 255, 0.8);
+}
+
+/* ── Sticky Footer ─────────────────────────── */
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  color: #ccc;
+  padding: 12px 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.9em;
+  z-index: 1000;
+}
+
+.footer-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.footer-title {
+  font-weight: bold;
+  color: #707070;
+}
+
+.footer-author {
+  color: #999;
+}
+
+.footer-copyright {
+  color: #777;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  font-size: 1.4em;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.playhead-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+}
+.playhead-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.playhead-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: #ff7844;
+  transition: opacity 0.2s;
+}
+.playhead-toggle.sc-off svg {
+  opacity: 0.35;
+}
+
+.footer-buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ── Responsive ────────────────────────────── */
+
+@media (max-width: 600px) {
+  body {
+    margin: 0.5em;
+    padding-bottom: 70px;
+  }
+
+  .book-title {
+    font-size: 1.5em;
+  }
+
+  h1 {
+    font-size: 1.3em;
+  }
+
+  .footer {
+    padding: 10px 15px;
+    font-size: 0.8em;
+  }
+
+  .footer-info {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+  </style>
+</head>
+<body class="dark-mode">
+
+  <section class="cover-page" style="text-align:center; margin:0; padding:2em 0;">
+    <img src="images/cover.jpg" alt="Cover" style="max-width:100%; max-height:90vh; object-fit:contain;"/>
+  </section>
+
+  <section class="title-page">
+    <p class="book-title">WHAT I LEARNED FROM BIRDS</p>
+    <p class="book-subtitle">Reflections on Symbol and Spirit</p>
+    <p class="book-author">Linda A Lavid</p>
+    <p class="book-publisher">Plum Barn Press</p>
+  </section>
+
+  <section class="copyright-page" id="section-1">
+<section class="copyright-page" epub:type="copyright-page">
+<p></p>
+<p></p>
+<p>Copyright © 2026 by Linda A Lavid</p>
+<br>
+<p>All rights reserved.</p>
+<br>
+<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>
+<p></p>
+<p></p>
+<figure data-align="left" style="width:151px;text-align:left">
+<img src="images/mrs_plum_barn_press.jpg" alt="mrs plum barn press">
+<figcaption>Mrs. Plum Barn Press</figcaption>
+</figure>
+<p></p>
+</section>
+  </section>
+
+  <div class="contents-page">
+    <h1 class="toc-title">CONTENTS</h1>
+    <div class="toc-contents">
+      <div class="toc-item"><p class="toc-content"><a href="#section-3"><span class="toc-item-title">Introduction</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-4"><span class="toc-item-title">CARDINAL</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-5"><span class="toc-item-title">PUFFIN</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-6"><span class="toc-item-title">EAGLE</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-7"><span class="toc-item-title">SNOWY OWL</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-8"><span class="toc-item-title">RAVEN</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-9"><span class="toc-item-title">SWAN</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-10"><span class="toc-item-title">HUMMINGBIRD</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-11"><span class="toc-item-title">TOUCAN</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-12"><span class="toc-item-title">FLAMINGO</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-13"><span class="toc-item-title">PARROT</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-14"><span class="toc-item-title">PEACOCK</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-15"><span class="toc-item-title">GOLDEN PHEASANT</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-16"><span class="toc-item-title">Afterword</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-17"><span class="toc-item-title">About the Author</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="#section-18"><span class="toc-item-title">Also by Linda A Lavid</span></a></p></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-3" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;00-introduction.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Introduction" data-sc-aud_00_introduction_mp3="audio/00-introduction.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Introduction</div>
+      <div class="sc-block sc-block-h1" data-idx="0">Introduction</div>
+      <div class="sc-block sc-block-para" data-idx="1">BIRDS AS MESSENGERS OF AWARENESS</div>
+      <div class="sc-block sc-block-para" data-idx="2">Birds have always captured the human imagination.</div>
+      <div class="sc-block sc-block-para" data-idx="3">Long before field guides and scientific classifications, people watched birds for another reason entirely. Their movements through the sky seemed to carry meaning. A sudden appearance, a call in the distance, a flash of color against the landscape—these moments felt like small invitations to notice the world more closely.</div>
+      <div class="sc-block sc-block-para" data-idx="4">This book is not a guide to bird identification.</div>
+      <div class="sc-block sc-block-para" data-idx="5">Instead, it is a journey through <strong>symbol and reflection</strong>. Each bird in these pages represents an archetype—a way of understanding aspects of our own inner landscape. The birds become companions in a quiet exploration of awareness, resilience, transformation, joy, voice, and balance.</div>
+      <div class="sc-block sc-block-para" data-idx="6">You will meet twelve birds in this collection.</div>
+      <div class="sc-block sc-block-para" data-idx="7">Each chapter includes three elements:</div>
+      <div class="sc-block sc-block-para" data-idx="8">• a short narrative reflection inspired by the bird’s symbolic qualities</div>
+      <div class="sc-block sc-block-para" data-idx="9">• a brief connection to zodiac archetypes and numerology</div>
+      <div class="sc-block sc-block-para" data-idx="10">• a reflection prompt inviting you to consider how these themes appear in your own life</div>
+      <div class="sc-block sc-block-para" data-idx="11">The birds are not presented as rigid meanings or fixed interpretations. Symbols are most powerful when they remain open and alive. You may find that a bird evokes something different for you than it does for someone else—and that is exactly the point.</div>
+      <div class="sc-block sc-block-para" data-idx="12">This book invites curiosity rather than certainty.</div>
+      <div class="sc-block sc-block-para" data-idx="13">The wandering mind has a special way of learning. It moves between observation and imagination, between the outer world and the inner one. Sometimes a bird in a tree, a flash of color in the sky, or a quiet moment of attention becomes the starting point for deeper insight.</div>
+      <div class="sc-block sc-block-para" data-idx="14">In that sense, the birds in this book are not only creatures of feather and flight.</div>
+      <div class="sc-block sc-block-para" data-idx="15">They are mirrors.</div>
+      <div class="sc-block sc-block-para" data-idx="16">They reflect something about the ways we grow, adapt, struggle, celebrate, and ultimately come to understand ourselves.</div>
+      <div class="sc-block sc-block-para" data-idx="17">If you choose, you can read these reflections slowly—one bird at a time. Pause with the reflection prompts. Notice which ideas resonate and which simply pass by.</div>
+      <div class="sc-block sc-block-para" data-idx="18">Like birds themselves, insight often arrives unexpectedly.</div>
+      <div class="sc-block sc-block-para" data-idx="19">And sometimes, the smallest moment of noticing becomes the beginning of a much larger journey.</div>
+      <div class="sc-block sc-block-para" data-idx="20">Enjoy, Linda</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-4" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;cardinal.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="CARDINAL" data-sc-aud_cardinal_mp3="audio/cardinal.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">CARDINAL</div>
+      <div class="sc-block sc-block-h3" data-idx="0">CARDINAL</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE MESSENGER</div>
+      <div class="sc-block sc-block-para" data-idx="2">AIRES ♈</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/cardinal-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/cardinal-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The cardinal rarely arrives quietly.</div>
+          <div class="sc-block" data-idx="3">Even in the stillness of winter, when branches stand bare and the world feels paused, a flash of red appears like a living ember among the trees. It is impossible not to notice. The bird does not ask for attention—it claims it.</div>
+          <div class="sc-block" data-idx="3">Because of this, the cardinal has long been seen as a <strong>messenger</strong>.</div>
+          <div class="sc-block" data-idx="3">Not a messenger in the ordinary sense, carrying written words or spoken instructions, but a messenger of <strong>awareness</strong>. It appears at the moment when something inside us is beginning to wake up. A thought we hadn’t considered. A feeling we had overlooked. A quiet sense that life may be speaking in ways we rarely pause to hear.</div>
+          <div class="sc-block" data-idx="3">The cardinal’s brilliant red has the energy of <strong>vitality</strong>. It is the color of life moving through the body, the color of warmth in the middle of cold days, the color of beginnings.</div>
+          <div class="sc-block" data-idx="3">In symbolic language it resonates with <strong>Aries</strong>, the first spark of the zodiac, and with the number <strong>one</strong>, the moment when something steps forward and says, <em>this is where it begins.</em></div>
+          <div class="sc-block" data-idx="3">And yet the cardinal offers no explanation.</div>
+          <div class="sc-block" data-idx="3">It simply appears.</div>
+          <div class="sc-block" data-idx="3">A bright presence in an ordinary moment. A small interruption in the routine of the day. A reminder that attention itself is a form of awakening.</div>
+          <div class="sc-block" data-idx="3">The wandering mind often believes it is searching for answers, when in truth it is learning how to <strong>notice</strong>.</div>
+          <div class="sc-block" data-idx="3">The cardinal is the moment of noticing. A flicker of red among the branches, when something has begun.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think of a time when something small in the natural world suddenly caught your attention—a bird, a tree, a shift of light, a quiet sound.</div>
+          <div class="sc-block" data-idx="3">What changed in your awareness in that moment?</div>
+          <div class="sc-block" data-idx="3">Did it feel like a message, or simply an invitation to notice more deeply?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-5" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;puffin.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="PUFFIN" data-sc-aud_puffin_mp3="audio/puffin.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">PUFFIN</div>
+      <div class="sc-block sc-block-h3" data-idx="0">PUFFIN</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE SURVIVOR</div>
+      <div class="sc-block sc-block-para" data-idx="2">CAPRICORN ♑</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/puffin-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/puffin-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">At first glance, the puffin almost seems playful.</div>
+          <div class="sc-block" data-idx="3">Its bright beak, compact body, and slightly comical stance give the impression of a bird that belongs in a storybook rather than on the cold cliffs of the North Atlantic. But appearances can be misleading. The puffin lives where winds cut sharply across the sea and waves rise without warning. Its home is a landscape shaped by storms.</div>
+          <div class="sc-block" data-idx="3">And yet the puffin returns there every year.</div>
+          <div class="sc-block" data-idx="3">This quiet act of returning is part of its deeper symbolism. In the language of archetypes, the puffin carries the spirit of the <strong>survivor</strong>—not the dramatic hero who conquers the world, but the steady presence that continues, season after season, through whatever conditions arise.</div>
+          <div class="sc-block" data-idx="3">The puffin resonates with <strong>Capricorn</strong>, the sign known for endurance and persistence. Capricorn energy understands that real strength is not loud. It is patient. It climbs the mountain one careful step at a time.</div>
+          <div class="sc-block" data-idx="3">Numerology offers a similar echo through the number <strong>two</strong>, a symbol of balance and partnership. Puffins often return to the same nesting grounds and reunite with the same mate, working together to raise their young. Survival, in their world, is not a solitary achievement but a shared effort.</div>
+          <div class="sc-block" data-idx="3">Perhaps this is why the puffin’s appearance carries a subtle touch of humor. Its bright colors and curious posture seem to suggest that perseverance does not always have to look grim. Even in harsh places, there can be moments of lightness.</div>
+          <div class="sc-block" data-idx="3">The puffin reminds us that resilience often hides behind an ordinary face.</div>
+          <div class="sc-block" data-idx="3">Storms come. Seasons change. The cliffs grow quiet and then fill with life again. And somewhere in that cycle, the survivor returns—not to prove strength, but simply to continue.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think of a time when you endured a difficult season in your life.</div>
+          <div class="sc-block" data-idx="3">What helped you continue moving forward?</div>
+          <div class="sc-block" data-idx="3">Was it determination, the support of others, a quiet sense of purpose—or something unexpected that helped you keep returning to the path?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-6" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;eagle.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="EAGLE" data-sc-aud_eagle_mp3="audio/eagle.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">EAGLE</div>
+      <div class="sc-block sc-block-h3" data-idx="0">EAGLE</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE VISIONARY</div>
+      <div class="sc-block sc-block-para" data-idx="2">SAGITTARIUS ♐</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/eagle-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/eagle-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The eagle is rarely seen up close.</div>
+          <div class="sc-block" data-idx="3">More often, it appears as a distant shape moving slowly across the sky, riding currents of air that lift it far above the landscape. From that height, the world changes. Rivers become silver threads. Forests soften into patterns. What once seemed large becomes part of a much wider design.</div>
+          <div class="sc-block" data-idx="3">This is the gift of the eagle: <strong>perspective</strong>.</div>
+          <div class="sc-block" data-idx="3">Across many cultures, the eagle has been regarded as a symbol of vision—not only physical sight, but the ability to perceive what lies beyond the immediate moment. It is the archetype of the <strong>visionary</strong>, the one who can rise above confusion long enough to see where the path truly leads.</div>
+          <div class="sc-block" data-idx="3">The eagle resonates with <strong>Sagittarius</strong>, the seeker of horizons and distant truths. Sagittarius energy asks us to expand our view of the world, to question the boundaries we have accepted, and to aim our attention toward something larger than ourselves.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>three</strong> carries the energy of expansion and growth. It suggests movement outward—ideas unfolding, perspectives widening, understanding deepening as we step beyond the narrow ground of certainty.</div>
+          <div class="sc-block" data-idx="3">Yet the eagle does not hurry.</div>
+          <div class="sc-block" data-idx="3">It circles patiently, allowing the air itself to lift and guide its flight. Its power comes not from constant effort but from knowing how to work with the invisible currents already present in the world.</div>
+          <div class="sc-block" data-idx="3">This is a different kind of leadership.</div>
+          <div class="sc-block" data-idx="3">Not domination. Not force. But <strong>sovereignty</strong>—the quiet authority that comes from seeing clearly and acting with intention.</div>
+          <div class="sc-block" data-idx="3">The eagle reminds us that we are not confined to the immediate landscape of our worries or circumstances. At any moment, awareness can rise higher, widening the field of vision.</div>
+          <div class="sc-block" data-idx="3">What once seemed overwhelming becomes part of a larger story.</div>
+          <div class="sc-block" data-idx="3">The visionary simply remembers to look from above.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think of a situation in your life that once felt overwhelming when viewed up close.</div>
+          <div class="sc-block" data-idx="3">What changed when you stepped back and looked at it from a wider perspective?</div>
+          <div class="sc-block" data-idx="3">What new understanding appeared when you allowed your awareness to rise above the immediate moment?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="5"></div>
+      <div class="sc-block sc-block-break" data-idx="6">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-7" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;snowy-owl.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="SNOWY OWL" data-sc-aud_snowy_owl_mp3="audio/snowy-owl.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">SNOWY OWL</div>
+      <div class="sc-block sc-block-h3" data-idx="0">SNOWY OWL</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE SILENT SEER</div>
+      <div class="sc-block sc-block-para" data-idx="2">AQUARIUS ♒</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/snowy-owl-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/snowy-owl-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The snowy owl does not rush.</div>
+          <div class="sc-block" data-idx="3">In the wide quiet of winter fields, it often sits motionless, white against the pale landscape, almost indistinguishable from the snow itself. At first glance it seems still, perhaps even absent. But the owl is not inactive. It is watching.</div>
+          <div class="sc-block" data-idx="3">This is the wisdom of the <strong>silent seer</strong>.</div>
+          <div class="sc-block" data-idx="3">The snowy owl teaches that understanding often begins not with action, but with <strong>observation</strong>. In a world that encourages constant movement and quick decisions, the owl reminds us that clarity sometimes arrives only after we have allowed ourselves to pause.</div>
+          <div class="sc-block" data-idx="3">Winter carries this same lesson.</div>
+          <div class="sc-block" data-idx="3">When the ground is covered in snow, the landscape becomes simplified. Shapes stand out more clearly. Footprints remain visible. What might be hidden in other seasons is suddenly easy to see. The snowy owl belongs to this season of <strong>quiet clarity</strong>, when the mind settles and perception sharpens.</div>
+          <div class="sc-block" data-idx="3">Its symbolic resonance with <strong>Aquarius</strong> reflects this detached intelligence—the ability to observe patterns from a thoughtful distance. Aquarius energy is curious, perceptive, and often slightly outside the crowd, watching the movements of the world with a calm and questioning mind.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>four</strong> speaks of grounding and structure. It represents the stable foundation beneath activity, the steady frame that allows insight to form without urgency.</div>
+          <div class="sc-block" data-idx="3">The owl embodies this balance.</div>
+          <div class="sc-block" data-idx="3">It waits. It listens. It sees what others overlook.</div>
+          <div class="sc-block" data-idx="3">And when the moment arrives, its movement is swift and certain.</div>
+          <div class="sc-block" data-idx="3">The snowy owl reminds us that wisdom is not always loud or dramatic. Often it appears as a quiet knowing that forms slowly within us, the result of patient attention.</div>
+          <div class="sc-block" data-idx="3">The wandering mind does not always need to search for answers.</div>
+          <div class="sc-block" data-idx="3">Sometimes it only needs to <strong>be still long enough to see</strong>.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think of a moment when you held back from acting immediately and chose instead to watch, listen, or reflect.</div>
+          <div class="sc-block" data-idx="3">What did you notice that you might have missed if you had rushed forward?</div>
+          <div class="sc-block" data-idx="3">How did patience change what you understood?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-8" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;raven.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="RAVEN" data-sc-aud_raven_mp3="audio/raven.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">RAVEN</div>
+      <div class="sc-block sc-block-h3" data-idx="0">RAVEN</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE SHAPE-SHIFTER</div>
+      <div class="sc-block sc-block-para" data-idx="2">SCORPIO ♏</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/raven-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/raven-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The raven rarely behaves in predictable ways.</div>
+          <div class="sc-block" data-idx="3">It watches. It experiments. It plays. Sometimes it seems almost amused by the seriousness of the world below. A raven may soar high above a field one moment, then tumble through the air as if testing gravity itself. Intelligence moves behind those dark feathers—curious, adaptive, and quietly aware.</div>
+          <div class="sc-block" data-idx="3">Across many cultures, the raven has carried the reputation of a <strong>shape-shifter</strong>.</div>
+          <div class="sc-block" data-idx="3">It belongs to the space where things change form—where endings and beginnings overlap, and where the unknown invites exploration rather than fear. The raven walks comfortably along the edges of certainty, reminding us that transformation rarely happens inside familiar boundaries.</div>
+          <div class="sc-block" data-idx="3">This is why the raven resonates with <strong>Scorpio</strong>, the zodiac sign most closely associated with mystery, depth, and rebirth. Scorpio energy understands that life continually moves through cycles of shedding and renewal. Something must change shape before something new can emerge.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>five</strong> carries the rhythm of change. It is the number of movement, surprise, and unpredictability—the turning point where stability loosens and the world becomes fluid again.</div>
+          <div class="sc-block" data-idx="3">The raven thrives in this shifting space.</div>
+          <div class="sc-block" data-idx="3">It is clever enough to solve problems, bold enough to explore the unfamiliar, and playful enough to treat change as a kind of experiment. Where others might see darkness, the raven often sees possibility.</div>
+          <div class="sc-block" data-idx="3">Because the unknown is not always something to avoid.</div>
+          <div class="sc-block" data-idx="3">Sometimes it is the doorway where imagination awakens.</div>
+          <div class="sc-block" data-idx="3">The raven reminds us that the wandering mind is not meant to remain fixed in one form forever. Ideas evolve. Perspectives shift. What once felt solid may dissolve and reappear in a new shape.</div>
+          <div class="sc-block" data-idx="3">Transformation is rarely neat or predictable.</div>
+          <div class="sc-block" data-idx="3">But somewhere within that shifting landscape, the shape-shifter is already at work.</div>
+          <div class="sc-block" data-idx="3">Watching. Testing. Inviting us a little further into the mystery.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think of a time when something in your life changed unexpectedly.</div>
+          <div class="sc-block" data-idx="3">At first, did it feel confusing or unsettling?</div>
+          <div class="sc-block" data-idx="3">Looking back now, what new possibilities or insights emerged from that transformation?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-9" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;swan.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="SWAN" data-sc-aud_swan_mp3="audio/swan.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">SWAN</div>
+      <div class="sc-block sc-block-h3" data-idx="0">SWAN</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE TRANSFORMER</div>
+      <div class="sc-block sc-block-para" data-idx="2">CANCER ♋</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/swan-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/swan-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The swan moves across water with effortless grace.</div>
+          <div class="sc-block" data-idx="3">From a distance, it appears serene, gliding over the surface of a lake as if carried by some invisible current. The movement looks simple, almost effortless. But beneath the water, the swan’s feet are working steadily, guiding each quiet glide forward.</div>
+          <div class="sc-block" data-idx="3">This hidden effort is part of the swan’s deeper symbolism.</div>
+          <div class="sc-block" data-idx="3">The swan has long represented <strong>transformation</strong>—the mysterious process through which struggle slowly gives way to grace. One of the most enduring stories surrounding the swan is the ancient tale of the “ugly duckling,” a reminder that growth often requires passing through awkward, uncertain stages before something beautiful can emerge.</div>
+          <div class="sc-block" data-idx="3">The swan resonates with <strong>Cancer</strong>, the zodiac sign associated with emotional depth, memory, and devotion. Cancer energy understands that transformation often happens through feeling—through love, care, and the quiet willingness to remain present even when the waters of life become difficult to navigate.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>six</strong> reflects harmony and balance. It speaks of the heart’s capacity to bring conflicting elements together—strength and softness, struggle and beauty, effort and ease.</div>
+          <div class="sc-block" data-idx="3">The swan carries all of these qualities.</div>
+          <div class="sc-block" data-idx="3">It forms lasting bonds, returning to the same partner year after year. It moves through water with patience and dignity. Its elegance is not a performance, but the natural result of endurance, loyalty, and time.</div>
+          <div class="sc-block" data-idx="3">In becoming, the swan reminds us, change rarely arrives in dramatic flashes.</div>
+          <div class="sc-block" data-idx="3">More often, it unfolds quietly.</div>
+          <div class="sc-block" data-idx="3">A difficult season passes. A new understanding appears. And grace slowly replaces uncertainty.</div>
+          <div class="sc-block" data-idx="3">The wandering mind often fears its moments of awkwardness or confusion. Yet these are the very stages through which we grow.</div>
+          <div class="sc-block" data-idx="3">The swan does not rush the process.</div>
+          <div class="sc-block" data-idx="3">It simply continues forward, allowing time and experience to shape what it will become.</div>
+          <div class="sc-block" data-idx="3">And one day, almost without noticing, the waters grow calm and the movement becomes graceful.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think of a period in your life that once felt uncertain or difficult.</div>
+          <div class="sc-block" data-idx="3">Looking back now, can you see how that experience helped shape the person you have become?</div>
+          <div class="sc-block" data-idx="3">Where in your life might growth still be quietly unfolding?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-10" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;hummingbird.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="HUMMINGBIRD" data-sc-aud_hummingbird_mp3="audio/hummingbird.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">HUMMINGBIRD</div>
+      <div class="sc-block sc-block-h3" data-idx="0">HUMMINGBIRD</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE JOY BEARER</div>
+      <div class="sc-block sc-block-para" data-idx="2">PISCES ♓</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/hummingbir-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/hummingbir-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The hummingbird arrives like a spark.</div>
+          <div class="sc-block" data-idx="3">It hovers in the air with a movement so quick it almost disappears, wings beating faster than the eye can follow. For a moment it seems suspended between worlds—neither fully still nor fully in motion.</div>
+          <div class="sc-block" data-idx="3">And then, just as suddenly, it is gone.</div>
+          <div class="sc-block" data-idx="3">Despite its tiny size, the hummingbird carries a remarkable presence. It travels great distances, navigating vast landscapes with determination and precision. What appears delicate is, in truth, quietly powerful.</div>
+          <div class="sc-block" data-idx="3">The hummingbird has long been seen as a bearer of <strong>joy</strong>.</div>
+          <div class="sc-block" data-idx="3">It seeks the sweetness of life, moving from flower to flower, gathering nectar while also pollinating the world around it. In this way it reminds us that joy is not only something we receive—it is something we help create simply by participating in life.</div>
+          <div class="sc-block" data-idx="3">The hummingbird resonates with <strong>Pisces</strong>, the zodiac sign connected to wonder, imagination, and spiritual sensitivity. Pisces energy understands that the world contains layers of beauty that are often overlooked by a hurried mind.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>seven</strong> carries the energy of reflection and spiritual awareness. It invites us to pause, to notice the small mysteries unfolding around us, and to recognize that meaning often appears in the most unexpected places.</div>
+          <div class="sc-block" data-idx="3">The hummingbird embodies this awareness.</div>
+          <div class="sc-block" data-idx="3">It moves quickly, yet it lives fully in each moment. It does not linger in worry or regret. Instead, it trusts the rhythm of the present, finding sweetness wherever it appears.</div>
+          <div class="sc-block" data-idx="3">The wandering mind sometimes searches for meaning in distant places, believing that joy must be found through great effort or discovery.</div>
+          <div class="sc-block" data-idx="3">But the hummingbird suggests another possibility.</div>
+          <div class="sc-block" data-idx="3">Joy may already be here.</div>
+          <div class="sc-block" data-idx="3">A flash of color. A quiet bloom. A moment of sweetness hidden within the ordinary.</div>
+          <div class="sc-block" data-idx="3">The nectar of life is rarely far away.</div>
+          <div class="sc-block" data-idx="3">We simply need to notice it.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think about a small moment in your day that brought you unexpected joy—a sound, a color, a brief interaction, or a simple pleasure.</div>
+          <div class="sc-block" data-idx="3">What happens when you allow yourself to fully notice these tiny moments of sweetness?</div>
+          <div class="sc-block" data-idx="3">Could joy be something that appears more often than we realize?</div>
+        </div>
+      </div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-11" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;toucan.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="TOUCAN" data-sc-aud_toucan_mp3="audio/toucan.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">TOUCAN</div>
+      <div class="sc-block sc-block-h3" data-idx="0">TOUCAN</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE STORYTELLER</div>
+      <div class="sc-block sc-block-para" data-idx="2">GEMINI ♊</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/toucan-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/toucan-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The toucan is impossible to overlook.</div>
+          <div class="sc-block" data-idx="3">Its great curved beak, painted in brilliant colors, seems almost exaggerated—as if nature decided that subtlety was unnecessary in the lush green forests where this bird lives. The toucan does not hide in the background. It appears like a splash of color in a world already full of life.</div>
+          <div class="sc-block" data-idx="3">In this way, the toucan carries the spirit of the<strong> storyteller</strong>.</div>
+          <div class="sc-block" data-idx="3">Storytelling begins with expression—the desire to share what we see, what we feel, what we wonder about. The toucan reminds us that communication is not only about facts or information. It is also about personality, curiosity, and the playful exchange of ideas that helps us understand one another.</div>
+          <div class="sc-block" data-idx="3">This bird resonates with <strong>Gemini</strong>, the zodiac sign known for its love of conversation, learning, and exploration of the mind. Gemini energy delights in questions, connections, and the endless possibilities that emerge when thoughts are shared aloud.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>eight</strong> carries the energy of expression and creative power. It represents the movement of ideas from the inner world into the outer one—where imagination becomes voice, and voice becomes connection.</div>
+          <div class="sc-block" data-idx="3">The toucan thrives in this colorful exchange.</div>
+          <div class="sc-block" data-idx="3">Its presence seems to say that life does not always need to be serious to be meaningful. Playfulness has its own kind of intelligence. Curiosity opens doors that certainty often leaves closed.</div>
+          <div class="sc-block" data-idx="3">The wandering mind, after all, is a storyteller at heart. It gathers impressions, memories, questions, and images, weaving them into the narratives that help us make sense of the world.</div>
+          <div class="sc-block" data-idx="3">Sometimes these stories are thoughtful and quiet. Sometimes they are bright and surprising.</div>
+          <div class="sc-block" data-idx="3">Like the toucan, they carry color.</div>
+          <div class="sc-block" data-idx="3">And perhaps that is the deeper message of the storyteller.</div>
+          <div class="sc-block" data-idx="3">The world becomes richer when we allow our voices, our ideas, and our imagination to be seen and heard.</div>
+          <div class="sc-block" data-idx="3">Expression is not merely communication. It is a celebration of being alive.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think of a story you enjoy telling—perhaps about your past, your travels, or a moment that made you laugh.</div>
+          <div class="sc-block" data-idx="3">Why does this story matter to you?</div>
+          <div class="sc-block" data-idx="3">What part of yourself becomes visible when you share it with others?</div>
+        </div>
+      </div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-12" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;flamingo.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="FLAMINGO" data-sc-aud_flamingo_mp3="audio/flamingo.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">FLAMINGO</div>
+      <div class="sc-block sc-block-h3" data-idx="0">FLAMINGO</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE BALANCER</div>
+      <div class="sc-block sc-block-para" data-idx="2">VIRGO ♍</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/flamingo-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/flamingo-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The flamingo stands with quiet composure. Often balanced on a single slender leg, it appears almost effortless, as though equilibrium were simply part of its nature. In the shallow waters where flamingos gather, their reflections shimmer beneath them, doubling the sense of symmetry and calm.</div>
+          <div class="sc-block" data-idx="3">This posture is more than a curious habit. It is a symbol of balance.</div>
+          <div class="sc-block" data-idx="3">The flamingo carries the archetype of the <strong>Balancer</strong>, the one who finds steadiness within movement and harmony within complexity. Life rarely arranges itself neatly, yet the flamingo reminds us that composure can emerge even in shifting environments.</div>
+          <div class="sc-block" data-idx="3">Its resonance with <strong>Virgo</strong> reflects this subtle intelligence. Virgo energy is attentive, thoughtful, and quietly devoted to bringing order and clarity to the world. It understands that beauty often appears through careful balance—through small adjustments that bring things into alignment.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>nine</strong> carries the energy of completion and integration. It represents the stage where experience begins to mature into wisdom. The many lessons gathered along the path start to weave together into a more coherent understanding of life.</div>
+          <div class="sc-block" data-idx="3">The flamingo reflects this quiet maturity.</div>
+          <div class="sc-block" data-idx="3">Though elegant on its own, it is rarely alone. Flamingos gather in large communities, moving together in subtle rhythms—feeding, resting, and migrating as part of a collective pattern. Their presence reminds us that balance is not only personal but relational. We find equilibrium not just within ourselves, but within the circles we inhabit.</div>
+          <div class="sc-block" data-idx="3">Grace, the flamingo suggests, does not require perfection.</div>
+          <div class="sc-block" data-idx="3">It arises from attentiveness.</div>
+          <div class="sc-block" data-idx="3">A small shift of weight. A moment of stillness. A gentle awareness of where we stand.</div>
+          <div class="sc-block" data-idx="3">The wandering mind sometimes imagines balance as a fixed destination. Yet the flamingo reveals something more fluid: balance is an ongoing act of adjustment, a quiet dance between movement and rest.</div>
+          <div class="sc-block" data-idx="3">Poise is not rigid. It is living balance.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think about a time when your life felt particularly balanced—or perhaps when you were learning how to regain balance.</div>
+          <div class="sc-block" data-idx="3">What small adjustments helped you find steadiness again?</div>
+          <div class="sc-block" data-idx="3">Where in your life today might a gentle shift bring greater harmony?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-13" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;parrot.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="PARROT" data-sc-aud_parrot_mp3="audio/parrot.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">PARROT</div>
+      <div class="sc-block sc-block-h3" data-idx="0">PARROT</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE VOICE</div>
+      <div class="sc-block sc-block-para" data-idx="2">LIBRA ♎</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/parrot-aipng.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/parrot-aipng.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The parrot lives in a world of sound. Its bright feathers catch the eye, but it is the voice of the parrot that truly defines it.</div>
+          <div class="sc-block" data-idx="3">Calls echo through forest canopies. Words are repeated. Sounds are tested, shaped, and offered back again. The parrot listens carefully to the world and then answers it.</div>
+          <div class="sc-block" data-idx="3">This is the essence of the <strong>Voice</strong>.</div>
+          <div class="sc-block" data-idx="3">Voice is not only about speaking. It is about the relationship between listening and expression.</div>
+          <div class="sc-block" data-idx="3">The parrot reminds us that what we say often grows from what we have first heard and absorbed. Language is a living exchange—an ongoing conversation between ourselves and the world around us.</div>
+          <div class="sc-block" data-idx="3">The parrot resonates with <strong>Libra</strong>, the zodiac sign associated with dialogue, balance, and connection. Libra energy understands that communication builds bridges. Through words, tone, and shared understanding, we create the relationships that shape our lives.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>ten</strong> carries the energy of renewal. When reduced to <strong>one</strong>, it returns to the beginning—suggesting a fresh sense of identity emerging through experience. After all we have heard and repeated, there comes a moment when we begin to speak with our own voice.</div>
+          <div class="sc-block" data-idx="3">The parrot embodies this journey.</div>
+          <div class="sc-block" data-idx="3">At first, it echoes the sounds it encounters. It mirrors what surrounds it. But over time, something more interesting happens: the voice becomes expressive, playful, even creative. Sound becomes personality.</div>
+          <div class="sc-block" data-idx="3">The wandering mind moves through a similar process.</div>
+          <div class="sc-block" data-idx="3">We begin by repeating ideas that come from family, culture, teachers, and the voices of the past. Gradually, through experience and reflection, our own words begin to take shape.</div>
+          <div class="sc-block" data-idx="3">A thought becomes an opinion. An opinion becomes a perspective. A perspective becomes a voice.</div>
+          <div class="sc-block" data-idx="3">The parrot reminds us that voice is a living instrument.</div>
+          <div class="sc-block" data-idx="3">It carries truth. It carries connection. It carries the power to shape how we meet the world.</div>
+          <div class="sc-block" data-idx="3">And sometimes, the most important voice we learn to hear is our own.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think about a moment when you spoke honestly about something that mattered to you.</div>
+          <div class="sc-block" data-idx="3">How did it feel to express your true voice?</div>
+          <div class="sc-block" data-idx="3">What changed—either within you or in your relationships—when you allowed your words to reflect who you truly are?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-14" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;peacock.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="PEACOCK" data-sc-aud_peacock_mp3="audio/peacock.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">PEACOCK</div>
+      <div class="sc-block sc-block-h3" data-idx="0">PEACOCK</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE REVEALER</div>
+      <div class="sc-block sc-block-para" data-idx="2">TAURUS ♉</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/peacock-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/peacock-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The peacock does not hide its beauty.</div>
+          <div class="sc-block" data-idx="3">When the moment arrives, it lifts its long tail and unfolds a radiant fan of color and pattern. The feathers shimmer with blues, greens, and golds, each one marked with an eye-like shape that seems almost watchful.</div>
+          <div class="sc-block" data-idx="3">What was folded and unseen suddenly becomes impossible to ignore. This is the nature of the<strong> Revealer</strong>.</div>
+          <div class="sc-block" data-idx="3">The peacock reminds us that some truths are not meant to remain hidden. There are moments in life when we are invited to show who we truly are—not cautiously, not apologetically, but with the quiet confidence that authenticity carries its own kind of beauty.</div>
+          <div class="sc-block" data-idx="3">The peacock resonates with <strong>Taurus</strong>, a sign deeply connected to the sensory world—color, texture, sound, and form. Taurus energy appreciates the richness of physical existence and understands that beauty can be a doorway into deeper awareness. What we perceive with our senses often leads us toward something more meaningful.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>eleven</strong> is often called a master number. It carries the energy of illumination, a moment when insight breaks through and something previously unseen becomes visible. The peacock’s display echoes this awakening—an unfolding that reveals hidden patterns.</div>
+          <div class="sc-block" data-idx="3">And those patterns are remarkable.</div>
+          <div class="sc-block" data-idx="3">The feathers of the peacock form intricate shapes that resemble sacred geometry—repeating circles and flowing arcs that mirror the patterns found throughout nature. What appears decorative at first glance is actually part of a deeper design.</div>
+          <div class="sc-block" data-idx="3">The wandering mind encounters similar moments.</div>
+          <div class="sc-block" data-idx="3">A hidden talent emerges. A long-held truth becomes clear. A part of ourselves we once kept folded away begins to open.</div>
+          <div class="sc-block" data-idx="3">Revelation is rarely about showing off.</div>
+          <div class="sc-block" data-idx="3">It is about <strong>showing up</strong>.</div>
+          <div class="sc-block" data-idx="3">The peacock reminds us that the colors we carry within us are not accidents. They are expressions of the unique pattern of our lives.</div>
+          <div class="sc-block" data-idx="3">When we allow those colors to be seen, something remarkable happens.</div>
+          <div class="sc-block" data-idx="3">The world becomes brighter—not only for us, but for everyone who witnesses the unfolding.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Think about a quality or talent within yourself that you may have kept hidden or underplayed.</div>
+          <div class="sc-block" data-idx="3">What might happen if you allowed that part of yourself to be seen more fully?</div>
+          <div class="sc-block" data-idx="3">How could revealing your true colors change the way you experience the world?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-15" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;golden-pheasant.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="GOLDEN PHEASANT" data-sc-aud_golden_pheasant_mp3="audio/golden-pheasant.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">GOLDEN PHEASANT</div>
+      <div class="sc-block sc-block-h3" data-idx="0">GOLDEN PHEASANT</div>
+      <div class="sc-block sc-block-para" data-idx="1">THE RADIANT ONE</div>
+      <div class="sc-block sc-block-para" data-idx="2">LEO ♌</div>
+      <div class="sc-block-sticky" data-idx="3">
+        <div class="sc-sticky-img" data-idx="3"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/golden-pheasant-ai.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/golden-pheasant-ai.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="3">The golden pheasant appears like a living burst of sunlight.</div>
+          <div class="sc-block" data-idx="3">Its feathers glow with deep gold, crimson, and brilliant shades of orange and blue. Unlike the quiet camouflage of many birds, the pheasant carries its colors boldly, as if the landscape itself has decided to celebrate.</div>
+          <div class="sc-block" data-idx="3">There is something ceremonial about its presence.</div>
+          <div class="sc-block" data-idx="3">The golden pheasant embodies the<strong> Radiant One</strong>—the moment when a long journey begins to reveal its meaning. Radiance is not simply brightness. It is the quiet confidence that emerges after experience has shaped us, after lessons have been learned, and after awareness has grown wider than it once was.</div>
+          <div class="sc-block" data-idx="3">The pheasant resonates with <strong>Leo</strong>, the zodiac sign associated with vitality, warmth, and the creative spirit of life itself.</div>
+          <div class="sc-block" data-idx="3">Leo energy celebrates existence. It reminds us that living fully is not only about effort or endurance, but also about allowing joy and self-expression to shine outward.</div>
+          <div class="sc-block" data-idx="3">In numerology, the number <strong>twelve</strong> marks completion, the closing of one cycle before the beginning of another. When reduced to <strong>three</strong>, it returns to the energy of expansion and creativity—suggesting that endings are rarely final. They are gateways into renewed awareness.</div>
+          <div class="sc-block" data-idx="3">The golden pheasant reflects this turning point.</div>
+          <div class="sc-block" data-idx="3">After the watchfulness of the owl, the mystery of the raven, the grace of the swan, and the many lessons carried by the other birds, something begins to settle into place. The wandering mind, having traveled through curiosity, challenge, discovery, and transformation, arrives at a moment of quiet recognition.</div>
+          <div class="sc-block" data-idx="3">The journey itself has been the teacher.</div>
+          <div class="sc-block" data-idx="3">Radiance does not come from perfection. It comes from <strong>experience</strong>.</div>
+          <div class="sc-block" data-idx="3">The golden pheasant stands as a reminder that awareness often completes its circle not with dramatic revelation, but with a gentle sense of arrival.</div>
+          <div class="sc-block" data-idx="3">A deeper understanding. A fuller appreciation of life. A quiet triumph that needs no announcement.</div>
+          <div class="sc-block" data-idx="3">And from that place of completion, a new beginning quietly prepares to unfold.</div>
+          <div class="sc-block" data-idx="3">• • •</div>
+          <div class="sc-block" data-idx="3"><strong>Reflection Prompt</strong></div>
+          <div class="sc-block" data-idx="3">Looking back over the journey of your own experiences, what moments have helped shape your awareness the most?</div>
+          <div class="sc-block" data-idx="3">What lessons or insights feel like quiet triumphs in your life?</div>
+          <div class="sc-block" data-idx="3">And as one cycle of understanding completes itself, what new beginning might now be waiting to emerge?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-16" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;afterword.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Afterword" data-sc-aud_afterword_mp3="audio/afterword.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Afterword</div>
+      <div class="sc-block sc-block-h1" data-idx="0">Afterword</div>
+      <div class="sc-block sc-block-para" data-idx="1">DISCOVERING YOUR OWN BIRD</div>
+      <div class="sc-block sc-block-para" data-idx="2">Throughout this book you have met twelve birds, each representing a different quality of awareness: the messenger, the survivor, the visionary, the silent seer, the shape-shifter, the transformer, the joy bearer, the storyteller, the balancer, the voice, the revealer, and the radiant one.</div>
+      <div class="sc-block sc-block-para" data-idx="3">These birds are not meant to be fixed symbols or strict interpretations. They are invitations—ways of noticing the many qualities that appear in our lives as we grow, adapt, struggle, and learn.</div>
+      <div class="sc-block sc-block-para" data-idx="4">You may have already felt drawn to one bird more than the others.</div>
+      <div class="sc-block sc-block-para" data-idx="5">That is often how symbolic connections begin.</div>
+      <div class="sc-block sc-block-para" data-idx="6">A <strong>totem bird</strong> is not something assigned or chosen through rules. It is usually discovered through attention. The bird that stays in your mind, the one that seems to appear again and again, or the one whose qualities resonate most deeply with your current stage of life may be offering a kind of reflection.</div>
+      <div class="sc-block sc-block-para" data-idx="7">Sometimes a totem bird appears through the outer world: a bird frequently seen near your home, a bird that unexpectedly captures your attention, or a species that has always fascinated you.</div>
+      <div class="sc-block sc-block-para" data-idx="8">Sometimes the connection arises inwardly: a story, image, or idea that feels strangely familiar or meaningful.</div>
+      <div class="sc-block sc-block-para" data-idx="9">You might explore this by asking yourself a few simple questions:</div>
+      <div class="sc-block sc-block-para" data-idx="10"><em>Which bird in this book stayed with me the longest?</em></div>
+      <div class="sc-block sc-block-para" data-idx="11"><em>Which qualities feel most connected to my life right now?</em></div>
+      <div class="sc-block sc-block-para" data-idx="12"><em>What kind of awareness or growth am I currently experiencing?</em></div>
+      <div class="sc-block sc-block-para" data-idx="13">Your answers may change over time. Just as birds migrate and seasons shift, the qualities guiding us also evolve. A bird that resonates today may give way to another later in life.</div>
+      <div class="sc-block sc-block-para" data-idx="14">The purpose of this book is not to define these meanings for you, but to <strong>encourage your own observation</strong>.</div>
+      <div class="sc-block sc-block-para" data-idx="15">Look up when you hear a bird call.</div>
+      <div class="sc-block sc-block-para" data-idx="16">Notice the shape of wings against the sky.</div>
+      <div class="sc-block sc-block-para" data-idx="17">Pay attention to the small flashes of color moving through trees and fields.</div>
+      <div class="sc-block sc-block-para" data-idx="18">Nature has always been a quiet teacher. Sometimes a bird appears simply because it belongs there. And sometimes, if we are paying attention, it appears as a gentle reminder that awareness itself is always taking flight.</div>
+      <div class="sc-block sc-block-divider" data-idx="19"></div>
+      <div class="sc-block sc-block-para" data-idx="20">When we learn to notice the birds, we begin to notice ourselves.</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <section class="chapter" id="section-17">
+    <h1>About the Author</h1>
+<section class="chapter" epub:type="chapter">
+
+<h1>About the Author</h1>
+<p>Linda A Lavid is a recovering philosopher, retired social worker, part-time mystic, ongoing writer and artist. She likes writing stories and often asks the universe if it has any advice. It has plenty.</p>
+<p>If you’d like a digital version (personal use only) of any of the images in this book, please email me…<a target="_blank" rel="noopener" href="mailto:lindalavid@gmail.com">lindalavid@gmail.com</a> with Bird Request in the Subject area. Image can be printed.</p>
+</section>
+  </section>
+
+  <section class="chapter" id="section-18">
+    <h1>Also by Linda A Lavid</h1>
+<section class="chapter" epub:type="chapter">
+
+<p></p>
+<p></p>
+<h1>Also by Linda&nbsp;A&nbsp;Lavid</h1>
+<p style="text-align: center"><strong><em>Novels</em></strong></p>
+<p><em>Fly Away Girl: A Laurent &amp; Dove Mystery</em></p>
+<p><em>Murder in the Pachysandra: A Hattie Moon Mystery</em></p>
+<p><em>Howie in Love: A Hattie Moon Mystery</em></p>
+<p><em>Hattie Gets a Gun: A Hattie Moon Mystery</em></p>
+<p><em>Quigley Tree: A Novel</em></p>
+<p style="text-align: center"><strong><em>Novel Collection</em></strong></p>
+<p style="text-align: center"><em>Hattie Moon Mystery Series, Books 1,2,3</em></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><strong><em>Novellas</em></strong></p>
+<p style="text-align: center"><em>The Simple Mechanic of Infinite Execution</em></p>
+<p style="text-align: center"><em>The Dying of Ed Mees</em></p>
+<p style="text-align: center"><em>Blood on the Page</em></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><strong><em>Short Story Collections</em></strong></p>
+<p style="text-align: center"><em>Rented Rooms: A Collection of Short Fiction</em></p>
+<p style="text-align: center"><em>Thirst: A Collection of Short Fiction</em></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><strong><em>Short Story Singles</em></strong></p>
+<p style="text-align: center"><em>Barden Digby</em></p>
+<p style="text-align: center"><em>What Color the Truck</em></p>
+<p style="text-align: center"><em>Torn &amp; Patched</em></p>
+<p style="text-align: center"><em>Rosie &amp; Marie</em></p>
+<p style="text-align: center"><em>Fairy Door</em></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><strong><em>Nonfiction</em></strong></p>
+<p style="text-align: center"><em>On Creative Writing</em></p>
+<p style="text-align: center"><em>101 Ways to Meditate: Discover Your True Self</em></p>
+<p style="text-align: center"><em>Personal Archetypes for Stress Relief: A Holistic Guide</em></p>
+<p style="text-align: center"><em>The Mystery Writer’s Cat: A Straightforward Guide to Writing Whodunits</em></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><strong><em>Nonfiction Series</em></strong></p>
+<p style="text-align: center"><strong><em>Chronicles of a Wandering Mind</em></strong></p>
+<blockquote>Weaving Metaphors: Unlocking Creativity and Meaning Through Everyday ImagesUnlocking Abstracts: A Playful Guide to Seeing, Collaging, and Creating Beyond the ObviousExploring Fractals: Patterns of the Everyday, Seen with New EyesCurating Collections: Finding Spirit and Story in the Things We Gather and KeepInterpreting Strangers: Visual Encounters and the Stories They TellChallenging Constructs: Exploring How Beliefs Shape Our LivesKindling Magic: A Playful Path to Personal Magic and Creative PowerCrossing Thresholds: Discovering transformation in the spaces between what was and what’s next.Summoning Fables: Revealing timeless wisdom through modern myth and everyday magic.Illuminating Fables: Casting light on inner truth through story and reflection.Transcending Fables: How stories teach, transform, and survive.</blockquote>
+<p style="text-align: center"><strong><em>Wandering Mind Collections</em></strong></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><em>Kindling the Ordinary:</em> Weaving Metaphors, Kindling Magic, Interpreting Strangers</p>
+<blockquote>Children’s Picture Books</blockquote>
+<p style="text-align: center"><em>You Got This! A Picture Book about Small Wins</em></p>
+<p style="text-align: center"><em>You Got This! A Picture Book about Taking Your Time</em></p>
+<p style="text-align: center"><em>You Got This! A Picture book about Feeling Sad</em></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><strong><em>Art</em></strong></p>
+<p style="text-align: center"><em>Obits for Fun: Illustrated Reviews for Those Departed</em></p>
+<p style="text-align: center"><em>If Flowers Were Cake: And Other Collages</em></p>
+<p style="text-align: center"><em>Papers for Abstract Art: Geometrics, Color Tones &amp; Lines</em></p>
+<p style="text-align: center"><em>Woman &amp; Flight: An Art Series</em></p>
+<p style="text-align: center"><em>Cats: Winsome and Wild</em></p>
+<p style="text-align: center"></p>
+<p style="text-align: center"><strong><em>Spanish/Bilingual</em></strong></p>
+<p style="text-align: center"><em>Of the Dance/De La Danza</em></p>
+<p style="text-align: center"><em>101 Maneras de Meditar: Descubra Su Verdadero Yo</em></p>
+<p style="text-align: center"><em>Mujer Y Vuelo: Una Serie de Arte</em></p>
+</section>
+  </section>
+
+  <div class="footer">
+    <div class="footer-buttons">
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">&#9728;&#65039;</button>
+      <button class="playhead-toggle" id="playheadToggle" title="Toggle Scenecraft overlays"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 2H6c-1.2 0-2 .9-2 2v16c0 1.1.8 2 2 2h13c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h6v16z"/></svg></button>
+    </div>
+    <div class="footer-info">
+      <span class="footer-title">What I Learned from Birds</span>
+      <span class="footer-author">by <a target="_blank" href="https://www.lindalavid.com" style="color: orange; font-style: italic;">Linda A. Lavid</a></span>
+      <span class="footer-copyright">&copy; 2026</span>
+      <span style="color: orange; font-style: italic;">&nbsp;&nbsp;&nbsp;created using <a target="_blank" href="https://everythingebooks.org" style="color: orange; font-style: italic;">everythingebooks.org</a></span>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    var themeToggle = document.getElementById('themeToggle');
+    var body = document.body;
+
+    var savedTheme = localStorage.getItem('html-ebook-theme');
+    if (savedTheme === 'light' && body.classList.contains('dark-mode')) {
+      body.classList.remove('dark-mode');
+      themeToggle.textContent = '🌙';
+    } else if (savedTheme === 'dark' && !body.classList.contains('dark-mode')) {
+      body.classList.add('dark-mode');
+      themeToggle.textContent = '☀️';
+    }
+
+    themeToggle.addEventListener('click', function() {
+      body.classList.toggle('dark-mode');
+      var isDark = body.classList.contains('dark-mode');
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
+    });
+
+    // Playhead overlay toggle
+    var playheadToggle = document.getElementById('playheadToggle');
+    if (playheadToggle) {
+      var savedPlayhead = localStorage.getItem('html-ebook-playhead');
+      if (savedPlayhead === 'hidden') {
+        body.classList.add('sc-overlay-hidden');
+        playheadToggle.classList.add('sc-off');
+      }
+      playheadToggle.addEventListener('click', function() {
+        body.classList.toggle('sc-overlay-hidden');
+        var isHidden = body.classList.contains('sc-overlay-hidden');
+        playheadToggle.classList.toggle('sc-off', isHidden);
+        localStorage.setItem('html-ebook-playhead', isHidden ? 'hidden' : 'visible');
+      });
+    }
+
+
+    // SceneCraft scroll-driven immersive audio/visual engine
+    (function() {
+      var scenes = document.querySelectorAll('.sc-scene');
+      if (!scenes.length) return;
+
+      var DLG_FADE = 0.5;
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function createFadeIn(audioEl, vol, dur) {
+        audioEl.volume = 0;
+        audioEl.play().catch(function(){});
+        return { el: audioEl, state: 'in', start: Date.now(), dur: dur * 1000, targetVol: vol };
+      }
+      function createFadeOut(obj, dur) {
+        if (!obj || !obj.el) return null;
+        return { el: obj.el, state: 'out', start: Date.now(), dur: dur * 1000, startVol: obj.el.volume };
+      }
+      function tickFade(obj) {
+        if (!obj || !obj.el) return null;
+        var t = obj.dur > 0 ? clamp((Date.now() - obj.start) / obj.dur, 0, 1) : 1;
+        if (obj.state === 'in') {
+          obj.el.volume = t * (obj.targetVol || 1);
+          if (t >= 1) obj.state = 'playing';
+        } else if (obj.state === 'out') {
+          obj.el.volume = (1 - t) * (obj.startVol || 1);
+          if (t >= 1) { obj.el.pause(); return null; }
+        }
+        return obj;
+      }
+      function killAudio(obj) {
+        if (obj && obj.el) { obj.el.pause(); obj.el.src = ''; }
+        return null;
+      }
+
+      // Per-scene state
+      var sceneStates = [];
+      scenes.forEach(function(sceneEl, si) {
+        var cfg = null;
+        try { cfg = JSON.parse(sceneEl.dataset.scConfig || 'null'); } catch(e) {}
+        sceneStates.push({
+          el: sceneEl,
+          cfg: cfg,
+          inScene: false,
+          ambient: null,
+          ambientOut: null,
+          voice: null,
+          voiceOut: null,
+          activeDlg: -1,
+          dlgObj: null,
+          dlgOut: null,
+          activeStk: -1,
+          stkObj: null,
+          stkOut: null,
+          activePara: -1,
+          paraObj: null,
+          paraOut: null,
+          blocks: sceneEl.querySelectorAll('.sc-block'),
+          stickyWraps: sceneEl.querySelectorAll('.sc-block-sticky'),
+          enterEl: sceneEl.querySelector('.sc-enter'),
+          exitEl: sceneEl.querySelector('.sc-exit'),
+          bgEl: sceneEl.querySelector('.sc-bg'),
+          infoEl: sceneEl.querySelector('.sc-info'),
+        });
+      });
+
+      var playheadY = window.innerHeight * 0.5;
+      window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.5; });
+
+      function doEnter(s) {
+        if (s.inScene || !s.cfg) return;
+        s.inScene = true;
+        var c = s.cfg;
+        if (s.infoEl) s.infoEl.textContent = s.el.dataset.scTitle || '';
+
+        // Wallpaper
+        if (c.wallpaperFilename && s.bgEl) {
+          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (url) {
+            s.bgEl.style.backgroundImage = "url('" + url + "')";
+            s.bgEl.style.backgroundPosition = c.wallpaperPosition || 'center';
+            s.bgEl.style.opacity = String(c.wallpaperOpacity || 0.25);
+          }
+        }
+
+        // Ambient audio
+        s.ambientOut = killAudio(s.ambientOut);
+        if (c.ambientFilename) {
+          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (aUrl) {
+            var a = new Audio(aUrl);
+            a.loop = !!c.ambientLoop;
+            s.ambient = createFadeIn(a, c.ambientVolume || 0.5, c.fadeIn || 2);
+          }
+        }
+
+        // Narration voice
+        s.voiceOut = killAudio(s.voiceOut);
+        if (c.voiceMode === 'narration' && c.narrationFilename) {
+          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (nUrl) {
+            var n = new Audio(nUrl);
+            s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
+          }
+        }
+      }
+
+      function doExit(s) {
+        if (!s.inScene || !s.cfg) return;
+        s.inScene = false;
+        var c = s.cfg;
+        if (s.infoEl) s.infoEl.textContent = '';
+        if (s.bgEl) s.bgEl.style.opacity = '0';
+
+        if (s.ambient) { s.ambientOut = createFadeOut(s.ambient, c.fadeOut || 3); s.ambient = null; }
+        if (s.voice) { s.voiceOut = createFadeOut(s.voice, c.fadeOut || 3); s.voice = null; }
+        s.dlgObj = killAudio(s.dlgObj);
+        s.dlgOut = killAudio(s.dlgOut);
+        s.activeDlg = -1;
+        s.stkObj = killAudio(s.stkObj);
+        s.stkOut = killAudio(s.stkOut);
+        s.activeStk = -1;
+        s.paraObj = killAudio(s.paraObj);
+        s.paraOut = killAudio(s.paraOut);
+        s.activePara = -1;
+      }
+
+      function tick() {
+        for (var si = 0; si < sceneStates.length; si++) {
+          var s = sceneStates[si];
+          if (!s.cfg) continue;
+          var c = s.cfg;
+
+          // Tick fades
+          s.ambientOut = tickFade(s.ambientOut);
+          s.voiceOut = tickFade(s.voiceOut);
+          if (s.ambient && s.ambient.state === 'in') tickFade(s.ambient);
+          if (s.voice && s.voice.state === 'in') tickFade(s.voice);
+          s.dlgObj = tickFade(s.dlgObj);
+          s.dlgOut = tickFade(s.dlgOut);
+          s.stkObj = tickFade(s.stkObj);
+          s.stkOut = tickFade(s.stkOut);
+          s.paraObj = tickFade(s.paraObj);
+          s.paraOut = tickFade(s.paraOut);
+
+          // Block visibility
+          for (var bi = 0; bi < s.blocks.length; bi++) {
+            var b = s.blocks[bi];
+            var rect = b.getBoundingClientRect();
+            var center = rect.top + rect.height / 2;
+            if (center < playheadY + 100) b.classList.add('sc-vis'); else b.classList.remove('sc-vis');
+            if (center < playheadY - window.innerHeight * 0.3) b.classList.add('sc-past'); else b.classList.remove('sc-past');
+          }
+
+          // Scene zone detection
+          var enterBottom = s.enterEl ? s.enterEl.getBoundingClientRect().bottom : 0;
+          var exitTop = s.exitEl ? s.exitEl.getBoundingClientRect().top : window.innerHeight;
+          if (enterBottom <= playheadY && exitTop > playheadY) {
+            doEnter(s);
+          } else {
+            doExit(s);
+          }
+
+          // Per-dialogue voice
+          if (s.inScene && c.voiceMode === 'dialogue') {
+            var currentDlg = -1;
+            for (var di = 0; di < s.blocks.length; di++) {
+              var db = s.blocks[di];
+              var dr = db.getBoundingClientRect();
+              var dataIdx = parseInt(db.dataset.idx || '-1', 10);
+              if (dr.top < playheadY && dr.bottom > playheadY && db.classList.contains('sc-block-dialogue')) {
+                currentDlg = dataIdx;
+              }
+            }
+            if (currentDlg !== s.activeDlg) {
+              if (s.dlgObj && s.dlgObj.el) {
+                s.dlgOut = killAudio(s.dlgOut);
+                s.dlgOut = createFadeOut(s.dlgObj, DLG_FADE);
+                s.dlgObj = null;
+              }
+              s.activeDlg = currentDlg;
+              if (currentDlg >= 0 && c.dialogueClips) {
+                var clip = c.dialogueClips[currentDlg];
+                if (clip && clip.filename) {
+                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (dUrl) {
+                    var da = new Audio(dUrl);
+                    s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-sticky audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentStk = -1;
+            for (var swi = 0; swi < s.stickyWraps.length; swi++) {
+              var sw = s.stickyWraps[swi];
+              var sIdx = parseInt(sw.dataset.idx || '-1', 10);
+              if (sw.querySelector('.sc-block.sc-vis')) {
+                currentStk = sIdx;
+              }
+            }
+            if (currentStk !== s.activeStk) {
+              if (s.stkObj && s.stkObj.el) {
+                s.stkOut = killAudio(s.stkOut);
+                s.stkOut = createFadeOut(s.stkObj, DLG_FADE);
+                s.stkObj = null;
+              }
+              s.activeStk = currentStk;
+              if (currentStk >= 0 && c.stickyClips) {
+                var sClip = c.stickyClips[currentStk];
+                if (sClip && sClip.filename) {
+                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (sUrl) {
+                    var sa = new Audio(sUrl);
+                    s.stkObj = createFadeIn(sa, sClip.volume || c.stickyVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-para audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentPara = -1;
+            for (var pi = 0; pi < s.blocks.length; pi++) {
+              var pb = s.blocks[pi];
+              var pr = pb.getBoundingClientRect();
+              var pIdx = parseInt(pb.dataset.idx || '-1', 10);
+              if (pr.top < playheadY && pr.bottom > playheadY && !pb.classList.contains('sc-block-dialogue') && pb.classList.contains('sc-block-para')) {
+                currentPara = pIdx;
+              }
+            }
+            if (currentPara !== s.activePara) {
+              if (s.paraObj && s.paraObj.el) {
+                s.paraOut = killAudio(s.paraOut);
+                s.paraOut = createFadeOut(s.paraObj, DLG_FADE);
+                s.paraObj = null;
+              }
+              s.activePara = currentPara;
+              if (currentPara >= 0 && c.paraClips) {
+                var pClip = c.paraClips[currentPara];
+                if (pClip && pClip.filename) {
+                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (pUrl) {
+                    var pa = new Audio(pUrl);
+                    s.paraObj = createFadeIn(pa, pClip.volume || c.paraVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
