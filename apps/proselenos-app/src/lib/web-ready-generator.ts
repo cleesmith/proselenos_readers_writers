@@ -27,16 +27,27 @@ export interface WebReadyOptions {
 // ── Public functions ──────────────────────────────────────────────────────
 
 /**
- * Build a slug for the zip folder/filename.
- * Example: "Vapo Cramb" + "Clee Smith" -> "vapo_cramb_clee_smith_2026-03-06"
+ * Build a slug for the zip download filename.
+ * Example: "Vapo & Cramb" + "Clee Smith" -> "Vapo--Cramb_clee_smith_2026-03-06"
  */
 export function makeWebReadySlug(title: string, author: string): string {
   const today = new Date().toISOString().slice(0, 10);
-  const raw = `${title} ${author}`
-    .toLowerCase()
+  const titleSlug = makeTitleSlug(title);
+  const authorSlug = author
     .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_-]/g, '');
-  return `${raw}_${today}`;
+    .replace(/[^A-Za-z0-9_-]/g, '')
+    .toLowerCase();
+  return `${titleSlug}_${authorSlug}_${today}`;
+}
+
+/**
+ * Derive a URL-friendly slug from a book title for use in <base href>.
+ * Example: "What I Learned from Birds" → "What-I-Learned-from-Birds"
+ */
+function makeTitleSlug(title: string): string {
+  return title
+    .replace(/\s+/g, '-')
+    .replace(/[^A-Za-z0-9-]/g, '');
 }
 
 /**
@@ -53,9 +64,9 @@ export async function generateWebReadyZip(options: WebReadyOptions): Promise<Blo
     subtitle, publisher,
   } = options;
 
-  const slug = makeWebReadySlug(title, author);
+  const titleSlug = makeTitleSlug(title);
   const zip = new JSZip();
-  const folder = zip.folder(slug)!;
+  const folder = zip.folder(titleSlug)!;
   const imagesFolder = folder.folder('images')!;
   const audioFolder = folder.folder('audio')!;
 
@@ -99,6 +110,9 @@ export async function generateWebReadyZip(options: WebReadyOptions): Promise<Blo
   return zip.generateAsync({ type: 'blob' });
 }
 
+// ── Module-level enlarge counter (reset per buildIndexHtml call) ──────────
+let globalEnlargeCounter = 0;
+
 // ── Internal: build the full HTML string ──────────────────────────────────
 
 interface BuildHtmlOptions {
@@ -115,6 +129,10 @@ interface BuildHtmlOptions {
 function buildIndexHtml(opts: BuildHtmlOptions): string {
   const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher } = opts;
 
+  // Reset the global enlarge counter for each new HTML build
+  globalEnlargeCounter = 0;
+
+  const titleSlug = makeTitleSlug(title);
   const sectionHtmls: string[] = [];
   let hasAnyVnContent = false;
   let hasAnySceneCraft = false;
@@ -172,7 +190,7 @@ ${contentHtml}
   <div class="contents-page">
     <h1 class="toc-title">CONTENTS</h1>
     <div class="toc-contents">
-${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a href="#section-${entry.index}"><span class="toc-item-title">${escapeHtml(entry.title)}</span></a></p></div>`).join('\n')}
+${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a href="./index.html#section-${entry.index}"><span class="toc-item-title">${escapeHtml(entry.title)}</span></a></p></div>`).join('\n')}
     </div>
   </div>` : '';
 
@@ -202,6 +220,7 @@ ${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
+  <base href="/${titleSlug}/" />
   <style>
 ${EPUB_BASE_CSS}
 ${vnCssBlock}
@@ -582,7 +601,8 @@ function generateSceneCraftHtml(
       let imgHtml = '';
       if (item.imgSrc) {
         const src = normalizeImgSrc(item.imgSrc);
-        imgHtml = `\n        <div class="sc-sticky-img" data-idx="${item.idx}"><input type="checkbox" id="sc-enlarge-${item.idx}"/><label for="sc-enlarge-${item.idx}" style="cursor:zoom-in;display:block"><img src="${src}" alt="${escapeHtml(item.alt || 'Sticky image')}"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-${item.idx}" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('${src}');background-color:#000;cursor:zoom-out"></label></div>`;
+        const enlargeId = `sc-enlarge-${++globalEnlargeCounter}`;
+        imgHtml = `\n        <div class="sc-sticky-img" data-idx="${item.idx}"><input type="checkbox" id="${enlargeId}"/><label for="${enlargeId}" style="cursor:zoom-in;display:block"><img src="${src}" alt="${escapeHtml(item.alt || 'Sticky image')}"/></label><label class="sc-enlarge-overlay" for="${enlargeId}" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('${src}');background-color:#000;cursor:zoom-out"></label></div>`;
       }
       const textLines = item.text.split('\n').filter(l => l.trim()).map(line =>
         `          <div class="sc-block" data-idx="${item.idx}">${addTargetBlank(line)}</div>`
