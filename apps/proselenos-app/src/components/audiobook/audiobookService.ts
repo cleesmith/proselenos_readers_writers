@@ -190,25 +190,34 @@ export async function analyzeEpub(zip: JSZip): Promise<AudiobookAnalysis> {
       const sectionTitle = titleMatch?.[1]?.trim() || sectionData?.title || idref;
 
       if (config) {
+        // Voice-mode-specific clips
         if (config.voiceMode === 'narration' && config.narrationFilename) {
           clips.push({ idx: 0, filename: config.narrationFilename, type: 'narration' });
-        } else if (config.voiceMode === 'dialogue') {
-          const sources: Array<{ obj: Record<string, unknown>; type: AudioClip['type'] }> = [
-            { obj: config.stickyClips, type: 'sticky' },
-            { obj: config.dialogueClips, type: 'dialogue' },
-            { obj: config.paraClips, type: 'para' },
-          ];
-          for (const src of sources) {
-            if (!src.obj) continue;
-            for (const key of Object.keys(src.obj)) {
-              const clip = src.obj[key] as any;
-              if (clip?.filename) {
-                clips.push({ idx: parseInt(key, 10), filename: clip.filename, type: src.type });
-              }
+        } else if (config.voiceMode === 'dialogue' && config.dialogueClips) {
+          for (const key of Object.keys(config.dialogueClips)) {
+            const clip = (config.dialogueClips as Record<string, unknown>)[key] as any;
+            if (clip?.filename) {
+              clips.push({ idx: parseInt(key, 10), filename: clip.filename, type: 'dialogue' });
             }
           }
-          clips.sort((a, b) => a.idx - b.idx);
         }
+
+        // Sticky and para clips play regardless of voiceMode (matches html-generator.ts:911)
+        const alwaysSources: Array<{ obj: Record<string, unknown>; type: AudioClip['type'] }> = [
+          { obj: config.stickyClips, type: 'sticky' },
+          { obj: config.paraClips, type: 'para' },
+        ];
+        for (const src of alwaysSources) {
+          if (!src.obj) continue;
+          for (const key of Object.keys(src.obj)) {
+            const clip = src.obj[key] as any;
+            if (clip?.filename) {
+              clips.push({ idx: parseInt(key, 10), filename: clip.filename, type: src.type });
+            }
+          }
+        }
+
+        clips.sort((a, b) => a.idx - b.idx);
       }
 
       // Scan inline <audio><source> tags
@@ -346,6 +355,11 @@ export async function buildM4B(
     }
   }
 
+  if (concatLines.length === 0) {
+    ffmpeg.terminate();
+    throw new Error('No audio clips found in this EPUB — nothing to build');
+  }
+
   onProgress({ message: 'Building chapter metadata...', percent: 45 });
 
   // Write concat list
@@ -415,13 +429,25 @@ export async function buildM4B(
 
   args.push('-f', 'mp4', 'output.m4b');
 
+  // Collect ffmpeg log output so we can surface real errors
+  const logs: string[] = [];
+  ffmpeg.on('log', ({ message }: { message: string }) => {
+    console.warn('[ffmpeg]', message);
+    logs.push(message);
+  });
+
   // Run ffmpeg
   ffmpeg.on('progress', ({ progress }) => {
     const pct = 55 + Math.round(progress * 40);
     onProgress({ message: 'Encoding M4B...', percent: Math.min(pct, 95) });
   });
 
-  await ffmpeg.exec(args);
+  const exitCode = await ffmpeg.exec(args);
+  if (exitCode !== 0) {
+    ffmpeg.terminate();
+    const detail = logs.slice(-10).join('\n');
+    throw new Error(`ffmpeg failed (exit ${exitCode}):\n${detail}`);
+  }
 
   onProgress({ message: 'Reading output...', percent: 96 });
 
