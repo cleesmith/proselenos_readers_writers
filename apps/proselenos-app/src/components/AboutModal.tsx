@@ -251,7 +251,7 @@ export default function AboutModal({
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
               <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere (<i>except when using OpenRouter/AI</i>)</li>
               <li style={{ marginBottom: '8px' }}>Organized into sections: front matter, chapters, and back matter - the ebook is your manuscript</li>
-              <li style={{ marginBottom: '8px' }}>Click &quot;send Ebook&quot; to export as EPUB and add to your Library for instant reading and listening</li>
+              <li style={{ marginBottom: '8px' }}>Click &quot;Publish&quot; to export as EPUB and add to your Library for instant reading and listening</li>
               <li style={{ marginBottom: '8px' }}>No accounts, no sign up, no sign in, no emails - completely private</li>
             </ul>
           </div>

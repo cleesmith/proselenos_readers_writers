@@ -176,7 +176,7 @@ export default function AuthorsHeader({
         {/* Exit */}
         <StyledSmallButton onClick={handleExitClick} theme={theme} title="Quit authors, return to library (aborts running AI tool)">Exit</StyledSmallButton>
 
-        {/* Open dropdown + send Ebook → Library */}
+        {/* Open dropdown + Publish → Library */}
         <div style={{ display: 'flex', gap: '0px', alignItems: 'center' }}>
           {/* Open dropdown */}
           <div ref={openDropdownRef} style={{ position: 'relative' }}>
@@ -299,7 +299,7 @@ export default function AuthorsHeader({
               </div>
             )}
           </div>
-          <StyledSmallButton theme={theme} onClick={onSaveClick} disabled={toolExecuting} styleOverrides={{ marginRight: 0 }} title="Put current ebook into Library">send Ebook</StyledSmallButton>
+          <StyledSmallButton theme={theme} onClick={onSaveClick} disabled={toolExecuting} styleOverrides={{ marginRight: 0 }} title="Publish to Library">Publish</StyledSmallButton>
           <span style={{ color: isDarkMode ? '#86efac' : '#16a34a', fontSize: '16px' }}>⇨</span>
           <StyledSmallButton onClick={handleLibraryClick} theme={theme} title="Go read ebooks">Library</StyledSmallButton>
           <TrafficLightIcon

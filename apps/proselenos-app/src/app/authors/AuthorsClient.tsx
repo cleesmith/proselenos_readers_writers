@@ -269,7 +269,7 @@ export default function AuthorsClient() {
         }
       }
 
-      // Filter out table-of-contents - it gets auto-generated on "send Ebook"
+      // Filter out table-of-contents - it gets auto-generated on "Publish"
       await saveFullWorkingCopy({
         title: parsed.title,
         author: parsed.author,

@@ -90,7 +90,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   }
   function getExportTooltip(): string {
     const stored = localStorage.getItem('last_export_date');
-    if (!stored) return 'Welcome!';
+    if (!stored) return 'Click to Export a backup zip file';
     const status = getExportTrafficLightStatus();
     if (status === 'green') return `Exported on: ${new Date(stored).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
     if (status === 'yellow') return 'Export needed';
@@ -102,7 +102,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     return getExportTrafficLightStatus();
   });
   const [trafficTooltip, setTrafficTooltip] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'Welcome!';
+    if (typeof window === 'undefined') return 'Click to Export a backup zip file';
     return getExportTooltip();
   });
 

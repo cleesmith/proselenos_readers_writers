@@ -207,7 +207,7 @@ export default function AuthorsLayout({
   }
   function getExportTooltip(): string {
     const stored = localStorage.getItem('last_export_date');
-    if (!stored) return 'Welcome!';
+    if (!stored) return 'Click to Export a backup zip file';
     const status = getExportTrafficLightStatus();
     if (status === 'green') return `Exported on: ${new Date(stored).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
     if (status === 'yellow') return 'Export needed';
@@ -219,7 +219,7 @@ export default function AuthorsLayout({
     return getExportTrafficLightStatus();
   });
   const [trafficTooltip, setTrafficTooltip] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'Welcome!';
+    if (typeof window === 'undefined') return 'Click to Export a backup zip file';
     return getExportTooltip();
   });
 
@@ -917,7 +917,7 @@ export default function AuthorsLayout({
           }
 
           // Save to IndexedDB with normalization (section-001, section-002, etc.)
-          // Filter out table-of-contents - it gets auto-generated on "send Ebook"
+          // Filter out table-of-contents - it gets auto-generated on "Publish"
           // XHTML-Native: Use xhtml field directly from parsed sections
           await saveFullWorkingCopy({
             title: parsed.title,
@@ -996,7 +996,7 @@ export default function AuthorsLayout({
           // Clear any existing working copy first
           await clearWorkingCopy();
           // Save to IndexedDB
-          // Filter out table-of-contents - it gets auto-generated on "send Ebook"
+          // Filter out table-of-contents - it gets auto-generated on "Publish"
           // XHTML-Native: Convert plain text content to XHTML paragraphs
           await saveFullWorkingCopy({
             title: parsed.title,
