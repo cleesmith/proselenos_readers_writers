@@ -107,6 +107,16 @@ export async function generateWebReadyZip(options: WebReadyOptions): Promise<Blo
 
   folder.file('index.html', html, { compression: 'DEFLATE' });
 
+  // If this book has SceneCraft scenes, also generate autoplay.html
+  const hasSceneCraft = sections.some(s => s.sceneCraftConfig);
+  if (hasSceneCraft) {
+    const autoplayHtml = buildAutoplayHtml({
+      title, author, year, sections, isDarkMode,
+      coverFilename, subtitle, publisher,
+    });
+    folder.file('autoplay.html', autoplayHtml, { compression: 'DEFLATE' });
+  }
+
   return zip.generateAsync({ type: 'blob' });
 }
 
@@ -279,6 +289,152 @@ ${hasAnySceneCraft ? '      <button class="playhead-toggle" id="playheadToggle" 
         localStorage.setItem('html-ebook-playhead', isHidden ? 'hidden' : 'visible');
       });
     }
+${sceneCraftJsBlock}
+  </script>
+</body>
+</html>`;
+}
+
+// ── Autoplay variant: passive viewer with auto-scroll ─────────────────────
+
+function buildAutoplayHtml(opts: BuildHtmlOptions): string {
+  const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher } = opts;
+
+  // Reset the global enlarge counter for each new HTML build
+  globalEnlargeCounter = 0;
+
+  const titleSlug = makeTitleSlug(title);
+  const sectionHtmls: string[] = [];
+  let hasAnyVnContent = false;
+  let hasAnySceneCraft = false;
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]!;
+    const lower = section.title.toLowerCase().trim();
+
+    // Skip sections we generate from metadata
+    if (lower === 'contents' || lower === 'table of contents') continue;
+    if (lower === 'cover') continue;
+    if (lower === 'title page') continue;
+
+    // SceneCraft sections — use autoplay variant (no playhead)
+    if (section.sceneCraftConfig) {
+      hasAnySceneCraft = true;
+      sectionHtmls.push(generateAutoplaySceneCraftHtml(
+        section.title, section.content, section.sceneCraftConfig, i
+      ));
+      continue;
+    }
+
+    let contentHtml = processContent(section.content);
+    contentHtml = normalizeMediaPaths(contentHtml);
+    contentHtml = deduplicateEnlargeIds(contentHtml, i);
+    contentHtml = addTargetBlank(contentHtml);
+
+    if (lower === 'copyright') {
+      sectionHtmls.push(`
+  <section class="copyright-page" id="section-${i}">
+${contentHtml}
+  </section>`);
+    } else if (sectionHasVnContent(contentHtml)) {
+      hasAnyVnContent = true;
+      sectionHtmls.push(`
+  <article class="scene" id="section-${i}">
+    <h1 class="scene-title">${escapeHtml(section.title)}</h1>
+${contentHtml}
+  </article>`);
+    } else {
+      sectionHtmls.push(`
+  <section class="chapter" id="section-${i}">
+    <h1>${escapeHtml(section.title)}</h1>
+${contentHtml}
+  </section>`);
+    }
+  }
+
+  // TOC — links point to autoplay.html
+  const tocEntries = sections
+    .map((section, index) => ({ title: section.title, index }))
+    .filter(entry => !isFrontMatter(entry.title));
+
+  const tocHtml = tocEntries.length > 0 ? `
+  <div class="contents-page">
+    <h1 class="toc-title">CONTENTS</h1>
+    <div class="toc-contents">
+${tocEntries.map(entry => `      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-${entry.index}"><span class="toc-item-title">${escapeHtml(entry.title)}</span></a></p></div>`).join('\n')}
+    </div>
+  </div>` : '';
+
+  const copyrightIdx = sectionHtmls.findIndex(h => h.includes('class="copyright-page"'));
+  if (copyrightIdx !== -1) {
+    sectionHtmls.splice(copyrightIdx + 1, 0, tocHtml);
+  } else {
+    sectionHtmls.splice(0, 0, tocHtml);
+  }
+
+  // Prepend cover and title page
+  const coverHtml = generateCoverHtml(title, author, coverFilename);
+  const titlePageHtml = generateTitlePageHtml(title, author, subtitle, publisher);
+  sectionHtmls.unshift(titlePageHtml);
+  sectionHtmls.unshift(coverHtml);
+
+  const allSectionsHtml = sectionHtmls.join('\n');
+
+  // Build combined CSS
+  const vnCssBlock = hasAnyVnContent ? `\n/* ── Visual Narrative styles ──────────────── */\n${getVnClassRules()}` : '';
+  const sceneCraftCssBlock = hasAnySceneCraft ? `\n${SCENECRAFT_AUTOPLAY_CSS}` : '';
+  const sceneCraftJsBlock = hasAnySceneCraft ? `\n${SCENECRAFT_AUTOPLAY_JS}` : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)} &#8212; Autoplay</title>
+  <base href="/${titleSlug}/" />
+  <style>
+${EPUB_BASE_CSS}
+${vnCssBlock}
+${sceneCraftCssBlock}
+${HTML_SPECIFIC_CSS}
+  </style>
+</head>
+<body${isDarkMode ? ' class="dark-mode"' : ''}>
+${allSectionsHtml}
+
+  <div class="footer">
+    <div class="footer-buttons">
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#9728;&#65039;' : '&#127769;'}</button>
+    </div>
+    <div class="footer-info">
+      <span class="footer-title">${escapeHtml(title)}</span>
+      <span class="footer-author">by ${escapeHtml(author)}</span>
+      <span class="footer-copyright">&copy; ${escapeHtml(year)}</span>
+      <span class="footer-scene" id="footerScene"></span>
+    </div>
+    <div class="footer-status" id="footerStatus"></div>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    var themeToggle = document.getElementById('themeToggle');
+    var body = document.body;
+
+    var savedTheme = localStorage.getItem('html-ebook-theme');
+    if (savedTheme === 'light' && body.classList.contains('dark-mode')) {
+      body.classList.remove('dark-mode');
+      themeToggle.textContent = '\u{1F319}';
+    } else if (savedTheme === 'dark' && !body.classList.contains('dark-mode')) {
+      body.classList.add('dark-mode');
+      themeToggle.textContent = '\u2600\uFE0F';
+    }
+
+    themeToggle.addEventListener('click', function() {
+      body.classList.toggle('dark-mode');
+      var isDark = body.classList.contains('dark-mode');
+      themeToggle.textContent = isDark ? '\u2600\uFE0F' : '\u{1F319}';
+      localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
+    });
 ${sceneCraftJsBlock}
   </script>
 </body>
@@ -669,6 +825,143 @@ ${textLines}
   <div class="sc-scene" id="section-${sectionIndex}" ${dataAttrs.join(' ')}>
     <div class="sc-bg"></div>
     <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">${escapeHtml(sectionTitle)}</div>
+${blocksHtml}
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>`;
+}
+
+/**
+ * Generate SceneCraft HTML for autoplay — identical to generateSceneCraftHtml
+ * except there is no playhead overlay div.
+ */
+function generateAutoplaySceneCraftHtml(
+  sectionTitle: string,
+  xhtml: string,
+  config: SceneCraftConfig,
+  sectionIndex: number,
+): string {
+  const elements = parseSceneElements(xhtml);
+
+  // Build data attributes for media — use relative paths
+  const dataAttrs: string[] = [];
+  dataAttrs.push(`data-sc-config='${escapeHtml(JSON.stringify(config))}'`);
+  dataAttrs.push(`data-sc-title="${escapeHtml(sectionTitle)}"`);
+
+  if (config.wallpaperFilename) {
+    const safeKey = config.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_');
+    dataAttrs.push(`data-sc-img_${safeKey}="images/${config.wallpaperFilename}"`);
+  }
+  const audioFiles = new Set<string>();
+  if (config.ambientFilename) audioFiles.add(config.ambientFilename);
+  if (config.narrationFilename) audioFiles.add(config.narrationFilename);
+  if (config.dialogueClips) {
+    Object.values(config.dialogueClips).forEach(clip => {
+      if (clip.filename) audioFiles.add(clip.filename);
+    });
+  }
+  if (config.stickyClips) {
+    Object.values(config.stickyClips).forEach(clip => {
+      if (clip.filename) audioFiles.add(clip.filename);
+    });
+  }
+  if (config.paraClips) {
+    Object.values(config.paraClips).forEach(clip => {
+      if (clip.filename) audioFiles.add(clip.filename);
+    });
+  }
+  audioFiles.forEach(fn => {
+    const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_');
+    dataAttrs.push(`data-sc-aud_${safeKey}="audio/${fn}"`);
+  });
+
+  // Build content blocks — use relative paths for media
+  const blocksHtml = elements.map(item => {
+    const escapedText = addTargetBlank(item.text);
+    if (item.type === 'dialogue') {
+      const spk = item.direction ? `${item.speaker} (${item.direction})` : (item.speaker || 'unknown');
+      return `      <div class="sc-block sc-block-dialogue" data-idx="${item.idx}">
+        <span class="sc-speaker">${escapeHtml(spk)}</span>
+        ${escapedText}
+      </div>`;
+    }
+    if (item.type === 'sticky') {
+      let imgHtml = '';
+      if (item.imgSrc) {
+        const src = normalizeImgSrc(item.imgSrc);
+        const enlargeId = `sc-enlarge-${++globalEnlargeCounter}`;
+        imgHtml = `\n        <div class="sc-sticky-img" data-idx="${item.idx}"><input type="checkbox" id="${enlargeId}"/><label for="${enlargeId}" style="cursor:zoom-in;display:block"><img src="${src}" alt="${escapeHtml(item.alt || 'Sticky image')}"/></label><label class="sc-enlarge-overlay" for="${enlargeId}" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('${src}');background-color:#000;cursor:zoom-out"></label></div>`;
+      }
+      const textLines = item.text.split('\n').filter(l => l.trim()).map(line =>
+        `          <div class="sc-block" data-idx="${item.idx}">${addTargetBlank(line)}</div>`
+      ).join('\n');
+      return `      <div class="sc-block-sticky" data-idx="${item.idx}">${imgHtml}
+        <div class="sc-sticky-text">
+${textLines}
+        </div>
+      </div>`;
+    }
+    if (item.type === 'emphasis') {
+      return `      <div class="sc-block sc-block-emphasis" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'quote') {
+      return `      <div class="sc-block sc-block-quote" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'internal') {
+      return `      <div class="sc-block sc-block-internal" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'break') {
+      return `      <div class="sc-block sc-block-break" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'h1' || item.type === 'h2' || item.type === 'h3') {
+      return `      <div class="sc-block sc-block-${item.type}" data-idx="${item.idx}">${escapedText}</div>`;
+    }
+    if (item.type === 'divider') {
+      return `      <div class="sc-block sc-block-divider" data-idx="${item.idx}"></div>`;
+    }
+    if (item.type === 'linebreak') {
+      return `      <div class="sc-block sc-block-linebreak" data-idx="${item.idx}"></div>`;
+    }
+    if (item.type === 'figure') {
+      let imgTag = '';
+      if (item.imgSrc) {
+        const src = normalizeImgSrc(item.imgSrc);
+        imgTag = `<img src="${src}" alt="${escapeHtml(item.alt || item.text)}" style="max-width:${item.width || '260px'};border-radius:4px;opacity:0.9;display:block"/>
+          <span style="font-family:'SF Mono',monospace;font-size:0.55em;color:#5a554e;letter-spacing:0.06em;margin-top:0.4em;display:block">${escapeHtml(item.alt || item.text)}</span>`;
+      }
+      if (!imgTag) {
+        imgTag = `<span style="color:#5a554e;font-style:italic;font-size:0.8em">[${escapeHtml(item.alt || item.text)}]</span>`;
+      }
+      return `      <div class="sc-block" data-idx="${item.idx}" style="text-align:left">${imgTag}</div>`;
+    }
+    if (item.type === 'audio') {
+      let audioTag = '';
+      if (item.audioSrc) {
+        const src = normalizeAudioSrc(item.audioSrc);
+        audioTag = `<audio controls preload="none" style="width:100%;max-width:400px"><source src="${src}"></audio>`;
+      }
+      if (!audioTag) {
+        audioTag = `<span style="color:#5a554e;font-style:italic;font-size:0.8em">[audio]</span>`;
+      }
+      return `      <div class="sc-block" data-idx="${item.idx}">${audioTag}</div>`;
+    }
+    if (item.type === 'para') {
+      const styleAttr = item.style ? ` style="${escapeHtml(item.style)}"` : '';
+      return `      <div class="sc-block sc-block-para" data-idx="${item.idx}"${styleAttr}>${escapedText}</div>`;
+    }
+    const styleAttr = item.style ? ` style="${escapeHtml(item.style)}"` : '';
+    return `      <div class="sc-block" data-idx="${item.idx}"${styleAttr}>${escapedText}</div>`;
+  }).join('\n');
+
+  // No playhead div — autoplay uses footer-based scene display
+  return `
+  <div class="sc-scene" id="section-${sectionIndex}" ${dataAttrs.join(' ')}>
+    <div class="sc-bg"></div>
     <div class="sc-info"></div>
     <div class="sc-content">
       <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
@@ -1643,3 +1936,757 @@ body.dark-mode .copyright-page a:hover {
     gap: 4px;
   }
 }`;
+
+// ── Autoplay-specific CSS/JS constants ────────────────────────────────────
+
+const SCENECRAFT_AUTOPLAY_CSS = `/* ── SceneCraft autoplay immersive styles ──── */
+.sc-scene {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  background: #060608;
+  color: #c8c0b4;
+  overflow: clip;
+}
+.sc-scene .sc-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+.sc-scene .sc-info {
+  display: none;
+}
+.sc-scene .sc-content {
+  max-width: min(88%, 52rem);
+  margin: 0 auto;
+  padding: 50vh 2rem;
+  font-family: Georgia, 'EB Garamond', serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  line-height: 2;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-dead-zone {
+  height: 50vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+.sc-scene .sc-dead-zone span {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: #2a2620;
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-enter {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.25);
+  margin-bottom: 3em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-exit {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.15);
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid rgba(255,255,255,0.03);
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-dead-zone-after {
+  height: 70vh;
+}
+.sc-scene .sc-block {
+  margin-bottom: 1.6em;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block.sc-vis {
+  opacity: 1;
+  transform: translateY(0);
+}
+.sc-scene .sc-block.sc-past {
+  opacity: 0.3;
+}
+.sc-scene .sc-block-dialogue {
+  color: #d4c090;
+}
+.sc-scene .sc-block-dialogue .sc-speaker {
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 0.65em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a08040;
+  display: block;
+  margin-bottom: 0.3em;
+}
+.sc-scene .sc-block-emphasis {
+  font-style: italic;
+  color: #e0c8b0;
+  text-align: center;
+}
+.sc-scene .sc-block-quote {
+  border-left: 2px solid rgba(200,192,180,0.3);
+  padding-left: 1.5em;
+}
+.sc-scene .sc-block-internal {
+  font-style: italic;
+  padding-left: 2em;
+}
+.sc-scene .sc-block-break {
+  text-align: center;
+  color: #3a3530;
+  letter-spacing: 0.3em;
+}
+.sc-scene .sc-block-h1 {
+  font-size: 1.8em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h2 {
+  font-size: 1.4em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h3 {
+  font-size: 1.15em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-divider {
+  border-top: 1px solid rgba(200,192,180,0.15);
+  margin: 1.6em 0;
+}
+.sc-scene .sc-block-linebreak {
+  height: 1.2em;
+  margin: 0;
+}
+.sc-scene .sc-block-sticky {
+  display: flex;
+  gap: 1.5em;
+  align-items: flex-start;
+  min-height: 300px;
+  margin-bottom: 1.6em;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block-sticky .sc-block {
+  margin-bottom: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img {
+  position: sticky;
+  top: 0;
+  width: 40%;
+  flex-shrink: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input[type="checkbox"] {
+  display: none;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input:checked ~ .sc-enlarge-overlay {
+  display: block !important;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img img {
+  width: 100%;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+.sc-scene .sc-block-sticky .sc-sticky-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding-top: 15vh;
+}
+/* ── Sticky-image enlarge: collapse stacking contexts so overlay reaches root ── */
+body:has(.sc-sticky-img input:checked) .sc-scene .sc-content {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-block-sticky {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-sticky-img {
+  position: static;
+}
+.sc-scene a {
+  color: #e8c078;
+  text-decoration: underline;
+  text-decoration-color: rgba(232, 192, 120, 0.4);
+}
+.sc-scene a:hover {
+  color: #f0d898;
+  text-decoration-color: rgba(240, 216, 152, 0.7);
+}
+/* ── Autoplay footer extras ──── */
+.footer-scene {
+  color: rgba(255,120,68,0.35);
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  margin-left: 12px;
+}
+.footer-scene-label {
+  color: #777;
+}
+.footer-status {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255,120,68,0.35);
+  margin-left: auto;
+  user-select: none;
+  transition: opacity 2s;
+  white-space: nowrap;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.footer-status.pill {
+  background: rgba(255,120,68,0.08);
+  border-color: rgba(255,120,68,0.12);
+  cursor: pointer;
+}`;
+
+const SCENECRAFT_AUTOPLAY_JS = `
+    // SceneCraft autoplay: scroll-driven audio + auto-scroll controller
+    (function() {
+      var scenes = document.querySelectorAll('.sc-scene');
+      if (!scenes.length) return;
+
+      var DLG_FADE = 0.5;
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function createFadeIn(audioEl, vol, dur) {
+        audioEl.volume = 0;
+        audioEl.play().catch(function(){});
+        return { el: audioEl, state: 'in', start: Date.now(), dur: dur * 1000, targetVol: vol };
+      }
+      function createFadeOut(obj, dur) {
+        if (!obj || !obj.el) return null;
+        return { el: obj.el, state: 'out', start: Date.now(), dur: dur * 1000, startVol: obj.el.volume };
+      }
+      function tickFade(obj) {
+        if (!obj || !obj.el) return null;
+        var t = obj.dur > 0 ? clamp((Date.now() - obj.start) / obj.dur, 0, 1) : 1;
+        if (obj.state === 'in') {
+          obj.el.volume = t * (obj.targetVol || 1);
+          if (t >= 1) obj.state = 'playing';
+        } else if (obj.state === 'out') {
+          obj.el.volume = (1 - t) * (obj.startVol || 1);
+          if (t >= 1) { obj.el.pause(); return null; }
+        }
+        return obj;
+      }
+      function killAudio(obj) {
+        if (obj && obj.el) { obj.el.pause(); obj.el.src = ''; }
+        return null;
+      }
+
+      // Per-scene state
+      var sceneStates = [];
+      scenes.forEach(function(sceneEl, si) {
+        var cfg = null;
+        try { cfg = JSON.parse(sceneEl.dataset.scConfig || 'null'); } catch(e) {}
+        sceneStates.push({
+          el: sceneEl,
+          cfg: cfg,
+          inScene: false,
+          ambient: null,
+          ambientOut: null,
+          voice: null,
+          voiceOut: null,
+          activeDlg: -1,
+          dlgObj: null,
+          dlgOut: null,
+          activeStk: -1,
+          stkObj: null,
+          stkOut: null,
+          activePara: -1,
+          paraObj: null,
+          paraOut: null,
+          blocks: sceneEl.querySelectorAll('.sc-block'),
+          stickyWraps: sceneEl.querySelectorAll('.sc-block-sticky'),
+          enterEl: sceneEl.querySelector('.sc-enter'),
+          exitEl: sceneEl.querySelector('.sc-exit'),
+          bgEl: sceneEl.querySelector('.sc-bg'),
+        });
+      });
+
+      var playheadY = window.innerHeight * 0.5;
+      window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.5; });
+
+      function doEnter(s) {
+        if (s.inScene || !s.cfg) return;
+        s.inScene = true;
+        var c = s.cfg;
+        var footerScene = document.getElementById('footerScene');
+        var scTitle = s.el.dataset.scTitle || '';
+        if (footerScene) footerScene.innerHTML = scTitle ? '<span class="footer-scene-label">now playing: </span>' + scTitle : '';
+
+        // Wallpaper
+        if (c.wallpaperFilename && s.bgEl) {
+          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (url) {
+            s.bgEl.style.backgroundImage = "url('" + url + "')";
+            s.bgEl.style.backgroundPosition = c.wallpaperPosition || 'center';
+            s.bgEl.style.opacity = String(c.wallpaperOpacity || 0.25);
+          }
+        }
+
+        // Ambient audio
+        s.ambientOut = killAudio(s.ambientOut);
+        if (c.ambientFilename) {
+          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (aUrl) {
+            var a = new Audio(aUrl);
+            a.loop = !!c.ambientLoop;
+            s.ambient = createFadeIn(a, c.ambientVolume || 0.5, c.fadeIn || 2);
+          }
+        }
+
+        // Narration voice
+        s.voiceOut = killAudio(s.voiceOut);
+        if (c.voiceMode === 'narration' && c.narrationFilename) {
+          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (nUrl) {
+            var n = new Audio(nUrl);
+            s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
+          }
+        }
+      }
+
+      function doExit(s) {
+        if (!s.inScene || !s.cfg) return;
+        s.inScene = false;
+        var c = s.cfg;
+        var footerScene = document.getElementById('footerScene');
+        var myTitle = s.el.dataset.scTitle || '';
+        if (footerScene && myTitle && footerScene.textContent.indexOf(myTitle) !== -1) {
+          footerScene.innerHTML = '';
+        }
+        if (s.bgEl) s.bgEl.style.opacity = '0';
+
+        if (s.ambient) { s.ambientOut = createFadeOut(s.ambient, c.fadeOut || 3); s.ambient = null; }
+        if (s.voice) { s.voiceOut = createFadeOut(s.voice, c.fadeOut || 3); s.voice = null; }
+        s.dlgObj = killAudio(s.dlgObj);
+        s.dlgOut = killAudio(s.dlgOut);
+        s.activeDlg = -1;
+        s.stkObj = killAudio(s.stkObj);
+        s.stkOut = killAudio(s.stkOut);
+        s.activeStk = -1;
+        s.paraObj = killAudio(s.paraObj);
+        s.paraOut = killAudio(s.paraOut);
+        s.activePara = -1;
+      }
+
+      function tick() {
+        for (var si = 0; si < sceneStates.length; si++) {
+          var s = sceneStates[si];
+          if (!s.cfg) continue;
+          var c = s.cfg;
+
+          // Tick fades
+          s.ambientOut = tickFade(s.ambientOut);
+          s.voiceOut = tickFade(s.voiceOut);
+          if (s.ambient && s.ambient.state === 'in') tickFade(s.ambient);
+          if (s.voice && s.voice.state === 'in') tickFade(s.voice);
+          s.dlgObj = tickFade(s.dlgObj);
+          s.dlgOut = tickFade(s.dlgOut);
+          s.stkObj = tickFade(s.stkObj);
+          s.stkOut = tickFade(s.stkOut);
+          s.paraObj = tickFade(s.paraObj);
+          s.paraOut = tickFade(s.paraOut);
+
+          // Block visibility
+          for (var bi = 0; bi < s.blocks.length; bi++) {
+            var b = s.blocks[bi];
+            var rect = b.getBoundingClientRect();
+            var center = rect.top + rect.height / 2;
+            if (center < playheadY + 100) b.classList.add('sc-vis'); else b.classList.remove('sc-vis');
+            if (center < playheadY - window.innerHeight * 0.3) b.classList.add('sc-past'); else b.classList.remove('sc-past');
+          }
+
+          // Scene zone detection
+          var enterBottom = s.enterEl ? s.enterEl.getBoundingClientRect().bottom : 0;
+          var exitTop = s.exitEl ? s.exitEl.getBoundingClientRect().top : window.innerHeight;
+          if (enterBottom <= playheadY && exitTop > playheadY) {
+            doEnter(s);
+          } else {
+            doExit(s);
+          }
+
+          // Per-dialogue voice
+          if (s.inScene && c.voiceMode === 'dialogue') {
+            var currentDlg = -1;
+            for (var di = 0; di < s.blocks.length; di++) {
+              var db = s.blocks[di];
+              var dr = db.getBoundingClientRect();
+              var dataIdx = parseInt(db.dataset.idx || '-1', 10);
+              if (dr.top < playheadY && dr.bottom > playheadY && db.classList.contains('sc-block-dialogue')) {
+                currentDlg = dataIdx;
+              }
+            }
+            if (currentDlg !== s.activeDlg) {
+              if (s.dlgObj && s.dlgObj.el) {
+                s.dlgOut = killAudio(s.dlgOut);
+                s.dlgOut = createFadeOut(s.dlgObj, DLG_FADE);
+                s.dlgObj = null;
+              }
+              s.activeDlg = currentDlg;
+              if (currentDlg >= 0 && c.dialogueClips) {
+                var clip = c.dialogueClips[currentDlg];
+                if (clip && clip.filename) {
+                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (dUrl) {
+                    var da = new Audio(dUrl);
+                    s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-sticky audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentStk = -1;
+            for (var swi = 0; swi < s.stickyWraps.length; swi++) {
+              var sw = s.stickyWraps[swi];
+              var sIdx = parseInt(sw.dataset.idx || '-1', 10);
+              if (sw.querySelector('.sc-block.sc-vis')) {
+                currentStk = sIdx;
+              }
+            }
+            if (currentStk !== s.activeStk) {
+              if (s.stkObj && s.stkObj.el) {
+                s.stkOut = killAudio(s.stkOut);
+                s.stkOut = createFadeOut(s.stkObj, DLG_FADE);
+                s.stkObj = null;
+              }
+              s.activeStk = currentStk;
+              if (currentStk >= 0 && c.stickyClips) {
+                var sClip = c.stickyClips[currentStk];
+                if (sClip && sClip.filename) {
+                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (sUrl) {
+                    var sa = new Audio(sUrl);
+                    s.stkObj = createFadeIn(sa, sClip.volume || c.stickyVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-para audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentPara = -1;
+            for (var pi = 0; pi < s.blocks.length; pi++) {
+              var pb = s.blocks[pi];
+              var pr = pb.getBoundingClientRect();
+              var pIdx = parseInt(pb.dataset.idx || '-1', 10);
+              if (pr.top < playheadY && pr.bottom > playheadY && !pb.classList.contains('sc-block-dialogue') && pb.classList.contains('sc-block-para')) {
+                currentPara = pIdx;
+              }
+            }
+            if (currentPara !== s.activePara) {
+              if (s.paraObj && s.paraObj.el) {
+                s.paraOut = killAudio(s.paraOut);
+                s.paraOut = createFadeOut(s.paraObj, DLG_FADE);
+                s.paraObj = null;
+              }
+              s.activePara = currentPara;
+              if (currentPara >= 0 && c.paraClips) {
+                var pClip = c.paraClips[currentPara];
+                if (pClip && pClip.filename) {
+                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (pUrl) {
+                    var pa = new Audio(pUrl);
+                    s.paraObj = createFadeIn(pa, pClip.volume || c.paraVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+
+      // ── Autoplay scroll controller ──────────────────────────
+      // Audio is the master clock.
+      // Dialogue/para clips GATE the scroll (nearly pause until done).
+      // Sticky clips PACE the scroll (keep scrolling to reveal text).
+      // Narration scenes PACE the scroll to match the narration duration.
+      // Ambient never affects scroll — it is just atmosphere.
+
+      var FRONT_MATTER_SPEED = 0.3; // px/frame for cover, copyright, TOC (~18px/s)
+      var BASE_SPEED = 0.8;        // px/frame through non-audio content (~48px/s @ 60fps)
+      var DEAD_ZONE_SPEED = 2.5;   // px/frame through silence gaps (dead zones)
+      var CREEP_SPEED = 0.15;      // px/frame — tiny drift while a dialogue clip plays
+      var PAUSE_AFTER_CLIP = 45;   // frames to breathe after a clip ends (~0.75s)
+      var NARRATION_MIN_SPEED = 0.1;   // floor during narration (6px/s — barely moving crawl)
+      var NARRATION_MAX_SPEED = 0.35;  // cap so narration scenes don't rush (~21px/s, ~0.75 lines/sec)
+      var NARRATION_COAST_SPEED = 0.3; // gentle coast after narration audio ends (~18px/s)
+      var STICKY_MIN_SPEED = 0.08;    // very low floor — let audio fully control pace
+      var STICKY_MAX_SPEED = 1.2;     // cap for sticky clips
+      var FPS = 60;
+
+      var firstSceneEl = document.querySelector('.sc-scene');
+      var pastFrontMatter = false;
+
+      function isInFrontMatter() {
+        if (pastFrontMatter) return false;
+        if (firstSceneEl && firstSceneEl.getBoundingClientRect().top <= window.innerHeight) {
+          pastFrontMatter = true;
+          return false;
+        }
+        return true;
+      }
+
+      var autoScrollActive = false;
+      var scrollDone = false;
+      var postClipTimer = 0;
+
+      function isClipPlaying(obj) {
+        if (!obj || !obj.el) return false;
+        return !obj.el.paused && !obj.el.ended;
+      }
+
+      function hasDuration(obj) {
+        if (!obj || !obj.el) return false;
+        return obj.el.duration && !isNaN(obj.el.duration) && obj.el.duration > 0;
+      }
+
+      // Only dialogue and para clips gate (nearly stop scroll).
+      // Sticky clips are handled separately with pacing.
+      function isGatedAudioPlaying() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (isClipPlaying(s.dlgObj)) return true;
+          if (isClipPlaying(s.paraObj)) return true;
+          // NOTE: stkObj is NOT here — sticky clips are paced, not gated
+        }
+        return false;
+      }
+
+      function isInDeadZone() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          if (sceneStates[i].inScene) return false;
+        }
+        return true;
+      }
+
+      // For sticky clips: pace scroll so the sticky section finishes
+      // scrolling right when the audio clip ends.
+      function getStickyPacedSpeed() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (!s.inScene) continue;
+          if (!isClipPlaying(s.stkObj)) continue;
+
+          // If playing but duration not loaded yet, crawl until we can calculate
+          if (!hasDuration(s.stkObj)) return STICKY_MIN_SPEED;
+
+          var audio = s.stkObj.el;
+          var remaining = audio.duration - audio.currentTime;
+          if (remaining <= 0) continue;
+
+          // Find the active sticky wrapper element
+          var activeIdx = s.activeStk;
+          if (activeIdx < 0) continue;
+
+          for (var sw = 0; sw < s.stickyWraps.length; sw++) {
+            var wrap = s.stickyWraps[sw];
+            var idx = parseInt(wrap.dataset.idx || '-1', 10);
+            if (idx !== activeIdx) continue;
+
+            // Find the last text block inside the sticky text column
+            var textBlocks = wrap.querySelectorAll('.sc-sticky-text .sc-block');
+            if (!textBlocks.length) continue;
+            var lastBlock = textBlocks[textBlocks.length - 1];
+            var lastRect = lastBlock.getBoundingClientRect();
+
+            // Distance = bottom of last text block to playhead
+            var pixelsLeft = lastRect.bottom - playheadY;
+
+            // If all text has already passed the playhead but audio still playing,
+            // keep scrolling slowly — don't jump to BASE_SPEED
+            if (pixelsLeft <= 10) return BASE_SPEED;
+
+            var speed = pixelsLeft / (remaining * FPS);
+            speed = Math.max(STICKY_MIN_SPEED, Math.min(STICKY_MAX_SPEED, speed));
+            return speed;
+          }
+
+          // Sticky clip is playing but couldn't find wrapper — crawl
+          return STICKY_MIN_SPEED;
+        }
+        return null;
+      }
+
+      // For narration scenes: pace scroll so we reach the scene exit
+      // right when the narration track ends.
+      function getNarrationPacedSpeed() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (!s.inScene) continue;
+          if (!s.voice || !s.voice.el) continue;
+          var audio = s.voice.el;
+          if (audio.paused || audio.ended) continue;
+
+          // If audio is playing but duration hasn't loaded yet,
+          // crawl slowly until we can calculate proper pacing
+          if (!audio.duration || isNaN(audio.duration) || audio.duration <= 0) {
+            return NARRATION_MIN_SPEED;
+          }
+
+          var remaining = audio.duration - audio.currentTime;
+          if (remaining <= 0) continue;
+
+          var exitEl = s.exitEl;
+          if (!exitEl) continue;
+          var exitRect = exitEl.getBoundingClientRect();
+          var pixelsLeft = exitRect.top - playheadY;
+          if (pixelsLeft <= 0) continue;
+
+          // Nearly at exit but narration still playing — almost stop so we
+          // don't leave the scene while audio is still going
+          if (pixelsLeft <= 10) return 0.05;
+
+          var speed = pixelsLeft / (remaining * FPS);
+          speed = Math.max(NARRATION_MIN_SPEED, Math.min(NARRATION_MAX_SPEED, speed));
+          return speed;
+        }
+        return null;
+      }
+
+      // True if we're inside a narration scene (even if its audio has ended).
+      // Used to apply coast speed after narration finishes.
+      function isInNarrationScene() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (s.inScene && s.cfg && s.cfg.voiceMode === 'narration') return true;
+        }
+        return false;
+      }
+
+      function autoScroll() {
+        if (!autoScrollActive || scrollDone) {
+          requestAnimationFrame(autoScroll);
+          return;
+        }
+
+        var maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (window.scrollY >= maxScroll) {
+          scrollDone = true;
+          console.log('Autoplay: reached the end.');
+          return;
+        }
+
+        var speed;
+
+        // Priority 0: front matter (cover, copyright, TOC) — slow scroll
+        if (isInFrontMatter()) {
+          speed = FRONT_MATTER_SPEED;
+          window.scrollBy(0, speed);
+          requestAnimationFrame(autoScroll);
+          return;
+        }
+
+        // Priority 1: dialogue/para clip playing — gate (nearly stop)
+        if (isGatedAudioPlaying()) {
+          speed = CREEP_SPEED;
+          postClipTimer = PAUSE_AFTER_CLIP;
+        }
+        // Priority 2: just finished a clip — brief pause
+        else if (postClipTimer > 0) {
+          speed = CREEP_SPEED;
+          postClipTimer--;
+        }
+        // Priority 3: sticky clip playing — pace through the sticky section
+        else {
+          var stickySpeed = getStickyPacedSpeed();
+          if (stickySpeed !== null) {
+            speed = stickySpeed;
+          }
+          // Priority 4: narration playing — pace through the scene
+          else {
+            var narrationSpeed = getNarrationPacedSpeed();
+            if (narrationSpeed !== null) {
+              speed = narrationSpeed;
+            }
+            // Priority 5: narration scene but audio ended — coast gently
+            else if (isInNarrationScene()) {
+              speed = NARRATION_COAST_SPEED;
+            }
+            // Priority 6: dead zone — move through silence
+            else if (isInDeadZone()) {
+              speed = DEAD_ZONE_SPEED;
+            }
+            // Default: gentle reading pace
+            else {
+              speed = BASE_SPEED;
+            }
+          }
+        }
+
+        window.scrollBy(0, speed);
+        requestAnimationFrame(autoScroll);
+      }
+
+      // Status indicator + start/pause control (lives in the footer)
+      var statusEl = document.getElementById('footerStatus');
+      statusEl.textContent = 'PRESS SPACE TO BEGIN';
+      statusEl.classList.add('pill');
+
+      document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (scrollDone) return;
+
+          autoScrollActive = !autoScrollActive;
+
+          if (autoScrollActive) {
+            statusEl.textContent = 'PLAYING';
+            statusEl.classList.remove('pill');
+            // fade out the indicator after 1 second
+            setTimeout(function() {
+              if (autoScrollActive) statusEl.style.opacity = '0';
+            }, 1000);
+          } else {
+            statusEl.style.opacity = '1';
+            statusEl.textContent = 'PAUSED \\u2014 SPACE TO RESUME';
+            statusEl.classList.add('pill');
+          }
+        }
+      });
+
+      // also allow clicking the status bar to toggle
+      statusEl.addEventListener('click', function() {
+        var ev = new KeyboardEvent('keydown', { code: 'Space' });
+        document.dispatchEvent(ev);
+      });
+
+      requestAnimationFrame(autoScroll);
+
+    })();`;
