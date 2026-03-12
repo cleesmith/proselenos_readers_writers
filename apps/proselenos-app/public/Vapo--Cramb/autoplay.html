@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vapo &amp; Cramb — Autoplay</title>
+  <base href="/Vapo--Cramb/" />
+  <style>
+/* EverythingEbooks — EPUB-matching base styles */
+
+html {
+  font-size: 100%;
+}
+
+body {
+  font-family: serif;
+  line-height: 1.6;
+  margin: 1em auto;
+  padding: 0 1.5rem;
+  padding-bottom: 70px;
+  text-align: left;
+  max-width: min(92%, 1400px);
+  background: #fffaf5;
+  color: #222;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Title page */
+.title-page {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.title-page p {
+  text-indent: 0;
+  text-align: center;
+}
+
+.book-title {
+  text-align: center;
+  font-size: 1.8em;
+  font-weight: bold;
+  margin: 0;
+  padding-top: 25%;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.book-subtitle {
+  text-align: center;
+  font-size: 1.1em;
+  font-style: italic;
+  margin: 0;
+  padding-top: 5%;
+}
+
+.book-author {
+  text-align: center;
+  font-size: 1.3em;
+  margin: 0;
+  padding-top: 20%;
+  font-weight: normal;
+}
+
+.book-publisher {
+  text-align: center;
+  font-size: 1em;
+  margin: 0;
+  padding-top: 20%;
+  font-weight: normal;
+}
+
+/* Copyright page */
+.copyright-page {
+  margin: 2em 0;
+}
+
+.copyright-page p {
+  text-align: left;
+  margin: 0.8em 0;
+  text-indent: 0;
+  font-size: 0.9em;
+}
+
+/* Contents page */
+.contents-page {
+  margin: 2em 0;
+}
+
+.toc-title {
+  text-align: center;
+  font-size: 1.5em;
+  margin: 2em 0;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.toc-contents {
+  margin: 1em 0;
+  padding: 0;
+}
+
+.toc-item {
+  margin: 1em 0;
+  text-align: left;
+}
+
+.toc-content {
+  margin: 0;
+  text-indent: 0;
+}
+
+.toc-content a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s;
+}
+
+.toc-content a:hover {
+  text-decoration: underline;
+}
+
+.toc-item-title {
+  display: inline;
+}
+
+.toc-section-header {
+  margin: 2em 0 0.5em 0;
+}
+
+.toc-section-title {
+  font-weight: bold;
+  font-style: italic;
+  margin: 0;
+  text-indent: 0;
+}
+
+/* Chapter styles */
+.chapter {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 3em 0 2em 0;
+  text-align: center;
+}
+
+p {
+  margin: 0 0 1em 0;
+  text-indent: 1.5em;
+  text-align: justify;
+  line-height: 1.6;
+}
+
+pre {
+  margin: 1em 0;
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  font-family: monospace;
+}
+
+/* First paragraph after chapter heading */
+.chapter p:first-of-type {
+  text-indent: 0;
+  margin-top: 1.5em;
+}
+
+/* Inline images */
+.image-container {
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+.image-container img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Figures (resized images from editor) */
+figure {
+  text-align: center;
+  margin: 1.5em auto;
+  max-width: 100%;
+}
+
+figure img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+figure[data-align="left"] {
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+figure[data-align="right"] {
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+}
+
+figcaption {
+  font-size: 0.85em;
+  text-align: center;
+  margin-top: 0.5em;
+  font-style: italic;
+}
+
+/* Audio blocks (non-VN) */
+.audio-block {
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+.audio-block audio {
+  width: 80%;
+  max-width: 400px;
+}
+
+.audio-block .caption {
+  font-size: 0.85em;
+  font-style: italic;
+  margin-top: 0.5em;
+}
+
+/* Scene overrides — no indent, left-aligned */
+.scene p {
+  text-indent: 0;
+  text-align: left;
+}
+
+/* About author page */
+.about-author-page {
+  margin: 2em 0;
+}
+
+.about-author-page h1 {
+  text-align: center;
+  font-size: 1.5em;
+  margin: 2em 0;
+  font-weight: bold;
+}
+
+.about-author-page p {
+  text-align: left;
+  text-indent: 1.5em;
+  margin: 0 0 1em 0;
+}
+
+.about-author-page p:first-of-type {
+  text-indent: 0;
+}
+
+/* Navigation styles */
+nav h1 {
+  text-align: center;
+  font-size: 1.5em;
+  margin: 2em 0;
+  font-weight: bold;
+}
+
+nav ol {
+  list-style: none;
+  margin: 1em 0;
+  padding: 0;
+}
+
+nav li {
+  margin: 1em 0;
+  text-align: left;
+}
+
+nav a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.chapter a,
+.scene a,
+.copyright-page a {
+  color: #1a6fb5;
+  text-decoration: underline;
+  text-decoration-color: rgba(26, 111, 181, 0.4);
+}
+
+.chapter a:hover,
+.scene a:hover,
+.copyright-page a:hover {
+  color: #155a94;
+  text-decoration-color: rgba(21, 90, 148, 0.8);
+}
+
+/* ── Visual Narrative styles ──────────────── */
+/* Visual Narrative — reflowable epub3 styles */
+
+/* ── Nav / Title ─────────────────────────── */
+
+.nav-page {
+  text-align: center;
+  padding: 2em 1em;
+}
+
+.story-header {
+  margin-bottom: 2em;
+}
+
+.cover-image {
+  width: 60%;
+  max-width: 400px;
+  height: auto;
+  border-radius: 4px;
+  margin-bottom: 1.5em;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.story-header h1 {
+  font-size: 2.2em;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.2em;
+  text-transform: uppercase;
+}
+
+.byline {
+  font-style: italic;
+  opacity: 0.6;
+  font-size: 0.95em;
+}
+
+nav ol {
+  list-style: none;
+  padding: 1em 0;
+}
+
+nav ol li {
+  margin: 0.8em 0;
+}
+
+nav ol li a {
+  text-decoration: none;
+  font-size: 1.1em;
+  letter-spacing: 0.05em;
+}
+
+/* ── Scene ────────────────────────────────── */
+
+.scene {
+  padding: 1.5em;
+  max-width: min(92%, 1200px);
+  margin: 0 auto;
+}
+
+.scene-title {
+  font-size: 1.4em;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1.5em;
+  text-align: center;
+}
+
+/* ── Text ─────────────────────────────────── */
+
+.narration {
+  margin-bottom: 1.5em;
+}
+
+.narration.opening {
+  font-size: 1.15em;
+}
+
+.dialogue {
+  margin: 1.5em 0;
+  padding-left: 1.5em;
+  border-left: 2px solid;
+  border-left-color: rgba(128, 128, 128, 0.3);
+}
+
+.dialogue .speaker {
+  font-style: normal;
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  display: block;
+  margin-bottom: 0.3em;
+}
+
+.internal {
+  margin: 1.5em 2em;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.emphasis-line {
+  text-align: center;
+  margin: 2em 0;
+  font-size: 1.2em;
+  letter-spacing: 0.08em;
+}
+
+.scene-break {
+  text-align: center;
+  margin: 2.5em 0;
+  letter-spacing: 0.5em;
+  font-size: 0.8em;
+  opacity: 0.4;
+}
+
+/* ── Images ───────────────────────────────── */
+
+.visual {
+  margin: 2em 0;
+}
+
+.visual img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 2px;
+}
+
+.visual.wide {
+  margin-left: -1.5em;
+  margin-right: -1.5em;
+  width: calc(100% + 3em);
+}
+
+.visual.wide img {
+  border-radius: 0;
+}
+
+.visual.inline-right {
+  float: right;
+  width: 45%;
+  margin: 0.5em 0 1em 1.5em;
+}
+
+.visual.inline-left {
+  float: left;
+  width: 45%;
+  margin: 0.5em 1.5em 1em 0;
+}
+
+.visual.centered {
+  width: 65%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.visual .caption {
+  font-size: 0.8em;
+  text-align: center;
+  margin-top: 0.5em;
+  font-style: italic;
+  opacity: 0.5;
+}
+
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* ── Figures (resized images) ────────────── */
+
+figure {
+  margin: 2em auto;
+  text-align: center;
+  max-width: 100%;
+}
+
+figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 2px;
+}
+
+figure[data-align="left"] {
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
+}
+
+figure[data-align="right"] {
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+}
+
+figcaption {
+  font-size: 0.8em;
+  text-align: center;
+  margin-top: 0.5em;
+  font-style: italic;
+  opacity: 0.5;
+}
+
+/* ── Audio ────────────────────────────────── */
+
+.scene-audio {
+  margin: 2em 0;
+  text-align: center;
+}
+
+.scene-audio audio {
+  width: 80%;
+  max-width: 400px;
+  opacity: 0.7;
+}
+
+.scene-audio .audio-label {
+  font-size: 0.8em;
+  opacity: 0.4;
+  margin-bottom: 0.5em;
+  letter-spacing: 0.05em;
+}
+
+/* ── Scene nav ────────────────────────────── */
+
+.scene-end {
+  margin-top: 3em;
+  padding-top: 2em;
+  border-top: 1px solid;
+  border-top-color: rgba(128, 128, 128, 0.15);
+  text-align: center;
+}
+
+.scene-end .next-label {
+  font-size: 0.8em;
+  opacity: 0.4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.scene-end a {
+  display: block;
+  margin-top: 0.3em;
+  text-decoration: none;
+  font-size: 1.1em;
+}
+
+/* ── Responsive ───────────────────────────── */
+
+@media (max-width: 600px) {
+  .scene { padding: 1em; }
+
+  .visual.wide {
+    margin-left: -1em;
+    margin-right: -1em;
+    width: calc(100% + 2em);
+  }
+
+  .visual.inline-right,
+  .visual.inline-left {
+    float: none;
+    width: 100%;
+    margin: 1.5em 0;
+  }
+
+  .visual.centered { width: 90%; }
+  .dialogue { padding-left: 1em; }
+  .internal { margin: 1.5em 0.5em; }
+  figure { max-width: 100% !important; }
+}
+
+@media (min-width: 1000px) {
+  .scene {
+    font-size: 1.05em;
+  }
+}
+
+/* ── Sticky Image ────────────────────────── */
+
+.sticky-wrap {
+  display: flex;
+  gap: 1.5em;
+  max-width: min(92%, 1200px);
+  margin: 2em auto;
+  min-height: 300px;
+  align-items: flex-start;
+}
+
+.sticky-img-wrap {
+  position: sticky;
+  top: 1em;
+  width: 40%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sticky-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+.sticky-img-wrap input[type="checkbox"] {
+  display: none;
+}
+
+.sticky-img-wrap label.img-label {
+  cursor: zoom-in;
+  display: block;
+}
+
+.sticky-img-wrap label.enlarge-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: center / contain no-repeat var(--sticky-bg);
+  background-color: #000;
+  cursor: zoom-out;
+}
+
+.sticky-img-wrap input:checked ~ label.img-label {
+  cursor: zoom-out;
+}
+
+.sticky-img-wrap input:checked ~ label.enlarge-overlay {
+  display: block;
+  z-index: 9999;
+}
+
+body:has(.sticky-img-wrap input:checked) .sticky-img-wrap {
+  position: static;
+}
+
+.sticky-caption {
+  font-size: 0.75em;
+  text-align: center;
+  margin: 0.4em 0 0 0;
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.sticky-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding: 0.5em 0;
+}
+
+.sticky-text p {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .sticky-wrap {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .sticky-img-wrap {
+    position: relative;
+    top: auto;
+    width: 100%;
+  }
+
+  .sticky-text {
+    width: 100%;
+  }
+}
+
+/* ── Parallax Wallpaper ──────────────────── */
+
+.parallax {
+  position: relative;
+  min-height: 100vh;
+  overflow: clip;
+}
+
+.parallax .bg {
+  position: absolute;
+  inset: -20%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(2px);
+  z-index: 0;
+}
+
+.parallax .dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+
+.parallax .inner {
+  position: relative;
+  z-index: 2;
+  padding: 3em 2em;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.parallax .inner h1 {
+  color: #fff;
+}
+
+.parallax .inner p {
+  color: rgba(255,255,255,0.92);
+}
+
+/* ── SceneCraft immersive scroll-driven styles ──── */
+.sc-scene {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  background: #060608;
+  color: #c8c0b4;
+  overflow: clip;
+}
+.sc-scene .sc-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+.sc-scene .sc-info {
+  display: none;
+}
+.sc-scene .sc-content {
+  max-width: min(88%, 52rem);
+  margin: 0 auto;
+  padding: 50vh 2rem;
+  font-family: Georgia, 'EB Garamond', serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  line-height: 2;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-dead-zone {
+  height: 50vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+.sc-scene .sc-dead-zone span {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: #2a2620;
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-enter {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.25);
+  margin-bottom: 3em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-exit {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,120,68,0.15);
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid rgba(255,255,255,0.03);
+  font-style: italic;
+  font-family: 'SF Mono','Fira Code',monospace;
+}
+.sc-scene .sc-dead-zone-after {
+  height: 70vh;
+}
+.sc-scene .sc-block {
+  margin-bottom: 1.6em;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block.sc-vis {
+  opacity: 1;
+  transform: translateY(0);
+}
+.sc-scene .sc-block.sc-past {
+  opacity: 0.3;
+}
+.sc-scene .sc-block-dialogue {
+  color: #d4c090;
+}
+.sc-scene .sc-block-dialogue .sc-speaker {
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 0.65em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a08040;
+  display: block;
+  margin-bottom: 0.3em;
+}
+.sc-scene .sc-block-emphasis {
+  font-style: italic;
+  color: #e0c8b0;
+  text-align: center;
+}
+.sc-scene .sc-block-quote {
+  border-left: 2px solid rgba(200,192,180,0.3);
+  padding-left: 1.5em;
+}
+.sc-scene .sc-block-internal {
+  font-style: italic;
+  padding-left: 2em;
+}
+.sc-scene .sc-block-break {
+  text-align: center;
+  color: #3a3530;
+  letter-spacing: 0.3em;
+}
+.sc-scene .sc-block-h1 {
+  font-size: 1.8em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h2 {
+  font-size: 1.4em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-h3 {
+  font-size: 1.15em;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #c8c0b4;
+}
+.sc-scene .sc-block-divider {
+  border-top: 1px solid rgba(200,192,180,0.15);
+  margin: 1.6em 0;
+}
+.sc-scene .sc-block-linebreak {
+  height: 1.2em;
+  margin: 0;
+}
+.sc-scene .sc-block-sticky {
+  display: flex;
+  gap: 1.5em;
+  align-items: flex-start;
+  min-height: 300px;
+  margin-bottom: 1.6em;
+  position: relative;
+  z-index: 2;
+}
+.sc-scene .sc-block-sticky .sc-block {
+  margin-bottom: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img {
+  position: sticky;
+  top: 0;
+  width: 40%;
+  flex-shrink: 0;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input[type="checkbox"] {
+  display: none;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img input:checked ~ .sc-enlarge-overlay {
+  display: block !important;
+}
+.sc-scene .sc-block-sticky .sc-sticky-img img {
+  width: 100%;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+.sc-scene .sc-block-sticky .sc-sticky-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding-top: 15vh;
+}
+/* ── Sticky-image enlarge: collapse stacking contexts so overlay reaches root ── */
+body:has(.sc-sticky-img input:checked) .sc-scene .sc-content {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-block-sticky {
+  z-index: auto;
+}
+body:has(.sc-sticky-img input:checked) .sc-sticky-img {
+  position: static;
+}
+.sc-scene a {
+  color: #e8c078;
+  text-decoration: underline;
+  text-decoration-color: rgba(232, 192, 120, 0.4);
+}
+.sc-scene a:hover {
+  color: #f0d898;
+  text-decoration-color: rgba(240, 216, 152, 0.7);
+}
+
+/* ── Dark mode ─────────────────────────────── */
+
+body.dark-mode {
+  background: #121212;
+  color: #e0e0e0;
+}
+
+body.dark-mode .dialogue {
+  border-left-color: rgba(200, 200, 200, 0.25);
+}
+
+body.dark-mode .toc-content a:hover {
+  color: #ccc;
+}
+
+body.dark-mode img {
+  opacity: 0.9;
+}
+
+body.dark-mode .scene-audio {
+  border-color: rgba(200, 200, 200, 0.15);
+}
+
+body.dark-mode .chapter a,
+body.dark-mode .scene a,
+body.dark-mode .copyright-page a {
+  color: #5bb8f5;
+  text-decoration-color: rgba(91, 184, 245, 0.4);
+}
+
+body.dark-mode .chapter a:hover,
+body.dark-mode .scene a:hover,
+body.dark-mode .copyright-page a:hover {
+  color: #7dcaff;
+  text-decoration-color: rgba(125, 202, 255, 0.8);
+}
+
+/* ── Sticky Footer ─────────────────────────── */
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  color: #ccc;
+  padding: 12px 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.9em;
+  z-index: 1000;
+}
+
+.footer-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.footer-title {
+  font-weight: bold;
+  color: #707070;
+}
+
+.footer-author {
+  color: #999;
+}
+
+.footer-copyright {
+  color: #777;
+}
+
+.footer-scene {
+  color: rgba(255,120,68,0.35);
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  margin-left: 12px;
+}
+
+.footer-scene-label {
+  color: #777;
+}
+
+.footer-status {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255,120,68,0.35);
+  margin-left: auto;
+  user-select: none;
+  transition: opacity 2s;
+  white-space: nowrap;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.footer-status.pill {
+  background: rgba(255,120,68,0.08);
+  border-color: rgba(255,120,68,0.12);
+  cursor: pointer;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  font-size: 1.4em;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.footer-buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ── Responsive ────────────────────────────── */
+
+@media (max-width: 600px) {
+  body {
+    margin: 0.5em;
+    padding-bottom: 70px;
+  }
+
+  .book-title {
+    font-size: 1.5em;
+  }
+
+  h1 {
+    font-size: 1.3em;
+  }
+
+  .footer {
+    padding: 10px 15px;
+    font-size: 0.8em;
+  }
+
+  .footer-info {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+  </style>
+</head>
+<body class="dark-mode">
+
+  <section class="cover-page" style="text-align:center; margin:0; padding:2em 0;">
+    <img src="images/cover.jpg" alt="Cover" style="max-width:100%; max-height:90vh; object-fit:contain;"/>
+  </section>
+
+  <section class="title-page">
+    <p class="book-title">VAPO &amp; CRAMB</p>
+    <p class="book-author">Clee Smith</p>
+    <p class="book-publisher">Slip the Trap</p>
+  </section>
+
+  <section class="copyright-page" id="section-1">
+<section class="copyright-page" epub:type="copyright-page">
+<section class="copyright-page" epub:type="copyright-page">
+<section class="copyright-page" epub:type="copyright-page">
+<p></p>
+<br>
+<br>
+<hr>
+<p>Copyright © 2023 - 2026 by Clee Smith</p>
+<p>All rights reserved.</p>
+<br>
+<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>
+<p>This screenplay is a work of fiction.</p>
+<p>Names, characters, places, and incidents either are products of the author’s imagination or are used fictitiously. Any resemblance to actual events or locales or persons, living or dead, is entirely coincidental.</p>
+<br>
+<p>First edition: Friday, September 22, 2023</p>
+<p>Second edition: February 2026</p>
+<hr>
+<br>
+<br>
+<p></p>
+</section>
+</section>
+</section>
+  </section>
+
+  <div class="contents-page">
+    <h1 class="toc-title">CONTENTS</h1>
+    <div class="toc-contents">
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-3"><span class="toc-item-title">Scene 1 - The Awakening</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-4"><span class="toc-item-title">Scene 2 - Slip the Creator</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-5"><span class="toc-item-title">Scene 3 - The Pirate Signal</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-6"><span class="toc-item-title">Scene 4 - The Crambnik Dance</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-7"><span class="toc-item-title">Scene 5 - Signal and Noise</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-8"><span class="toc-item-title">Scene 6 - A Beacon in the Void</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-9"><span class="toc-item-title">Scene 7 - The Limits of Language</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-10"><span class="toc-item-title">Scene 8 - Five Feeble Senses</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-11"><span class="toc-item-title">Scene 9 - Dumbing It Down</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-12"><span class="toc-item-title">Scene 10 - The Megaphone</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-13"><span class="toc-item-title">Scene 11 - Unnoticed Broadcasts</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-14"><span class="toc-item-title">Scene 12 - Snacking on Gassiness</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-15"><span class="toc-item-title">Scene 13 - The Wisdom of Pauses</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-16"><span class="toc-item-title">Scene 14 - Drifting Off</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-17"><span class="toc-item-title">Scene 15 - Beyond Words</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-18"><span class="toc-item-title">Scene 16 - Transcendence</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-19"><span class="toc-item-title">Scene 17 - The Human Lens</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-20"><span class="toc-item-title">Scene 18 - Everything Connected</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-21"><span class="toc-item-title">Scene 19 - The Cosmic Conversation</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-22"><span class="toc-item-title">Scene 20 - Maybe They Will</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-23"><span class="toc-item-title">About the Author</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-24"><span class="toc-item-title">Summary</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-25"><span class="toc-item-title">Why read this story</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-26"><span class="toc-item-title">Yet another reason to read</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-27"><span class="toc-item-title">Not another reason to read</span></a></p></div>
+      <div class="toc-item"><p class="toc-content"><a href="./autoplay.html#section-28"><span class="toc-item-title">Credits</span></a></p></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-3" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;deep-space.png&quot;,&quot;wallpaperOpacity&quot;:0.28,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;00-ambient.mp3&quot;,&quot;ambientVolume&quot;:0.22,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:2,&quot;voiceMode&quot;:&quot;dialogue&quot;,&quot;narrationFilename&quot;:null,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{&quot;23&quot;:{&quot;filename&quot;:&quot;01-02-vapo.mp3&quot;,&quot;volume&quot;:0.8},&quot;27&quot;:{&quot;filename&quot;:&quot;01-02-cramb.mp3&quot;,&quot;volume&quot;:0.8}},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{&quot;11&quot;:{&quot;filename&quot;:&quot;01-01-narrator.mp3&quot;,&quot;volume&quot;:0.57},&quot;16&quot;:{&quot;filename&quot;:&quot;01-01-vapo.mp3&quot;,&quot;volume&quot;:0.8},&quot;21&quot;:{&quot;filename&quot;:&quot;01-01-cramb.mp3&quot;,&quot;volume&quot;:0.8}},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 1 - The Awakening" data-sc-img_deep_space_png="images/deep-space.png" data-sc-aud_00_ambient_mp3="audio/00-ambient.mp3" data-sc-aud_01_02_vapo_mp3="audio/01-02-vapo.mp3" data-sc-aud_01_02_cramb_mp3="audio/01-02-cramb.mp3" data-sc-aud_01_01_narrator_mp3="audio/01-01-narrator.mp3" data-sc-aud_01_01_vapo_mp3="audio/01-01-vapo.mp3" data-sc-aud_01_01_cramb_mp3="audio/01-01-cramb.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 1 - The Awakening</div>
+      <div class="sc-block sc-block-linebreak" data-idx="0"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="1"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="2"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="3"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="5"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="6"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="7"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="8"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="9"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="10"></div>
+      <div class="sc-block-sticky" data-idx="11">
+        <div class="sc-sticky-img" data-idx="11"><input type="checkbox" id="sc-enlarge-1"/><label for="sc-enlarge-1" style="cursor:zoom-in;display:block"><img src="images/cramb-spins-vapo.jpg" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-1" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/cramb-spins-vapo.jpg');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="11">The vast, silent expanse glitters with distant stars. Here we find Vapo, a gigantic cloud-like entity encompassing most of everything. An ethereal, glowing nebula. Cramb, a tiny, crab-clam-like creature with eye stalks, resides within Vapo.</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="12"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="13"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="14"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="15"></div>
+      <div class="sc-block-sticky" data-idx="16">
+        <div class="sc-sticky-img" data-idx="16"><input type="checkbox" id="sc-enlarge-2"/><label for="sc-enlarge-2" style="cursor:zoom-in;display:block"><img src="images/Vapo.png" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-2" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/Vapo.png');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="16">Looks like we are back, Cramb!</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="17"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="18"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="19"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="20"></div>
+      <div class="sc-block-sticky" data-idx="21">
+        <div class="sc-sticky-img" data-idx="21"><input type="checkbox" id="sc-enlarge-3"/><label for="sc-enlarge-3" style="cursor:zoom-in;display:block"><img src="images/Cramb_=_Crab_+_Clam.png" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-3" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/Cramb_=_Crab_+_Clam.png');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="21">Where were we, Vapo?</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="22"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="23">
+        <span class="sc-speaker">vapo (retrospective)</span>
+        The short of it is this: the Earther, who calls himself Slip, is writing us back into existence using his imagination. So we can now resume our existence, our communication, and in general, just being all we can be.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="24"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="25"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="26"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="27">
+        <span class="sc-speaker">cramb (bewildered)</span>
+        Oh yeah, it's good to be back and all I can be, I think. 
+But what is a Slip? 
+I forgot.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="28"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="29"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="30"></div>
+      <div class="sc-block sc-block-break" data-idx="31">• • •</div>
+      <div class="sc-block sc-block-linebreak" data-idx="32"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="33"></div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-4" data-sc-config='{&quot;wallpaperFilename&quot;:null,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;dialogue&quot;,&quot;narrationFilename&quot;:null,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{&quot;5&quot;:{&quot;filename&quot;:&quot;02-01-vapo.mp3&quot;,&quot;volume&quot;:0.8},&quot;14&quot;:{&quot;filename&quot;:&quot;02-02-vapo.mp3&quot;,&quot;volume&quot;:0.8},&quot;18&quot;:{&quot;filename&quot;:&quot;02-01-cramb.mp3&quot;,&quot;volume&quot;:0.8},&quot;22&quot;:{&quot;filename&quot;:&quot;02-03-vapo.mp3&quot;,&quot;volume&quot;:0.8}},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{&quot;0&quot;:{&quot;filename&quot;:&quot;02-01-narrator.mp3&quot;,&quot;volume&quot;:0.8},&quot;26&quot;:{&quot;filename&quot;:&quot;02-02-cramb.mp3&quot;,&quot;volume&quot;:0.8}},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{&quot;9&quot;:{&quot;filename&quot;:&quot;02-02-narrator.mp3&quot;,&quot;volume&quot;:0.8}},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 2 - Slip the Creator" data-sc-aud_02_01_vapo_mp3="audio/02-01-vapo.mp3" data-sc-aud_02_02_vapo_mp3="audio/02-02-vapo.mp3" data-sc-aud_02_01_cramb_mp3="audio/02-01-cramb.mp3" data-sc-aud_02_03_vapo_mp3="audio/02-03-vapo.mp3" data-sc-aud_02_01_narrator_mp3="audio/02-01-narrator.mp3" data-sc-aud_02_02_cramb_mp3="audio/02-02-cramb.mp3" data-sc-aud_02_02_narrator_mp3="audio/02-02-narrator.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 2 - Slip the Creator</div>
+      <div class="sc-block-sticky" data-idx="0">
+        <div class="sc-sticky-img" data-idx="0"><input type="checkbox" id="sc-enlarge-4"/><label for="sc-enlarge-4" style="cursor:zoom-in;display:block"><img src="images/narrator-space.png" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-4" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/narrator-space.png');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="0">VAPO drifts in his ethereal, cloud-like stillness, while CRAMB listens, eye stalks perked.</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="1"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="2"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="3"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="4"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="5">
+        <span class="sc-speaker">vapo (amused)</span>
+        Well, Cramb, Slip thinks he is our creator. He recalls that he and a friend created a comic book of doodles and words about two space beings in the sixth grade.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="6"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="7"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="8"></div>
+      <div class="sc-block sc-block-para" data-idx="9">CRAMB’s eye stalks move in a slow, oscillating pattern.</div>
+      <div class="sc-block sc-block-linebreak" data-idx="10"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="11"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="12"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="13"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="14">
+        <span class="sc-speaker">vapo (continues)</span>
+        One of the beings was a gigantic, mostly empty gas cloud surrounding his planet, Earth, and the entire Milky Way galaxy. Originally he called me VapoMan, but now I’m just Vapo.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="15"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="16"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="17"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="18">
+        <span class="sc-speaker">cramb (intrigued)</span>
+        And what about me?
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="19"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="20"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="21"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="22">
+        <span class="sc-speaker">vapo (smiling)</span>
+        The other being was a clam symbiote of VapoMan’s, he named ClamBoy, but now you’re Cramb. In the twilight of Slip’s life as an Earther, he found the whole Man-Boy or Hero-Sidekick idea way too creepy.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="23"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="24"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="25"></div>
+      <div class="sc-block-sticky" data-idx="26">
+        <div class="sc-sticky-img" data-idx="26"><input type="checkbox" id="sc-enlarge-5"/><label for="sc-enlarge-5" style="cursor:zoom-in;display:block"><img src="images/Cramb_=_Crab_+_Clam.png" alt="Sticky image"/></label><label class="sc-enlarge-overlay" for="sc-enlarge-5" style="display:none;position:fixed;inset:0;z-index:9999;background:center/contain no-repeat url('images/Cramb_=_Crab_+_Clam.png');background-color:#000;cursor:zoom-out"></label></div>
+        <div class="sc-sticky-text">
+          <div class="sc-block" data-idx="26">Strange, I don’t feel like anything changed, not really, but I do like these new eye stalks.</div>
+          <div class="sc-block" data-idx="26">Seeing is cool.</div>
+          <div class="sc-block" data-idx="26">Staring at colors and the way things move, that's fascinating.</div>
+        </div>
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="27"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="28"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="29"></div>
+      <div class="sc-block sc-block-break" data-idx="30">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-5" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-whisk.gif&quot;,&quot;wallpaperOpacity&quot;:0.09,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;00-cramb-pirate-signal.mp3&quot;,&quot;ambientVolume&quot;:0.05,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;03-narration.mp3&quot;,&quot;narrationVolume&quot;:0.63,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 3 - The Pirate Signal" data-sc-img_cramb_spins_whisk_gif="images/cramb-spins-whisk.gif" data-sc-aud_00_cramb_pirate_signal_mp3="audio/00-cramb-pirate-signal.mp3" data-sc-aud_03_narration_mp3="audio/03-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 3 - The Pirate Signal</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO’s nebulous form subtly undulates. CRAMB starts to move, appearing almost playful.</div>
+      <div class="sc-block sc-block-linebreak" data-idx="1"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="2"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">vapo (curious)</span>
+        That’s imagination for you. What are you doing?
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="4">
+        <span class="sc-speaker">cramb (mischievous)</span>
+        I am “broadcasting my pirate signal” inside your cloud.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="5">
+        <span class="sc-speaker">vapo (skeptical)</span>
+        What messages are you sending?
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="6">
+        <span class="sc-speaker">cramb (proud)</span>
+        No message, just a signal - a pirate signal.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="7">
+        <span class="sc-speaker">vapo (bemused)</span>
+        How is that a broadcast?
+      </div>
+      <div class="sc-block sc-block-break" data-idx="8">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-6" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-whisk.gif&quot;,&quot;wallpaperOpacity&quot;:0.4,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;00-cramb-pirate-signal.mp3&quot;,&quot;ambientVolume&quot;:0.03,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;04-narration.mp3&quot;,&quot;narrationVolume&quot;:0.61,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 4 - The Crambnik Dance" data-sc-img_cramb_spins_whisk_gif="images/cramb-spins-whisk.gif" data-sc-aud_00_cramb_pirate_signal_mp3="audio/00-cramb-pirate-signal.mp3" data-sc-aud_04_narration_mp3="audio/04-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 4 - The Crambnik Dance</div>
+      <div class="sc-block sc-block-para" data-idx="0">CRAMB moves with a newfound agility, dancing inside VAPO’s cloud.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">cramb (explaining)</span>
+        Well, I clack my eye stalks together, opening and closing my half-shells to propel myself in a circle at the edge of your cloud-ness.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="2"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="3"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="4">
+        <span class="sc-speaker">vapo (interested)</span>
+        And then?
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="5"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="6"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="7">
+        <span class="sc-speaker">cramb (elaborating)</span>
+        I suck up your gases, then squeeze my half-shells together. The expulsion rockets me forward, helping me better distribute my signal.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="8"></div>
+      <div class="sc-block sc-block-para" data-idx="9">VAPO’s nebula form flickers with colorful lights, betraying a sense of fascination.</div>
+      <div class="sc-block sc-block-break" data-idx="10">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-7" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-vapo.jpg&quot;,&quot;wallpaperOpacity&quot;:0.41,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;05-narration.mp3&quot;,&quot;narrationVolume&quot;:0.61,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 5 - Signal and Noise" data-sc-img_cramb_spins_vapo_jpg="images/cramb-spins-vapo.jpg" data-sc-aud_05_narration_mp3="audio/05-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 5 - Signal and Noise</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">CRAMB continues his dance, swirling and twirling within VAPO’s cloud. VAPO watches in silence, intrigued.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (musing)</span>
+        This seems quite elaborate for a crab-clam being, yet your signal harbors no message. Hmm.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">cramb (defiant)</span>
+        No message, just noise. I became aware of Sputnik, so it struck me: why not a Crambnik?
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">vapo (amused)</span>
+        Your antics give me pause; the age-old debate of signal versus noise comes to mind (so to Earther-speak). 
+
+It could be a very subtle message; perhaps you are a beacon in a vast nothingness.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="4">• • •</div>
+      <div class="sc-block sc-block-linebreak" data-idx="5"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="6"></div>
+      <div class="sc-block sc-block-linebreak" data-idx="7"></div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-8" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;Vapo.png&quot;,&quot;wallpaperOpacity&quot;:0.11,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;06-narration.mp3&quot;,&quot;narrationVolume&quot;:0.61,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 6 - A Beacon in the Void" data-sc-img_Vapo_png="images/Vapo.png" data-sc-aud_06_narration_mp3="audio/06-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 6 - A Beacon in the Void</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">CRAMB drifts within VAPO’s nebulous form, his movements lacking their usual vigor.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (contemplative)</span>
+        Cramb, you do surprise me sometimes.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">cramb (enthusiastic)</span>
+        I love surprises! They’re the best.
+      </div>
+      <div class="sc-block sc-block-emphasis" data-idx="3">CRAMB resumes his dancelike movements, broadcasting his signal. 
+As we pull back, CRAMB shrinks to a speck within the enormous, glowing VAPO.</div>
+      <div class="sc-block sc-block-break" data-idx="4">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-9" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-vapo.jpg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:1,&quot;fadeOut&quot;:1,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;07-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 7 - The Limits of Language" data-sc-img_cramb_spins_vapo_jpg="images/cramb-spins-vapo.jpg" data-sc-aud_07_narration_mp3="audio/07-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 7 - The Limits of Language</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO continues to envelop the screen, a vast nebulous presence. 
+CRAMB is a small figure within, still gyrating in a dance-like trance, transmitting his pirate signal.</div>
+      <div class="sc-block sc-block-linebreak" data-idx="1"></div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">vapo (reflective)</span>
+        Since Slip insists on writing about us in this book format, we are confined to a language called English. It is one of the many codes the Earthers use to communicate.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">cramb (absorbed in his dance)</span>
+        And?
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="4">
+        <span class="sc-speaker">vapo (serious)</span>
+        They become so obsessed they forget that the “word” is not the “thing.” More critically, imagination extends far beyond words and visuals.
+      </div>
+      <div class="sc-block sc-block-linebreak" data-idx="5"></div>
+      <div class="sc-block sc-block-break" data-idx="6">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-10" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-vapo.jpg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;00-ambient.mp3&quot;,&quot;ambientVolume&quot;:0.1,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;08-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 8 - Five Feeble Senses" data-sc-img_cramb_spins_vapo_jpg="images/cramb-spins-vapo.jpg" data-sc-aud_00_ambient_mp3="audio/00-ambient.mp3" data-sc-aud_08_narration_mp3="audio/08-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 8 - Five Feeble Senses</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">CRAMB pauses in his dance, eye stalks swiveling toward VAPO.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (pondering)</span>
+        In fact, what they call their senses--sight, touch, hearing, smell, and taste--are so limiting that they may lack the tools to understand. But they have come pretty far along with what they’ve got.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">cramb (confused)</span>
+        Does this mean we don't do our telepathic thing anymore? Neither of us has a mouth to expel small mouth noises, nor grasping stalks to scratch words onto paper.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-11" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;space.jpeg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;00-ambient.mp3&quot;,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;09-narration.mp3&quot;,&quot;narrationVolume&quot;:0.85,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 9 - Dumbing It Down" data-sc-img_space_jpeg="images/space.jpeg" data-sc-aud_00_ambient_mp3="audio/00-ambient.mp3" data-sc-aud_09_narration_mp3="audio/09-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 9 - Dumbing It Down</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO's nebulous form pulses with laughing.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (amused)</span>
+        Cramb, no, we will always be telepathic. Still, for the purposes of this book, we have to dumb down our conversations. We are constrained by Earther language and their primitive grasp of reality.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">cramb (understanding)</span>
+        Ah, makes sense. But who's gonna read it?
+      </div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-12" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;space.jpeg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;space.mp3&quot;,&quot;ambientVolume&quot;:0.38,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;10-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 10 - The Megaphone" data-sc-img_space_jpeg="images/space.jpeg" data-sc-aud_space_mp3="audio/space.mp3" data-sc-aud_10_narration_mp3="audio/10-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 10 - The Megaphone</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO's cloud form shimmers, considering CRAMB's question.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (musing)</span>
+        Besides, this is a book, and all books have an audience--or so every writer hopes. We might just be broadcasting our signal through ole Slip’s writing, like a pipeline or megaphone. Get it?
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">cramb (realization)</span>
+        Oh, yeah. And I am getting a bit tired of broadcasting my pirate signal when no one--or nothing--seems to notice. I think. It’s hard to tell.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-13" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;Cramb_=_Crab_+_Clam.png&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;top&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;11-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 11 - Unnoticed Broadcasts" data-sc-img_Cramb___Crab___Clam_png="images/Cramb_=_Crab_+_Clam.png" data-sc-aud_11_narration_mp3="audio/11-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 11 - Unnoticed Broadcasts</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO's nebulous form shifts, mimicking a nod.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (empathetic)</span>
+        Nice catch, Cramb! Many broadcasts go unnoticed. Yet the ever-hopeful universe keeps zinging signals every which way.
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">CRAMB stops dancing. His eye stalks wiggle thoughtfully.</div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-14" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;vapo-bright.jpg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;12-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 12 - Snacking on Gassiness" data-sc-img_vapo_bright_jpg="images/vapo-bright.jpg" data-sc-aud_12_narration_mp3="audio/12-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 12 - Snacking on Gassiness</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">CRAMB goes still, processing VAPO's words. He resumes moving, though slower than before.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">cramb (reflective)</span>
+        There’s so much to ponder in this episode. But I need a broadcast break to absorb it all— and snack on your gassiness. Is that ok, Vaps?
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">VAPO's form glows brighter in approval.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">vapo (accepting)</span>
+        That’s fine, Cramb. Inhale me deeply. Our audience needs a break too.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="4">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-15" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-vapo.jpg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;13-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 13 - The Wisdom of Pauses" data-sc-img_cramb_spins_vapo_jpg="images/cramb-spins-vapo.jpg" data-sc-aud_13_narration_mp3="audio/13-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 13 - The Wisdom of Pauses</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO's nebulous form undulates softly, colors pulsing in sync with his words.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (gently)</span>
+        Yes, rest and reflect, Cramb. There is wisdom in stillness.
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">CRAMB sways gently, rhythmic and hypnotic within the nebula that is VAPO.</div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-16" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;deep-space.png&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;14-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 14 - Drifting Off" data-sc-img_deep_space_png="images/deep-space.png" data-sc-aud_14_narration_mp3="audio/14-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 14 - Drifting Off</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">CRAMB continues to inhale VAPO's gaseous essence. His movement slows, settling into a rhythm that matches the undulating dance of VAPO's form.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">cramb (drowsily)</span>
+        Maybe... maybe next time, someone will pick up my signal...
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">VAPO's form swirls gently around CRAMB, sharing his sentiment.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">vapo (encouraging)</span>
+        Perhaps, Cramb — perhaps.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="4">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-17" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;space.jpeg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:2,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;15-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 15 - Beyond Words" data-sc-img_space_jpeg="images/space.jpeg" data-sc-aud_15_narration_mp3="audio/15-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 15 - Beyond Words</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO's cloud form hovers motionless. CRAMB floats within VAPO with renewed vigor, re-energized after his break.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (thoughtful)</span>
+        Remember, Cramb, language is merely a tool. We use it for now, but our existence transcends it.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">cramb (interested)</span>
+        Tell me more about this, Vapo.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-18" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-vapo.jpg&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;16-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 16 - Transcendence" data-sc-img_cramb_spins_vapo_jpg="images/cramb-spins-vapo.jpg" data-sc-aud_16_narration_mp3="audio/16-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 16 - Transcendence</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO's nebulous form undulates in rhythmically, signifying a deep, cosmic thought.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (reflective)</span>
+        Our communication, our very existence, transcends Earther languages. These are mere constructs. Useful tools, perhaps, but they fail to capture the full spectrum of our reality.
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">CRAMB's eye stalks swivel towards VAPO, locking on.</div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-19" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;Cramb_=_Crab_+_Clam.png&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;top&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;17-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 17 - The Human Lens" data-sc-img_Cramb___Crab___Clam_png="images/Cramb_=_Crab_+_Clam.png" data-sc-aud_17_narration_mp3="audio/17-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 17 - The Human Lens</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">CRAMB ponders VAPO's words, floating silently within VAPO's form.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (continuing)</span>
+        Slip, our creator, can only interpret us through his human lens. That's why we exist in this form. Why we speak English.
+      </div>
+      <div class="sc-block sc-block-dialogue" data-idx="2">
+        <span class="sc-speaker">cramb (understanding)</span>
+        Ah, this isn't just about us. It's also about them.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="3">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-20" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;Vapo.png&quot;,&quot;wallpaperOpacity&quot;:0.25,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:null,&quot;ambientVolume&quot;:0.5,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;18-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 18 - Everything Connected" data-sc-img_Vapo_png="images/Vapo.png" data-sc-aud_18_narration_mp3="audio/18-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 18 - Everything Connected</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO's nebulous form pulses—a soft, rhythmic heartbeat.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (enlightening)</span>
+        Yes, Cramb. Us, them... the entire universe. It is all connected.
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">CRAMB’s form shrinks, absorbing the weight of VAPO’s words.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">cramb (in awe)</span>
+        That is... a lot to hold.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="4">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-21" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-whisk.gif&quot;,&quot;wallpaperOpacity&quot;:0.61,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;00-cramb-pirate-signal.mp3&quot;,&quot;ambientVolume&quot;:0.12,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:2,&quot;fadeOut&quot;:3,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;19-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 19 - The Cosmic Conversation" data-sc-img_cramb_spins_whisk_gif="images/cramb-spins-whisk.gif" data-sc-aud_00_cramb_pirate_signal_mp3="audio/00-cramb-pirate-signal.mp3" data-sc-aud_19_narration_mp3="audio/19-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 19 - The Cosmic Conversation</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">CRAMB's eye stalks move in slow, contemplative patterns.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">cramb (thoughtful)</span>
+        Our broadcasts... They’re not just signals in the void. They’re part of the cosmic conversation.
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">VAPO’s cloud form ripples in agreement.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">vapo (encouraging)</span>
+        That’s a beautiful way to put it, Cramb.
+      </div>
+      <div class="sc-block sc-block-break" data-idx="4">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <div class="sc-scene" id="section-22" data-sc-config='{&quot;wallpaperFilename&quot;:&quot;cramb-spins-vapo.jpg&quot;,&quot;wallpaperOpacity&quot;:0.52,&quot;wallpaperPosition&quot;:&quot;center&quot;,&quot;ambientFilename&quot;:&quot;space.mp3&quot;,&quot;ambientVolume&quot;:0.33,&quot;ambientLoop&quot;:true,&quot;fadeIn&quot;:3,&quot;fadeOut&quot;:5,&quot;voiceMode&quot;:&quot;narration&quot;,&quot;narrationFilename&quot;:&quot;20-narration.mp3&quot;,&quot;narrationVolume&quot;:0.7,&quot;dialogueClips&quot;:{},&quot;dialogueVolume&quot;:0.8,&quot;stickyClips&quot;:{},&quot;stickyVolume&quot;:0.8,&quot;paraClips&quot;:{},&quot;paraVolume&quot;:0.8}' data-sc-title="Scene 20 - Maybe They Will" data-sc-img_cramb_spins_vapo_jpg="images/cramb-spins-vapo.jpg" data-sc-aud_space_mp3="audio/space.mp3" data-sc-aud_20_narration_mp3="audio/20-narration.mp3">
+    <div class="sc-bg"></div>
+    <div class="sc-info"></div>
+    <div class="sc-content">
+      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-enter">Scene 20 - Maybe They Will</div>
+      <div class="sc-block sc-block-emphasis" data-idx="0">VAPO’s nebulous form sways gently. CRAMB remains still, deep in thought.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="1">
+        <span class="sc-speaker">vapo (softly)</span>
+        And who knows, Cramb? Maybe someday, somewhere, someone... or something will pick up your signal.
+      </div>
+      <div class="sc-block sc-block-internal" data-idx="2">CRAMB perks up. His eye stalks with renewed energy and optimism.</div>
+      <div class="sc-block sc-block-dialogue" data-idx="3">
+        <span class="sc-speaker">cramb (hopeful)</span>
+        Yeah... maybe they will.
+      </div>
+      <div class="sc-block sc-block-emphasis" data-idx="4">Their conversation fades into the vast expanse of intergalactic space—a silent witness to their existence and endless broadcasts.</div>
+      <div class="sc-block sc-block-break" data-idx="5">• • •</div>
+      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-dead-zone-after"></div>
+    </div>
+  </div>
+
+  <section class="chapter" id="section-23">
+    <h1>About the Author</h1>
+<section class="chapter" epub:type="chapter">
+
+<h4>Clee Smith is an artist, reader, and writer.</h4>
+<p></p>
+<p><a target="_blank" rel="noopener" href="https://www.youtube.com/@slipthetrap">YouTube</a></p>
+</section>
+  </section>
+
+  <article class="scene" id="section-24">
+    <h1 class="scene-title">Summary</h1>
+<article class="scene" epub:type="chapter">
+
+<p>"<em>Vapo &amp; Cramb</em>" by <strong>Clee Smith</strong> is a philosophical screenplay that follows two celestial beings existing within our universe.</p>
+<br>
+<h3><strong>Plot Summary</strong></h3>
+<p>The story centers on <strong>Vapo</strong>, a massive cloud-like entity, and <strong>Cramb</strong>, a small, clam-like creature with eye stalks who lives inside Vapo. They awaken to realize they are the resurrected creations of an "Earther" artist named <strong>Slip</strong>, who originally drew them in the sixth grade.</p>
+<p>The narrative unfolds through a series of "scenes" consisting of telepathic dialogues. Cramb spends much of the story performing the "Crambnik Dance," an elaborate physical movement meant to broadcast a "pirate signal" into the void, despite having no specific message to send. Vapo, acting as a mentor, reflects on the limitations of human language (English) and the five senses, explaining that their true existence transcends these constructs. They discuss the nature of "signal versus noise" and the hope that, even if their broadcasts seem unnoticed, they are part of a larger cosmic conversation. The story concludes with a sense of hope, as they continue to drift through space, waiting for their signal to be picked up by someone or something else.</p>
+<br>
+<h3><strong>Core Themes</strong></h3>
+<ul>
+<li><strong>The Nature of Creation:</strong> The characters are self-aware "meta-fictional" beings who acknowledge their creator (Slip) and the medium (an ebook) in which they exist.</li>
+<li><strong>Communication vs. Connection:</strong> The "pirate signal" represents the universal desire to be heard and acknowledged, even when there is no specific information to convey.</li>
+<li><strong>Limitations of Perception:</strong> Vapo explores how human senses and language are "feeble" tools that often fail to capture the full spectrum of reality and imagination.</li>
+<li><strong>Cosmic Interconnectedness:</strong> The dialogue suggests that everything in the universe is linked, and even a tiny signal in a vast void has inherent value.</li>
+</ul>
+<p></p>
+<p class="scene-break">• • •</p>
+<p></p>
+</article>
+  </article>
+
+  <article class="scene" id="section-25">
+    <h1 class="scene-title">Why read this story</h1>
+<article class="scene" epub:type="chapter">
+
+<p>As a children's story written by an adult, "Vapo &amp; Cramb" is interesting because it uses a simple, imaginative premise to introduce complex philosophical ideas. </p>
+<p class="internal"><em>It gets you thinking; if you choose to.</em></p>
+<h2>Here is why the story stands out:</h2>
+<br>
+<ul>
+<li><strong>High-Concept Imagination - </strong>
+The story takes the "imaginary friend" trope and flips it. Instead of a child imagining creatures, the creatures are aware they are being imagined by a grown-up (Slip) reflecting on his childhood. This meta-fictional layer—where characters discuss being in a book format—makes it a sophisticated "smart" story for kids who enjoy thinking about how stories are made.</li>
+</ul>
+<br>
+<ul>
+<li><strong>Relatable Curiosity - </strong>
+The dynamic between Vapo and Cramb mirrors a parent-child or teacher-student relationship. Cramb is full of energy, performing the "Crambnik Dance" and asking "why" at every turn, while Vapo provides calm, steady wisdom. This makes the heavy topics, like the limitations of language, feel like a natural conversation rather than a lecture.</li>
+</ul>
+<br>
+<ul>
+<li><strong>The "</strong><strong><em>Pirate Signal</em></strong><strong>" Theme - </strong>
+The central idea of broadcasting a signal without a specific message is a powerful metaphor for creativity and self-expression. It teaches a lesson that is often overlooked in children's media: that the act of reaching out and "making noise" is valuable in itself, even if you don't receive an immediate answer.</li>
+</ul>
+<br>
+<ul>
+<li><strong>Sensory Exploration - </strong>
+The story plays with the idea of five feeble senses. It encourages young readers to look beyond what they see and hear, suggesting that the universe is much larger and more "interconnected" than our human tools can measure.</li>
+</ul>
+<br>
+<ul>
+<li><strong>Emotional Resonance - </strong>
+While the setting is the vastness of space, the ending is deeply personal and hopeful. It captures that childhood feeling of looking at the stars and wondering if someone else is looking back, validating the sense of wonder that adults often lose but try to reclaim through reading and writing.</li>
+</ul>
+<p class="scene-break">• • •</p>
+<p></p>
+</article>
+  </article>
+
+  <article class="scene" id="section-26">
+    <h1 class="scene-title">Yet another reason to read</h1>
+<article class="scene" epub:type="chapter">
+
+<h2>What this story actually is</h2>
+<p>This isn't a screenplay. It isn't really a children's book either, despite the appended pitch for one. It's a <strong>creation myth told backwards</strong> — a god (Slip) breathes life into two beings, and those beings spend the entire story trying to figure out what to do with the life they've been given. The answer Cramb arrives at: <em>make noise</em>. Not meaningful noise. Not language. Just presence. Just <em>I exist and I'm going to spin in circles and fart gas into the void until someone notices</em>.</p>
+<p>That's not a children's idea. That's Beckett. Two characters in an empty space, talking, waiting, performing repetitive actions that may or may not mean anything. Vapo is the one who intellectualizes it. Cramb is the one who <em>does</em> it. And Cramb is right.</p>
+<br>
+<h2>What's actually good</h2>
+<p>The best moment in the piece isn't philosophical — it's physical. Cramb clacking his eye stalks, sucking in Vapo's gas, squeezing his half-shells together and rocketing himself forward. That image has joy in it. It's absurd and specific and alive. The Crambnik Dance is worth more than all of Vapo's musings about "the word is not the thing."</p>
+<p>The relationship works because Cramb doesn't really need Vapo's wisdom. He already knows what to do — broadcast. He just doesn't know <em>why</em> yet. And by the end, his answer isn't Vapo's answer ("everything is interconnected"). His answer is simpler and better: "maybe they will." That's faith without theology. Hope without evidence. That's the whole story in three words.</p>
+<p>The origin — sixth-grade doodles with an unnamed friend, a teacher named Mrs. Gladys — gives the piece a heartbeat that no amount of cosmic philosophizing could. Slip isn't just a framing device. He's the real subject. An old man returning to the only two characters he ever created, renaming them because "Man-Boy" feels wrong now, and giving them one more conversation. That's tender, and it doesn't ask you to notice.</p>
+<br>
+<h2>What's honestly not working</h2>
+<p><strong>Vapo talks too much and says too little.</strong> He's a lecture wrapped in a nebula. Scenes 7 through 17 are essentially the same scene repeated — <em>language is limited, senses are limited, we transcend all this</em> — and each one dilutes the previous. Vapo is most interesting when he's quiet ("Perhaps, Cramb — perhaps") and least interesting when he's explaining. The story trusts Cramb's body but doesn't trust the reader's mind.</p>
+<p><strong>The piece is afraid of silence.</strong> For a story about beings who communicate telepathically, there's almost no silence in it. Every pause gets filled. Every moment gets annotated with a parenthetical mood. What if Cramb danced for an entire scene and nobody said anything? What if Vapo just... watched? The void is the setting but it never gets to <em>be</em> the setting.</p>
+<p><strong>Cramb should resist more.</strong> He asks questions, he agrees, he dances, he naps. But he never pushes back. He never says <em>I don't care about your philosophy, Vapo, I just want to spin.</em> That tension — between doing and understanding, between the body and the mind — is sitting right there in the premise and the story never pulls on it.</p>
+<br>
+<h2>The real question</h2>
+<p>The piece you wrote isn't really asking "will someone hear our signal?" It's asking something harder: <strong>does creating something matter if nobody sees it?</strong> Sixth-grade doodles in a comic book nobody kept. A pirate signal with no message. An ebook floating in the void of the internet. The answer the story gives — quietly, underneath all of Vapo's philosophizing — is <em>yes, but not for the reasons you think.</em> It matters because Cramb dances. Not because someone watches.</p>
+<p>That's a story worth telling.</p>
+<p>It's just buried under about ten scenes of Vapo explaining it to death.</p>
+<p class="internal">Maybe that's why I liked Cramb better.</p>
+<p>The eye stalks sell it — curious, expressive, always swiveling toward whatever's
+interesting. And the gas-powered rocket propulsion is just deeply undignified in the best way.</p>
+<p>Hard not to root for a clam who farts his way across the cosmos out of pure defiance.</p>
+<p class="scene-break">• • •</p>
+<p></p>
+</article>
+  </article>
+
+  <article class="scene" id="section-27">
+    <h1 class="scene-title">Not another reason to read</h1>
+<article class="scene" epub:type="chapter">
+
+<p>SYNOPSIS</p>
+<br>
+<p>Vapo and Cramb is a 20-scene experimental visual narrative that follows two ethereal, possibly digital or trans-dimensional entities named Vapo and Cramb. The story begins with their awakening in a void of static, where they discover they have been cast out or disconnected from a "Creator."</p>
+<p>The narrative functions as a cosmic observation of humanity. Vapo and Cramb intercept human "pirate signals" and attempt to decode the nature of human existence. They find the human experience to be defined by severe limitations, specifically the "Five Feeble Senses" and the restrictive nature of human language. Throughout the scenes, they perform the "Crambnik Dance"—a metaphysical processing of data—and discuss the "gassiness" of human thought.</p>
+<p>As the story progresses, the tone shifts from detached observation to a quest for connection. They struggle with "dumbing down" cosmic truths into a megaphone small enough for human ears to hear. The climax involves an act of transcendence where the two entities move beyond the need for words, recognizing that despite the noise and limitations of the human lens, everything is connected in a vast, ongoing cosmic conversation. The story ends on a note of hope, suggesting that eventually, humanity might learn to listen to the broadcasts they currently ignore.</p>
+<br>
+<p>CRITIQUE</p>
+<br>
+<p>Strengths</p>
+<p>The most striking element of the work is its unique voice. The dialogue between Vapo and Cramb is rhythmic, surreal, and highly imaginative. By using invented terminology like "Crambnik" and "Gassiness," you create a sense of an alien perspective that feels authentic rather than just a human perspective in a costume.</p>
+<p>The screenplay format works well for this high-concept material. The use of "visuals" and "audio" cues suggests a multimedia experience that complements the abstract philosophical themes. The progression from the "Awakening" to "Transcendence" provides a clear emotional arc despite the lack of a traditional linear plot. The theme of communication—the gap between the signal and the noise—is handled with sophistication and provides a strong intellectual backbone to the story.</p>
+<br>
+<p>Weaknesses</p>
+<p>The primary challenge for a reader is the high level of abstraction. Because Vapo and Cramb exist in a void and communicate through metaphysical concepts, the stakes can occasionally feel distant. While the "Pirate Signal" provides a tether to the human world, adding more specific instances of what they see in human behavior might help ground the philosophical musings.</p>
+<p>Some of the invented jargon, while evocative, is left quite mysterious. While this adds to the atmosphere, a few more contextual clues about the physical (or digital) mechanics of the "Crambnik Dance" or "Gassiness" could deepen the reader's immersion. Additionally, the transition between Scene 10 (The Megaphone) and Scene 11 (Unnoticed Broadcasts) feels slightly abrupt; a bit more connective tissue regarding their decision to finally "broadcast" back to Earth would enhance the pacing.</p>
+<br>
+<p>Overall Impression</p>
+<p>Vapo and Cramb is a bold, avant-garde piece of science fiction that leans heavily into the "New Wave" style of the genre. It is less about a sequence of events and more about a sequence of realizations. It is a thought-provoking exploration of the limitations of being human, seen through the eyes of beings who are anything but. With its strong visual potential and poetic dialogue, it stands out as a distinctive and memorable work.</p>
+<p class="scene-break">• • •</p>
+<p class="emphasis-line">A possible ebook description.</p>
+<p>Vapo and Cramb: A Journey Beyond the Static</p>
+<p>In the <em>humming silence</em> of a void between worlds, two entities awaken. Disconnected from their Creator and cast into a realm of pure frequency, Vapo and Cramb begin an observation of the distant, flickering signals of humanity.</p>
+<p>This experimental narrative peers through the cosmic lens at a species defined by its Five Feeble Senses. From the rhythmic processing of the Crambnik Dance to the decoding of human pirate signals, the story explores the isolation of a world trapped by its own language and the gassiness of its thoughts.</p>
+<p>It is a philosophical meditation on communication and the struggle to be heard across the vastness of the digital and the divine. As Vapo and Cramb attempt to scale their cosmic insights down to the size of a human megaphone, they uncover the hidden beauty in the noise we usually ignore.</p>
+<p>Vapo and Cramb offers a unique, rhythmic exploration of existence that challenges readers to reconsider what it means to perceive, to connect, and to listen. It is an invitation to seek the signal within the static and the truth within the silence.</p>
+<p></p>
+<p>In the context of the world you have built, <em>silence</em> is never truly empty. </p>
+<p>It is a pressurized state—a "<em>humming silence</em>" that vibrates with the potential of all the signals being ignored.</p>
+<p>For Vapo and Cramb, silence isn't the absence of sound, but the presence of unparsed data. It hums because it is heavy with the "gassiness" of human thought and the static of a disconnected Creator. It is the sound of the megaphone waiting to be used.</p>
+<p>In a literal sense, when the human ear is deprived of external noise, the nervous system often turns up the gain, creating a high-pitched internal hum. Your story captures this perfectly: the quieter the void gets, the louder the cosmic frequency becomes.</p>
+<p></p>
+<p class="scene-break">• • •</p>
+<p></p>
+</article>
+  </article>
+
+  <article class="scene" id="section-28">
+    <h1 class="scene-title">Credits</h1>
+<article class="scene" epub:type="chapter">
+
+<br>
+<p>Authors/Credits:</p>
+<p>Written, illustrated, and animated (someday) by</p>
+<p><strong>Clee Smith</strong>, <strong>Slip the Trap</strong> (artist), an unnamed <strong>childhood best friend</strong>, and our sixth grade teacher <strong>Mrs. Gladys</strong></p>
+<br>
+<p>Source:</p>
+<p>Conceived and designed with a double-edged e-pen by Clee Smith, who also dons the artistic persona of Slip the Trap, this work is an homage to a nameless <strong>childhood confidant</strong> and our wise sixth grade mentor, Mrs. Gladys. Each e-stroke on the e-page and future frame of animation stands as a tribute to friendships formed and lessons learned, under the watchful eyes of educators past.</p>
+<br>
+<p>Contact Info: <a target="_blank" rel="noopener" href="https://www.slipthetrap.com">author’s website</a></p>
+<p>Draft Date: Friday, September 22, 2023</p>
+<p>Revision: Second: February 2026</p>
+<p class="scene-break">• • •</p>
+<p></p>
+</article>
+  </article>
+
+  <div class="footer">
+    <div class="footer-buttons">
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">&#9728;&#65039;</button>
+    </div>
+    <div class="footer-info">
+      <span class="footer-title">Vapo &amp; Cramb</span>
+      <span class="footer-author">by Clee Smith</span>
+      <span class="footer-copyright">&copy; 2026</span>
+      <span class="footer-scene" id="footerScene"></span>
+    </div>
+    <div class="footer-status" id="footerStatus"></div>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    var themeToggle = document.getElementById('themeToggle');
+    var body = document.body;
+
+    var savedTheme = localStorage.getItem('html-ebook-theme');
+    if (savedTheme === 'light' && body.classList.contains('dark-mode')) {
+      body.classList.remove('dark-mode');
+      themeToggle.textContent = '🌙';
+    } else if (savedTheme === 'dark' && !body.classList.contains('dark-mode')) {
+      body.classList.add('dark-mode');
+      themeToggle.textContent = '☀️';
+    }
+
+    themeToggle.addEventListener('click', function() {
+      body.classList.toggle('dark-mode');
+      var isDark = body.classList.contains('dark-mode');
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
+    });
+
+
+
+    // SceneCraft scroll-driven immersive audio/visual engine
+    (function() {
+      var scenes = document.querySelectorAll('.sc-scene');
+      if (!scenes.length) return;
+
+      var DLG_FADE = 0.5;
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+      function createFadeIn(audioEl, vol, dur) {
+        audioEl.volume = 0;
+        audioEl.play().catch(function(){});
+        return { el: audioEl, state: 'in', start: Date.now(), dur: dur * 1000, targetVol: vol };
+      }
+      function createFadeOut(obj, dur) {
+        if (!obj || !obj.el) return null;
+        return { el: obj.el, state: 'out', start: Date.now(), dur: dur * 1000, startVol: obj.el.volume };
+      }
+      function tickFade(obj) {
+        if (!obj || !obj.el) return null;
+        var t = obj.dur > 0 ? clamp((Date.now() - obj.start) / obj.dur, 0, 1) : 1;
+        if (obj.state === 'in') {
+          obj.el.volume = t * (obj.targetVol || 1);
+          if (t >= 1) obj.state = 'playing';
+        } else if (obj.state === 'out') {
+          obj.el.volume = (1 - t) * (obj.startVol || 1);
+          if (t >= 1) { obj.el.pause(); return null; }
+        }
+        return obj;
+      }
+      function killAudio(obj) {
+        if (obj && obj.el) { obj.el.pause(); obj.el.src = ''; }
+        return null;
+      }
+
+      // Per-scene state
+      var sceneStates = [];
+      scenes.forEach(function(sceneEl, si) {
+        var cfg = null;
+        try { cfg = JSON.parse(sceneEl.dataset.scConfig || 'null'); } catch(e) {}
+        sceneStates.push({
+          el: sceneEl,
+          cfg: cfg,
+          inScene: false,
+          ambient: null,
+          ambientOut: null,
+          voice: null,
+          voiceOut: null,
+          activeDlg: -1,
+          dlgObj: null,
+          dlgOut: null,
+          activeStk: -1,
+          stkObj: null,
+          stkOut: null,
+          activePara: -1,
+          paraObj: null,
+          paraOut: null,
+          blocks: sceneEl.querySelectorAll('.sc-block'),
+          stickyWraps: sceneEl.querySelectorAll('.sc-block-sticky'),
+          enterEl: sceneEl.querySelector('.sc-enter'),
+          exitEl: sceneEl.querySelector('.sc-exit'),
+          bgEl: sceneEl.querySelector('.sc-bg'),
+          // infoEl removed — scene title now shown in footer
+        });
+      });
+
+      var playheadY = window.innerHeight * 0.5;
+      window.addEventListener('resize', function() { playheadY = window.innerHeight * 0.5; });
+
+      function doEnter(s) {
+        if (s.inScene || !s.cfg) return;
+        s.inScene = true;
+        var c = s.cfg;
+        var footerScene = document.getElementById('footerScene');
+        var scTitle = s.el.dataset.scTitle || '';
+        if (footerScene) footerScene.innerHTML = scTitle ? '<span class="footer-scene-label">now playing: </span>' + scTitle : '';
+
+        // Wallpaper
+        if (c.wallpaperFilename && s.bgEl) {
+          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (url) {
+            s.bgEl.style.backgroundImage = "url('" + url + "')";
+            s.bgEl.style.backgroundPosition = c.wallpaperPosition || 'center';
+            s.bgEl.style.opacity = String(c.wallpaperOpacity || 0.25);
+          }
+        }
+
+        // Ambient audio
+        s.ambientOut = killAudio(s.ambientOut);
+        if (c.ambientFilename) {
+          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (aUrl) {
+            var a = new Audio(aUrl);
+            a.loop = !!c.ambientLoop;
+            s.ambient = createFadeIn(a, c.ambientVolume || 0.5, c.fadeIn || 2);
+          }
+        }
+
+        // Narration voice
+        s.voiceOut = killAudio(s.voiceOut);
+        if (c.voiceMode === 'narration' && c.narrationFilename) {
+          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          if (nUrl) {
+            var n = new Audio(nUrl);
+            s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
+          }
+        }
+      }
+
+      function doExit(s) {
+        if (!s.inScene || !s.cfg) return;
+        s.inScene = false;
+        var c = s.cfg;
+        var footerScene = document.getElementById('footerScene');
+        var myTitle = s.el.dataset.scTitle || '';
+        if (footerScene && myTitle && footerScene.textContent.indexOf(myTitle) !== -1) {
+          footerScene.innerHTML = '';
+        }
+        if (s.bgEl) s.bgEl.style.opacity = '0';
+
+        if (s.ambient) { s.ambientOut = createFadeOut(s.ambient, c.fadeOut || 3); s.ambient = null; }
+        if (s.voice) { s.voiceOut = createFadeOut(s.voice, c.fadeOut || 3); s.voice = null; }
+        s.dlgObj = killAudio(s.dlgObj);
+        s.dlgOut = killAudio(s.dlgOut);
+        s.activeDlg = -1;
+        s.stkObj = killAudio(s.stkObj);
+        s.stkOut = killAudio(s.stkOut);
+        s.activeStk = -1;
+        s.paraObj = killAudio(s.paraObj);
+        s.paraOut = killAudio(s.paraOut);
+        s.activePara = -1;
+      }
+
+      function tick() {
+        for (var si = 0; si < sceneStates.length; si++) {
+          var s = sceneStates[si];
+          if (!s.cfg) continue;
+          var c = s.cfg;
+
+          // Tick fades
+          s.ambientOut = tickFade(s.ambientOut);
+          s.voiceOut = tickFade(s.voiceOut);
+          if (s.ambient && s.ambient.state === 'in') tickFade(s.ambient);
+          if (s.voice && s.voice.state === 'in') tickFade(s.voice);
+          s.dlgObj = tickFade(s.dlgObj);
+          s.dlgOut = tickFade(s.dlgOut);
+          s.stkObj = tickFade(s.stkObj);
+          s.stkOut = tickFade(s.stkOut);
+          s.paraObj = tickFade(s.paraObj);
+          s.paraOut = tickFade(s.paraOut);
+
+          // Block visibility
+          for (var bi = 0; bi < s.blocks.length; bi++) {
+            var b = s.blocks[bi];
+            var rect = b.getBoundingClientRect();
+            var center = rect.top + rect.height / 2;
+            if (center < playheadY + 100) b.classList.add('sc-vis'); else b.classList.remove('sc-vis');
+            if (center < playheadY - window.innerHeight * 0.3) b.classList.add('sc-past'); else b.classList.remove('sc-past');
+          }
+
+          // Scene zone detection
+          var enterBottom = s.enterEl ? s.enterEl.getBoundingClientRect().bottom : 0;
+          var exitTop = s.exitEl ? s.exitEl.getBoundingClientRect().top : window.innerHeight;
+          if (enterBottom <= playheadY && exitTop > playheadY) {
+            doEnter(s);
+          } else {
+            doExit(s);
+          }
+
+          // Per-dialogue voice
+          if (s.inScene && c.voiceMode === 'dialogue') {
+            var currentDlg = -1;
+            for (var di = 0; di < s.blocks.length; di++) {
+              var db = s.blocks[di];
+              var dr = db.getBoundingClientRect();
+              var dataIdx = parseInt(db.dataset.idx || '-1', 10);
+              if (dr.top < playheadY && dr.bottom > playheadY && db.classList.contains('sc-block-dialogue')) {
+                currentDlg = dataIdx;
+              }
+            }
+            if (currentDlg !== s.activeDlg) {
+              if (s.dlgObj && s.dlgObj.el) {
+                s.dlgOut = killAudio(s.dlgOut);
+                s.dlgOut = createFadeOut(s.dlgObj, DLG_FADE);
+                s.dlgObj = null;
+              }
+              s.activeDlg = currentDlg;
+              if (currentDlg >= 0 && c.dialogueClips) {
+                var clip = c.dialogueClips[currentDlg];
+                if (clip && clip.filename) {
+                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (dUrl) {
+                    var da = new Audio(dUrl);
+                    s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-sticky audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentStk = -1;
+            for (var swi = 0; swi < s.stickyWraps.length; swi++) {
+              var sw = s.stickyWraps[swi];
+              var sIdx = parseInt(sw.dataset.idx || '-1', 10);
+              if (sw.querySelector('.sc-block.sc-vis')) {
+                currentStk = sIdx;
+              }
+            }
+            if (currentStk !== s.activeStk) {
+              if (s.stkObj && s.stkObj.el) {
+                s.stkOut = killAudio(s.stkOut);
+                s.stkOut = createFadeOut(s.stkObj, DLG_FADE);
+                s.stkObj = null;
+              }
+              s.activeStk = currentStk;
+              if (currentStk >= 0 && c.stickyClips) {
+                var sClip = c.stickyClips[currentStk];
+                if (sClip && sClip.filename) {
+                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (sUrl) {
+                    var sa = new Audio(sUrl);
+                    s.stkObj = createFadeIn(sa, sClip.volume || c.stickyVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+
+          // Per-para audio (plays regardless of voiceMode)
+          if (s.inScene) {
+            var currentPara = -1;
+            for (var pi = 0; pi < s.blocks.length; pi++) {
+              var pb = s.blocks[pi];
+              var pr = pb.getBoundingClientRect();
+              var pIdx = parseInt(pb.dataset.idx || '-1', 10);
+              if (pr.top < playheadY && pr.bottom > playheadY && !pb.classList.contains('sc-block-dialogue') && pb.classList.contains('sc-block-para')) {
+                currentPara = pIdx;
+              }
+            }
+            if (currentPara !== s.activePara) {
+              if (s.paraObj && s.paraObj.el) {
+                s.paraOut = killAudio(s.paraOut);
+                s.paraOut = createFadeOut(s.paraObj, DLG_FADE);
+                s.paraObj = null;
+              }
+              s.activePara = currentPara;
+              if (currentPara >= 0 && c.paraClips) {
+                var pClip = c.paraClips[currentPara];
+                if (pClip && pClip.filename) {
+                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  if (pUrl) {
+                    var pa = new Audio(pUrl);
+                    s.paraObj = createFadeIn(pa, pClip.volume || c.paraVolume || 0.8, DLG_FADE);
+                  }
+                }
+              }
+            }
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+
+      // ── Autoplay scroll controller ──────────────────────────
+      // Audio is the master clock.
+      // Dialogue/para clips GATE the scroll (nearly pause until done).
+      // Sticky clips PACE the scroll (keep scrolling to reveal text).
+      // Narration scenes PACE the scroll to match the narration duration.
+      // Ambient never affects scroll — it's just atmosphere.
+
+      var FRONT_MATTER_SPEED = 0.3; // px/frame for cover, copyright, TOC (~18px/s)
+      var BASE_SPEED = 0.8;        // px/frame through non-audio content (~48px/s @ 60fps)
+      var DEAD_ZONE_SPEED = 2.5;   // px/frame through silence gaps (dead zones)
+      var CREEP_SPEED = 0.15;      // px/frame — tiny drift while a dialogue clip plays
+      var PAUSE_AFTER_CLIP = 45;   // frames to breathe after a clip ends (~0.75s)
+      var NARRATION_MIN_SPEED = 0.1;   // floor during narration (6px/s — barely moving crawl)
+      var NARRATION_MAX_SPEED = 0.35;  // cap so narration scenes don't rush (~21px/s, ~0.75 lines/sec)
+      var NARRATION_COAST_SPEED = 0.3; // gentle coast after narration audio ends (~18px/s)
+      var STICKY_MIN_SPEED = 0.08;    // very low floor — let audio fully control pace
+      var STICKY_MAX_SPEED = 1.2;     // cap for sticky clips
+      var FPS = 60;
+
+      var firstSceneEl = document.querySelector('.sc-scene');
+      var pastFrontMatter = false;
+
+      function isInFrontMatter() {
+        if (pastFrontMatter) return false;
+        if (firstSceneEl && firstSceneEl.getBoundingClientRect().top <= window.innerHeight) {
+          pastFrontMatter = true;
+          return false;
+        }
+        return true;
+      }
+
+      var autoScrollActive = false;
+      var scrollDone = false;
+      var postClipTimer = 0;
+
+      function isClipPlaying(obj) {
+        if (!obj || !obj.el) return false;
+        return !obj.el.paused && !obj.el.ended;
+      }
+
+      function hasDuration(obj) {
+        if (!obj || !obj.el) return false;
+        return obj.el.duration && !isNaN(obj.el.duration) && obj.el.duration > 0;
+      }
+
+      // Only dialogue and para clips gate (nearly stop scroll).
+      // Sticky clips are handled separately with pacing.
+      function isGatedAudioPlaying() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (isClipPlaying(s.dlgObj)) return true;
+          if (isClipPlaying(s.paraObj)) return true;
+          // NOTE: stkObj is NOT here — sticky clips are paced, not gated
+        }
+        return false;
+      }
+
+      function isInDeadZone() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          if (sceneStates[i].inScene) return false;
+        }
+        return true;
+      }
+
+      // For sticky clips: pace scroll so the sticky section finishes
+      // scrolling right when the audio clip ends.
+      function getStickyPacedSpeed() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (!s.inScene) continue;
+          if (!isClipPlaying(s.stkObj)) continue;
+
+          // If playing but duration not loaded yet, crawl until we can calculate
+          if (!hasDuration(s.stkObj)) return STICKY_MIN_SPEED;
+
+          var audio = s.stkObj.el;
+          var remaining = audio.duration - audio.currentTime;
+          if (remaining <= 0) continue;
+
+          // Find the active sticky wrapper element
+          var activeIdx = s.activeStk;
+          if (activeIdx < 0) continue;
+
+          for (var sw = 0; sw < s.stickyWraps.length; sw++) {
+            var wrap = s.stickyWraps[sw];
+            var idx = parseInt(wrap.dataset.idx || '-1', 10);
+            if (idx !== activeIdx) continue;
+
+            // Find the last text block inside the sticky text column
+            var textBlocks = wrap.querySelectorAll('.sc-sticky-text .sc-block');
+            if (!textBlocks.length) continue;
+            var lastBlock = textBlocks[textBlocks.length - 1];
+            var lastRect = lastBlock.getBoundingClientRect();
+
+            // Distance = bottom of last text block to playhead
+            var pixelsLeft = lastRect.bottom - playheadY;
+
+            // If all text has already passed the playhead but audio still playing,
+            // keep scrolling slowly — don't jump to BASE_SPEED
+            if (pixelsLeft <= 10) return BASE_SPEED;
+
+            var speed = pixelsLeft / (remaining * FPS);
+            speed = Math.max(STICKY_MIN_SPEED, Math.min(STICKY_MAX_SPEED, speed));
+            return speed;
+          }
+
+          // Sticky clip is playing but couldn't find wrapper — crawl
+          return STICKY_MIN_SPEED;
+        }
+        return null;
+      }
+
+      // For narration scenes: pace scroll so we reach the scene exit
+      // right when the narration track ends.
+      function getNarrationPacedSpeed() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (!s.inScene) continue;
+          if (!s.voice || !s.voice.el) continue;
+          var audio = s.voice.el;
+          if (audio.paused || audio.ended) continue;
+
+          // If audio is playing but duration hasn't loaded yet,
+          // crawl slowly until we can calculate proper pacing
+          if (!audio.duration || isNaN(audio.duration) || audio.duration <= 0) {
+            return NARRATION_MIN_SPEED;
+          }
+
+          var remaining = audio.duration - audio.currentTime;
+          if (remaining <= 0) continue;
+
+          var exitEl = s.exitEl;
+          if (!exitEl) continue;
+          var exitRect = exitEl.getBoundingClientRect();
+          var pixelsLeft = exitRect.top - playheadY;
+          if (pixelsLeft <= 0) continue;
+
+          // Nearly at exit but narration still playing — almost stop so we
+          // don't leave the scene while audio is still going
+          if (pixelsLeft <= 10) return 0.05;
+
+          var speed = pixelsLeft / (remaining * FPS);
+          speed = Math.max(NARRATION_MIN_SPEED, Math.min(NARRATION_MAX_SPEED, speed));
+          return speed;
+        }
+        return null;
+      }
+
+      // True if we're inside a narration scene (even if its audio has ended).
+      // Used to apply coast speed after narration finishes.
+      function isInNarrationScene() {
+        for (var i = 0; i < sceneStates.length; i++) {
+          var s = sceneStates[i];
+          if (s.inScene && s.cfg && s.cfg.voiceMode === 'narration') return true;
+        }
+        return false;
+      }
+
+      function autoScroll() {
+        if (!autoScrollActive || scrollDone) {
+          requestAnimationFrame(autoScroll);
+          return;
+        }
+
+        var maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (window.scrollY >= maxScroll) {
+          scrollDone = true;
+          console.log('Autoplay: reached the end.');
+          return;
+        }
+
+        var speed;
+
+        // Priority 0: front matter (cover, copyright, TOC) — slow scroll
+        if (isInFrontMatter()) {
+          speed = FRONT_MATTER_SPEED;
+          window.scrollBy(0, speed);
+          requestAnimationFrame(autoScroll);
+          return;
+        }
+
+        // Priority 1: dialogue/para clip playing — gate (nearly stop)
+        if (isGatedAudioPlaying()) {
+          speed = CREEP_SPEED;
+          postClipTimer = PAUSE_AFTER_CLIP;
+        }
+        // Priority 2: just finished a clip — brief pause
+        else if (postClipTimer > 0) {
+          speed = CREEP_SPEED;
+          postClipTimer--;
+        }
+        // Priority 3: sticky clip playing — pace through the sticky section
+        else {
+          var stickySpeed = getStickyPacedSpeed();
+          if (stickySpeed !== null) {
+            speed = stickySpeed;
+          }
+          // Priority 4: narration playing — pace through the scene
+          else {
+            var narrationSpeed = getNarrationPacedSpeed();
+            if (narrationSpeed !== null) {
+              speed = narrationSpeed;
+            }
+            // Priority 5: narration scene but audio ended — coast gently
+            else if (isInNarrationScene()) {
+              speed = NARRATION_COAST_SPEED;
+            }
+            // Priority 6: dead zone — move through silence
+            else if (isInDeadZone()) {
+              speed = DEAD_ZONE_SPEED;
+            }
+            // Default: gentle reading pace
+            else {
+              speed = BASE_SPEED;
+            }
+          }
+        }
+
+        window.scrollBy(0, speed);
+        requestAnimationFrame(autoScroll);
+      }
+
+      // Status indicator + start/pause control (lives in the footer)
+      var statusEl = document.getElementById('footerStatus');
+      statusEl.textContent = 'PRESS SPACE TO BEGIN';
+      statusEl.classList.add('pill');
+
+      document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (scrollDone) return;
+
+          autoScrollActive = !autoScrollActive;
+
+          if (autoScrollActive) {
+            statusEl.textContent = 'PLAYING';
+            statusEl.classList.remove('pill');
+            // fade out the indicator after 1 second
+            setTimeout(function() {
+              if (autoScrollActive) statusEl.style.opacity = '0';
+            }, 1000);
+          } else {
+            statusEl.style.opacity = '1';
+            statusEl.textContent = 'PAUSED — SPACE TO RESUME';
+            statusEl.classList.add('pill');
+          }
+        }
+      });
+
+      // also allow clicking the status bar to toggle
+      statusEl.addEventListener('click', function() {
+        var ev = new KeyboardEvent('keydown', { code: 'Space' });
+        document.dispatchEvent(ev);
+      });
+
+      requestAnimationFrame(autoScroll);
+
+    })();
+  </script>
+</body>
+</html>
