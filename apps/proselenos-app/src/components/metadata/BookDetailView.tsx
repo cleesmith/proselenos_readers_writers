@@ -9,6 +9,7 @@ import {
   MdOutlineLanguage,
   MdOutlinePictureAsPdf,
   MdOutlineStorefront,
+  MdPictureAsPdf,
 } from 'react-icons/md';
 import { GiBoxUnpacking } from 'react-icons/gi';
 
@@ -37,6 +38,7 @@ interface BookDetailViewProps {
   onDownloadBookseller?: () => void;
   onDownloadWebReady?: () => void;
   onDownloadPdf?: () => void;
+  onDownloadPdfSquare?: () => void;
   onXray?: () => void;
   onAudiobook?: () => void;
   onReadEpub?: () => void;
@@ -54,6 +56,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onDownloadBookseller,
   onDownloadWebReady,
   onDownloadPdf,
+  onDownloadPdfSquare,
   onXray,
   onAudiobook,
 }) => {
@@ -119,8 +122,13 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
                 </button>
               )}
               {onDownloadPdf && (
-                <button onClick={onDownloadPdf} title={_('Download PDF (print ready)')}>
+                <button onClick={onDownloadPdf} title={_('Download 6x9 inch PDF (KDP)')}>
                   <MdOutlinePictureAsPdf className='fill-base-content hover:fill-red-500' />
+                </button>
+              )}
+              {onDownloadPdfSquare && (
+                <button onClick={onDownloadPdfSquare} title={_('Download 8.5x8.5 inch PDF (KDP square)')}>
+                  <MdPictureAsPdf className='fill-base-content hover:fill-blue-500' />
                 </button>
               )}
               {onAudiobook && (
