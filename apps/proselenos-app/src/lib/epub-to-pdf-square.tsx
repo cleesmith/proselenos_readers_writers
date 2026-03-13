@@ -27,11 +27,20 @@ Font.register({
 // ─── Styles (square format: no header, pageNumber, toc styles) ───
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 54,
-    paddingBottom: 54,
-    paddingLeft: 54,
-    paddingRight: 54,
+  pageOdd: {
+    paddingTop: 18,
+    paddingBottom: 18,
+    paddingLeft: 27,
+    paddingRight: 18,
+    fontFamily: 'EBGaramond',
+    fontSize: 11,
+    lineHeight: 1.4,
+  },
+  pageEven: {
+    paddingTop: 18,
+    paddingBottom: 18,
+    paddingLeft: 18,
+    paddingRight: 27,
     fontFamily: 'EBGaramond',
     fontSize: 11,
     lineHeight: 1.4,
@@ -70,31 +79,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'left',
   },
-  h1: {
-    fontSize: 18,
-    fontFamily: 'EBGaramond',
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  h2: {
-    fontSize: 15,
-    fontFamily: 'EBGaramond',
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  h3: {
-    fontSize: 13,
-    fontFamily: 'EBGaramond',
-    fontWeight: 'bold',
-    marginTop: 12,
-    marginBottom: 8,
-  },
   image: {
-    width: 400,
-    marginVertical: 15,
-    alignSelf: 'center' as const,
+    width: '100%',
+    marginVertical: 0,
   },
   sceneBreak: {
     textAlign: 'center',
@@ -164,16 +151,12 @@ function convertNode(node: Node): React.ReactNode {
     }
 
     case 'h1':
-      return <Text key={nextKey()} style={styles.h1}>{el.textContent ?? ''}</Text>;
-
     case 'h2':
-      return <Text key={nextKey()} style={styles.h2}>{el.textContent ?? ''}</Text>;
-
     case 'h3':
     case 'h4':
     case 'h5':
     case 'h6':
-      return <Text key={nextKey()} style={styles.h3}>{el.textContent ?? ''}</Text>;
+      return null;
 
     case 'img': {
       const src = el.getAttribute('src');
@@ -309,16 +292,17 @@ export const BookDocumentSquare: React.FC<{
 }> = ({ chapters, options }) => {
   return (
     <Document>
-      {/* 8.5 × 8.5 inches = 612 × 612 points */}
-      <Page size={[612, 612]} style={styles.page}>
-        {/* Title Page */}
+      {/* Page 1 (odd/recto): Title Page */}
+      <Page size={[612, 612]} style={styles.pageOdd}>
         <View style={styles.titlePage}>
           <Text style={styles.bookTitle}>{options.title}</Text>
           <Text style={styles.bookAuthor}>{options.author}</Text>
         </View>
+      </Page>
 
-        {/* Copyright Page */}
-        <View break style={styles.copyrightPage}>
+      {/* Page 2 (even/verso): Copyright Page */}
+      <Page size={[612, 612]} style={styles.pageEven}>
+        <View style={styles.copyrightPage}>
           <Text style={styles.copyrightText}>
             {options.copyright ?? `Copyright \u00A9 ${options.year ?? new Date().getFullYear()} ${options.author}. All rights reserved.`}
           </Text>
@@ -327,14 +311,18 @@ export const BookDocumentSquare: React.FC<{
           )}
           <Text style={styles.copyrightText}>Created with EverythingEbooks</Text>
         </View>
-
-        {/* Chapters — each starts on a new page */}
-        {chapters.map((ch) => (
-          <View break key={ch.id}>
-            {convertHtmlToElements(ch.html)}
-          </View>
-        ))}
       </Page>
+
+      {/* Chapters — each starts on a new page, alternating odd/even */}
+      {chapters.map((ch, i) => {
+        const pageNum = i + 3;
+        const pageStyle = pageNum % 2 === 1 ? styles.pageOdd : styles.pageEven;
+        return (
+          <Page size={[612, 612]} style={pageStyle} key={ch.id}>
+            <View>{convertHtmlToElements(ch.html)}</View>
+          </Page>
+        );
+      })}
     </Document>
   );
 };
