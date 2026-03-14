@@ -28,19 +28,19 @@ Font.register({
 
 const styles = StyleSheet.create({
   pageOdd: {
-    paddingTop: 18,
-    paddingBottom: 18,
-    paddingLeft: 27,
-    paddingRight: 18,
+    paddingTop: 27,
+    paddingBottom: 27,
+    paddingLeft: 36,   // gutter (0.5")
+    paddingRight: 27,  // outside (0.375")
     fontFamily: 'EBGaramond',
     fontSize: 11,
     lineHeight: 1.4,
   },
   pageEven: {
-    paddingTop: 18,
-    paddingBottom: 18,
-    paddingLeft: 18,
-    paddingRight: 27,
+    paddingTop: 27,
+    paddingBottom: 27,
+    paddingLeft: 27,   // outside (0.375")
+    paddingRight: 36,  // gutter (0.5")
     fontFamily: 'EBGaramond',
     fontSize: 11,
     lineHeight: 1.4,
@@ -83,7 +83,8 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    marginVertical: 0,
+    maxHeight: 558,          // content height: 612 - 27 - 27
+    objectFit: 'contain',    // scale proportionally, never distort
   },
   sceneBreak: {
     textAlign: 'center',
@@ -317,7 +318,7 @@ export const BookDocumentSquare: React.FC<{
         const pageStyle = pageNum % 2 === 1 ? styles.pageOdd : styles.pageEven;
         return (
           <Page size={[612, 612]} style={pageStyle} key={ch.id}>
-            <View>{convertHtmlToElements(ch.html)}</View>
+            <View style={{ flex: 1 }}>{convertHtmlToElements(ch.html)}</View>
           </Page>
         );
       })}
