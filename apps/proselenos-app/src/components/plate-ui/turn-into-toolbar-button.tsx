@@ -11,9 +11,7 @@ import {
   MessageSquareQuoteIcon,
   PilcrowIcon,
   QuoteIcon,
-  SparklesIcon,
   Trash2Icon,
-  TypeIcon,
 } from 'lucide-react';
 import type { TElement } from 'platejs';
 import { KEYS } from 'platejs';
@@ -67,18 +65,6 @@ export const turnIntoItems = [
     keywords: ['dialogue', 'speech', 'conversation'],
     label: 'Dialogue',
     value: 'vn_dialogue',
-  },
-  {
-    icon: <TypeIcon />,
-    keywords: ['internal', 'thought', 'inner'],
-    label: 'Internal Thought',
-    value: 'vn_internal',
-  },
-  {
-    icon: <SparklesIcon />,
-    keywords: ['emphasis', 'highlight', 'important'],
-    label: 'Emphasis Line',
-    value: 'vn_emphasis',
   },
 ];
 

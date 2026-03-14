@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vapo &amp; Cramb — Autoplay</title>
+  <title>Vapo &amp; Cramb &#8212; Autoplay</title>
   <base href="/Vapo--Cramb/" />
   <style>
 /* EverythingEbooks — EPUB-matching base styles */
@@ -719,7 +719,7 @@ body:has(.sticky-img-wrap input:checked) .sticky-img-wrap {
   color: rgba(255,255,255,0.92);
 }
 
-/* ── SceneCraft immersive scroll-driven styles ──── */
+/* ── SceneCraft autoplay immersive styles ──── */
 .sc-scene {
   position: relative;
   width: 100vw;
@@ -917,6 +917,36 @@ body:has(.sc-sticky-img input:checked) .sc-sticky-img {
   color: #f0d898;
   text-decoration-color: rgba(240, 216, 152, 0.7);
 }
+/* ── Autoplay footer extras ──── */
+.footer-scene {
+  color: rgba(255,120,68,0.35);
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  margin-left: 12px;
+}
+.footer-scene-label {
+  color: #777;
+}
+.footer-status {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255,120,68,0.35);
+  margin-left: auto;
+  user-select: none;
+  transition: opacity 2s;
+  white-space: nowrap;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.footer-status.pill {
+  background: rgba(255,120,68,0.08);
+  border-color: rgba(255,120,68,0.12);
+  cursor: pointer;
+}
 
 /* ── Dark mode ─────────────────────────────── */
 
@@ -991,38 +1021,6 @@ body.dark-mode .copyright-page a:hover {
   color: #777;
 }
 
-.footer-scene {
-  color: rgba(255,120,68,0.35);
-  font-family: 'SF Mono','Fira Code',monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  margin-left: 12px;
-}
-
-.footer-scene-label {
-  color: #777;
-}
-
-.footer-status {
-  font-family: "SF Mono", "Fira Code", monospace;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: rgba(255,120,68,0.35);
-  margin-left: auto;
-  user-select: none;
-  transition: opacity 2s;
-  white-space: nowrap;
-  padding: 4px 14px;
-  border-radius: 999px;
-  background: transparent;
-  border: 1px solid transparent;
-}
-.footer-status.pill {
-  background: rgba(255,120,68,0.08);
-  border-color: rgba(255,120,68,0.12);
-  cursor: pointer;
-}
-
 .theme-toggle {
   background: none;
   border: none;
@@ -1035,6 +1033,29 @@ body.dark-mode .copyright-page a:hover {
 
 .theme-toggle:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.playhead-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+}
+.playhead-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.playhead-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: #ff7844;
+  transition: opacity 0.2s;
+}
+.playhead-toggle.sc-off svg {
+  opacity: 0.35;
 }
 
 .footer-buttons {
@@ -1888,8 +1909,7 @@ interesting. And the gas-powered rocket propulsion is just deeply undignified in
     });
 
 
-
-    // SceneCraft scroll-driven immersive audio/visual engine
+    // SceneCraft autoplay: scroll-driven audio + auto-scroll controller
     (function() {
       var scenes = document.querySelectorAll('.sc-scene');
       if (!scenes.length) return;
@@ -1950,7 +1970,6 @@ interesting. And the gas-powered rocket propulsion is just deeply undignified in
           enterEl: sceneEl.querySelector('.sc-enter'),
           exitEl: sceneEl.querySelector('.sc-exit'),
           bgEl: sceneEl.querySelector('.sc-bg'),
-          // infoEl removed — scene title now shown in footer
         });
       });
 
@@ -2158,7 +2177,7 @@ interesting. And the gas-powered rocket propulsion is just deeply undignified in
       // Dialogue/para clips GATE the scroll (nearly pause until done).
       // Sticky clips PACE the scroll (keep scrolling to reveal text).
       // Narration scenes PACE the scroll to match the narration duration.
-      // Ambient never affects scroll — it's just atmosphere.
+      // Ambient never affects scroll — it is just atmosphere.
 
       var FRONT_MATTER_SPEED = 0.3; // px/frame for cover, copyright, TOC (~18px/s)
       var BASE_SPEED = 0.8;        // px/frame through non-audio content (~48px/s @ 60fps)
@@ -2396,7 +2415,7 @@ interesting. And the gas-powered rocket propulsion is just deeply undignified in
             }, 1000);
           } else {
             statusEl.style.opacity = '1';
-            statusEl.textContent = 'PAUSED — SPACE TO RESUME';
+            statusEl.textContent = 'PAUSED \u2014 SPACE TO RESUME';
             statusEl.classList.add('pill');
           }
         }

@@ -69,7 +69,7 @@ function createDefaultConfig(): SceneCraftConfig {
     ambientLoop: true,
     fadeIn: 2,
     fadeOut: 3,
-    voiceMode: 'narration',
+    voiceMode: 'dialogue',
     narrationFilename: null,
     narrationVolume: 0.7,
     dialogueClips: {},
@@ -572,7 +572,8 @@ export default function SceneCraftModal({
           <div style={{ fontSize: '8px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--sc-tdd)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             voice<span style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
           </div>
-          {/* Mode toggle */}
+          {/* Mode toggle — hidden: narration doesn't work with autoplay; kept for future re-enablement */}
+          {false && (
           <div style={{ display: 'flex', gap: '2px', marginBottom: '10px' }}>
             {(['narration', 'dialogue'] as const).map(mode => (
               <button
@@ -586,10 +587,11 @@ export default function SceneCraftModal({
                   cursor: 'pointer', borderRadius: '3px', textAlign: 'center', textTransform: 'capitalize',
                 }}
               >
-                {mode === 'narration' ? 'Narration' : 'Per Dialogue'}
+                {mode === 'narration' ? 'Narration' : 'Per Block'}
               </button>
             ))}
           </div>
+          )}
 
           {config.voiceMode === 'narration' ? (
             <>
@@ -613,7 +615,7 @@ export default function SceneCraftModal({
           ) : (
             <>
               <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic', marginBottom: '6px' }}>
-                Attach a voice clip to each dialogue block. Each clip fades in when scrolled to and fades out when scrolled past — in either direction.
+                Attach a voice clip to each block. Each clip fades in when scrolled to and fades out when scrolled past — in either direction.
               </div>
               {/* Dialogue voice list */}
               {renderDialogueList()}
@@ -628,7 +630,7 @@ export default function SceneCraftModal({
   function renderDialogueList() {
     const dialogues = elements.filter(e => e.type === 'dialogue');
     if (dialogues.length === 0) {
-      return <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', fontStyle: 'italic' }}>No dialogue blocks found in this scene.</div>;
+      return <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', fontStyle: 'italic' }}>No blocks found in this scene.</div>;
     }
 
     return (
@@ -748,7 +750,7 @@ export default function SceneCraftModal({
               </>
             ) : (
               <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic' }}>
-                Switch to &quot;Per Dialogue&quot; voice mode to attach clips to individual dialogue blocks.
+                Switch to &quot;Per Block&quot; voice mode to attach clips to individual blocks.
               </div>
             )}
           </>
@@ -914,7 +916,7 @@ export default function SceneCraftModal({
           }}>silence</div>
         </div>
         <div style={{ fontSize: '7px', color: 'var(--sc-tddd)', letterSpacing: '0.1em', textAlign: 'center' }}>
-          playhead at 33% triggers audio fades, wallpaper transitions, and voice clips — bidirectionally
+          playhead at 50% triggers audio fades, wallpaper transitions, and voice clips — bidirectionally
         </div>
       </div>
     );

@@ -13,8 +13,6 @@ import {
   PinIcon,
   PlusIcon,
   QuoteIcon,
-  SparklesIcon,
-  TypeIcon,
 } from 'lucide-react';
 import { KEYS } from 'platejs';
 import { type PlateEditor, useEditorRef } from 'platejs/react';
@@ -102,29 +100,19 @@ const groups: Group[] = [
     group: 'Visual Narrative',
     items: [
       {
+        icon: <PinIcon />,
+        label: 'Sticky Image',
+        value: 'vn_sticky_image',
+      },
+      {
         icon: <MessageSquareQuoteIcon />,
         label: 'Dialogue',
         value: 'vn_dialogue',
       },
       {
-        icon: <TypeIcon />,
-        label: 'Internal Thought',
-        value: 'vn_internal',
-      },
-      {
-        icon: <SparklesIcon />,
-        label: 'Emphasis Line',
-        value: 'vn_emphasis',
-      },
-      {
         icon: <MinusIcon />,
         label: 'Scene Break',
         value: 'vn_scene_break',
-      },
-      {
-        icon: <PinIcon />,
-        label: 'Sticky Image',
-        value: 'vn_sticky_image',
       },
     ].map((item) => ({
       ...item,

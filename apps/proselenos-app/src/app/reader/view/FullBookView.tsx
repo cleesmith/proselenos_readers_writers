@@ -762,7 +762,7 @@ function createDefaultConfig(): SceneCraftConfig {
     ambientLoop: true,
     fadeIn: 2,
     fadeOut: 3,
-    voiceMode: 'narration',
+    voiceMode: 'dialogue',
     narrationFilename: null,
     narrationVolume: 0.7,
     dialogueClips: {},

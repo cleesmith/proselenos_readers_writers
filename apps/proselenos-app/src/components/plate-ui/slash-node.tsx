@@ -17,11 +17,9 @@ import {
   PilcrowIcon,
   Quote,
   RadicalIcon,
-  SparklesIcon,
   Square,
   Table,
   TableOfContentsIcon,
-  TypeIcon,
 } from 'lucide-react';
 import { KEYS, type TComboboxInputElement } from 'platejs';
 import type { PlateEditor, PlateElementProps } from 'platejs/react';
@@ -147,18 +145,6 @@ const groups: Group[] = [
         keywords: ['dialogue', 'speaker', 'talk', 'say'],
         label: 'Dialogue',
         value: 'vn_dialogue',
-      },
-      {
-        icon: <TypeIcon />,
-        keywords: ['internal', 'thought', 'thinking'],
-        label: 'Internal Thought',
-        value: 'vn_internal',
-      },
-      {
-        icon: <SparklesIcon />,
-        keywords: ['emphasis', 'highlight', 'centered'],
-        label: 'Emphasis Line',
-        value: 'vn_emphasis',
       },
       {
         icon: <MinusIcon />,
