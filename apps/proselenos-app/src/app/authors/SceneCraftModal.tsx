@@ -173,6 +173,8 @@ export default function SceneCraftModal({
       const restored = sceneCraftConfig
         ? { ...createDefaultConfig(), ...sceneCraftConfig }
         : createDefaultConfig();
+      // Narration mode is disabled (toggle hidden) — force per-block mode
+      restored.voiceMode = 'dialogue';
       // Clean stale dialogueClips whose index no longer points to a dialogue element
       if (restored.dialogueClips && Object.keys(restored.dialogueClips).length > 0) {
         const cleaned = { ...restored.dialogueClips };
@@ -626,23 +628,31 @@ export default function SceneCraftModal({
     );
   }
 
-  // ── Render: Dialogue clip list ────────────────────────────
+  // ── Render: Voice-capable block list (dialogue, sticky, para) ─
   function renderDialogueList() {
-    const dialogues = elements.filter(e => e.type === 'dialogue');
-    if (dialogues.length === 0) {
+    const voiceBlocks = elements.filter(e => e.type === 'dialogue' || e.type === 'sticky' || e.type === 'para');
+    if (voiceBlocks.length === 0) {
       return <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', fontStyle: 'italic' }}>No blocks found in this scene.</div>;
     }
 
     return (
       <>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {dialogues.map(d => {
-            const clip = config.dialogueClips[d.idx];
-            const spk = d.direction ? `${d.speaker} (${d.direction})` : d.speaker;
+          {voiceBlocks.map(d => {
+            const clipsMap = d.type === 'dialogue' ? config.dialogueClips
+              : d.type === 'sticky' ? config.stickyClips
+              : config.paraClips;
+            const clip = clipsMap[d.idx];
+            const pickerTarget = `${d.type}-${d.idx}`;
+            const label = d.type === 'dialogue'
+              ? (d.direction ? `${d.speaker} (${d.direction})` : d.speaker)
+              : d.type === 'sticky'
+              ? 'sticky'
+              : (d.text && d.text.length > 40 ? d.text.slice(0, 40) + '…' : d.text || 'para');
             return (
               <div
-                key={d.idx}
-                onClick={clip ? undefined : () => openAudioPicker(`dialogue-${d.idx}`)}
+                key={`${d.type}-${d.idx}`}
+                onClick={clip ? undefined : () => openAudioPicker(pickerTarget)}
                 style={{
                   padding: '6px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px',
                   background: clip ? 'rgba(200,150,80,0.04)' : 'rgba(255,255,255,0.015)',
@@ -654,22 +664,24 @@ export default function SceneCraftModal({
                   fontSize: '8px', color: '#c8a050', letterSpacing: '0.06em', textTransform: 'uppercase',
                   width: '100px', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
-                  {spk}
+                  {label}
                 </div>
                 {clip ? (
                   <>
                     <div style={{ fontSize: '8px', color: 'rgba(200,150,80,0.6)', flex: 1 }}>{clip.filename}</div>
                     <button
-                      onClick={e => { e.stopPropagation(); openAudioPicker(`dialogue-${d.idx}`); }}
+                      onClick={e => { e.stopPropagation(); openAudioPicker(pickerTarget); }}
                       style={{ fontSize: '8px', color: 'var(--sc-td)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit', padding: '2px 4px' }}
                       title="Replace"
                     >↻</button>
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        const newClips = { ...config.dialogueClips };
+                        const newClips = { ...clipsMap };
                         delete newClips[d.idx];
-                        updateConfig({ dialogueClips: newClips });
+                        const updateKey = d.type === 'dialogue' ? 'dialogueClips'
+                          : d.type === 'sticky' ? 'stickyClips' : 'paraClips';
+                        updateConfig({ [updateKey]: newClips });
                       }}
                       style={{ fontSize: '8px', color: 'var(--sc-td)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit', padding: '2px 4px' }}
                       title="Remove"
@@ -682,16 +694,18 @@ export default function SceneCraftModal({
             );
           })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', marginTop: '8px' }}>
-          <span style={{ fontSize: '9px', color: 'var(--sc-td)', letterSpacing: '0.04em' }}>Default volume</span>
-          <input type="range" min="0" max="100" value={Math.round(config.dialogueVolume * 100)}
-            onChange={e => updateConfig({ dialogueVolume: parseInt(e.target.value, 10) / 100 })}
-            style={{ width: '80px', height: '4px', accentColor: 'var(--sc-acc)' }}
-          />
-          <span style={{ fontSize: '9px', color: 'var(--sc-td)', width: '28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-            {Math.round(config.dialogueVolume * 100)}%
-          </span>
-        </div>
+        {voiceBlocks.some(b => b.type === 'dialogue') && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', marginTop: '8px' }}>
+            <span style={{ fontSize: '9px', color: 'var(--sc-td)', letterSpacing: '0.04em' }}>Default volume</span>
+            <input type="range" min="0" max="100" value={Math.round(config.dialogueVolume * 100)}
+              onChange={e => updateConfig({ dialogueVolume: parseInt(e.target.value, 10) / 100 })}
+              style={{ width: '80px', height: '4px', accentColor: 'var(--sc-acc)' }}
+            />
+            <span style={{ fontSize: '9px', color: 'var(--sc-td)', width: '28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+              {Math.round(config.dialogueVolume * 100)}%
+            </span>
+          </div>
+        )}
       </>
     );
   }
