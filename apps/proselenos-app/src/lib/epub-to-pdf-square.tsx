@@ -56,12 +56,14 @@ const styles = StyleSheet.create({
     fontFamily: 'EBGaramond',
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: 1.6,
+    marginBottom: 120,
   },
   bookAuthor: {
     fontSize: 16,
     fontStyle: 'italic',
     textAlign: 'center',
+    marginTop: 30,
   },
   // Copyright page
   copyrightPage: {
@@ -300,18 +302,14 @@ export const BookDocumentSquare: React.FC<{
         </View>
       </Page>
 
-      {/* Page 2 (even/verso): Copyright Page */}
-      <Page size={[612, 612]} style={styles.pageEven}>
-        <View style={styles.copyrightPage}>
-          <Text style={styles.copyrightText}>
-            {options.copyright ?? `Copyright \u00A9 ${options.year ?? new Date().getFullYear()} ${options.author}. All rights reserved.`}
-          </Text>
-          {options.publisher && (
-            <Text style={styles.copyrightText}>Published by {options.publisher}</Text>
-          )}
-          <Text style={styles.copyrightText}>Created with EverythingEbooks</Text>
-        </View>
-      </Page>
+      {/* Page 2 (even/verso): Copyright Page — only if the epub has one */}
+      {options.copyrightHtml && (
+        <Page size={[612, 612]} style={styles.pageEven}>
+          <View style={styles.copyrightPage}>
+            {convertHtmlToElements(options.copyrightHtml)}
+          </View>
+        </Page>
+      )}
 
       {/* Chapters — each starts on a new page, alternating odd/even */}
       {chapters.map((ch, i) => {

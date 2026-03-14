@@ -10,6 +10,7 @@ import { useEnv } from '@/context/EnvContext';
 import {
   getSpineItems,
   extractChapters,
+  extractCopyrightHtml,
   BookDocument,
   resetElementKeyCounter,
   type PdfOptions,
@@ -80,6 +81,11 @@ const PdfModal: React.FC<PdfModalProps> = ({ book, bookMeta, isOpen, onClose }) 
 
         if (cancelledRef.current) return;
 
+        setProgress({ message: 'Extracting copyright...', percent: 40 });
+        const copyrightHtml = await extractCopyrightHtml(zip, spinePaths);
+
+        if (cancelledRef.current) return;
+
         setProgress({ message: 'Laying out pages...', percent: 50 });
 
         resetElementKeyCounter();
@@ -87,6 +93,7 @@ const PdfModal: React.FC<PdfModalProps> = ({ book, bookMeta, isOpen, onClose }) 
           title: book.title || 'Untitled',
           author: book.author || 'Unknown',
           publisher: bookMeta?.publisher || undefined,
+          copyrightHtml: copyrightHtml ?? undefined,
         };
 
         const blob = await pdf(<BookDocument chapters={chapters} options={options} />).toBlob();

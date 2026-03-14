@@ -10,6 +10,7 @@ import { useEnv } from '@/context/EnvContext';
 import {
   getSpineItems,
   extractChapters,
+  extractCopyrightHtml,
   type PdfOptions,
 } from '@/lib/epub-to-pdf';
 import {
@@ -82,6 +83,11 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
 
         if (cancelledRef.current) return;
 
+        setProgress({ message: 'Extracting copyright...', percent: 40 });
+        const copyrightHtml = await extractCopyrightHtml(zip, spinePaths);
+
+        if (cancelledRef.current) return;
+
         setProgress({ message: 'Laying out square pages...', percent: 50 });
 
         resetElementKeyCounter();
@@ -89,6 +95,7 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
           title: book.title || 'Untitled',
           author: book.author || 'Unknown',
           publisher: bookMeta?.publisher || undefined,
+          copyrightHtml: copyrightHtml ?? undefined,
         };
 
         const blob = await pdf(<BookDocumentSquare chapters={chapters} options={options} />).toBlob();

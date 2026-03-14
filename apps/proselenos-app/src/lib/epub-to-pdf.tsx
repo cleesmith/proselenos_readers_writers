@@ -20,7 +20,7 @@ export interface PdfOptions {
   author: string;
   publisher?: string;      // e.g. "Slip the Trap"
   year?: string;           // e.g. "2026"
-  copyright?: string;      // custom copyright text, or auto-generated
+  copyrightHtml?: string;  // HTML from the epub's copyright.xhtml, or omit to skip
   includeToc?: boolean;    // default true
 }
 
@@ -157,6 +157,35 @@ export async function extractChapters(
   return chapters;
 }
 
+// ─── 2a. Extract copyright page HTML from the epub ───
+
+export async function extractCopyrightHtml(
+  zip: JSZip,
+  spinePaths: string[]
+): Promise<string | null> {
+  for (const path of spinePaths) {
+    const filename = path.split('/').pop() ?? '';
+    if (!/copyright/i.test(filename)) continue;
+
+    const xhtml = await zip.file(path)?.async('text');
+    if (!xhtml) continue;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xhtml, 'application/xhtml+xml');
+    const body = doc.querySelector('body');
+    if (!body) continue;
+
+    const textContent = body.textContent?.trim() ?? '';
+    if (textContent.length < 5) continue;
+
+    // Flatten links for print (same treatment as chapters)
+    flattenLinksForPrint(body);
+
+    return body.innerHTML;
+  }
+  return null;
+}
+
 // ─── 2b. Strip hyperlinks for print compliance ───
 
 function flattenLinksForPrint(container: Element): void {
@@ -215,12 +244,14 @@ const styles = StyleSheet.create({
     fontFamily: 'EBGaramond',
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: 1.6,
+    marginBottom: 120,
   },
   bookAuthor: {
     fontSize: 16,
     fontStyle: 'italic',
     textAlign: 'center',
+    marginTop: 30,
   },
   // Copyright page
   copyrightPage: {
@@ -525,16 +556,12 @@ export const BookDocument: React.FC<{
           <Text style={styles.bookAuthor}>{options.author}</Text>
         </View>
 
-        {/* Copyright Page */}
-        <View break style={styles.copyrightPage}>
-          <Text style={styles.copyrightText}>
-            {options.copyright ?? `Copyright \u00A9 ${options.year ?? new Date().getFullYear()} ${options.author}. All rights reserved.`}
-          </Text>
-          {options.publisher && (
-            <Text style={styles.copyrightText}>Published by {options.publisher}</Text>
-          )}
-          <Text style={styles.copyrightText}>Created with EverythingEbooks</Text>
-        </View>
+        {/* Copyright Page — only if the epub has one */}
+        {options.copyrightHtml && (
+          <View break style={styles.copyrightPage}>
+            {convertHtmlToElements(options.copyrightHtml)}
+          </View>
+        )}
 
         {/* Table of Contents */}
         {includeToc && (
