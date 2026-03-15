@@ -31,6 +31,9 @@
       "@pdfjs/*": [
         "./public/vendor/pdfjs/*"
       ],
+      "book-pdf": [
+        "../../packages/book-pdf"
+      ]
     }
   },
   "include": [

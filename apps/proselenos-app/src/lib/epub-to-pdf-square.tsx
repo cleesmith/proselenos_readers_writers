@@ -1,11 +1,11 @@
 // epub-to-pdf-square.tsx
 //
-// Client-side epub → 8.5×8.5 inch square PDF using JSZip + @react-pdf/renderer
+// Client-side epub → 8.5×8.5 inch square PDF using JSZip + book-pdf
 // Cloned from epub-to-pdf.tsx — no page numbers, no running headers, no TOC.
 // Targeting children's books and art books on Amazon KDP.
 
 import React from 'react';
-import { Document, Page, Text, View, Image, StyleSheet, Font, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet, pdf } from 'book-pdf';
 import JSZip from 'jszip';
 import {
   getSpineItems,
@@ -13,16 +13,7 @@ import {
   type PdfOptions,
   type ChapterData,
 } from './epub-to-pdf';
-
-Font.register({
-  family: 'EBGaramond',
-  fonts: [
-    { src: '/fonts/EBGaramond-Regular.ttf', fontWeight: 'normal' },
-    { src: '/fonts/EBGaramond-Bold.ttf', fontWeight: 'bold' },
-    { src: '/fonts/EBGaramond-Italic.ttf', fontWeight: 'normal', fontStyle: 'italic' },
-    { src: '/fonts/EBGaramond-BoldItalic.ttf', fontWeight: 'bold', fontStyle: 'italic' },
-  ],
-});
+// Font registration handled by book-pdf (EBGaramond is the only font)
 
 // ─── Styles (square format: no header, pageNumber, toc styles) ───
 
@@ -61,6 +52,7 @@ const styles = StyleSheet.create({
   },
   bookAuthor: {
     fontSize: 16,
+    fontFamily: 'EBGaramond',
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 30,
@@ -73,11 +65,13 @@ const styles = StyleSheet.create({
   },
   copyrightText: {
     fontSize: 9,
+    fontFamily: 'EBGaramond',
     lineHeight: 1.6,
     marginBottom: 4,
   },
   // Content styles
   paragraph: {
+    fontFamily: 'EBGaramond',
     marginBottom: 10,
     textAlign: 'left',
   },
@@ -87,14 +81,17 @@ const styles = StyleSheet.create({
     objectFit: 'contain',    // scale proportionally, never distort
   },
   sceneBreak: {
+    fontFamily: 'EBGaramond',
     textAlign: 'center',
     marginVertical: 15,
   },
   listItem: {
+    fontFamily: 'EBGaramond',
     marginBottom: 4,
     paddingLeft: 15,
   },
   blockquote: {
+    fontFamily: 'EBGaramond',
     paddingLeft: 20,
     fontStyle: 'italic',
     marginBottom: 10,
@@ -171,12 +168,12 @@ function convertNode(node: Node): React.ReactNode {
     case 'hr':
       return (
         <View key={nextKey()} style={styles.sceneBreak}>
-          <Text>* * *</Text>
+          <Text style={{ fontFamily: 'EBGaramond' }}>* * *</Text>
         </View>
       );
 
     case 'br':
-      return <Text key={nextKey()}>{'\n'}</Text>;
+      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond' }}>{'\n'}</Text>;
 
     case 'ul':
     case 'ol': {
@@ -200,7 +197,7 @@ function convertNode(node: Node): React.ReactNode {
       const inlineContent = collectInlineContent(el);
       return (
         <View key={nextKey()} style={styles.blockquote}>
-          <Text>{inlineContent}</Text>
+          <Text style={{ fontFamily: 'EBGaramond' }}>{inlineContent}</Text>
         </View>
       );
     }
@@ -222,7 +219,7 @@ function convertNode(node: Node): React.ReactNode {
 
     case 'em':
     case 'i':
-      return <Text key={nextKey()} style={{ fontStyle: 'italic' }}>{el.textContent ?? ''}</Text>;
+      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond', fontStyle: 'italic' }}>{el.textContent ?? ''}</Text>;
 
     case 'strong':
     case 'b':
@@ -234,7 +231,7 @@ function convertNode(node: Node): React.ReactNode {
     case 'sub':
     case 'u':
     case 'a':
-      return <Text key={nextKey()}>{el.textContent ?? ''}</Text>;
+      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond' }}>{el.textContent ?? ''}</Text>;
 
     default: {
       const children = convertChildren(el);
@@ -263,7 +260,7 @@ function collectInlineContent(el: Element): React.ReactNode[] {
       case 'em':
       case 'i':
         results.push(
-          <Text key={nextKey()} style={{ fontStyle: 'italic' }}>{childEl.textContent ?? ''}</Text>
+          <Text key={nextKey()} style={{ fontFamily: 'EBGaramond', fontStyle: 'italic' }}>{childEl.textContent ?? ''}</Text>
         );
         break;
       case 'strong':
@@ -327,6 +324,7 @@ export const BookDocumentSquare: React.FC<{
 };
 
 // ─── Public API ───
+// No post-processing needed — book-pdf only produces EBGaramond fonts
 
 export async function generatePdfFromEpubSquare(
   epubData: ArrayBuffer,
@@ -342,7 +340,10 @@ export async function generatePdfFromEpubSquare(
     throw new Error('No chapter content found in epub');
   }
 
-  const blob = await pdf(<BookDocumentSquare chapters={chapters} options={options} />).toBlob();
+  const blob = await pdf(
+    <BookDocumentSquare chapters={chapters} options={options} />
+  ).toBlob();
+
   const url = URL.createObjectURL(blob);
   window.open(url, '_blank');
 }

@@ -1,3 +1,4 @@
 packages:
   - 'apps/*'
   - 'packages/foliate-js'
+  - 'packages/book-pdf'

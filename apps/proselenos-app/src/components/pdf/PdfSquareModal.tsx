@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import JSZip from 'jszip';
-import { pdf } from '@react-pdf/renderer';
+import { pdf } from 'book-pdf';
 import { Book } from '@/types/book';
 import { BookMetadata } from '@/libs/document';
 import { getLocalBookFilename } from '@/utils/book';

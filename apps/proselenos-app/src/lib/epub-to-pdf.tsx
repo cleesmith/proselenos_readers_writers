@@ -1,19 +1,11 @@
 // epub-to-pdf.tsx
 //
-// Client-side epub → PDF using JSZip + @react-pdf/renderer
+// Client-side epub → PDF using JSZip + book-pdf
 
 import React from 'react';
-import { Document, Page, Text, View, Image, StyleSheet, Font, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet, pdf } from 'book-pdf';
 import JSZip from 'jszip';
-Font.register({
-  family: 'EBGaramond',
-  fonts: [
-    { src: '/fonts/EBGaramond-Regular.ttf', fontWeight: 'normal' },
-    { src: '/fonts/EBGaramond-Bold.ttf', fontWeight: 'bold' },
-    { src: '/fonts/EBGaramond-Italic.ttf', fontWeight: 'normal', fontStyle: 'italic' },
-    { src: '/fonts/EBGaramond-BoldItalic.ttf', fontWeight: 'bold', fontStyle: 'italic' },
-  ],
-});
+// Font registration handled by book-pdf (EBGaramond is the only font)
 
 export interface PdfOptions {
   title: string;

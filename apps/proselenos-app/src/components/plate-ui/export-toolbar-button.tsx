@@ -70,25 +70,6 @@ export function ExportToolbarButton(props: DropdownMenuProps) {
     window.URL.revokeObjectURL(blobUrl);
   };
 
-  const exportToPdf = async () => {
-    const canvas = await getCanvas();
-
-    const PDFLib = await import('pdf-lib');
-    const pdfDoc = await PDFLib.PDFDocument.create();
-    const page = pdfDoc.addPage([canvas.width, canvas.height]);
-    const imageEmbed = await pdfDoc.embedPng(canvas.toDataURL('PNG'));
-    const { height, width } = imageEmbed.scale(1);
-    page.drawImage(imageEmbed, {
-      height,
-      width,
-      x: 0,
-      y: 0,
-    });
-    const pdfBase64 = await pdfDoc.saveAsBase64({ dataUri: true });
-
-    await downloadFile(pdfBase64, 'plate.pdf');
-  };
-
   const exportToImage = async () => {
     const canvas = await getCanvas();
     await downloadFile(canvas.toDataURL('image/png'), 'plate.png');
@@ -157,9 +138,6 @@ export function ExportToolbarButton(props: DropdownMenuProps) {
         <DropdownMenuGroup>
           <DropdownMenuItem onSelect={exportToHtml}>
             Export as HTML
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={exportToPdf}>
-            Export as PDF
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={exportToImage}>
             Export as Image

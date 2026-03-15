@@ -189,9 +189,6 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@react-pdf/renderer':
-        specifier: ^4.3.2
-        version: 4.3.2(react@19.1.0)
       '@udecode/cn':
         specifier: ^52.0.1
         version: 52.0.11(@types/react@18.3.12)(class-variance-authority@0.7.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwind-merge@3.4.0)
@@ -210,6 +207,9 @@ importers:
       ai:
         specifier: 5.0.28
         version: 5.0.28(zod@4.3.3)
+      book-pdf:
+        specifier: workspace:*
+        version: link:../../packages/book-pdf
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -294,9 +294,6 @@ importers:
       overlayscrollbars-react:
         specifier: ^0.5.6
         version: 0.5.6(overlayscrollbars@2.13.0)(react@19.1.0)
-      pdf-lib:
-        specifier: ^1.17.1
-        version: 1.17.1
       platejs:
         specifier: ^52.0.1
         version: 52.0.17(@types/react@18.3.12)(immer@10.2.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(scheduler@0.26.0)(use-sync-external-store@1.6.0(react@19.1.0))
@@ -484,6 +481,75 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@1.21.7)(jsdom@26.1.0)(terser@5.44.1)(yaml@2.8.2)
+
+  packages/book-pdf:
+    dependencies:
+      '@react-pdf/fns':
+        specifier: 3.1.2
+        version: 3.1.2
+      '@react-pdf/font':
+        specifier: ^4.0.4
+        version: 4.0.4
+      '@react-pdf/image':
+        specifier: ^3.0.4
+        version: 3.0.4
+      '@react-pdf/png-js':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@react-pdf/primitives':
+        specifier: ^4.1.1
+        version: 4.1.1
+      '@react-pdf/reconciler':
+        specifier: ^2.0.0
+        version: 2.0.0(react@19.1.0)
+      '@react-pdf/render':
+        specifier: ^4.3.2
+        version: 4.3.2
+      '@react-pdf/stylesheet':
+        specifier: ^6.1.2
+        version: 6.1.2
+      '@react-pdf/textkit':
+        specifier: ^6.1.0
+        version: 6.1.0
+      '@react-pdf/types':
+        specifier: ^2.9.2
+        version: 2.9.2
+      browserify-zlib:
+        specifier: ^0.2.0
+        version: 0.2.0
+      crypto-js:
+        specifier: ^4.2.0
+        version: 4.2.0
+      emoji-regex-xs:
+        specifier: ^1.0.0
+        version: 1.0.0
+      events:
+        specifier: ^3.3.0
+        version: 3.3.0
+      fontkit:
+        specifier: ^2.0.2
+        version: 2.0.4
+      is-url:
+        specifier: ^1.2.4
+        version: 1.2.4
+      jay-peg:
+        specifier: ^1.1.1
+        version: 1.1.1
+      linebreak:
+        specifier: ^1.1.0
+        version: 1.1.0
+      queue:
+        specifier: ^6.0.1
+        version: 6.0.2
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      vite-compatible-readable-stream:
+        specifier: ^3.6.1
+        version: 3.6.1
+      yoga-layout:
+        specifier: ^3.2.1
+        version: 3.2.1
 
   packages/foliate-js:
     dependencies:
@@ -1292,12 +1358,6 @@ packages:
   '@opentelemetry/semantic-conventions@1.39.0':
     resolution: {integrity: sha512-R5R9tb2AXs2IRLNKLBJDynhkfmx7mX0vi8NkhZb3gUkPWHn6HXk5J8iQ/dql0U3ApfWym4kXXmBDRGO+oeOfjg==}
     engines: {node: '>=14'}
-
-  '@pdf-lib/standard-fonts@1.0.0':
-    resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
-
-  '@pdf-lib/upng@1.0.1':
-    resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
 
   '@platejs/ai@52.1.0':
     resolution: {integrity: sha512-jXw4oJdsNEmm9MNQiJzhO9hJFiAxQY2LMZ6TcVXE00FtVZ+vwN+67SwfWBTw+tIAHjyleNTd1P46nSfoEaa0Dg==}
@@ -2335,9 +2395,6 @@ packages:
   '@react-pdf/image@3.0.4':
     resolution: {integrity: sha512-z0ogVQE0bKqgXQ5smgzIU857rLV7bMgVdrYsu3UfXDDLSzI7QPvzf6MFTFllX6Dx2rcsF13E01dqKPtJEM799g==}
 
-  '@react-pdf/layout@4.4.2':
-    resolution: {integrity: sha512-gNu2oh8MiGR+NJZYTJ4c4q0nWCESBI6rKFiodVhE7OeVAjtzZzd6l65wsN7HXdWJqOZD3ttD97iE+tf5SOd/Yg==}
-
   '@react-pdf/pdfkit@4.1.0':
     resolution: {integrity: sha512-Wm/IOAv0h/U5Ra94c/PltFJGcpTUd/fwVMVeFD6X9tTTPCttIwg0teRG1Lqq617J8K4W7jpL/B0HTH0mjp3QpQ==}
 
@@ -2354,11 +2411,6 @@ packages:
 
   '@react-pdf/render@4.3.2':
     resolution: {integrity: sha512-el5KYM1sH/PKcO4tRCIm8/AIEmhtraaONbwCrBhFdehoGv6JtgnXiMxHGAvZbI5kEg051GbyP+XIU6f6YbOu6Q==}
-
-  '@react-pdf/renderer@4.3.2':
-    resolution: {integrity: sha512-EhPkj35gO9rXIyyx29W3j3axemvVY5RigMmlK4/6Ku0pXB8z9PEE/sz4ZBOShu2uot6V4xiCR3aG+t9IjJJlBQ==}
-    peerDependencies:
-      react: 19.1.0
 
   '@react-pdf/stylesheet@6.1.2':
     resolution: {integrity: sha512-E3ftGRYUQGKiN3JOgtGsLDo0hGekA6dmkmi/MYACytmPTKxQRBSO3126MebmCq+t1rgU9uRlREIEawJ+8nzSbw==}
@@ -5773,9 +5825,6 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
-  pdf-lib@1.17.1:
-    resolution: {integrity: sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==}
-
   perfect-freehand@1.2.0:
     resolution: {integrity: sha512-h/0ikF1M3phW7CwpZ5MMvKnfpHficWoOEyr//KVNTxV4F6deRK1eYMtHyBKEAKFK0aXIEUK9oBvlF6PNXMDsAw==}
 
@@ -6893,9 +6942,6 @@ packages:
 
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
-
-  tslib@1.14.1:
-    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -8233,14 +8279,6 @@ snapshots:
 
   '@opentelemetry/semantic-conventions@1.39.0': {}
 
-  '@pdf-lib/standard-fonts@1.0.0':
-    dependencies:
-      pako: 1.0.11
-
-  '@pdf-lib/upng@1.0.1':
-    dependencies:
-      pako: 1.0.11
-
   '@platejs/ai@52.1.0(platejs@52.0.17(@types/react@18.3.12)(immer@10.2.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(scheduler@0.26.0)(use-sync-external-store@1.6.0(react@19.1.0)))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.9.3)':
     dependencies:
       '@platejs/markdown': 52.1.0(platejs@52.0.17(@types/react@18.3.12)(immer@10.2.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(scheduler@0.26.0)(use-sync-external-store@1.6.0(react@19.1.0)))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
@@ -9354,18 +9392,6 @@ snapshots:
       '@react-pdf/png-js': 3.0.0
       jay-peg: 1.1.1
 
-  '@react-pdf/layout@4.4.2':
-    dependencies:
-      '@react-pdf/fns': 3.1.2
-      '@react-pdf/image': 3.0.4
-      '@react-pdf/primitives': 4.1.1
-      '@react-pdf/stylesheet': 6.1.2
-      '@react-pdf/textkit': 6.1.0
-      '@react-pdf/types': 2.9.2
-      emoji-regex-xs: 1.0.0
-      queue: 6.0.2
-      yoga-layout: 3.2.1
-
   '@react-pdf/pdfkit@4.1.0':
     dependencies:
       '@babel/runtime': 7.28.4
@@ -9401,23 +9427,6 @@ snapshots:
       normalize-svg-path: 1.1.0
       parse-svg-path: 0.1.2
       svg-arc-to-cubic-bezier: 3.2.0
-
-  '@react-pdf/renderer@4.3.2(react@19.1.0)':
-    dependencies:
-      '@babel/runtime': 7.28.4
-      '@react-pdf/fns': 3.1.2
-      '@react-pdf/font': 4.0.4
-      '@react-pdf/layout': 4.4.2
-      '@react-pdf/pdfkit': 4.1.0
-      '@react-pdf/primitives': 4.1.1
-      '@react-pdf/reconciler': 2.0.0(react@19.1.0)
-      '@react-pdf/render': 4.3.2
-      '@react-pdf/types': 2.9.2
-      events: 3.3.0
-      object-assign: 4.1.1
-      prop-types: 15.8.1
-      queue: 6.0.2
-      react: 19.1.0
 
   '@react-pdf/stylesheet@6.1.2':
     dependencies:
@@ -13525,13 +13534,6 @@ snapshots:
 
   pathval@2.0.1: {}
 
-  pdf-lib@1.17.1:
-    dependencies:
-      '@pdf-lib/standard-fonts': 1.0.0
-      '@pdf-lib/upng': 1.0.1
-      pako: 1.0.11
-      tslib: 1.14.1
-
   perfect-freehand@1.2.0: {}
 
   performance-now@2.1.0: {}
@@ -14794,8 +14796,6 @@ snapshots:
       json5: 1.0.2
       minimist: 1.2.8
       strip-bom: 3.0.0
-
-  tslib@1.14.1: {}
 
   tslib@2.8.1: {}
 
