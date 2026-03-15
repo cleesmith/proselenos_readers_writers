@@ -61,16 +61,14 @@ export const AboutWindow = () => {
     <Dialog
       id='about_window'
       isOpen={isOpen}
-      title={_('EverythingEbooks')}
+      title=""
       onClose={handleClose}
       boxClassName='sm:!w-[480px] sm:!max-w-screen-sm sm:h-auto'
     >
       {isOpen && (
         <div className='about-content flex h-full flex-col items-center justify-center gap-4 pb-10 sm:pb-0'>
           <div className='flex flex-1 flex-col items-center justify-end gap-2 px-8 py-2'>
-            <div className='mb-2 mt-6'>
-              <img src='/icon.png' alt='App Logo' className='h-20 w-20' width={64} height={64} />
-            </div>
+
             <div className='flex select-text flex-col items-center'>
               <h2 className='mb-1 text-2xl font-bold'>EverythingEbooks</h2>
               <p className='mb-2 text-sm italic tracking-wide text-neutral-content'>Readers and Writers</p>

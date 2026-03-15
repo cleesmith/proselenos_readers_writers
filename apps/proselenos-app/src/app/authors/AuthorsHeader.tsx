@@ -161,17 +161,13 @@ export default function AuthorsHeader({
           {isDarkMode ? '☀️' : '🌙'}
         </button>
 
-        {/* Logo */}
-        <img
-          src="/icon.png"
-          alt="EverythingEbooks"
-          title="EverythingEbooks"
-          style={{
-            width: '32px',
-            height: '32px',
-            cursor: 'pointer',
-          }}
+        <TrafficLightIcon
+          status={trafficLightStatus}
+          isDarkMode={isDarkMode}
+          onClick={onStorageClick}
+          tooltip={trafficTooltip}
         />
+        <div style={{ width: '8px' }} />
 
         {/* Exit */}
         <StyledSmallButton onClick={handleExitClick} theme={theme} title="Quit authors, return to library (aborts running AI tool)">Exit</StyledSmallButton>
@@ -302,12 +298,6 @@ export default function AuthorsHeader({
           <StyledSmallButton theme={theme} onClick={onSaveClick} disabled={toolExecuting} styleOverrides={{ marginRight: 0 }} title="Publish to Library">Publish</StyledSmallButton>
           <span style={{ color: isDarkMode ? '#86efac' : '#16a34a', fontSize: '16px' }}>⇨</span>
           <StyledSmallButton onClick={handleLibraryClick} theme={theme} title="Go read ebooks">Library</StyledSmallButton>
-          <TrafficLightIcon
-            status={trafficLightStatus}
-            isDarkMode={isDarkMode}
-            onClick={onStorageClick}
-            tooltip={trafficTooltip}
-          />
         </div>
       </div>
 
