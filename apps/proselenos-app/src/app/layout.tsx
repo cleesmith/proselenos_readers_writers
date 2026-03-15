@@ -25,10 +25,6 @@ export const metadata = {
       url: 'https://github.com/cleesmith/proselenos_readers_writers',
     },
   ],
-  icons: [
-    { rel: 'apple-touch-icon', url: '/icon_180x180.png' },
-    { rel: 'icon', url: '/icon.png' },
-  ],
 };
 
 export const viewport = {
@@ -48,7 +44,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           name='viewport'
           content='minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover'
         />
-        <link rel='apple-touch-icon' sizes='180x180' href='/icon_180x180.png' />
         <link rel='icon' href='/favicon.ico' />
         <link rel="preload" href="/fonts/EBGaramond-Regular.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/EBGaramond-Bold.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
