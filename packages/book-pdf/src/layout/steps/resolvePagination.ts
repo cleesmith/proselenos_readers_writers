@@ -1,5 +1,5 @@
-import * as P from '@react-pdf/primitives';
-import { omit, compose } from '@react-pdf/fns';
+import * as P from '../../vendor/primitives/index.js';
+import { omit, compose } from '../../vendor/fns/index.js';
 import type FontStore from '../../font/index';
 
 import isFixed from '../node/isFixed';

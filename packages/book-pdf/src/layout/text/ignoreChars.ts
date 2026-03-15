@@ -1,4 +1,4 @@
-import { Font, Fragment } from '@react-pdf/textkit';
+import { Font, Fragment } from '../../vendor/textkit';
 
 const IGNORABLE_CODEPOINTS = [
   8232, // LINE_SEPARATOR

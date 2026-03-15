@@ -1,6 +1,6 @@
-import * as P from '@react-pdf/primitives';
+import * as P from '../../vendor/primitives/index.js';
 import type FontStore from '../../font/index';
-import { castArray } from '@react-pdf/fns';
+import { castArray } from '../../vendor/fns/index.js';
 
 import fetchEmojis from '../text/emoji';
 import fetchImage from '../image/fetchImage';

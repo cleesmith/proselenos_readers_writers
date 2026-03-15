@@ -1,9 +1,9 @@
-import { SafeStyle, Style } from '@react-pdf/stylesheet';
-import * as P from '@react-pdf/primitives';
+import { SafeStyle, Style } from '../../vendor/stylesheet/index.js';
+import * as P from '../../vendor/primitives/index.js';
 import { YogaNode } from 'yoga-layout/load';
 
 import { Box, NodeProps, Origin } from './base';
-import { Image } from '@react-pdf/image';
+import { Image } from '../../vendor/image';
 
 type HTTPMethod = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 

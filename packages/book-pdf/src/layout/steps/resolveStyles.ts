@@ -1,5 +1,5 @@
-import * as P from '@react-pdf/primitives';
-import stylesheet, { Container, Style } from '@react-pdf/stylesheet';
+import * as P from '../../vendor/primitives/index.js';
+import stylesheet, { Container, Style } from '../../vendor/stylesheet/index.js';
 
 import {
   DocumentNode,

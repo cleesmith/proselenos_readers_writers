@@ -1,4 +1,4 @@
-import * as P from '@react-pdf/primitives';
+import * as P from '../../vendor/primitives/index.js';
 import type FontStore from '../../font/index';
 
 import layoutText from '../text/layoutText';

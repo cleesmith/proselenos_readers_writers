@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 
 import emojiRegex from 'emoji-regex-xs';
-import resolveImage from '@react-pdf/image';
-import { Fragment } from '@react-pdf/textkit';
+import resolveImage from '../../vendor/image';
+import { Fragment } from '../../vendor/textkit';
 
 import { EmojiSource } from '../../../types';
 

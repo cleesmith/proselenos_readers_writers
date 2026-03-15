@@ -1,4 +1,4 @@
-import * as P from '@react-pdf/primitives';
+import * as P from '../../vendor/primitives/index.js';
 import { ClipPathNode, SafeClipPathNode } from './clip-path';
 import { LinearGradientNode, SafeLinearGradientNode } from './linear-gradient';
 import { RadialGradientNode, SafeRadialGradientNode } from './radial-gradient';

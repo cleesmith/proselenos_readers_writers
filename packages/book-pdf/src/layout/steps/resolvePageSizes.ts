@@ -1,4 +1,4 @@
-import { flatten } from '@react-pdf/stylesheet';
+import { flatten } from '../../vendor/stylesheet/index.js';
 
 import getPageSize from '../page/getSize';
 import { DocumentNode, PageNode } from '../types';

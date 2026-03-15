@@ -1,4 +1,4 @@
-import * as P from '@react-pdf/primitives';
+import * as P from '../../vendor/primitives/index.js';
 import type FontStore from '../../font/index';
 import layoutEngine, {
   bidi,
@@ -10,7 +10,7 @@ import layoutEngine, {
   textDecoration,
   fromFragments,
   Fragment,
-} from '@react-pdf/textkit';
+} from '../../vendor/textkit';
 
 import transformText from '../text/transformText';
 import {

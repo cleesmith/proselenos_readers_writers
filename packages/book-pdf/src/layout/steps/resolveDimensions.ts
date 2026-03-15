@@ -1,5 +1,5 @@
-import * as P from '@react-pdf/primitives';
-import { isNil, compose } from '@react-pdf/fns';
+import * as P from '../../vendor/primitives/index.js';
+import { isNil, compose } from '../../vendor/fns/index.js';
 import type FontStore from '../../font/index';
 
 import getMargin from '../node/getMargin';

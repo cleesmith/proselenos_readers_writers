@@ -484,36 +484,18 @@ importers:
 
   packages/book-pdf:
     dependencies:
-      '@react-pdf/fns':
-        specifier: 3.1.2
-        version: 3.1.2
-      '@react-pdf/image':
-        specifier: ^3.0.4
-        version: 3.0.4
-      '@react-pdf/png-js':
-        specifier: ^3.0.0
-        version: 3.0.0
-      '@react-pdf/primitives':
-        specifier: ^4.1.1
-        version: 4.1.1
-      '@react-pdf/reconciler':
-        specifier: ^2.0.0
-        version: 2.0.0(react@19.1.0)
-      '@react-pdf/render':
-        specifier: ^4.3.2
-        version: 4.3.2
-      '@react-pdf/stylesheet':
-        specifier: ^6.1.2
-        version: 6.1.2
-      '@react-pdf/textkit':
-        specifier: ^6.1.0
-        version: 6.1.0
-      '@react-pdf/types':
-        specifier: ^2.9.2
-        version: 2.9.2
+      abs-svg-path:
+        specifier: ^0.1.1
+        version: 0.1.1
+      bidi-js:
+        specifier: ^1.0.3
+        version: 1.0.3
       browserify-zlib:
         specifier: ^0.2.0
         version: 0.2.0
+      color-string:
+        specifier: ^1.9.1
+        version: 1.9.1
       crypto-js:
         specifier: ^4.2.0
         version: 4.2.0
@@ -526,6 +508,12 @@ importers:
       fontkit:
         specifier: ^2.0.2
         version: 2.0.4
+      hsl-to-hex:
+        specifier: ^1.0.0
+        version: 1.0.0
+      hyphen:
+        specifier: ^1.14.1
+        version: 1.14.1
       is-url:
         specifier: ^1.2.4
         version: 1.2.4
@@ -535,12 +523,36 @@ importers:
       linebreak:
         specifier: ^1.1.0
         version: 1.1.0
+      media-engine:
+        specifier: ^1.0.3
+        version: 1.0.3
+      normalize-svg-path:
+        specifier: ^1.1.0
+        version: 1.1.0
+      object-assign:
+        specifier: ^4.1.1
+        version: 4.1.1
+      parse-svg-path:
+        specifier: ^0.1.2
+        version: 0.1.2
+      postcss-value-parser:
+        specifier: ^4.2.0
+        version: 4.2.0
       queue:
         specifier: ^6.0.1
         version: 6.0.2
       react:
         specifier: 19.1.0
         version: 19.1.0
+      scheduler:
+        specifier: ^0.25.0
+        version: 0.25.0
+      svg-arc-to-cubic-bezier:
+        specifier: ^3.2.0
+        version: 3.2.0
+      unicode-properties:
+        specifier: ^1.4.1
+        version: 1.4.1
       vite-compatible-readable-stream:
         specifier: ^3.6.1
         version: 3.6.1
@@ -2382,41 +2394,6 @@ packages:
 
   '@react-dnd/shallowequal@4.0.2':
     resolution: {integrity: sha512-/RVXdLvJxLg4QKvMoM5WlwNR9ViO9z8B/qPcc+C0Sa/teJY7QG7kJ441DwzOjMYEY7GmU4dj5EcGHIkKZiQZCA==}
-
-  '@react-pdf/fns@3.1.2':
-    resolution: {integrity: sha512-qTKGUf0iAMGg2+OsUcp9ffKnKi41RukM/zYIWMDJ4hRVYSr89Q7e3wSDW/Koqx3ea3Uy/z3h2y3wPX6Bdfxk6g==}
-
-  '@react-pdf/font@4.0.4':
-    resolution: {integrity: sha512-8YtgGtL511txIEc9AjiilpZ7yjid8uCd8OGUl6jaL3LIHnrToUupSN4IzsMQpVTCMYiDLFnDNQzpZsOYtRS/Pg==}
-
-  '@react-pdf/image@3.0.4':
-    resolution: {integrity: sha512-z0ogVQE0bKqgXQ5smgzIU857rLV7bMgVdrYsu3UfXDDLSzI7QPvzf6MFTFllX6Dx2rcsF13E01dqKPtJEM799g==}
-
-  '@react-pdf/pdfkit@4.1.0':
-    resolution: {integrity: sha512-Wm/IOAv0h/U5Ra94c/PltFJGcpTUd/fwVMVeFD6X9tTTPCttIwg0teRG1Lqq617J8K4W7jpL/B0HTH0mjp3QpQ==}
-
-  '@react-pdf/png-js@3.0.0':
-    resolution: {integrity: sha512-eSJnEItZ37WPt6Qv5pncQDxLJRK15eaRwPT+gZoujP548CodenOVp49GST8XJvKMFt9YqIBzGBV/j9AgrOQzVA==}
-
-  '@react-pdf/primitives@4.1.1':
-    resolution: {integrity: sha512-IuhxYls1luJb7NUWy6q5avb1XrNaVj9bTNI40U9qGRuS6n7Hje/8H8Qi99Z9UKFV74bBP3DOf3L1wV2qZVgVrQ==}
-
-  '@react-pdf/reconciler@2.0.0':
-    resolution: {integrity: sha512-7zaPRujpbHSmCpIrZ+b9HSTJHthcVZzX0Wx7RzvQGsGBUbHP4p6s5itXrAIOuQuPvDepoHGNOvf6xUuMVvdoyw==}
-    peerDependencies:
-      react: 19.1.0
-
-  '@react-pdf/render@4.3.2':
-    resolution: {integrity: sha512-el5KYM1sH/PKcO4tRCIm8/AIEmhtraaONbwCrBhFdehoGv6JtgnXiMxHGAvZbI5kEg051GbyP+XIU6f6YbOu6Q==}
-
-  '@react-pdf/stylesheet@6.1.2':
-    resolution: {integrity: sha512-E3ftGRYUQGKiN3JOgtGsLDo0hGekA6dmkmi/MYACytmPTKxQRBSO3126MebmCq+t1rgU9uRlREIEawJ+8nzSbw==}
-
-  '@react-pdf/textkit@6.1.0':
-    resolution: {integrity: sha512-sFlzDC9CDFrJsnL3B/+NHrk9+Advqk7iJZIStiYQDdskbow8GF/AGYrpIk+vWSnh35YxaGbHkqXq53XOxnyrjQ==}
-
-  '@react-pdf/types@2.9.2':
-    resolution: {integrity: sha512-dufvpKId9OajLLbgn9q7VLUmyo1Jf+iyGk2ZHmCL8nIDtL8N1Ejh9TH7+pXXrR0tdie1nmnEb5Bz9U7g4hI4/g==}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -6456,8 +6433,8 @@ packages:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
 
-  scheduler@0.25.0-rc-603e6108-20241029:
-    resolution: {integrity: sha512-pFwF6H1XrSdYYNLfOcGlM28/j8CGLu8IvdrxqhjWULe2bPcKiKW4CV+OWqR/9fT52mywx65l7ysNkjLKBda7eA==}
+  scheduler@0.25.0:
+    resolution: {integrity: sha512-xFVuu11jh+xcO7JOAGJNOXld8/TcEHK/4CituBUeUb5hqxJLj9YuemAEuvm9gQ/+pgXYfbQuqAkiYu+u7YEsNA==}
 
   scheduler@0.26.0:
     resolution: {integrity: sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==}
@@ -9375,78 +9352,6 @@ snapshots:
 
   '@react-dnd/shallowequal@4.0.2': {}
 
-  '@react-pdf/fns@3.1.2': {}
-
-  '@react-pdf/font@4.0.4':
-    dependencies:
-      '@react-pdf/pdfkit': 4.1.0
-      '@react-pdf/types': 2.9.2
-      fontkit: 2.0.4
-      is-url: 1.2.4
-
-  '@react-pdf/image@3.0.4':
-    dependencies:
-      '@react-pdf/png-js': 3.0.0
-      jay-peg: 1.1.1
-
-  '@react-pdf/pdfkit@4.1.0':
-    dependencies:
-      '@babel/runtime': 7.28.4
-      '@react-pdf/png-js': 3.0.0
-      browserify-zlib: 0.2.0
-      crypto-js: 4.2.0
-      fontkit: 2.0.4
-      jay-peg: 1.1.1
-      linebreak: 1.1.0
-      vite-compatible-readable-stream: 3.6.1
-
-  '@react-pdf/png-js@3.0.0':
-    dependencies:
-      browserify-zlib: 0.2.0
-
-  '@react-pdf/primitives@4.1.1': {}
-
-  '@react-pdf/reconciler@2.0.0(react@19.1.0)':
-    dependencies:
-      object-assign: 4.1.1
-      react: 19.1.0
-      scheduler: 0.25.0-rc-603e6108-20241029
-
-  '@react-pdf/render@4.3.2':
-    dependencies:
-      '@babel/runtime': 7.28.4
-      '@react-pdf/fns': 3.1.2
-      '@react-pdf/primitives': 4.1.1
-      '@react-pdf/textkit': 6.1.0
-      '@react-pdf/types': 2.9.2
-      abs-svg-path: 0.1.1
-      color-string: 1.9.1
-      normalize-svg-path: 1.1.0
-      parse-svg-path: 0.1.2
-      svg-arc-to-cubic-bezier: 3.2.0
-
-  '@react-pdf/stylesheet@6.1.2':
-    dependencies:
-      '@react-pdf/fns': 3.1.2
-      '@react-pdf/types': 2.9.2
-      color-string: 1.9.1
-      hsl-to-hex: 1.0.0
-      media-engine: 1.0.3
-      postcss-value-parser: 4.2.0
-
-  '@react-pdf/textkit@6.1.0':
-    dependencies:
-      '@react-pdf/fns': 3.1.2
-      bidi-js: 1.0.3
-      hyphen: 1.14.1
-      unicode-properties: 1.4.1
-
-  '@react-pdf/types@2.9.2':
-    dependencies:
-      '@react-pdf/font': 4.0.4
-      '@react-pdf/primitives': 4.1.1
-      '@react-pdf/stylesheet': 6.1.2
-
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
   '@rollup/plugin-node-resolve@15.3.1(rollup@4.54.0)':
@@ -11288,7 +11193,7 @@ snapshots:
       eslint: 9.39.2(jiti@1.21.7)
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@1.21.7))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@1.21.7))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@1.21.7))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.2(jiti@1.21.7))
       eslint-plugin-react: 7.37.5(eslint@9.39.2(jiti@1.21.7))
       eslint-plugin-react-hooks: 7.0.1(eslint@9.39.2(jiti@1.21.7))
@@ -11325,7 +11230,7 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@1.21.7))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@1.21.7))
     transitivePeerDependencies:
       - supports-color
 
@@ -11340,7 +11245,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@1.21.7)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.51.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@1.21.7)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -14237,7 +14142,7 @@ snapshots:
     dependencies:
       xmlchars: 2.2.0
 
-  scheduler@0.25.0-rc-603e6108-20241029: {}
+  scheduler@0.25.0: {}
 
   scheduler@0.26.0: {}
 

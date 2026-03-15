@@ -4,10 +4,10 @@
 
 import FontStore from './font/index';
 import { EBGARAMOND_FONTS } from './font/embedded-fonts';
-import renderPDF from '@react-pdf/render';
+import renderPDF from './vendor/render/index.js';
 import PDFDocument from './pdfkit/index';
 import layoutDocument from './layout/index';
-import { upperFirst } from '@react-pdf/fns';
+import { upperFirst } from './vendor/fns/index.js';
 
 import { omitNils } from './utils';
 import createRenderer from './renderer';
@@ -152,4 +152,4 @@ const StyleSheet = {
 export { Font, StyleSheet, pdf, createRenderer };
 
 // Re-export primitives (Document, Page, Text, View, Image, etc.)
-export * from '@react-pdf/primitives';
+export * from './vendor/primitives/index.js';

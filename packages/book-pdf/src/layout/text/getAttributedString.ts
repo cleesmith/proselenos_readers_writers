@@ -1,5 +1,5 @@
-import * as P from '@react-pdf/primitives';
-import { Fragment, fromFragments } from '@react-pdf/textkit';
+import * as P from '../../vendor/primitives/index.js';
+import { Fragment, fromFragments } from '../../vendor/textkit';
 import type FontStore from '../../font/index';
 
 import { embedEmojis } from './emoji';

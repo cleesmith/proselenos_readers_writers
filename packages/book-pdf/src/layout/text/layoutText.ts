@@ -6,7 +6,7 @@ import layoutEngine, {
   wordHyphenation,
   textDecoration,
   fontSubstitution,
-} from '@react-pdf/textkit';
+} from '../../vendor/textkit';
 import type FontStore from '../../font/index';
 
 import getAttributedString from './getAttributedString';

@@ -1,5 +1,5 @@
 import * as Yoga from 'yoga-layout/load';
-import { upperFirst } from '@react-pdf/fns';
+import { upperFirst } from '../../vendor/fns/index.js';
 import { SafeNode } from '../types';
 
 const ALIGN = {

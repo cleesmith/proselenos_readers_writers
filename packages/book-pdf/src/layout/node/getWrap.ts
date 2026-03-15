@@ -1,4 +1,4 @@
-import * as P from '@react-pdf/primitives';
+import * as P from '../../vendor/primitives/index.js';
 import { SafeNode } from '../types';
 
 const NON_WRAP_TYPES = [P.Svg, P.Note, P.Image, P.Canvas];

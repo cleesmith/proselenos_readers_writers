@@ -1,5 +1,5 @@
 import * as Yoga from 'yoga-layout/load';
-import { isNil } from '@react-pdf/fns';
+import { isNil } from '../../vendor/fns/index.js';
 import { SafeNode } from '../types';
 
 const POSITION = {

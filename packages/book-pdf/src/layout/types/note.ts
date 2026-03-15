@@ -1,5 +1,5 @@
-import * as P from '@react-pdf/primitives';
-import { SafeStyle, Style } from '@react-pdf/stylesheet';
+import * as P from '../../vendor/primitives/index.js';
+import { SafeStyle, Style } from '../../vendor/stylesheet/index.js';
 
 import { NodeProps } from './base';
 import { SafeTextInstanceNode, TextInstanceNode } from './text-instance';

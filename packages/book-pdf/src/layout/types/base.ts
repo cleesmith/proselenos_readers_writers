@@ -1,4 +1,4 @@
-import { Transform } from '@react-pdf/stylesheet';
+import { Transform } from '../../vendor/stylesheet/index.js';
 import { YogaNode } from 'yoga-layout/load';
 import * as React from 'react';
 import { SafeClipPathNode } from './clip-path';

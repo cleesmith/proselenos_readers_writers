@@ -1,4 +1,4 @@
-import * as P from '@react-pdf/primitives';
+import * as P from '../../vendor/primitives/index.js';
 
 import { SafeDefs, SafeDefsNode, SafeNode, SafeSvgNode } from '../types';
 
