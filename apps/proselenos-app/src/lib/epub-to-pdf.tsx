@@ -195,7 +195,7 @@ function flattenLinksForPrint(container: Element): void {
   }
 }
 
-// ─── 3. React-PDF styles ───
+// ─── 3. book-pdf styles ───
 
 const styles = StyleSheet.create({
   page: {
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
 });
 
-// ─── 4. HTML-to-react-pdf converter ───
+// ─── 4. HTML-to-book-pdf converter ───
 
 export let elementKeyCounter = 0;
 
@@ -331,10 +331,10 @@ function nextKey(): string {
 
 /**
  * Converts an HTML string (from epub chapter content) into an array of
- * react-pdf elements. This is the core bridge between DOM-parsed epub
- * content and the react-pdf component tree.
+ * book-pdf elements. This is the core bridge between DOM-parsed epub
+ * content and the book-pdf component tree.
  *
- * Key constraint: react-pdf's <Text> can nest other <Text> for inline
+ * Key constraint: book-pdf's <Text> can nest other <Text> for inline
  * styling, but cannot contain <View> or <Image>. Block elements and
  * images must be at <View> level.
  */
@@ -478,7 +478,7 @@ function convertNode(node: Node): React.ReactNode {
 
 /**
  * Collects inline content from an element, preserving bold/italic
- * as nested <Text> elements (which react-pdf supports for inline styling).
+ * as nested <Text> elements (which book-pdf supports for inline styling).
  */
 function collectInlineContent(el: Element): React.ReactNode[] {
   const results: React.ReactNode[] = [];

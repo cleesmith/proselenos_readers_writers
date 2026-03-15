@@ -11,7 +11,6 @@ import { SafeViewNode, ViewNode } from './view';
 interface LinkProps extends NodeProps {
   /**
    * Enable/disable page wrapping for element.
-   * @see https://react-pdf.org/components#page-wrapping
    */
   wrap?: boolean;
   href?: string;

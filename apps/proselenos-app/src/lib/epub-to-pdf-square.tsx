@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
 });
 
-// ─── HTML-to-react-pdf converter (own key counter) ───
+// ─── HTML-to-book-pdf converter (own key counter) ───
 
 let elementKeyCounter = 0;
 

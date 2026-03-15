@@ -12,23 +12,19 @@ import { SafeTspanNode, TspanNode } from './tspan';
 interface TextProps extends NodeProps {
   /**
    * Enable/disable page wrapping for element.
-   * @see https://react-pdf.org/components#page-wrapping
    */
   wrap?: boolean;
   render?: RenderProp;
   /**
    * Override the default hyphenation-callback
-   * @see https://react-pdf.org/fonts#registerhyphenationcallback
    */
   hyphenationCallback?: HyphenationCallback;
   /**
    * Specifies the minimum number of lines in a text element that must be shown at the bottom of a page or its container.
-   * @see https://react-pdf.org/advanced#orphan-&-widow-protection
    */
   orphans?: number;
   /**
-   * Specifies the minimum number of lines in a text element that must be shown at the top of a page or its container..
-   * @see https://react-pdf.org/advanced#orphan-&-widow-protection
+   * Specifies the minimum number of lines in a text element that must be shown at the top of a page or its container.
    */
   widows?: number;
   // Svg props

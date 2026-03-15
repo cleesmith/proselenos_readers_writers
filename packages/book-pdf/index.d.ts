@@ -3,7 +3,7 @@
 
 import type { ReactElement, ReactNode } from 'react';
 
-// Permissive style type — avoids strict literal-type errors from @react-pdf/types
+// Permissive style type — avoids strict literal-type errors from book-pdf/types
 type Style = Record<string, any>;
 
 type PageSize = string | number | [number, number];

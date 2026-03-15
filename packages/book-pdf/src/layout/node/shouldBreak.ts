@@ -43,7 +43,7 @@ const shouldBreak = (
   const endOfPresence = getEndOfPresence(child, futureElements);
 
   // If the child is already at the top of the page, breaking won't improve its presence
-  // (as long as react-pdf does not support breaking into differently sized containers)
+  // (as long as book-pdf does not support breaking into differently sized containers)
   const breakingImprovesPresence =
     previousElements.filter((node: SafeNode) => !isFixed(node)).length > 0;
 

@@ -17,7 +17,6 @@ interface ViewProps extends NodeProps {
   id?: string;
   /**
    * Enable/disable page wrapping for element.
-   * @see https://react-pdf.org/components#page-wrapping
    */
   wrap?: boolean;
   render?: RenderProp;

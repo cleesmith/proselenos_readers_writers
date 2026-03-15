@@ -81,7 +81,6 @@ export type PageSize =
 interface PageProps extends NodeProps {
   /**
    * Enable page wrapping for this page.
-   * @see https://react-pdf.org/components#page-wrapping
    */
   wrap?: boolean;
   size?: PageSize;

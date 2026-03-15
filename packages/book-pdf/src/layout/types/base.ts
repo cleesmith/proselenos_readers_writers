@@ -64,23 +64,19 @@ export type NodeProps = {
   id?: string;
   /**
    * Render component in all wrapped pages.
-   * @see https://react-pdf.org/advanced#fixed-components
    */
   fixed?: boolean;
   /**
    * Force the wrapping algorithm to start a new page when rendering the
    * element.
-   * @see https://react-pdf.org/advanced#page-breaks
    */
   break?: boolean;
   /**
    * Hint that no page wrapping should occur between all sibling elements following the element within n points
-   * @see https://react-pdf.org/advanced#orphan-&-widow-protection
    */
   minPresenceAhead?: number;
   /**
    * Enables debug mode on page bounding box.
-   * @see https://react-pdf.org/advanced#debugging
    */
   debug?: boolean;
   bookmark?: Bookmark;
