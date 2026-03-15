@@ -250,7 +250,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       },
     });
     const showBookDetailsMenuItem = await MenuItem.new({
-      text: _('Show Ebook Details'),
+      text: _('Show Ebook Plus'),
       action: async () => {
         showBookDetailsModal(book);
       },

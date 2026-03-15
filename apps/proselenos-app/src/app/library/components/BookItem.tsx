@@ -134,8 +134,8 @@ const BookItem: React.FC<BookItemProps> = ({
               </button>
             )}
             <button
-              aria-label={_('Show Ebook Details')}
-              title={_('Ebook Details')}
+              aria-label={_('Show Ebook Plus')}
+              title={_('Ebook Plus')}
               className='show-detail-button -m-2 p-2'
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => {

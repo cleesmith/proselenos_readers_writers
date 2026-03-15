@@ -100,7 +100,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
                 </button>
               )}
               {onDownloadLocal && (
-                <button onClick={onDownloadLocal} title={_('Download ebook')}>
+                <button onClick={onDownloadLocal} title={_('Download authors epub')}>
                   <MdOutlineFileDownload className='fill-base-content hover:fill-green-500' />
                 </button>
               )}
