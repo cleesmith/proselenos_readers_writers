@@ -3,7 +3,7 @@ import React from 'react';
 import { IoIosList as TOCIcon } from 'react-icons/io';
 import { RxSlider as SliderIcon } from 'react-icons/rx';
 import { RiFontFamily as FontIcon } from 'react-icons/ri';
-import { PiSun as ColorIcon, PiXBold } from 'react-icons/pi';
+import { PiXBold } from 'react-icons/pi';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import Button from '@/components/Button';
@@ -38,11 +38,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         icon={<TOCIcon size={tocIconSize} />}
         onClick={() => onSetActionTab('toc')}
       />
-      <Button
-        label={_('Color')}
-        icon={<ColorIcon className={clsx(actionTab === 'color' && 'text-blue-500')} />}
-        onClick={() => onSetActionTab('color')}
-      />
+
       <Button
         label={_('Reading Progress')}
         icon={<SliderIcon className={clsx(actionTab === 'progress' && 'text-blue-500')} />}

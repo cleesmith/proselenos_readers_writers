@@ -3,7 +3,7 @@ import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { FooterBarChildProps } from './types';
 import { NavigationPanel } from './NavigationPanel';
 import { FontLayoutPanel } from './FontLayoutPanel';
-import { ColorPanel } from './ColorPanel';
+
 import { NavigationBar } from './NavigationBar';
 
 const MobileFooterBar: React.FC<FooterBarChildProps> = ({
@@ -24,7 +24,7 @@ const MobileFooterBar: React.FC<FooterBarChildProps> = ({
 
   return (
     <>
-      <ColorPanel actionTab={actionTab} bottomOffset={bottomOffset} />
+
       <NavigationPanel
         actionTab={actionTab}
         progressFraction={progressFraction}

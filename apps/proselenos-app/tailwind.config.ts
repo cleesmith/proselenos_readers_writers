@@ -57,7 +57,7 @@ const config: Config = {
         });
         return acc;
       },
-      ['light', 'dark'] as (Record<string, unknown> | string)[],
+      [] as (Record<string, unknown> | string)[],
     ),
   },
 };

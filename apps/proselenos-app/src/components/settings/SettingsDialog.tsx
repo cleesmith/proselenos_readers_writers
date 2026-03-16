@@ -6,7 +6,7 @@ import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
 import { RiFontSize } from 'react-icons/ri';
 import { RiDashboardLine } from 'react-icons/ri';
-import { VscSymbolColor } from 'react-icons/vsc';
+
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { LiaHandPointerSolid } from 'react-icons/lia';
 import { IoAccessibilityOutline } from 'react-icons/io5';
@@ -14,14 +14,14 @@ import { MdArrowBackIosNew, MdArrowForwardIos, MdClose } from 'react-icons/md';
 import { getDirFromUILanguage } from '@/utils/rtl';
 import FontPanel from './FontPanel';
 import LayoutPanel from './LayoutPanel';
-import ColorPanel from './ColorPanel';
+
 import Dropdown from '@/components/Dropdown';
 import Dialog from '@/components/Dialog';
 import DialogMenu from './DialogMenu';
 import ControlPanel from './ControlPanel';
 import MiscPanel from './MiscPanel';
 
-export type SettingsPanelType = 'Font' | 'Layout' | 'Color' | 'Control' | 'Custom';
+export type SettingsPanelType = 'Font' | 'Layout' | 'Control' | 'Custom';
 export type SettingsPanelPanelProp = {
   bookKey: string;
   onRegisterReset: (resetFn: () => void) => void;
@@ -53,12 +53,7 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       icon: RiDashboardLine,
       label: _('Layout'),
     },
-    {
-      tab: 'Color',
-      icon: VscSymbolColor,
-      label: _('Color'),
-    },
-    {
+{
       tab: 'Control',
       icon: LiaHandPointerSolid,
       label: _('Behavior'),
@@ -89,7 +84,6 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   >({
     Font: null,
     Layout: null,
-    Color: null,
     Control: null,
     Custom: null,
   });
@@ -253,13 +247,7 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
             onRegisterReset={(fn) => registerResetFunction('Layout', fn)}
           />
         )}
-        {activePanel === 'Color' && (
-          <ColorPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Color', fn)}
-          />
-        )}
-        {activePanel === 'Control' && (
+{activePanel === 'Control' && (
           <ControlPanel
             bookKey={bookKey}
             onRegisterReset={(fn) => registerResetFunction('Control', fn)}
