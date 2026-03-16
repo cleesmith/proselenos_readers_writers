@@ -19,6 +19,7 @@ import BookDetailEdit from './BookDetailEdit';
 import { XrayModal } from '@/components/xray';
 import { AudiobookModal } from '@/components/audiobook';
 import { PdfModal, PdfSquareModal } from '@/components/pdf';
+import EbookPlusHelp from './EbookPlusHelp';
 import JSZip from 'jszip';
 import { stripEpubForBookseller } from '@/lib/bookseller-strip';
 import { downloadBookAsWebReady } from '@/services/webReadyService';
@@ -59,6 +60,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [showAudiobook, setShowAudiobook] = useState(false);
   const [showPdf, setShowPdf] = useState(false);
   const [showPdfSquare, setShowPdfSquare] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
 
@@ -123,6 +125,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     setShowAudiobook(false);
     setShowPdf(false);
     setShowPdfSquare(false);
+    setShowHelp(false);
     onClose();
   };
 
@@ -303,6 +306,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onXray={book.hash === '__bookseller_temp__' ? undefined : handleXray}
                 onAudiobook={book.hash === '__bookseller_temp__' ? undefined : handleAudiobook}
                 onReadEpub={onReadEpub ? handleReadEpub : undefined}
+                onHelp={() => setShowHelp(true)}
               />
             )}
           </div>
@@ -349,6 +353,11 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
         bookMeta={bookMeta}
         isOpen={showPdfSquare}
         onClose={handleClosePdfSquare}
+      />
+
+      <EbookPlusHelp
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
       />
     </>
   );

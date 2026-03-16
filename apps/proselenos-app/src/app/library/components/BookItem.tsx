@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { MdCheckCircle, MdCheckCircleOutline, MdOutlineAutoStories, MdOutlineStorefront } from 'react-icons/md';
-import { LiaInfoCircleSolid } from 'react-icons/lia';
+
 
 import { Book } from '@/types/book';
 import { useEnv } from '@/context/EnvContext';
@@ -94,15 +94,9 @@ const BookItem: React.FC<BookItemProps> = ({
             </p>
           )}
         </div>
-        <div
-          className={clsx('flex items-center', book.progress ? 'justify-between' : 'justify-end')}
-          style={{
-            height: `${iconSize15}px`,
-            minHeight: `${iconSize15}px`,
-          }}
-        >
-          {book.progress && <ReadingProgress book={book} />}
-          <div className='flex items-center justify-center gap-x-8'>
+        <div>
+          <div className='flex items-center justify-center gap-x-3'>
+            {book.progress && <ReadingProgress book={book} />}
             {onReadBook && (
               <button
                 aria-label={_('Read Ebook')}
@@ -142,9 +136,9 @@ const BookItem: React.FC<BookItemProps> = ({
                 showBookDetailsModal(book);
               }}
             >
-              <div className='pt-[2px] sm:pt-[1px]'>
-                <LiaInfoCircleSolid size={iconSize15} />
-              </div>
+              <span className='rounded-full bg-base-300 px-[5px] py-[1px] text-[9px] font-semibold leading-tight text-base-content/70 hover:text-base-content'>
+                {_('Plus')}
+              </span>
             </button>
             {transferProgress !== null && transferProgress !== 100 && (
               <div

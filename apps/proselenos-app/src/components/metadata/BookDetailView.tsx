@@ -42,6 +42,7 @@ interface BookDetailViewProps {
   onXray?: () => void;
   onAudiobook?: () => void;
   onReadEpub?: () => void;
+  onHelp?: () => void;
 }
 
 const BookDetailView: React.FC<BookDetailViewProps> = ({
@@ -59,16 +60,17 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onDownloadPdfSquare,
   onXray,
   onAudiobook,
+  onHelp,
 }) => {
   const _ = useTranslation();
 
   return (
     <div className='relative w-full rounded-lg'>
-      <div className='mb-6 me-4 flex h-32 items-start'>
-        <div className='me-10 aspect-[28/41] h-32 shadow-lg'>
+      <div className='mb-6 me-4 flex min-h-32 items-start'>
+        <div className='me-4 sm:me-10 aspect-[28/41] h-32 shadow-lg'>
           <BookCover mode='list' book={book} />
         </div>
-        <div className='title-author flex h-32 flex-col justify-between'>
+        <div className='title-author flex min-h-32 flex-col justify-between'>
           <div>
             <p className='text-base-content mb-2 line-clamp-2 text-lg font-bold'>
               {formatTitle(book.title) || _('Untitled')}
@@ -77,65 +79,77 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
               {formatAuthors(book.author, book.primaryLanguage) || _('Unknown')}
             </p>
           </div>
-          <div className='flex flex-col gap-y-2'>
-            <div className='flex flex-wrap items-center gap-x-8'>
-              {onEdit && (
-                <button onClick={onEdit} title={_('Edit Ebook Metadata')}>
-                  <MdOutlineEdit className='fill-base-content hover:fill-blue-500' />
-                </button>
-              )}
-              {onDelete && (
-                <button onClick={onDelete} title={_('Remove ebook')}>
-                  <MdOutlineDelete className='fill-red-500 hover:fill-red-600' />
-                </button>
-              )}
-              {book.uploadedAt && onDownload && (
-                <button onClick={onDownload} title={_('Download from Private Ebooks')}>
-                  <MdOutlineCloudDownload className='fill-base-content' />
-                </button>
-              )}
-              {book.downloadedAt && onUpload && (
-                <button onClick={onUpload} title={_('Back up to Private Ebooks')}>
-                  <MdOutlineCloudUpload className='fill-base-content' />
-                </button>
-              )}
-              {onDownloadLocal && (
-                <button onClick={onDownloadLocal} title={_('Download authors epub')}>
-                  <MdOutlineFileDownload className='fill-base-content hover:fill-green-500' />
-                </button>
-              )}
-              {onDownloadBookseller && (
-                <button onClick={onDownloadBookseller} title={_('Download for booksellers (EPUBCheck-clean)')}>
-                  <MdOutlineStorefront className='fill-base-content hover:fill-orange-500' />
-                </button>
-              )}
-              {onXray && (
-                <button onClick={onXray} title={_('X-ray: View epub structure')}>
-                  <GiBoxUnpacking className='fill-base-content hover:fill-purple-500' />
-                </button>
-              )}
-            </div>
-            <div className='flex flex-wrap items-center gap-x-8'>
-              {onDownloadWebReady && (
-                <button onClick={onDownloadWebReady} title={_('Download web ready (zip)')}>
-                  <MdOutlineLanguage className='fill-base-content hover:fill-teal-500' />
-                </button>
-              )}
-              {onDownloadPdf && (
-                <button onClick={onDownloadPdf} title={_('Download 6x9 inch PDF (KDP)')}>
-                  <MdOutlinePictureAsPdf className='fill-base-content hover:fill-red-500' />
-                </button>
-              )}
-              {onDownloadPdfSquare && (
-                <button onClick={onDownloadPdfSquare} title={_('Download 8.5x8.5 inch PDF (KDP square)')}>
-                  <MdPictureAsPdf className='fill-base-content hover:fill-blue-500' />
-                </button>
-              )}
-              {onAudiobook && (
-                <button onClick={onAudiobook} title={_('Audiobook: Build and play')}>
-                  <MdOutlineHeadphones className='fill-base-content hover:fill-amber-500' />
-                </button>
-              )}
+          <div className='flex items-center gap-x-3 bg-base-200/50 rounded-lg px-3 py-2'>
+            {onHelp && (
+              <button
+                onClick={onHelp}
+                title={_('Icon guide')}
+                className='border border-base-300 rounded px-2 py-1 text-[11px] text-neutral-content hover:text-base-content font-medium'
+              >
+                {_('Help')}
+              </button>
+            )}
+            <div className='w-px self-stretch bg-base-300'></div>
+            <div className='flex flex-col gap-y-2'>
+              <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-8'>
+                {onEdit && (
+                  <button onClick={onEdit} title={_('Edit Ebook Metadata')}>
+                    <MdOutlineEdit className='fill-base-content hover:fill-blue-500' />
+                  </button>
+                )}
+                {onDelete && (
+                  <button onClick={onDelete} title={_('Remove ebook')}>
+                    <MdOutlineDelete className='fill-red-500 hover:fill-red-600' />
+                  </button>
+                )}
+                {book.uploadedAt && onDownload && (
+                  <button onClick={onDownload} title={_('Download from Private Ebooks')}>
+                    <MdOutlineCloudDownload className='fill-base-content' />
+                  </button>
+                )}
+                {book.downloadedAt && onUpload && (
+                  <button onClick={onUpload} title={_('Back up to Private Ebooks')}>
+                    <MdOutlineCloudUpload className='fill-base-content' />
+                  </button>
+                )}
+                {onDownloadLocal && (
+                  <button onClick={onDownloadLocal} title={_('Download authors epub')}>
+                    <MdOutlineFileDownload className='fill-base-content hover:fill-green-500' />
+                  </button>
+                )}
+                {onDownloadBookseller && (
+                  <button onClick={onDownloadBookseller} title={_('Download for booksellers (EPUBCheck-clean)')}>
+                    <MdOutlineStorefront className='fill-base-content hover:fill-orange-500' />
+                  </button>
+                )}
+                {onXray && (
+                  <button onClick={onXray} title={_('X-ray: View epub structure')}>
+                    <GiBoxUnpacking className='fill-base-content hover:fill-purple-500' />
+                  </button>
+                )}
+              </div>
+              <div className='flex flex-wrap items-center gap-x-3 sm:gap-x-8'>
+                {onDownloadWebReady && (
+                  <button onClick={onDownloadWebReady} title={_('Download web ready (zip)')}>
+                    <MdOutlineLanguage className='fill-base-content hover:fill-teal-500' />
+                  </button>
+                )}
+                {onDownloadPdf && (
+                  <button onClick={onDownloadPdf} title={_('Download 6x9 inch PDF (KDP)')}>
+                    <MdOutlinePictureAsPdf className='fill-base-content hover:fill-red-500' />
+                  </button>
+                )}
+                {onDownloadPdfSquare && (
+                  <button onClick={onDownloadPdfSquare} title={_('Download 8.5x8.5 inch PDF (KDP square)')}>
+                    <MdPictureAsPdf className='fill-base-content hover:fill-blue-500' />
+                  </button>
+                )}
+                {onAudiobook && (
+                  <button onClick={onAudiobook} title={_('Audiobook: Build and play')}>
+                    <MdOutlineHeadphones className='fill-base-content hover:fill-amber-500' />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
