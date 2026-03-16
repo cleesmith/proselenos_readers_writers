@@ -10,11 +10,10 @@ const config: Config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   safelist: [
-    { pattern: /bg-./ },
-    { pattern: /text-./ },
-    { pattern: /fill-./ },
-    { pattern: /decoration-./ },
-    { pattern: /tooltip-./ },
+    // BooknoteItem.tsx highlight colors (dynamic template literals)
+    'bg-red-500', 'bg-yellow-500', 'bg-green-500', 'bg-blue-500', 'bg-violet-500',
+    'decoration-red-400', 'decoration-yellow-400', 'decoration-green-400', 'decoration-blue-400', 'decoration-violet-400',
+    'bg-opacity-40',
   ],
   theme: {
     extend: {
