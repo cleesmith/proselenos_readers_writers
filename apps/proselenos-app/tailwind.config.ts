@@ -1,3 +1,5 @@
+// clean up too many unused themes and remove stuff from Readest clone
+
 import type { Config } from 'tailwindcss';
 import { themes } from './src/styles/themes';
 import daisyui from 'daisyui';
