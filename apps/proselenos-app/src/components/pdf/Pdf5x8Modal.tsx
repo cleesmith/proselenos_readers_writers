@@ -14,11 +14,11 @@ import {
   type PdfOptions,
 } from '@/lib/epub-to-pdf';
 import {
-  BookDocumentSquare,
+  BookDocument5x8,
   resetElementKeyCounter,
-} from '@/lib/epub-to-pdf-square';
+} from '@/lib/epub-to-pdf-5x8';
 
-interface PdfSquareModalProps {
+interface Pdf5x8ModalProps {
   book: Book;
   bookMeta: BookMetadata | null;
   isOpen: boolean;
@@ -32,7 +32,7 @@ interface Progress {
   percent: number;
 }
 
-const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen, onClose }) => {
+const Pdf5x8Modal: React.FC<Pdf5x8ModalProps> = ({ book, bookMeta, isOpen, onClose }) => {
   const { envConfig } = useEnv();
   const [phase, setPhase] = useState<Phase>('loading');
   const [progress, setProgress] = useState<Progress>({ message: 'Preparing...', percent: 0 });
@@ -88,7 +88,7 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
 
         if (cancelledRef.current) return;
 
-        setProgress({ message: 'Laying out square pages...', percent: 50 });
+        setProgress({ message: 'Laying out 5×8 pages...', percent: 50 });
 
         resetElementKeyCounter();
         const options: PdfOptions = {
@@ -98,7 +98,7 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
           copyrightHtml: copyrightHtml ?? undefined,
         };
 
-        const blob = await pdf(<BookDocumentSquare chapters={chapters} options={options} />).toBlob();
+        const blob = await pdf(<BookDocument5x8 chapters={chapters} options={options} />).toBlob();
 
         if (cancelledRef.current) return;
 
@@ -116,8 +116,8 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
         }, 800);
       } catch (err) {
         if (cancelledRef.current) return;
-        console.error('Square PDF generation failed:', err);
-        setError(err instanceof Error ? err.message : 'Square PDF generation failed');
+        console.error('5x8 PDF generation failed:', err);
+        setError(err instanceof Error ? err.message : '5x8 PDF generation failed');
         setPhase('error');
       }
     };
@@ -157,7 +157,7 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
               <line x1='9' y1='9' x2='15' y2='15' className='stroke-error' />
             </svg>
           </div>
-          <p className='text-error font-semibold mb-2'>Square PDF Generation Failed</p>
+          <p className='text-error font-semibold mb-2'>5x8 PDF Generation Failed</p>
           <p className='text-base-content/60 text-sm mb-4'>{error}</p>
           <button className='btn btn-ghost btn-sm' onClick={onClose}>
             Close
@@ -173,7 +173,7 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
       <div className='text-center max-w-sm px-4'>
         {/* PDF icon */}
         <div className='mb-4'>
-          <svg className='mx-auto text-red-700' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round'>
+          <svg className='mx-auto text-red-400' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round'>
             <path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' />
             <polyline points='14 2 14 8 20 8' />
             <line x1='16' y1='13' x2='8' y2='13' />
@@ -182,13 +182,13 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
           </svg>
         </div>
 
-        <h3 className='text-base-content font-semibold text-lg mb-2'>Building 8.5x8.5 inch PDF (KDP square)</h3>
+        <h3 className='text-base-content font-semibold text-lg mb-2'>Building 5x8 inch PDF</h3>
         <p className='text-base-content/60 text-sm mb-4'>{progress.message}</p>
 
-        {/* Progress bar — darker red gradient (8.5×8.5 square) */}
+        {/* Progress bar — lighter red gradient (5×8) */}
         <div className='w-full h-1.5 bg-base-300 rounded-full overflow-hidden mb-2'>
           <div
-            className='h-full bg-gradient-to-r from-red-800 to-red-600 rounded-full'
+            className='h-full bg-gradient-to-r from-red-500 to-red-300 rounded-full'
             style={{ width: `${progress.percent}%`, transition: 'width 0.3s' }}
           />
         </div>
@@ -208,4 +208,4 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
   );
 };
 
-export default PdfSquareModal;
+export default Pdf5x8Modal;

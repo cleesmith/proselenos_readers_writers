@@ -37,6 +37,7 @@ interface BookDetailViewProps {
   onDownloadLocal?: () => void;
   onDownloadBookseller?: () => void;
   onDownloadWebReady?: () => void;
+  onDownloadPdf5x8?: () => void;
   onDownloadPdf?: () => void;
   onDownloadPdfSquare?: () => void;
   onXray?: () => void;
@@ -56,6 +57,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onDownloadLocal,
   onDownloadBookseller,
   onDownloadWebReady,
+  onDownloadPdf5x8,
   onDownloadPdf,
   onDownloadPdfSquare,
   onXray,
@@ -134,6 +136,11 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
                     <MdOutlineLanguage className='fill-base-content hover:fill-teal-500' />
                   </button>
                 )}
+                {onDownloadPdf5x8 && (
+                  <button onClick={onDownloadPdf5x8} title={_('Download 5x8 inch PDF (KDP)')}>
+                    <MdPictureAsPdf className='fill-base-content hover:fill-red-400' />
+                  </button>
+                )}
                 {onDownloadPdf && (
                   <button onClick={onDownloadPdf} title={_('Download 6x9 inch PDF (KDP)')}>
                     <MdOutlinePictureAsPdf className='fill-base-content hover:fill-red-500' />
@@ -141,7 +148,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
                 )}
                 {onDownloadPdfSquare && (
                   <button onClick={onDownloadPdfSquare} title={_('Download 8.5x8.5 inch PDF (KDP square)')}>
-                    <MdPictureAsPdf className='fill-base-content hover:fill-blue-500' />
+                    <MdPictureAsPdf className='fill-base-content hover:fill-red-700' />
                   </button>
                 )}
                 {onAudiobook && (

@@ -62,12 +62,17 @@ const bottomRowItems: HelpItem[] = [
     description: 'Download your book formatted for web reading, with Scenecraft styling and audio.',
   },
   {
+    icon: <MdPictureAsPdf size={ICON_SIZE} className="fill-red-400" />,
+    name: 'Download 5x8 inch PDF (KDP)',
+    description: 'Generate a 5×8 inch print PDF for Amazon KDP. The most popular small paperback size.',
+  },
+  {
     icon: <MdOutlinePictureAsPdf size={ICON_SIZE} className="fill-red-500" />,
     name: 'Download 6x9 inch PDF (KDP)',
     description: 'Generate a 6×9 inch print PDF for Amazon KDP. Uses embedded EB Garamond fonts.',
   },
   {
-    icon: <MdPictureAsPdf size={ICON_SIZE} className="fill-blue-500" />,
+    icon: <MdPictureAsPdf size={ICON_SIZE} className="fill-red-700" />,
     name: 'Download 8.5x8.5 inch PDF (KDP square)',
     description: 'Generate an 8.5×8.5 inch square print PDF for Amazon KDP. Suited for illustrated works and photo books.',
   },

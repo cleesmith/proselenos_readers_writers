@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
   page: {
     paddingTop: 50,
     paddingBottom: 50,
-    paddingLeft: 54,
-    paddingRight: 45,
+    paddingLeft: 63,   // 0.875" — matches Vellum
+    paddingRight: 63,  // 0.875" — matches Vellum
     fontFamily: 'EBGaramond',
     fontSize: 11,
     lineHeight: 1.4,
@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
   header: {
     position: 'absolute',
     top: 25,
-    left: 54,
-    right: 45,
+    left: 63,
+    right: 63,
     textAlign: 'center',
     color: 'grey',
     fontSize: 9,

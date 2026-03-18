@@ -18,7 +18,7 @@ import BookDetailView from './BookDetailView';
 import BookDetailEdit from './BookDetailEdit';
 import { XrayModal } from '@/components/xray';
 import { AudiobookModal } from '@/components/audiobook';
-import { PdfModal, PdfSquareModal } from '@/components/pdf';
+import { PdfModal, Pdf5x8Modal, PdfSquareModal } from '@/components/pdf';
 import EbookPlusHelp from './EbookPlusHelp';
 import JSZip from 'jszip';
 import { stripEpubForBookseller } from '@/lib/bookseller-strip';
@@ -58,6 +58,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [showXray, setShowXray] = useState(false);
   const [showAudiobook, setShowAudiobook] = useState(false);
+  const [showPdf5x8, setShowPdf5x8] = useState(false);
   const [showPdf, setShowPdf] = useState(false);
   const [showPdfSquare, setShowPdfSquare] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -123,6 +124,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     setActiveDeleteAction(null);
     setShowXray(false);
     setShowAudiobook(false);
+    setShowPdf5x8(false);
     setShowPdf(false);
     setShowPdfSquare(false);
     setShowHelp(false);
@@ -210,6 +212,14 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const handleDownloadWebReady = async () => {
     const { isDarkMode } = useThemeStore.getState();
     await downloadBookAsWebReady(book, envConfig, isDarkMode);
+  };
+
+  const handlePdf5x8 = () => {
+    setShowPdf5x8(true);
+  };
+
+  const handleClosePdf5x8 = () => {
+    setShowPdf5x8(false);
   };
 
   const handlePdf = () => {
@@ -301,6 +311,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onDownloadLocal={book.hash === '__bookseller_temp__' ? undefined : handleDownloadLocal}
                 onDownloadBookseller={book.hash === '__bookseller_temp__' ? undefined : handleDownloadBookseller}
                 onDownloadWebReady={book.hash === '__bookseller_temp__' ? undefined : handleDownloadWebReady}
+                onDownloadPdf5x8={book.hash === '__bookseller_temp__' ? undefined : handlePdf5x8}
                 onDownloadPdf={book.hash === '__bookseller_temp__' ? undefined : handlePdf}
                 onDownloadPdfSquare={book.hash === '__bookseller_temp__' ? undefined : handlePdfSquare}
                 onXray={book.hash === '__bookseller_temp__' ? undefined : handleXray}
@@ -339,6 +350,13 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
         book={book}
         isOpen={showAudiobook}
         onClose={handleCloseAudiobook}
+      />
+
+      <Pdf5x8Modal
+        book={book}
+        bookMeta={bookMeta}
+        isOpen={showPdf5x8}
+        onClose={handleClosePdf5x8}
       />
 
       <PdfModal

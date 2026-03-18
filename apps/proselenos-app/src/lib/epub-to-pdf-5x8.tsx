@@ -1,8 +1,9 @@
-// epub-to-pdf-square.tsx
+// epub-to-pdf-5x8.tsx
 //
-// Client-side epub → 8.5×8.5 inch square PDF using JSZip + book-pdf
-// Cloned from epub-to-pdf.tsx — no page numbers, no running headers, no TOC.
-// Targeting children's books and art books on Amazon KDP.
+// Client-side epub → 5×8 inch PDF using JSZip + book-pdf
+// Cloned from epub-to-pdf.tsx — single continuous page flow with
+// running headers, page numbers, and table of contents.
+// Targeting Amazon KDP's most popular small paperback trim size.
 
 import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet, pdf } from 'book-pdf';
@@ -15,26 +16,35 @@ import {
 } from './epub-to-pdf';
 // Font registration handled by book-pdf (EBGaramond is the only font)
 
-// ─── Styles (square format: no header, pageNumber, toc styles) ───
+// ─── Styles (5×8 format) ───
 
 const styles = StyleSheet.create({
-  pageOdd: {
-    paddingTop: 27,
-    paddingBottom: 27,
-    paddingLeft: 63,   // 0.875" — matches Vellum
-    paddingRight: 63,  // 0.875" — matches Vellum
+  page: {
+    paddingTop: 45,
+    paddingBottom: 45,
+    paddingLeft: 63,
+    paddingRight: 63,
     fontFamily: 'EBGaramond',
     fontSize: 11,
     lineHeight: 1.4,
   },
-  pageEven: {
-    paddingTop: 27,
-    paddingBottom: 27,
-    paddingLeft: 63,   // 0.875" — matches Vellum
-    paddingRight: 63,  // 0.875" — matches Vellum
-    fontFamily: 'EBGaramond',
-    fontSize: 11,
-    lineHeight: 1.4,
+  header: {
+    position: 'absolute',
+    top: 22,
+    left: 63,
+    right: 63,
+    textAlign: 'center',
+    color: 'grey',
+    fontSize: 9,
+  },
+  pageNumber: {
+    position: 'absolute',
+    fontSize: 12,
+    top: 546,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: 'grey',
   },
   // Title page
   titlePage: {
@@ -43,55 +53,85 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bookTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontFamily: 'EBGaramond',
     fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 1.6,
-    marginBottom: 120,
+    marginBottom: 100,
   },
   bookAuthor: {
-    fontSize: 16,
-    fontFamily: 'EBGaramond',
+    fontSize: 15,
     fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: 30,
+    marginTop: 25,
   },
   // Copyright page
   copyrightPage: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: 60,
+    paddingBottom: 50,
   },
   copyrightText: {
     fontSize: 9,
-    fontFamily: 'EBGaramond',
     lineHeight: 1.6,
     marginBottom: 4,
   },
+  // TOC page
+  tocPage: {
+    paddingTop: 70,
+  },
+  tocHeading: {
+    fontSize: 16,
+    fontFamily: 'EBGaramond',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 25,
+  },
+  tocItem: {
+    fontSize: 11,
+    marginBottom: 8,
+  },
   // Content styles
   paragraph: {
-    fontFamily: 'EBGaramond',
     marginBottom: 10,
     textAlign: 'left',
   },
+  h1: {
+    fontSize: 18,
+    fontFamily: 'EBGaramond',
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  h2: {
+    fontSize: 15,
+    fontFamily: 'EBGaramond',
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  h3: {
+    fontSize: 13,
+    fontFamily: 'EBGaramond',
+    fontWeight: 'bold',
+    marginTop: 12,
+    marginBottom: 8,
+  },
   image: {
-    width: '100%',
-    maxHeight: 558,          // content height: 612 - 27 - 27
-    objectFit: 'contain',    // scale proportionally, never distort
+    width: 180,
+    marginVertical: 15,
+    alignSelf: 'center' as const,
   },
   sceneBreak: {
-    fontFamily: 'EBGaramond',
     textAlign: 'center',
     marginVertical: 15,
   },
   listItem: {
-    fontFamily: 'EBGaramond',
     marginBottom: 4,
     paddingLeft: 15,
   },
   blockquote: {
-    fontFamily: 'EBGaramond',
     paddingLeft: 20,
     fontStyle: 'italic',
     marginBottom: 10,
@@ -107,7 +147,7 @@ export function resetElementKeyCounter() {
 }
 
 function nextKey(): string {
-  return `sq-${elementKeyCounter++}`;
+  return `f8-${elementKeyCounter++}`;
 }
 
 function convertHtmlToElements(html: string): React.ReactNode[] {
@@ -151,12 +191,16 @@ function convertNode(node: Node): React.ReactNode {
     }
 
     case 'h1':
+      return <Text key={nextKey()} style={styles.h1}>{el.textContent ?? ''}</Text>;
+
     case 'h2':
+      return <Text key={nextKey()} style={styles.h2}>{el.textContent ?? ''}</Text>;
+
     case 'h3':
     case 'h4':
     case 'h5':
     case 'h6':
-      return null;
+      return <Text key={nextKey()} style={styles.h3}>{el.textContent ?? ''}</Text>;
 
     case 'img': {
       const src = el.getAttribute('src');
@@ -168,12 +212,12 @@ function convertNode(node: Node): React.ReactNode {
     case 'hr':
       return (
         <View key={nextKey()} style={styles.sceneBreak}>
-          <Text style={{ fontFamily: 'EBGaramond' }}>* * *</Text>
+          <Text>* * *</Text>
         </View>
       );
 
     case 'br':
-      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond' }}>{'\n'}</Text>;
+      return <Text key={nextKey()}>{'\n'}</Text>;
 
     case 'ul':
     case 'ol': {
@@ -197,7 +241,7 @@ function convertNode(node: Node): React.ReactNode {
       const inlineContent = collectInlineContent(el);
       return (
         <View key={nextKey()} style={styles.blockquote}>
-          <Text style={{ fontFamily: 'EBGaramond' }}>{inlineContent}</Text>
+          <Text>{inlineContent}</Text>
         </View>
       );
     }
@@ -212,6 +256,7 @@ function convertNode(node: Node): React.ReactNode {
     case 'main':
     case 'header':
     case 'footer': {
+      // Block-level containers: recursively convert children
       const children = convertChildren(el);
       if (children.length === 0) return null;
       return <View key={nextKey()}>{children}</View>;
@@ -219,7 +264,7 @@ function convertNode(node: Node): React.ReactNode {
 
     case 'em':
     case 'i':
-      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond', fontStyle: 'italic' }}>{el.textContent ?? ''}</Text>;
+      return <Text key={nextKey()} style={{ fontStyle: 'italic' }}>{el.textContent ?? ''}</Text>;
 
     case 'strong':
     case 'b':
@@ -231,9 +276,10 @@ function convertNode(node: Node): React.ReactNode {
     case 'sub':
     case 'u':
     case 'a':
-      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond' }}>{el.textContent ?? ''}</Text>;
+      return <Text key={nextKey()}>{el.textContent ?? ''}</Text>;
 
     default: {
+      // Unknown element: render children as fallback
       const children = convertChildren(el);
       if (children.length === 0) return null;
       if (children.length === 1) return children[0];
@@ -242,6 +288,10 @@ function convertNode(node: Node): React.ReactNode {
   }
 }
 
+/**
+ * Collects inline content from an element, preserving bold/italic
+ * as nested <Text> elements (which book-pdf supports for inline styling).
+ */
 function collectInlineContent(el: Element): React.ReactNode[] {
   const results: React.ReactNode[] = [];
 
@@ -260,7 +310,7 @@ function collectInlineContent(el: Element): React.ReactNode[] {
       case 'em':
       case 'i':
         results.push(
-          <Text key={nextKey()} style={{ fontFamily: 'EBGaramond', fontStyle: 'italic' }}>{childEl.textContent ?? ''}</Text>
+          <Text key={nextKey()} style={{ fontStyle: 'italic' }}>{childEl.textContent ?? ''}</Text>
         );
         break;
       case 'strong':
@@ -273,9 +323,12 @@ function collectInlineContent(el: Element): React.ReactNode[] {
         results.push('\n');
         break;
       case 'img': {
+        // Images can't be nested inside <Text>, so we skip them in inline context.
+        // They'll be handled at block level if the parent is a block container.
         break;
       }
       default:
+        // For any other inline-ish element, just grab text content
         results.push(childEl.textContent ?? '');
         break;
     }
@@ -284,49 +337,66 @@ function collectInlineContent(el: Element): React.ReactNode[] {
   return results;
 }
 
-// ─── BookDocumentSquare component (no header, no page numbers, no TOC) ───
+// ─── BookDocument5x8 component ───
 
-export const BookDocumentSquare: React.FC<{
+export const BookDocument5x8: React.FC<{
   chapters: ChapterData[];
   options: PdfOptions;
 }> = ({ chapters, options }) => {
+  const includeToc = options.includeToc !== false;
+
   return (
     <Document>
-      {/* Page 1 (odd/recto): Title Page */}
-      <Page size={[612, 612]} style={styles.pageOdd}>
+      <Page size={[360, 576]} style={styles.page}>
+        {/* Running header: hidden on first few pages */}
+        <Text style={styles.header} fixed render={({ pageNumber }: { pageNumber: number }) => {
+          if (pageNumber <= 3) return '';
+          return pageNumber % 2 === 0 ? options.author : options.title;
+        }} />
+
+        {/* Title Page */}
         <View style={styles.titlePage}>
           <Text style={styles.bookTitle}>{options.title}</Text>
           <Text style={styles.bookAuthor}>{options.author}</Text>
         </View>
-      </Page>
 
-      {/* Page 2 (even/verso): Copyright Page — only if the epub has one */}
-      {options.copyrightHtml && (
-        <Page size={[612, 612]} style={styles.pageEven}>
-          <View style={styles.copyrightPage}>
+        {/* Copyright Page — only if the epub has one */}
+        {options.copyrightHtml && (
+          <View break style={styles.copyrightPage}>
             {convertHtmlToElements(options.copyrightHtml)}
           </View>
-        </Page>
-      )}
+        )}
 
-      {/* Chapters — each starts on a new page, alternating odd/even */}
-      {chapters.map((ch, i) => {
-        const pageNum = i + 3;
-        const pageStyle = pageNum % 2 === 1 ? styles.pageOdd : styles.pageEven;
-        return (
-          <Page size={[612, 612]} style={pageStyle} key={ch.id}>
-            <View style={{ flex: 1 }}>{convertHtmlToElements(ch.html)}</View>
-          </Page>
-        );
-      })}
+        {/* Table of Contents */}
+        {includeToc && (
+          <View break style={styles.tocPage}>
+            <Text style={styles.tocHeading}>Contents</Text>
+            {chapters.map((ch, i) => (
+              <Text key={i} style={styles.tocItem}>{ch.title}</Text>
+            ))}
+          </View>
+        )}
+
+        {/* Chapters — each starts on a new page */}
+        {chapters.map((ch) => (
+          <View break key={ch.id}>
+            {convertHtmlToElements(ch.html)}
+          </View>
+        ))}
+
+        {/* Page numbers: hidden on page 1 */}
+        <Text style={styles.pageNumber} fixed render={({ pageNumber }: { pageNumber: number }) => {
+          if (pageNumber === 1) return '';
+          return String(pageNumber);
+        }} />
+      </Page>
     </Document>
   );
 };
 
 // ─── Public API ───
-// No post-processing needed — book-pdf only produces EBGaramond fonts
 
-export async function generatePdfFromEpubSquare(
+export async function generatePdfFromEpub5x8(
   epubData: ArrayBuffer,
   options: PdfOptions
 ): Promise<void> {
@@ -340,10 +410,7 @@ export async function generatePdfFromEpubSquare(
     throw new Error('No chapter content found in epub');
   }
 
-  const blob = await pdf(
-    <BookDocumentSquare chapters={chapters} options={options} />
-  ).toBlob();
-
+  const blob = await pdf(<BookDocument5x8 chapters={chapters} options={options} />).toBlob();
   const url = URL.createObjectURL(blob);
   window.open(url, '_blank');
 }
