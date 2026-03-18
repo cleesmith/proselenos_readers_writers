@@ -80,21 +80,27 @@ export async function generateWebReadyZip(options: WebReadyOptions): Promise<Blo
     imagesFolder.file(coverFilename, coverImage, { compression: 'STORE' });
   }
 
-  // Content images
-  const imageFilenames = new Set<string>();
+  // Content images: sequential names (001.jpg, 002.png, ...)
+  const imageMap = new Map<string, string>();
+  let imgCounter = 0;
   if (images) {
     for (const img of images) {
-      imagesFolder.file(img.filename, img.blob, { compression: 'STORE' });
-      imageFilenames.add(img.filename);
+      const ext = img.filename.slice(img.filename.lastIndexOf('.')).toLowerCase();
+      const seqName = String(++imgCounter).padStart(3, '0') + ext;
+      imageMap.set(img.filename, seqName);
+      imagesFolder.file(seqName, img.blob, { compression: 'STORE' });
     }
   }
 
-  // Audio files
-  const audioFilenames = new Set<string>();
+  // Audio files: sequential names (001.mp3, 002.mp3, ...)
+  const audioMap = new Map<string, string>();
+  let audCounter = 0;
   if (audios) {
     for (const aud of audios) {
-      audioFolder.file(aud.filename, aud.blob, { compression: 'STORE' });
-      audioFilenames.add(aud.filename);
+      const ext = aud.filename.slice(aud.filename.lastIndexOf('.')).toLowerCase();
+      const seqName = String(++audCounter).padStart(3, '0') + ext;
+      audioMap.set(aud.filename, seqName);
+      audioFolder.file(seqName, aud.blob, { compression: 'STORE' });
     }
   }
 
@@ -103,6 +109,7 @@ export async function generateWebReadyZip(options: WebReadyOptions): Promise<Blo
   const html = buildIndexHtml({
     title, author, year, sections, isDarkMode,
     coverFilename, subtitle, publisher,
+    imageMap, audioMap,
   });
 
   folder.file('index.html', html, { compression: 'DEFLATE' });
@@ -113,6 +120,7 @@ export async function generateWebReadyZip(options: WebReadyOptions): Promise<Blo
     const autoplayHtml = buildAutoplayHtml({
       title, author, year, sections, isDarkMode,
       coverFilename, subtitle, publisher,
+      imageMap, audioMap,
     });
     folder.file('autoplay.html', autoplayHtml, { compression: 'DEFLATE' });
   }
@@ -134,10 +142,12 @@ interface BuildHtmlOptions {
   coverFilename?: string;
   subtitle?: string;
   publisher?: string;
+  imageMap?: Map<string, string>;
+  audioMap?: Map<string, string>;
 }
 
 function buildIndexHtml(opts: BuildHtmlOptions): string {
-  const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher } = opts;
+  const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher, imageMap, audioMap } = opts;
 
   // Reset the global enlarge counter for each new HTML build
   globalEnlargeCounter = 0;
@@ -159,14 +169,22 @@ function buildIndexHtml(opts: BuildHtmlOptions): string {
     // SceneCraft sections
     if (section.sceneCraftConfig) {
       hasAnySceneCraft = true;
-      sectionHtmls.push(generateSceneCraftHtml(
-        section.title, section.content, section.sceneCraftConfig, i
-      ));
+      let scHtml = generateSceneCraftHtml(
+        section.title, section.content, section.sceneCraftConfig, i,
+        imageMap, audioMap
+      );
+      if (imageMap?.size || audioMap?.size) {
+        scHtml = remapMediaPaths(scHtml, imageMap ?? new Map(), audioMap ?? new Map());
+      }
+      sectionHtmls.push(scHtml);
       continue;
     }
 
     let contentHtml = processContent(section.content);
     contentHtml = normalizeMediaPaths(contentHtml);
+    if (imageMap?.size || audioMap?.size) {
+      contentHtml = remapMediaPaths(contentHtml, imageMap ?? new Map(), audioMap ?? new Map());
+    }
     contentHtml = deduplicateEnlargeIds(contentHtml, i);
     contentHtml = addTargetBlank(contentHtml);
 
@@ -298,7 +316,7 @@ ${sceneCraftJsBlock}
 // ── Autoplay variant: passive viewer with auto-scroll ─────────────────────
 
 function buildAutoplayHtml(opts: BuildHtmlOptions): string {
-  const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher } = opts;
+  const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher, imageMap, audioMap } = opts;
 
   // Reset the global enlarge counter for each new HTML build
   globalEnlargeCounter = 0;
@@ -320,14 +338,22 @@ function buildAutoplayHtml(opts: BuildHtmlOptions): string {
     // SceneCraft sections — use autoplay variant (no playhead)
     if (section.sceneCraftConfig) {
       hasAnySceneCraft = true;
-      sectionHtmls.push(generateAutoplaySceneCraftHtml(
-        section.title, section.content, section.sceneCraftConfig, i
-      ));
+      let scHtml = generateAutoplaySceneCraftHtml(
+        section.title, section.content, section.sceneCraftConfig, i,
+        imageMap, audioMap
+      );
+      if (imageMap?.size || audioMap?.size) {
+        scHtml = remapMediaPaths(scHtml, imageMap ?? new Map(), audioMap ?? new Map());
+      }
+      sectionHtmls.push(scHtml);
       continue;
     }
 
     let contentHtml = processContent(section.content);
     contentHtml = normalizeMediaPaths(contentHtml);
+    if (imageMap?.size || audioMap?.size) {
+      contentHtml = remapMediaPaths(contentHtml, imageMap ?? new Map(), audioMap ?? new Map());
+    }
     contentHtml = deduplicateEnlargeIds(contentHtml, i);
     contentHtml = addTargetBlank(contentHtml);
 
@@ -701,6 +727,70 @@ function normalizeAudioSrc(src: string): string {
 }
 
 /**
+ * Deep-clone a SceneCraft config and remap all media filenames to sequential names.
+ */
+function remapSceneCraftConfig(
+  config: SceneCraftConfig,
+  imageMap: Map<string, string>,
+  audioMap: Map<string, string>,
+): SceneCraftConfig {
+  const c = JSON.parse(JSON.stringify(config)) as SceneCraftConfig;
+  if (c.wallpaperFilename && imageMap.has(c.wallpaperFilename)) {
+    c.wallpaperFilename = imageMap.get(c.wallpaperFilename)!;
+  }
+  if (c.ambientFilename && audioMap.has(c.ambientFilename)) {
+    c.ambientFilename = audioMap.get(c.ambientFilename)!;
+  }
+  if (c.narrationFilename && audioMap.has(c.narrationFilename)) {
+    c.narrationFilename = audioMap.get(c.narrationFilename)!;
+  }
+  if (c.dialogueClips) {
+    for (const key of Object.keys(c.dialogueClips)) {
+      const clip = c.dialogueClips[Number(key)];
+      if (clip?.filename && audioMap.has(clip.filename)) {
+        clip.filename = audioMap.get(clip.filename)!;
+      }
+    }
+  }
+  if (c.stickyClips) {
+    for (const key of Object.keys(c.stickyClips)) {
+      const clip = c.stickyClips[Number(key)];
+      if (clip?.filename && audioMap.has(clip.filename)) {
+        clip.filename = audioMap.get(clip.filename)!;
+      }
+    }
+  }
+  if (c.paraClips) {
+    for (const key of Object.keys(c.paraClips)) {
+      const clip = c.paraClips[Number(key)];
+      if (clip?.filename && audioMap.has(clip.filename)) {
+        clip.filename = audioMap.get(clip.filename)!;
+      }
+    }
+  }
+  return c;
+}
+
+/**
+ * Replace original media paths in HTML content with sequential filenames.
+ * Catches <img src="images/...">, <audio src="audio/...">, url(images/...) etc.
+ */
+function remapMediaPaths(
+  html: string,
+  imageMap: Map<string, string>,
+  audioMap: Map<string, string>,
+): string {
+  let result = html;
+  for (const [orig, seq] of imageMap) {
+    result = result.replaceAll(`images/${orig}`, `images/${seq}`);
+  }
+  for (const [orig, seq] of audioMap) {
+    result = result.replaceAll(`audio/${orig}`, `audio/${seq}`);
+  }
+  return result;
+}
+
+/**
  * Generate SceneCraft HTML for a section — using relative paths instead of data URLs.
  */
 function generateSceneCraftHtml(
@@ -708,38 +798,45 @@ function generateSceneCraftHtml(
   xhtml: string,
   config: SceneCraftConfig,
   sectionIndex: number,
+  imageMap?: Map<string, string>,
+  audioMap?: Map<string, string>,
 ): string {
   const elements = parseSceneElements(xhtml);
 
+  // Remap config filenames to sequential names if maps provided
+  const cfg = (imageMap?.size || audioMap?.size)
+    ? remapSceneCraftConfig(config, imageMap ?? new Map(), audioMap ?? new Map())
+    : config;
+
   // Build data attributes for media — use relative paths
   const dataAttrs: string[] = [];
-  dataAttrs.push(`data-sc-config='${escapeHtml(JSON.stringify(config))}'`);
+  dataAttrs.push(`data-sc-config='${escapeHtml(JSON.stringify(cfg))}'`);
   dataAttrs.push(`data-sc-title="${escapeHtml(sectionTitle)}"`);
 
-  if (config.wallpaperFilename) {
-    const safeKey = config.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_');
-    dataAttrs.push(`data-sc-img_${safeKey}="images/${config.wallpaperFilename}"`);
+  if (cfg.wallpaperFilename) {
+    const safeKey = cfg.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    dataAttrs.push(`data-sc-img_${safeKey}="images/${cfg.wallpaperFilename}"`);
   }
   const audioFiles = new Set<string>();
-  if (config.ambientFilename) audioFiles.add(config.ambientFilename);
-  if (config.narrationFilename) audioFiles.add(config.narrationFilename);
-  if (config.dialogueClips) {
-    Object.values(config.dialogueClips).forEach(clip => {
+  if (cfg.ambientFilename) audioFiles.add(cfg.ambientFilename);
+  if (cfg.narrationFilename) audioFiles.add(cfg.narrationFilename);
+  if (cfg.dialogueClips) {
+    Object.values(cfg.dialogueClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
     });
   }
-  if (config.stickyClips) {
-    Object.values(config.stickyClips).forEach(clip => {
+  if (cfg.stickyClips) {
+    Object.values(cfg.stickyClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
     });
   }
-  if (config.paraClips) {
-    Object.values(config.paraClips).forEach(clip => {
+  if (cfg.paraClips) {
+    Object.values(cfg.paraClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
     });
   }
   audioFiles.forEach(fn => {
-    const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_');
+    const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     dataAttrs.push(`data-sc-aud_${safeKey}="audio/${fn}"`);
   });
 
@@ -845,38 +942,45 @@ function generateAutoplaySceneCraftHtml(
   xhtml: string,
   config: SceneCraftConfig,
   sectionIndex: number,
+  imageMap?: Map<string, string>,
+  audioMap?: Map<string, string>,
 ): string {
   const elements = parseSceneElements(xhtml);
 
+  // Remap config filenames to sequential names if maps provided
+  const cfg = (imageMap?.size || audioMap?.size)
+    ? remapSceneCraftConfig(config, imageMap ?? new Map(), audioMap ?? new Map())
+    : config;
+
   // Build data attributes for media — use relative paths
   const dataAttrs: string[] = [];
-  dataAttrs.push(`data-sc-config='${escapeHtml(JSON.stringify(config))}'`);
+  dataAttrs.push(`data-sc-config='${escapeHtml(JSON.stringify(cfg))}'`);
   dataAttrs.push(`data-sc-title="${escapeHtml(sectionTitle)}"`);
 
-  if (config.wallpaperFilename) {
-    const safeKey = config.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_');
-    dataAttrs.push(`data-sc-img_${safeKey}="images/${config.wallpaperFilename}"`);
+  if (cfg.wallpaperFilename) {
+    const safeKey = cfg.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    dataAttrs.push(`data-sc-img_${safeKey}="images/${cfg.wallpaperFilename}"`);
   }
   const audioFiles = new Set<string>();
-  if (config.ambientFilename) audioFiles.add(config.ambientFilename);
-  if (config.narrationFilename) audioFiles.add(config.narrationFilename);
-  if (config.dialogueClips) {
-    Object.values(config.dialogueClips).forEach(clip => {
+  if (cfg.ambientFilename) audioFiles.add(cfg.ambientFilename);
+  if (cfg.narrationFilename) audioFiles.add(cfg.narrationFilename);
+  if (cfg.dialogueClips) {
+    Object.values(cfg.dialogueClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
     });
   }
-  if (config.stickyClips) {
-    Object.values(config.stickyClips).forEach(clip => {
+  if (cfg.stickyClips) {
+    Object.values(cfg.stickyClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
     });
   }
-  if (config.paraClips) {
-    Object.values(config.paraClips).forEach(clip => {
+  if (cfg.paraClips) {
+    Object.values(cfg.paraClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
     });
   }
   audioFiles.forEach(fn => {
-    const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_');
+    const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     dataAttrs.push(`data-sc-aud_${safeKey}="audio/${fn}"`);
   });
 
@@ -1610,7 +1714,7 @@ const SCENECRAFT_JS = `
 
         // Wallpaper
         if (c.wallpaperFilename && s.bgEl) {
-          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (url) {
             s.bgEl.style.backgroundImage = "url('" + url + "')";
             s.bgEl.style.backgroundPosition = c.wallpaperPosition || 'center';
@@ -1621,7 +1725,7 @@ const SCENECRAFT_JS = `
         // Ambient audio
         s.ambientOut = killAudio(s.ambientOut);
         if (c.ambientFilename) {
-          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (aUrl) {
             var a = new Audio(aUrl);
             a.loop = !!c.ambientLoop;
@@ -1632,7 +1736,7 @@ const SCENECRAFT_JS = `
         // Narration voice
         s.voiceOut = killAudio(s.voiceOut);
         if (c.voiceMode === 'narration' && c.narrationFilename) {
-          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (nUrl) {
             var n = new Audio(nUrl);
             s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
@@ -1717,7 +1821,7 @@ const SCENECRAFT_JS = `
               if (currentDlg >= 0 && c.dialogueClips) {
                 var clip = c.dialogueClips[currentDlg];
                 if (clip && clip.filename) {
-                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (dUrl) {
                     var da = new Audio(dUrl);
                     s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
@@ -1747,7 +1851,7 @@ const SCENECRAFT_JS = `
               if (currentStk >= 0 && c.stickyClips) {
                 var sClip = c.stickyClips[currentStk];
                 if (sClip && sClip.filename) {
-                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (sUrl) {
                     var sa = new Audio(sUrl);
                     s.stkObj = createFadeIn(sa, sClip.volume || c.stickyVolume || 0.8, DLG_FADE);
@@ -1778,7 +1882,7 @@ const SCENECRAFT_JS = `
               if (currentPara >= 0 && c.paraClips) {
                 var pClip = c.paraClips[currentPara];
                 if (pClip && pClip.filename) {
-                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (pUrl) {
                     var pa = new Audio(pUrl);
                     s.paraObj = createFadeIn(pa, pClip.volume || c.paraVolume || 0.8, DLG_FADE);
@@ -2246,7 +2350,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
 
         // Wallpaper
         if (c.wallpaperFilename && s.bgEl) {
-          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (url) {
             s.bgEl.style.backgroundImage = "url('" + url + "')";
             s.bgEl.style.backgroundPosition = c.wallpaperPosition || 'center';
@@ -2257,7 +2361,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
         // Ambient audio
         s.ambientOut = killAudio(s.ambientOut);
         if (c.ambientFilename) {
-          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (aUrl) {
             var a = new Audio(aUrl);
             a.loop = !!c.ambientLoop;
@@ -2268,7 +2372,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
         // Narration voice
         s.voiceOut = killAudio(s.voiceOut);
         if (c.voiceMode === 'narration' && c.narrationFilename) {
-          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (nUrl) {
             var n = new Audio(nUrl);
             s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
@@ -2357,7 +2461,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
               if (currentDlg >= 0 && c.dialogueClips) {
                 var clip = c.dialogueClips[currentDlg];
                 if (clip && clip.filename) {
-                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (dUrl) {
                     var da = new Audio(dUrl);
                     s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
@@ -2387,7 +2491,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
               if (currentStk >= 0 && c.stickyClips) {
                 var sClip = c.stickyClips[currentStk];
                 if (sClip && sClip.filename) {
-                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (sUrl) {
                     var sa = new Audio(sUrl);
                     s.stkObj = createFadeIn(sa, sClip.volume || c.stickyVolume || 0.8, DLG_FADE);
@@ -2418,7 +2522,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
               if (currentPara >= 0 && c.paraClips) {
                 var pClip = c.paraClips[currentPara];
                 if (pClip && pClip.filename) {
-                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (pUrl) {
                     var pa = new Audio(pUrl);
                     s.paraObj = createFadeIn(pa, pClip.volume || c.paraVolume || 0.8, DLG_FADE);

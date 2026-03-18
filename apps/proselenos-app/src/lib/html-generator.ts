@@ -791,7 +791,7 @@ const SCENECRAFT_JS = `
 
         // Wallpaper
         if (c.wallpaperFilename && s.bgEl) {
-          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var url = s.el.dataset['scImg_' + c.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (url) {
             s.bgEl.style.backgroundImage = "url('" + url + "')";
             s.bgEl.style.backgroundPosition = c.wallpaperPosition || 'center';
@@ -802,7 +802,7 @@ const SCENECRAFT_JS = `
         // Ambient audio
         s.ambientOut = killAudio(s.ambientOut);
         if (c.ambientFilename) {
-          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var aUrl = s.el.dataset['scAud_' + c.ambientFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (aUrl) {
             var a = new Audio(aUrl);
             a.loop = !!c.ambientLoop;
@@ -813,7 +813,7 @@ const SCENECRAFT_JS = `
         // Narration voice
         s.voiceOut = killAudio(s.voiceOut);
         if (c.voiceMode === 'narration' && c.narrationFilename) {
-          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_')];
+          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
           if (nUrl) {
             var n = new Audio(nUrl);
             s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
@@ -898,7 +898,7 @@ const SCENECRAFT_JS = `
               if (currentDlg >= 0 && c.dialogueClips) {
                 var clip = c.dialogueClips[currentDlg];
                 if (clip && clip.filename) {
-                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var dUrl = s.el.dataset['scAud_' + clip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (dUrl) {
                     var da = new Audio(dUrl);
                     s.dlgObj = createFadeIn(da, clip.volume || c.dialogueVolume || 0.8, DLG_FADE);
@@ -929,7 +929,7 @@ const SCENECRAFT_JS = `
               if (currentStk >= 0 && c.stickyClips) {
                 var sClip = c.stickyClips[currentStk];
                 if (sClip && sClip.filename) {
-                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var sUrl = s.el.dataset['scAud_' + sClip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (sUrl) {
                     var sa = new Audio(sUrl);
                     s.stkObj = createFadeIn(sa, sClip.volume || c.stickyVolume || 0.8, DLG_FADE);
@@ -960,7 +960,7 @@ const SCENECRAFT_JS = `
               if (currentPara >= 0 && c.paraClips) {
                 var pClip = c.paraClips[currentPara];
                 if (pClip && pClip.filename) {
-                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_')];
+                  var pUrl = s.el.dataset['scAud_' + pClip.filename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
                   if (pUrl) {
                     var pa = new Audio(pUrl);
                     s.paraObj = createFadeIn(pa, pClip.volume || c.paraVolume || 0.8, DLG_FADE);
@@ -1315,7 +1315,7 @@ function generateSceneCraftHtml(
     if (config.wallpaperFilename) {
       const url = mediaDataUrls[`images/${config.wallpaperFilename}`];
       if (url) {
-        const safeKey = config.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_');
+        const safeKey = config.wallpaperFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
         dataAttrs.push(`data-sc-img_${safeKey}="${url}"`);
       }
     }
@@ -1340,7 +1340,7 @@ function generateSceneCraftHtml(
     audioFiles.forEach(fn => {
       const url = mediaDataUrls[`audio/${fn}`];
       if (url) {
-        const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_');
+        const safeKey = fn.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
         dataAttrs.push(`data-sc-aud_${safeKey}="${url}"`);
       }
     });
