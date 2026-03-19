@@ -20,6 +20,7 @@ export interface Chapter {
   paragraphs: string[];  // Same as content (legacy)
   xhtml?: string;        // XHTML content (single source of truth)
   sceneCraftConfig?: SceneCraftConfig;  // SceneCraft immersive scene config
+  type?: string;
 }
 
 /**
@@ -156,6 +157,7 @@ export async function generateEpubFromWorkingCopy(
       paragraphs: paragraphs,  // Legacy
       xhtml: normalizedXhtml,  // XHTML source of truth (normalized)
       sceneCraftConfig: section.sceneCraftConfig,  // SceneCraft immersive config
+      type: section.type,
     };
 
     // No Matter sections go to separate array
@@ -356,20 +358,17 @@ async function generateEPUB(
     zip.file('OEBPS/about-author.xhtml', aboutAuthorHTML);
   }
 
-  // 8b. Embed SceneCraft meta.json (so enhanced HTML can recreate immersive scenes)
+  // 8b. Embed meta.json with section types + SceneCraft configs (for round-trip fidelity)
   const allChapters = [...chapters, ...(noMatterSections || [])];
-  const sceneCraftMeta = {
-    sections: allChapters
-      .filter(ch => ch.sceneCraftConfig)
-      .map(ch => ({
-        id: ch.id,
-        title: ch.title,
-        sceneCraftConfig: ch.sceneCraftConfig,
-      })),
+  const epubMeta = {
+    sections: allChapters.map(ch => ({
+      id: ch.id,
+      title: ch.title,
+      type: ch.type,
+      ...(ch.sceneCraftConfig ? { sceneCraftConfig: ch.sceneCraftConfig } : {}),
+    })),
   };
-  if (sceneCraftMeta.sections.length > 0) {
-    zip.file('OEBPS/meta.json', JSON.stringify(sceneCraftMeta, null, 2));
-  }
+  zip.file('OEBPS/meta.json', JSON.stringify(epubMeta, null, 2));
 
   // 9. Create content.opf (EPUB 3.0 format) with all new items
   // Pass the shared UUID and cover image info for correct media-type

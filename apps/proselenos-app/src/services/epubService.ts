@@ -5,7 +5,7 @@
 // PlateJS conversion happens only when editor loads a section.
 
 import JSZip from 'jszip';
-import { ElementType } from '@/app/authors/elementTypes';
+import { ElementType, normalizeElementType } from '@/app/authors/elementTypes';
 import type { SceneCraftConfig } from '@/services/manuscriptStorage';
 
 // XHTML-Native: Section now stores raw XHTML as single source of truth
@@ -83,7 +83,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
   const { title, author, language, publisher, manifest, spine, coverImageId } = parseContentOpf(contentOpf);
 
   // Extract SceneCraft meta.json if present (embedded by generateEPUB)
-  let sceneCraftMeta: { sections: Array<{ id: string; title: string; sceneCraftConfig: SceneCraftConfig }> } | null = null;
+  let sceneCraftMeta: { sections: Array<{ id: string; title: string; type?: string; sceneCraftConfig?: SceneCraftConfig }> } | null = null;
   const metaJsonFile = zip.file('OEBPS/meta.json');
   if (metaJsonFile) {
     try {
@@ -177,9 +177,18 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     }
 
     // If linear="no", this is No Matter content (non-linear in reading flow)
-    const sectionType: ElementType = spineItem.linear === false
-      ? 'no-matter'
-      : inferSectionType(sectionTitle);
+    // Otherwise, prefer type from meta.json (round-trip fidelity), fall back to inferSectionType
+    let sectionType: ElementType;
+    if (spineItem.linear === false) {
+      sectionType = 'no-matter';
+    } else {
+      const metaMatch = sceneCraftMeta?.sections.find(
+        m => m.id === spineItem.idref || m.title === sectionTitle
+      );
+      sectionType = metaMatch?.type
+        ? normalizeElementType(metaMatch.type)
+        : inferSectionType(sectionTitle);
+    }
 
     // Match SceneCraft config from meta.json by section id or title
     let sectionSceneCraft: SceneCraftConfig | undefined;
