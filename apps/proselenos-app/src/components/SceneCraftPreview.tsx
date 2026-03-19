@@ -108,7 +108,6 @@ export default function SceneCraftPreview({
       const cache = new Map<string, string>();
       const toResolve: string[] = [];
       if (config.ambientFilename) toResolve.push(config.ambientFilename);
-      if (config.narrationFilename) toResolve.push(config.narrationFilename);
       Object.values(config.dialogueClips).forEach(clip => {
         if (clip.filename) toResolve.push(clip.filename);
       });
@@ -215,15 +214,6 @@ export default function SceneCraftPreview({
           }
         }
 
-        // Narration voice
-        pvVoiceOut.current = killAudio(pvVoiceOut.current);
-        if (c.voiceMode === 'narration' && c.narrationFilename) {
-          const url = audioUrlCache.current.get(c.narrationFilename);
-          if (url) {
-            const a = new Audio(url);
-            pvVoice.current = fadeIn(a, c.narrationVolume, c.fadeIn);
-          }
-        }
       }
 
       function doExit() {
@@ -234,8 +224,6 @@ export default function SceneCraftPreview({
 
         // Ambient fade out
         if (pvAmbient.current) { pvAmbientOut.current = fadeOut(pvAmbient.current, c.fadeOut); pvAmbient.current = null; }
-        // Narration fade out
-        if (pvVoice.current) { pvVoiceOut.current = fadeOut(pvVoice.current, c.fadeOut); pvVoice.current = null; }
         // Stop all dialogue
         dlgFadeObj.current = killAudio(dlgFadeObj.current);
         dlgFadeOut.current = killAudio(dlgFadeOut.current);
@@ -296,7 +284,7 @@ export default function SceneCraftPreview({
         }
 
         // Per-dialogue voice
-        if (inScene && c.voiceMode === 'dialogue') {
+        if (inScene) {
           let currentDialogueIdx = -1;
           blocks.forEach(b => {
             const r = b.getBoundingClientRect();
@@ -329,7 +317,7 @@ export default function SceneCraftPreview({
           }
         }
 
-        // Per-sticky-image audio (plays regardless of voiceMode)
+        // Per-sticky-image audio
         if (inScene) {
           let currentStickyIdx = -1;
           const stickyContainers = pvScrollRef.current?.querySelectorAll('.sc-pv-sticky') ?? [];
@@ -362,7 +350,7 @@ export default function SceneCraftPreview({
           }
         }
 
-        // Per-para audio (plays regardless of voiceMode, like sticky)
+        // Per-para audio
         if (inScene) {
           let currentParaIdx = -1;
           blocks.forEach(b => {

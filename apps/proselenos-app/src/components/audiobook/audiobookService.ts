@@ -1,9 +1,11 @@
+// apps/proselenos-app/src/components/audiobook/audiobookService.ts
+
 /**
- * audiobookService.ts
- *
  * Pure functions for:
- *   1. Analyzing an EPUB's SceneCraft audio structure and building an M4B (from AudiobookBuilder.tsx)
- *   2. Parsing M4B files: MP4 box navigation, chapter/metadata extraction, MP3 frame extraction (from m4b-player.html)
+ *   1. Analyzing an EPUB's audio structure and building an 
+ *      M4B (from AudiobookBuilder.tsx)
+ *   2. Parsing M4B files: MP4 box navigation, chapter/metadata extraction, 
+ *      MP3 frame extraction (from m4b-player.html)
  */
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -16,7 +18,7 @@ import JSZip from 'jszip';
 export interface AudioClip {
   idx: number;
   filename: string;
-  type: 'narration' | 'dialogue' | 'sticky' | 'para' | 'inline';
+  type: 'inline';
 }
 
 export interface AnalyzedSection {
@@ -77,6 +79,21 @@ export interface M4BMetadata {
 // ──────────────────────────────────────────────
 // EPUB Analysis
 // ──────────────────────────────────────────────
+
+/** Recursively collect audio filenames from any JSON structure. */
+function collectAudioFilenames(obj: unknown): string[] {
+  const result: string[] = [];
+  if (typeof obj === 'string') {
+    if (/\.(wav|mp3|ogg|m4a|aac|webm|mp4)$/i.test(obj)) result.push(obj);
+  } else if (Array.isArray(obj)) {
+    for (const item of obj) result.push(...collectAudioFilenames(item));
+  } else if (obj && typeof obj === 'object') {
+    for (const val of Object.values(obj as Record<string, unknown>)) {
+      result.push(...collectAudioFilenames(val));
+    }
+  }
+  return result;
+}
 
 export async function analyzeEpub(zip: JSZip): Promise<AudiobookAnalysis> {
   // Step 1: Find content.opf
@@ -159,17 +176,13 @@ export async function analyzeEpub(zip: JSZip): Promise<AudiobookAnalysis> {
     if (idref) spineOrder.push(idref);
   });
 
-  // Step 2: Read meta.json
+  // Step 2: Read meta.json (optional — provides additional audio references per section)
   const metaFile = zip.file(opfDir + 'meta.json');
-  if (!metaFile) throw new Error('No meta.json found — this EPUB may not have SceneCraft audio');
-  const meta = JSON.parse(await metaFile.async('string'));
-  const sections: Array<{ id?: string; title?: string; sceneCraftConfig?: Record<string, unknown> }> =
-    meta.sections || [];
+  const metaSections: Array<{ id?: string; title?: string; [key: string]: unknown }> =
+    metaFile ? (JSON.parse(await metaFile.async('string')).sections || []) : [];
 
-  const sectionMap: Record<string, (typeof sections)[0]> = {};
-  sections.forEach((sec) => {
-    if (sec.id) sectionMap[sec.id] = sec;
-  });
+  const sectionMap: Record<string, (typeof metaSections)[0]> = {};
+  metaSections.forEach((sec) => { if (sec.id) sectionMap[sec.id] = sec; });
 
   // Step 3: Process each spine item
   const analyzed: AnalyzedSection[] = await Promise.all(
@@ -183,41 +196,19 @@ export async function analyzeEpub(zip: JSZip): Promise<AudiobookAnalysis> {
       const xhtml = await xhtmlFile.async('string');
       const clips: AudioClip[] = [];
       const sectionData = sectionMap[idref];
-      const config = sectionData?.sceneCraftConfig as any;
 
       // Title from xhtml
       const titleMatch = xhtml.match(/<title[^>]*>([^<]+)<\/title>/i);
       const sectionTitle = titleMatch?.[1]?.trim() || sectionData?.title || idref;
 
-      if (config) {
-        // Voice-mode-specific clips
-        if (config.voiceMode === 'narration' && config.narrationFilename) {
-          clips.push({ idx: 0, filename: config.narrationFilename, type: 'narration' });
-        } else if (config.voiceMode === 'dialogue' && config.dialogueClips) {
-          for (const key of Object.keys(config.dialogueClips)) {
-            const clip = (config.dialogueClips as Record<string, unknown>)[key] as any;
-            if (clip?.filename) {
-              clips.push({ idx: parseInt(key, 10), filename: clip.filename, type: 'dialogue' });
-            }
+      // Source 1 (plays first): audio filenames from meta.json section config
+      if (sectionData) {
+        const metaFilenames = collectAudioFilenames(sectionData);
+        for (const fn of metaFilenames) {
+          if (zip.file(opfDir + 'audio/' + fn)) {
+            clips.push({ idx: clips.length, filename: fn, type: 'inline' });
           }
         }
-
-        // Sticky and para clips play regardless of voiceMode (matches html-generator.ts:911)
-        const alwaysSources: Array<{ obj: Record<string, unknown>; type: AudioClip['type'] }> = [
-          { obj: config.stickyClips, type: 'sticky' },
-          { obj: config.paraClips, type: 'para' },
-        ];
-        for (const src of alwaysSources) {
-          if (!src.obj) continue;
-          for (const key of Object.keys(src.obj)) {
-            const clip = src.obj[key] as any;
-            if (clip?.filename) {
-              clips.push({ idx: parseInt(key, 10), filename: clip.filename, type: src.type });
-            }
-          }
-        }
-
-        clips.sort((a, b) => a.idx - b.idx);
       }
 
       // Scan inline <audio><source> tags
@@ -226,7 +217,6 @@ export async function analyzeEpub(zip: JSZip): Promise<AudiobookAnalysis> {
         const src = el.getAttribute('src');
         if (!src) return;
         const audioFilename = src.replace(/^(\.\/)?audio\//, '');
-        if (config?.ambientFilename === audioFilename) return;
         if (clips.some((c) => c.filename === audioFilename)) return;
         clips.push({ idx: 9999 + i, filename: audioFilename, type: 'inline' });
       });

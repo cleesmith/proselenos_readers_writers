@@ -506,7 +506,7 @@ export class SectionAudioEngine {
     private imageUrls: Map<string, string>,
   ) {}
 
-  /** Start ambient + narration audio, apply wallpaper. bgEl/infoEl are shared DOM nodes. */
+  /** Start ambient audio, apply wallpaper. bgEl/infoEl are shared DOM nodes. */
   enter(bgEl: HTMLElement | null, infoEl: HTMLElement | null, title: string): void {
     if (infoEl) infoEl.textContent = title;
 
@@ -534,15 +534,6 @@ export class SectionAudioEngine {
       }
     }
 
-    // Narration voice
-    this.voiceOut = killAudio(this.voiceOut);
-    if (c.voiceMode === 'narration' && c.narrationFilename) {
-      const url = this.audioUrls.get(c.narrationFilename);
-      if (url) {
-        const a = new Audio(url);
-        this.voice = fadeIn(a, c.narrationVolume, c.fadeIn);
-      }
-    }
   }
 
   /** Fade out all audio, clear wallpaper. */
@@ -555,8 +546,6 @@ export class SectionAudioEngine {
 
     // Ambient fade out
     if (this.ambient) { this.ambientOut = fadeOut(this.ambient, fadeOutDur); this.ambient = null; }
-    // Narration fade out
-    if (this.voice) { this.voiceOut = fadeOut(this.voice, fadeOutDur); this.voice = null; }
     // Stop dialogue
     this.dlgFade = killAudio(this.dlgFade);
     this.dlgFadeOut = killAudio(this.dlgFadeOut);
@@ -593,7 +582,7 @@ export class SectionAudioEngine {
   /** Manage dialogue clip for the given element index. */
   tickDialogue(currentIdx: number): void {
     const c = this.config;
-    if (!c || c.voiceMode !== 'dialogue') return;
+    if (!c) return;
 
     if (currentIdx !== this.activeDialogueIdx) {
       // Fade out previous

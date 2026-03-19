@@ -1015,11 +1015,6 @@ export interface SceneCraftConfig {
   // Scene transitions
   fadeIn: number;                    // seconds
   fadeOut: number;                   // seconds
-  // Voice mode
-  voiceMode: string;                 // "narration" | "dialogue"
-  // Narration
-  narrationFilename: string | null;  // ref to Audio Library
-  narrationVolume: number;
   // Dialogue clips
   dialogueClips: Record<number, {    // keyed by element idx
     filename: string;                // ref to Audio Library

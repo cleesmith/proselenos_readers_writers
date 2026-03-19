@@ -69,9 +69,6 @@ function createDefaultConfig(): SceneCraftConfig {
     ambientLoop: true,
     fadeIn: 2,
     fadeOut: 3,
-    voiceMode: 'dialogue',
-    narrationFilename: null,
-    narrationVolume: 0.7,
     dialogueClips: {},
     dialogueVolume: 0.8,
     stickyClips: {},
@@ -147,7 +144,7 @@ export default function SceneCraftModal({
   // Asset picker state (reuse existing modals)
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showAudioPicker, setShowAudioPicker] = useState(false);
-  const [audioPickerTarget, setAudioPickerTarget] = useState<string>(''); // 'ambient' | 'narration' | 'dialogue-N'
+  const [audioPickerTarget, setAudioPickerTarget] = useState<string>(''); // 'ambient' | 'dialogue-N'
 
   // ── Parse elements from XHTML ──────────────────────────────
   const elements = useMemo(() => parseSceneXhtml(sectionXhtml), [sectionXhtml]);
@@ -173,8 +170,6 @@ export default function SceneCraftModal({
       const restored = sceneCraftConfig
         ? { ...createDefaultConfig(), ...sceneCraftConfig }
         : createDefaultConfig();
-      // Narration mode is disabled (toggle hidden) — force per-block mode
-      restored.voiceMode = 'dialogue';
       // Clean stale dialogueClips whose index no longer points to a dialogue element
       if (restored.dialogueClips && Object.keys(restored.dialogueClips).length > 0) {
         const cleaned = { ...restored.dialogueClips };
@@ -261,8 +256,6 @@ export default function SceneCraftModal({
   const handleAudioSelected = useCallback((filename: string, _label: string, _mediaType: string) => {
     if (audioPickerTarget === 'ambient') {
       updateConfig({ ambientFilename: filename });
-    } else if (audioPickerTarget === 'narration') {
-      updateConfig({ narrationFilename: filename });
     } else if (audioPickerTarget.startsWith('dialogue-')) {
       const idx = parseInt(audioPickerTarget.replace('dialogue-', ''), 10);
       if (!isNaN(idx) && elements[idx]?.type === 'dialogue') {
@@ -310,7 +303,7 @@ export default function SceneCraftModal({
   // ── Render: Structure Panel items ─────────────────────────
   function renderStructureItem(item: SceneCraftElement, i: number) {
     const isSel = selectedIdx === i;
-    const hasClip = (config.voiceMode === 'dialogue' && item.type === 'dialogue' && !!config.dialogueClips[i])
+    const hasClip = (item.type === 'dialogue' && !!config.dialogueClips[i])
       || (item.type === 'sticky' && !!config.stickyClips[i])
       || (item.type === 'para' && !!config.paraClips[i]);
 
@@ -574,55 +567,11 @@ export default function SceneCraftModal({
           <div style={{ fontSize: '8px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--sc-tdd)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             voice<span style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
           </div>
-          {/* Mode toggle — hidden: narration doesn't work with autoplay; kept for future re-enablement */}
-          {false && (
-          <div style={{ display: 'flex', gap: '2px', marginBottom: '10px' }}>
-            {(['narration', 'dialogue'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => updateConfig({ voiceMode: mode })}
-                style={{
-                  flex: 1, padding: '6px 8px', fontSize: '9px', fontFamily: 'inherit', letterSpacing: '0.06em',
-                  border: config.voiceMode === mode ? '1px solid rgba(255,120,68,0.2)' : '1px solid var(--sc-bdr)',
-                  background: config.voiceMode === mode ? 'var(--sc-acc-d)' : 'rgba(255,255,255,0.02)',
-                  color: config.voiceMode === mode ? 'var(--sc-acc)' : 'var(--sc-td)',
-                  cursor: 'pointer', borderRadius: '3px', textAlign: 'center', textTransform: 'capitalize',
-                }}
-              >
-                {mode === 'narration' ? 'Narration' : 'Per Block'}
-              </button>
-            ))}
+          <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic', marginBottom: '6px' }}>
+            Attach a voice clip to each block. Each clip fades in when scrolled to and fades out when scrolled past — in either direction.
           </div>
-          )}
-
-          {config.voiceMode === 'narration' ? (
-            <>
-              <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic', marginBottom: '6px' }}>
-                One voice track for the entire scene. Fades in/out at scene boundaries.
-              </div>
-              {renderFileSlot('Voice', '.mp3', config.narrationFilename, () => openAudioPicker('narration'), () => updateConfig({ narrationFilename: null }))}
-              {config.narrationFilename && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
-                  <span style={{ fontSize: '9px', color: 'var(--sc-td)', letterSpacing: '0.04em' }}>Volume</span>
-                  <input type="range" min="0" max="100" value={Math.round(config.narrationVolume * 100)}
-                    onChange={e => updateConfig({ narrationVolume: parseInt(e.target.value, 10) / 100 })}
-                    style={{ width: '80px', height: '4px', accentColor: 'var(--sc-acc)' }}
-                  />
-                  <span style={{ fontSize: '9px', color: 'var(--sc-td)', width: '28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {Math.round(config.narrationVolume * 100)}%
-                  </span>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic', marginBottom: '6px' }}>
-                Attach a voice clip to each block. Each clip fades in when scrolled to and fades out when scrolled past — in either direction.
-              </div>
-              {/* Dialogue voice list */}
-              {renderDialogueList()}
-            </>
-          )}
+          {/* Dialogue voice list */}
+          {renderDialogueList()}
         </div>
       </>
     );
@@ -731,40 +680,32 @@ export default function SceneCraftModal({
             <div style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: 'var(--sc-prose-d)', lineHeight: 1.6, marginBottom: '12px' }}>
               {item.text}
             </div>
-            {config.voiceMode === 'dialogue' ? (
-              <>
-                <div style={{ fontSize: '8px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--sc-tdd)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  voice clip<span style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
-                </div>
-                {renderFileSlot('Voice', '.mp3', config.dialogueClips[idx]?.filename || null,
-                  () => openAudioPicker(`dialogue-${idx}`),
-                  () => {
+            <div style={{ fontSize: '8px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--sc-tdd)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              voice clip<span style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+            </div>
+            {renderFileSlot('Voice', '.mp3', config.dialogueClips[idx]?.filename || null,
+              () => openAudioPicker(`dialogue-${idx}`),
+              () => {
+                const newClips = { ...config.dialogueClips };
+                delete newClips[idx];
+                updateConfig({ dialogueClips: newClips });
+              }
+            )}
+            {config.dialogueClips[idx] && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span style={{ fontSize: '9px', color: 'var(--sc-td)', letterSpacing: '0.04em' }}>Volume</span>
+                <input type="range" min="0" max="100"
+                  value={Math.round((config.dialogueClips[idx]!.volume || config.dialogueVolume) * 100)}
+                  onChange={e => {
                     const newClips = { ...config.dialogueClips };
-                    delete newClips[idx];
+                    newClips[idx] = { ...newClips[idx]!, volume: parseInt(e.target.value, 10) / 100 };
                     updateConfig({ dialogueClips: newClips });
-                  }
-                )}
-                {config.dialogueClips[idx] && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
-                    <span style={{ fontSize: '9px', color: 'var(--sc-td)', letterSpacing: '0.04em' }}>Volume</span>
-                    <input type="range" min="0" max="100"
-                      value={Math.round((config.dialogueClips[idx]!.volume || config.dialogueVolume) * 100)}
-                      onChange={e => {
-                        const newClips = { ...config.dialogueClips };
-                        newClips[idx] = { ...newClips[idx]!, volume: parseInt(e.target.value, 10) / 100 };
-                        updateConfig({ dialogueClips: newClips });
-                      }}
-                      style={{ width: '80px', height: '4px', accentColor: 'var(--sc-acc)' }}
-                    />
-                    <span style={{ fontSize: '9px', color: 'var(--sc-td)', width: '28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {Math.round((config.dialogueClips[idx]!.volume || config.dialogueVolume) * 100)}%
-                    </span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div style={{ fontSize: '8px', color: 'var(--sc-tddd)', lineHeight: 1.5, fontStyle: 'italic' }}>
-                Switch to &quot;Per Block&quot; voice mode to attach clips to individual blocks.
+                  }}
+                  style={{ width: '80px', height: '4px', accentColor: 'var(--sc-acc)' }}
+                />
+                <span style={{ fontSize: '9px', color: 'var(--sc-td)', width: '28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {Math.round((config.dialogueClips[idx]!.volume || config.dialogueVolume) * 100)}%
+                </span>
               </div>
             )}
           </>
@@ -906,7 +847,7 @@ export default function SceneCraftModal({
     let dots = '';
     if (config.wallpaperFilename) dots += ' \u25CF';
     if (config.ambientFilename) dots += ' \u266B';
-    if (config.narrationFilename || Object.keys(config.dialogueClips).length) dots += ' \u266A';
+    if (Object.keys(config.dialogueClips).length) dots += ' \u266A';
 
     return (
       <div style={{

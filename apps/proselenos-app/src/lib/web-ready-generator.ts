@@ -741,9 +741,6 @@ function remapSceneCraftConfig(
   if (c.ambientFilename && audioMap.has(c.ambientFilename)) {
     c.ambientFilename = audioMap.get(c.ambientFilename)!;
   }
-  if (c.narrationFilename && audioMap.has(c.narrationFilename)) {
-    c.narrationFilename = audioMap.get(c.narrationFilename)!;
-  }
   if (c.dialogueClips) {
     for (const key of Object.keys(c.dialogueClips)) {
       const clip = c.dialogueClips[Number(key)];
@@ -819,7 +816,6 @@ function generateSceneCraftHtml(
   }
   const audioFiles = new Set<string>();
   if (cfg.ambientFilename) audioFiles.add(cfg.ambientFilename);
-  if (cfg.narrationFilename) audioFiles.add(cfg.narrationFilename);
   if (cfg.dialogueClips) {
     Object.values(cfg.dialogueClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
@@ -963,7 +959,6 @@ function generateAutoplaySceneCraftHtml(
   }
   const audioFiles = new Set<string>();
   if (cfg.ambientFilename) audioFiles.add(cfg.ambientFilename);
-  if (cfg.narrationFilename) audioFiles.add(cfg.narrationFilename);
   if (cfg.dialogueClips) {
     Object.values(cfg.dialogueClips).forEach(clip => {
       if (clip.filename) audioFiles.add(clip.filename);
@@ -1733,15 +1728,6 @@ const SCENECRAFT_JS = `
           }
         }
 
-        // Narration voice
-        s.voiceOut = killAudio(s.voiceOut);
-        if (c.voiceMode === 'narration' && c.narrationFilename) {
-          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
-          if (nUrl) {
-            var n = new Audio(nUrl);
-            s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
-          }
-        }
       }
 
       function doExit(s) {
@@ -1801,7 +1787,7 @@ const SCENECRAFT_JS = `
           }
 
           // Per-dialogue voice
-          if (s.inScene && c.voiceMode === 'dialogue') {
+          if (s.inScene) {
             var currentDlg = -1;
             for (var di = 0; di < s.blocks.length; di++) {
               var db = s.blocks[di];
@@ -1831,7 +1817,7 @@ const SCENECRAFT_JS = `
             }
           }
 
-          // Per-sticky audio (plays regardless of voiceMode)
+          // Per-sticky audio
           if (s.inScene) {
             var currentStk = -1;
             for (var swi = 0; swi < s.stickyWraps.length; swi++) {
@@ -1861,7 +1847,7 @@ const SCENECRAFT_JS = `
             }
           }
 
-          // Per-para audio (plays regardless of voiceMode)
+          // Per-para audio
           if (s.inScene) {
             var currentPara = -1;
             for (var pi = 0; pi < s.blocks.length; pi++) {
@@ -2369,15 +2355,6 @@ const SCENECRAFT_AUTOPLAY_JS = `
           }
         }
 
-        // Narration voice
-        s.voiceOut = killAudio(s.voiceOut);
-        if (c.voiceMode === 'narration' && c.narrationFilename) {
-          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
-          if (nUrl) {
-            var n = new Audio(nUrl);
-            s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
-          }
-        }
       }
 
       function doExit(s) {
@@ -2441,7 +2418,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
           }
 
           // Per-dialogue voice
-          if (s.inScene && c.voiceMode === 'dialogue') {
+          if (s.inScene) {
             var currentDlg = -1;
             for (var di = 0; di < s.blocks.length; di++) {
               var db = s.blocks[di];
@@ -2471,7 +2448,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
             }
           }
 
-          // Per-sticky audio (plays regardless of voiceMode)
+          // Per-sticky audio
           if (s.inScene) {
             var currentStk = -1;
             for (var swi = 0; swi < s.stickyWraps.length; swi++) {
@@ -2501,7 +2478,7 @@ const SCENECRAFT_AUTOPLAY_JS = `
             }
           }
 
-          // Per-para audio (plays regardless of voiceMode)
+          // Per-para audio
           if (s.inScene) {
             var currentPara = -1;
             for (var pi = 0; pi < s.blocks.length; pi++) {
@@ -2540,7 +2517,6 @@ const SCENECRAFT_AUTOPLAY_JS = `
       // Audio is the master clock.
       // Dialogue/para clips GATE the scroll (nearly pause until done).
       // Sticky clips PACE the scroll (keep scrolling to reveal text).
-      // Narration scenes PACE the scroll to match the narration duration.
       // Ambient never affects scroll — it is just atmosphere.
 
       var FRONT_MATTER_SPEED = 0.3; // px/frame for cover, copyright, TOC (~18px/s)
@@ -2548,9 +2524,6 @@ const SCENECRAFT_AUTOPLAY_JS = `
       var DEAD_ZONE_SPEED = 2.5;   // px/frame through silence gaps (dead zones)
       var CREEP_SPEED = 0.15;      // px/frame — tiny drift while a dialogue clip plays
       var PAUSE_AFTER_CLIP = 45;   // frames to breathe after a clip ends (~0.75s)
-      var NARRATION_MIN_SPEED = 0.1;   // floor during narration (6px/s — barely moving crawl)
-      var NARRATION_MAX_SPEED = 0.35;  // cap so narration scenes don't rush (~21px/s, ~0.75 lines/sec)
-      var NARRATION_COAST_SPEED = 0.3; // gentle coast after narration audio ends (~18px/s)
       var STICKY_MIN_SPEED = 0.08;    // very low floor — let audio fully control pace
       var STICKY_MAX_SPEED = 1.2;     // cap for sticky clips
       var FPS = 60;
@@ -2648,52 +2621,6 @@ const SCENECRAFT_AUTOPLAY_JS = `
         return null;
       }
 
-      // For narration scenes: pace scroll so we reach the scene exit
-      // right when the narration track ends.
-      function getNarrationPacedSpeed() {
-        for (var i = 0; i < sceneStates.length; i++) {
-          var s = sceneStates[i];
-          if (!s.inScene) continue;
-          if (!s.voice || !s.voice.el) continue;
-          var audio = s.voice.el;
-          if (audio.paused || audio.ended) continue;
-
-          // If audio is playing but duration hasn't loaded yet,
-          // crawl slowly until we can calculate proper pacing
-          if (!audio.duration || isNaN(audio.duration) || audio.duration <= 0) {
-            return NARRATION_MIN_SPEED;
-          }
-
-          var remaining = audio.duration - audio.currentTime;
-          if (remaining <= 0) continue;
-
-          var exitEl = s.exitEl;
-          if (!exitEl) continue;
-          var exitRect = exitEl.getBoundingClientRect();
-          var pixelsLeft = exitRect.top - playheadY;
-          if (pixelsLeft <= 0) continue;
-
-          // Nearly at exit but narration still playing — almost stop so we
-          // don't leave the scene while audio is still going
-          if (pixelsLeft <= 10) return 0.05;
-
-          var speed = pixelsLeft / (remaining * FPS);
-          speed = Math.max(NARRATION_MIN_SPEED, Math.min(NARRATION_MAX_SPEED, speed));
-          return speed;
-        }
-        return null;
-      }
-
-      // True if we're inside a narration scene (even if its audio has ended).
-      // Used to apply coast speed after narration finishes.
-      function isInNarrationScene() {
-        for (var i = 0; i < sceneStates.length; i++) {
-          var s = sceneStates[i];
-          if (s.inScene && s.cfg && s.cfg.voiceMode === 'narration') return true;
-        }
-        return false;
-      }
-
       function autoScroll() {
         if (!autoScrollActive || scrollDone) {
           requestAnimationFrame(autoScroll);
@@ -2733,24 +2660,13 @@ const SCENECRAFT_AUTOPLAY_JS = `
           if (stickySpeed !== null) {
             speed = stickySpeed;
           }
-          // Priority 4: narration playing — pace through the scene
+          // Priority 4: dead zone — move through silence
+          else if (isInDeadZone()) {
+            speed = DEAD_ZONE_SPEED;
+          }
+          // Default: gentle reading pace
           else {
-            var narrationSpeed = getNarrationPacedSpeed();
-            if (narrationSpeed !== null) {
-              speed = narrationSpeed;
-            }
-            // Priority 5: narration scene but audio ended — coast gently
-            else if (isInNarrationScene()) {
-              speed = NARRATION_COAST_SPEED;
-            }
-            // Priority 6: dead zone — move through silence
-            else if (isInDeadZone()) {
-              speed = DEAD_ZONE_SPEED;
-            }
-            // Default: gentle reading pace
-            else {
-              speed = BASE_SPEED;
-            }
+            speed = BASE_SPEED;
           }
         }
 

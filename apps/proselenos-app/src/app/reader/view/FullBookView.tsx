@@ -3,7 +3,7 @@
 // Full-book scroll-driven immersive reader.
 // Cloned from SingleChapterView.tsx — renders ALL sections as one continuous
 // scroll with per-section SceneCraft support (wallpaper, ambient audio,
-// narration, dialogue clips, playhead animation).
+// dialogue clips, playhead animation).
 // Key diff from SingleChapterView: receives pre-resolved imageUrls/audioUrls Maps
 // instead of getImageUrl/getAudioUrl callbacks, and loops over multiple sections.
 
@@ -380,9 +380,6 @@ function buildFullBookHtml(p: BuildFullBookHtmlParams): string {
         ambientLoop: c.ambientLoop,
         fadeIn: c.fadeIn,
         fadeOut: c.fadeOut,
-        voiceMode: c.voiceMode,
-        narrationFilename: c.narrationFilename,
-        narrationVolume: c.narrationVolume,
         dialogueClips: c.dialogueClips,
         dialogueVolume: c.dialogueVolume,
         stickyClips: c.stickyClips,
@@ -595,10 +592,6 @@ function doEnter(si) {
   if (c.ambientFilename && AUDIO_MAP[c.ambientFilename]) {
     ambient = createFadeIn(AUDIO_MAP[c.ambientFilename], c.ambientVolume, c.fadeIn, c.ambientLoop);
   }
-  voiceOut = killAudio(voiceOut);
-  if (c.voiceMode === 'narration' && c.narrationFilename && AUDIO_MAP[c.narrationFilename]) {
-    voice = createFadeIn(AUDIO_MAP[c.narrationFilename], c.narrationVolume, c.fadeIn, false);
-  }
 }
 
 function doExitCurrent() {
@@ -661,7 +654,7 @@ function tick() {
   if (activeSectionIdx >= 0) {
     var sec = SECTIONS[activeSectionIdx];
     var c = sec ? sec.config : null;
-    if (c && c.voiceMode === 'dialogue') {
+    if (c) {
       var currentDlg = -1;
       blocks.forEach(function(b) {
         var r = b.getBoundingClientRect();
@@ -682,7 +675,7 @@ function tick() {
     }
   }
 
-  // Sticky audio (plays regardless of voiceMode)
+  // Sticky audio
   if (activeSectionIdx >= 0) {
     var secStk = SECTIONS[activeSectionIdx];
     var cStk = secStk ? secStk.config : null;
@@ -708,7 +701,7 @@ function tick() {
     }
   }
 
-  // Para audio (plays regardless of voiceMode)
+  // Para audio
   if (activeSectionIdx >= 0) {
     var secPara = SECTIONS[activeSectionIdx];
     var cPara = secPara ? secPara.config : null;
@@ -762,9 +755,6 @@ function createDefaultConfig(): SceneCraftConfig {
     ambientLoop: true,
     fadeIn: 2,
     fadeOut: 3,
-    voiceMode: 'dialogue',
-    narrationFilename: null,
-    narrationVolume: 0.7,
     dialogueClips: {},
     dialogueVolume: 0.8,
     stickyClips: {},
@@ -925,7 +915,7 @@ export default function FullBookView({
         if (!c) continue;
         const audioFiles: string[] = [];
         if (c.ambientFilename) audioFiles.push(c.ambientFilename);
-        if (c.narrationFilename) audioFiles.push(c.narrationFilename);
+
         if (c.dialogueClips) {
           Object.values(c.dialogueClips).forEach(clip => {
             if (clip.filename) audioFiles.push(clip.filename);
@@ -1104,15 +1094,6 @@ export default function FullBookView({
           }
         }
 
-        // Narration voice
-        pvVoiceOut.current = killAudio(pvVoiceOut.current);
-        if (c.voiceMode === 'narration' && c.narrationFilename) {
-          const url = audioUrls.get(c.narrationFilename);
-          if (url) {
-            const a = new Audio(url);
-            pvVoice.current = fadeIn(a, c.narrationVolume, c.fadeIn);
-          }
-        }
       }
 
       function doExitCurrent() {
@@ -1129,8 +1110,6 @@ export default function FullBookView({
 
         // Ambient fade out
         if (pvAmbient.current) { pvAmbientOut.current = fadeOut(pvAmbient.current, fadeOutDur); pvAmbient.current = null; }
-        // Narration fade out
-        if (pvVoice.current) { pvVoiceOut.current = fadeOut(pvVoice.current, fadeOutDur); pvVoice.current = null; }
         // Stop all dialogue
         dlgFadeObj.current = killAudio(dlgFadeObj.current);
         dlgFadeOut.current = killAudio(dlgFadeOut.current);
@@ -1190,11 +1169,11 @@ export default function FullBookView({
           doExitCurrent();
         }
 
-        // Per-dialogue voice (only if current section uses dialogue mode)
+        // Per-dialogue voice
         if (activeSectionIdx >= 0) {
           const zone = sectionZones[activeSectionIdx];
           const c = zone?.config;
-          if (c && c.voiceMode === 'dialogue') {
+          if (c) {
             let currentDialogueIdx = -1;
             blocks.forEach(b => {
               const r = b.getBoundingClientRect();
@@ -1232,7 +1211,7 @@ export default function FullBookView({
           }
         }
 
-        // Per-sticky-image audio (plays regardless of voiceMode)
+        // Per-sticky-image audio
         if (activeSectionIdx >= 0) {
           const zone = sectionZones[activeSectionIdx];
           const c = zone?.config;
@@ -1270,7 +1249,7 @@ export default function FullBookView({
           }
         }
 
-        // Per-para audio (plays regardless of voiceMode)
+        // Per-para audio
         if (activeSectionIdx >= 0) {
           const zone = sectionZones[activeSectionIdx];
           const c = zone?.config;

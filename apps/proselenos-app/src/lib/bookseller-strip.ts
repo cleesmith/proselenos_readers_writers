@@ -101,10 +101,7 @@ function stripXhtmlContent(html: string): string {
   // 8. <p class="scene-break">...</p> → <hr/>
   s = s.replace(/<p class="scene-break">[^<]*<\/p>/g, '<hr/>');
 
-  // 9. <p class="narration ..."> → <p>
-  s = s.replace(/<p class="narration[^"]*">/g, '<p>');
-
-  // 10. <div class="visual ..."> → <figure>, with caption → figcaption
+  // 9. <div class="visual ..."> → <figure>, with caption → figcaption
   s = s.replace(
     /<div class="visual[^"]*">\s*([\s\S]*?)\s*<\/div>/g,
     (_match, inner: string) => {
@@ -116,22 +113,22 @@ function stripXhtmlContent(html: string): string {
     }
   );
 
-  // 11. <div class="clearfix"></div> → remove entirely
+  // 10. <div class="clearfix"></div> → remove entirely
   s = s.replace(/<div class="clearfix">\s*<\/div>\n?/g, '');
 
-  // 12. scene-audio wrapper → keep <audio> only, strip wrapper and audio-label
+  // 11. scene-audio wrapper → keep <audio> only, strip wrapper and audio-label
   s = s.replace(
     /<div class="scene-audio">\s*(?:<p class="audio-label">[^<]*<\/p>\s*)?(<audio[\s\S]*?<\/audio>)\s*<\/div>/g,
     '$1'
   );
 
-  // 13. audio-block wrapper → keep <audio> only
+  // 12. audio-block wrapper → keep <audio> only
   s = s.replace(
     /<div class="audio-block">\s*(<audio[\s\S]*?<\/audio>)\s*(?:<p class="caption">[^<]*<\/p>\s*)?<\/div>/g,
     '$1'
   );
 
-  // 14–18. Cleanup any remaining sticky/enlarge artifacts
+  // 13–17. Cleanup any remaining sticky/enlarge artifacts
   s = s.replace(/<input type="checkbox" id="enlarge-\d+"\/>\n?/g, '');
   s = s.replace(/<label class="enlarge-overlay" for="enlarge-\d+"><\/label>\n?/g, '');
   s = s.replace(/<label class="img-label" for="enlarge-\d+">\s*/g, '');

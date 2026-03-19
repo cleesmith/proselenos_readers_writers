@@ -388,8 +388,6 @@ function processBlockChildren(container: Element): (PlateElement | PlateText)[] 
           blocks.push({ type: 'p', vnType: 'emphasis', children: children.length > 0 ? children : [{ text: '' }] });
           break;
         }
-        // Visual Narrative plain narration: <p class="narration"> — just a regular paragraph
-        // (narration class is cosmetic, no special PlateJS property needed)
         const parsed = parseElement(el);
         if (parsed) blocks.push(parsed);
         break;

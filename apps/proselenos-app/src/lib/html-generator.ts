@@ -810,15 +810,6 @@ const SCENECRAFT_JS = `
           }
         }
 
-        // Narration voice
-        s.voiceOut = killAudio(s.voiceOut);
-        if (c.voiceMode === 'narration' && c.narrationFilename) {
-          var nUrl = s.el.dataset['scAud_' + c.narrationFilename.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()];
-          if (nUrl) {
-            var n = new Audio(nUrl);
-            s.voice = createFadeIn(n, c.narrationVolume || 0.7, c.fadeIn || 2);
-          }
-        }
       }
 
       function doExit(s) {
@@ -878,7 +869,7 @@ const SCENECRAFT_JS = `
           }
 
           // Per-dialogue voice
-          if (s.inScene && c.voiceMode === 'dialogue') {
+          if (s.inScene) {
             var currentDlg = -1;
             for (var di = 0; di < s.blocks.length; di++) {
               var db = s.blocks[di];
@@ -908,7 +899,7 @@ const SCENECRAFT_JS = `
             }
           }
 
-          // Per-sticky audio (plays regardless of voiceMode)
+          // Per-sticky audio
           if (s.inScene) {
             var currentStk = -1;
             for (var swi = 0; swi < s.stickyWraps.length; swi++) {
@@ -939,7 +930,7 @@ const SCENECRAFT_JS = `
             }
           }
 
-          // Per-para audio (plays regardless of voiceMode)
+          // Per-para audio
           if (s.inScene) {
             var currentPara = -1;
             for (var pi = 0; pi < s.blocks.length; pi++) {
@@ -1321,7 +1312,7 @@ function generateSceneCraftHtml(
     }
     const audioFiles = new Set<string>();
     if (config.ambientFilename) audioFiles.add(config.ambientFilename);
-    if (config.narrationFilename) audioFiles.add(config.narrationFilename);
+
     if (config.dialogueClips) {
       Object.values(config.dialogueClips).forEach(clip => {
         if (clip.filename) audioFiles.add(clip.filename);

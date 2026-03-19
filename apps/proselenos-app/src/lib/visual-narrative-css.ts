@@ -95,14 +95,6 @@ nav ol li a {
 
 /* ── Text ─────────────────────────────────── */
 
-.narration {
-  margin-bottom: 1.5em;
-}
-
-.narration.opening {
-  font-size: 1.15em;
-}
-
 .dialogue {
   margin: 1.5em 0;
   padding-left: 1.5em;
@@ -534,14 +526,6 @@ nav ol li a {
 }
 
 /* ── Text ─────────────────────────────────── */
-
-.narration {
-  margin-bottom: 1.5em;
-}
-
-.narration.opening {
-  font-size: 1.15em;
-}
 
 .dialogue {
   margin: 1.5em 0;

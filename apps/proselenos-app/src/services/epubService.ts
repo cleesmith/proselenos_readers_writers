@@ -27,7 +27,7 @@ export interface ParsedEpub {
   coverImage: Blob | null;
   sections: ParsedSection[];
   images?: Array<{filename: string, blob: Blob}>;  // Inline images (not cover), optional for backwards compatibility
-  audios?: Array<{filename: string, blob: Blob}>;  // Audio files (ambient, narration, dialogue clips)
+  audios?: Array<{filename: string, blob: Blob}>;  // Audio files (ambient, dialogue clips)
 }
 
 /**
@@ -130,7 +130,7 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
     }
   }
 
-  // Step 3c: Extract audio files (ambient, narration, dialogue clips)
+  // Step 3c: Extract audio files (ambient, dialogue clips)
   const audios: Array<{filename: string, blob: Blob}> = [];
   for (const [, item] of manifest) {
     if (!item.mediaType.startsWith('audio/')) continue;
@@ -187,7 +187,16 @@ export async function parseEpub(file: File): Promise<ParsedEpub> {
       const match = sceneCraftMeta.sections.find(
         m => m.id === spineItem.idref || m.title === sectionTitle
       );
-      if (match) sectionSceneCraft = match.sceneCraftConfig;
+      if (match) {
+        sectionSceneCraft = match.sceneCraftConfig;
+        // Strip deprecated fields from old meta.json data
+        if (sectionSceneCraft) {
+          const raw = sectionSceneCraft as unknown as Record<string, unknown>;
+          delete raw.voiceMode;
+          delete raw.narrationFilename;
+          delete raw.narrationVolume;
+        }
+      }
     }
 
     sections.push({
