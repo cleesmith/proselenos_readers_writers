@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PiGear, PiPencil, PiTrash, PiArrowClockwise, PiArrowCircleUp, PiDatabase, PiInfo } from 'react-icons/pi';
+import { PiGear, PiPencil, PiBookOpenText, PiTrash, PiArrowClockwise, PiArrowCircleUp, PiDatabase, PiInfo } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { showConfirm, showAlert } from '@/app/shared/alerts';
 import { TbSunMoon } from 'react-icons/tb';
@@ -295,6 +295,16 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
       />
       <MenuItem label={_('Settings')} Icon={PiGear} onClick={openSettingsDialog} />
       <hr aria-hidden='true' className='border-base-200 my-1' />
+      <MenuItem
+        label={_('Reader')}
+        description={_('explore a curated collection of books available for immersive reading')}
+        Icon={PiBookOpenText}
+        buttonClass='bg-emerald-600/20 hover:!bg-emerald-600/30'
+        onClick={() => {
+          setIsDropdownOpen?.(false);
+          window.open('https://reader.everythingebooks.org/', '_blank');
+        }}
+      />
       <MenuItem
         label={_('Authors')}
         description={_('use AI and non-AI tools to help with editing, writing, and publishing your manuscripts')}
