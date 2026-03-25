@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { SceneCraftConfig } from '@/services/manuscriptStorage';
-import Swal from 'sweetalert2';
+// import Swal from 'sweetalert2';
 
 // ============================================================
 //  Types
@@ -241,23 +241,24 @@ function parseSceneXhtml(xhtml: string): SceneCraftElement[] {
 //  Download helpers
 // ============================================================
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#039;').replace(/`/g,'&#96;').replace(/\$/g,'&#36;');
-}
+// function escapeHtml(text: string): string {
+//   return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+//     .replace(/"/g,'&quot;').replace(/'/g,'&#039;').replace(/`/g,'&#96;').replace(/\$/g,'&#36;');
+// }
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 
-async function blobUrlToDataUri(blobUrl: string): Promise<string> {
-  const resp = await fetch(blobUrl);
-  const blob = await resp.blob();
-  const buf = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buf);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
-  return `data:${blob.type};base64,${btoa(binary)}`;
-}
+// async function blobUrlToDataUri(blobUrl: string): Promise<string> {
+//   const resp = await fetch(blobUrl);
+//   const blob = await resp.blob();
+//   const buf = await blob.arrayBuffer();
+//   const bytes = new Uint8Array(buf);
+//   let binary = '';
+//   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+//   return `data:${blob.type};base64,${btoa(binary)}`;
+// }
 
+/* buildFullBookHtml — commented out (Download button disabled)
 interface BuildFullBookHtmlParams {
   sections: Array<{
     title: string;
@@ -740,6 +741,7 @@ requestAnimationFrame(tick);
 </body>
 </html>`;
 }
+end of buildFullBookHtml */
 
 // ============================================================
 //  Default config factory
@@ -869,118 +871,118 @@ export default function FullBookView({
   // Enlarged image lightbox
   const [enlargedImg, setEnlargedImg] = useState<string | null>(null);
 
-  // ── Download state ────────────────────────────────────────
-  const [downloading, setDownloading] = useState(false);
+  // ── Download state (commented out — button hidden) ───────
+  // const [downloading, setDownloading] = useState(false);
 
-  const handleDownload = useCallback(async () => {
-    setDownloading(true);
-    Swal.fire({
-      title: 'Processing...',
-      text: 'Preparing standalone HTML download...',
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      didOpen: () => { Swal.showLoading(); },
-    });
-    try {
-      // Resolve inline images to data URIs
-      const imageMap = new Map<string, string>();
-      for (const section of parsedSections) {
-        for (const el of section.elements) {
-          if (el.imgSrc && !imageMap.has(el.imgSrc)) {
-            const fn = el.imgSrc.replace(/^(\.\.\/)*images\//, '');
-            const blobUrl = imageUrls.get(fn) || imageUrls.get(el.imgSrc);
-            if (blobUrl) {
-              try { imageMap.set(el.imgSrc, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
-            }
-          }
-        }
-      }
+  // const handleDownload = useCallback(async () => {
+  //   setDownloading(true);
+  //   Swal.fire({
+  //     title: 'Processing...',
+  //     text: 'Preparing standalone HTML download...',
+  //     allowOutsideClick: false,
+  //     showConfirmButton: false,
+  //     didOpen: () => { Swal.showLoading(); },
+  //   });
+  //   try {
+  //     // Resolve inline images to data URIs
+  //     const imageMap = new Map<string, string>();
+  //     for (const section of parsedSections) {
+  //       for (const el of section.elements) {
+  //         if (el.imgSrc && !imageMap.has(el.imgSrc)) {
+  //           const fn = el.imgSrc.replace(/^(\.\.\/)*images\//, '');
+  //           const blobUrl = imageUrls.get(fn) || imageUrls.get(el.imgSrc);
+  //           if (blobUrl) {
+  //             try { imageMap.set(el.imgSrc, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+  //           }
+  //         }
+  //       }
+  //     }
 
-      // Resolve wallpapers to data URIs
-      const wallpaperUris = new Map<number, string>();
-      for (let si = 0; si < parsedSections.length; si++) {
-        const c = parsedSections[si]!.config;
-        if (c?.wallpaperFilename) {
-          const blobUrl = imageUrls.get(c.wallpaperFilename);
-          if (blobUrl) {
-            try { wallpaperUris.set(si, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
-          }
-        }
-      }
+  //     // Resolve wallpapers to data URIs
+  //     const wallpaperUris = new Map<number, string>();
+  //     for (let si = 0; si < parsedSections.length; si++) {
+  //       const c = parsedSections[si]!.config;
+  //       if (c?.wallpaperFilename) {
+  //         const blobUrl = imageUrls.get(c.wallpaperFilename);
+  //         if (blobUrl) {
+  //           try { wallpaperUris.set(si, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+  //         }
+  //       }
+  //     }
 
-      // Resolve audio to data URIs
-      const audioMap = new Map<string, string>();
-      for (const section of parsedSections) {
-        const c = section.config;
-        if (!c) continue;
-        const audioFiles: string[] = [];
-        if (c.ambientFilename) audioFiles.push(c.ambientFilename);
+  //     // Resolve audio to data URIs
+  //     const audioMap = new Map<string, string>();
+  //     for (const section of parsedSections) {
+  //       const c = section.config;
+  //       if (!c) continue;
+  //       const audioFiles: string[] = [];
+  //       if (c.ambientFilename) audioFiles.push(c.ambientFilename);
 
-        if (c.dialogueClips) {
-          Object.values(c.dialogueClips).forEach(clip => {
-            if (clip.filename) audioFiles.push(clip.filename);
-          });
-        }
-        if (c.stickyClips) {
-          Object.values(c.stickyClips).forEach(clip => {
-            if (clip.filename) audioFiles.push(clip.filename);
-          });
-        }
-        if (c.paraClips) {
-          Object.values(c.paraClips).forEach(clip => {
-            if (clip.filename) audioFiles.push(clip.filename);
-          });
-        }
-        for (const fn of audioFiles) {
-          if (!audioMap.has(fn)) {
-            const blobUrl = audioUrls.get(fn);
-            if (blobUrl) {
-              try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
-            }
-          }
-        }
-      }
+  //       if (c.dialogueClips) {
+  //         Object.values(c.dialogueClips).forEach(clip => {
+  //           if (clip.filename) audioFiles.push(clip.filename);
+  //         });
+  //       }
+  //       if (c.stickyClips) {
+  //         Object.values(c.stickyClips).forEach(clip => {
+  //           if (clip.filename) audioFiles.push(clip.filename);
+  //         });
+  //       }
+  //       if (c.paraClips) {
+  //         Object.values(c.paraClips).forEach(clip => {
+  //           if (clip.filename) audioFiles.push(clip.filename);
+  //         });
+  //       }
+  //       for (const fn of audioFiles) {
+  //         if (!audioMap.has(fn)) {
+  //           const blobUrl = audioUrls.get(fn);
+  //           if (blobUrl) {
+  //             try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+  //           }
+  //         }
+  //       }
+  //     }
 
-      // Also resolve inline audio-block audio from elements
-      for (const section of parsedSections) {
-        for (const el of section.elements) {
-          if (el.type === 'audio' && el.audioSrc) {
-            const fn = el.audioSrc.replace(/^(\.\.\/)?audio\//, '');
-            if (fn && !audioMap.has(fn)) {
-              const blobUrl = audioUrls.get(fn);
-              if (blobUrl) {
-                try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
-              }
-            }
-          }
-        }
-      }
+  //     // Also resolve inline audio-block audio from elements
+  //     for (const section of parsedSections) {
+  //       for (const el of section.elements) {
+  //         if (el.type === 'audio' && el.audioSrc) {
+  //           const fn = el.audioSrc.replace(/^(\.\.\/)?audio\//, '');
+  //           if (fn && !audioMap.has(fn)) {
+  //             const blobUrl = audioUrls.get(fn);
+  //             if (blobUrl) {
+  //               try { audioMap.set(fn, await blobUrlToDataUri(blobUrl)); } catch { /* skip */ }
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
 
-      const html = buildFullBookHtml({
-        sections: parsedSections,
-        bookTitle: bookTitle || 'Untitled',
-        bookAuthor: bookAuthor || '',
-        imageMap,
-        audioMap,
-        wallpaperUris,
-        hasAnySceneCraft,
-        isDark: !pvLight,
-      });
+  //     const html = buildFullBookHtml({
+  //       sections: parsedSections,
+  //       bookTitle: bookTitle || 'Untitled',
+  //       bookAuthor: bookAuthor || '',
+  //       imageMap,
+  //       audioMap,
+  //       wallpaperUris,
+  //       hasAnySceneCraft,
+  //       isDark: !pvLight,
+  //     });
 
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(bookTitle || 'book').replace(/[^a-zA-Z0-9_\- ]/g, '').trim()}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } finally {
-      Swal.close();
-      setDownloading(false);
-    }
-  }, [parsedSections, imageUrls, audioUrls, bookTitle, bookAuthor, hasAnySceneCraft, pvLight]);
+  //     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  //     const url = URL.createObjectURL(blob);
+  //     const a = document.createElement('a');
+  //     a.href = url;
+  //     a.download = `${(bookTitle || 'book').replace(/[^a-zA-Z0-9_\- ]/g, '').trim()}.html`;
+  //     document.body.appendChild(a);
+  //     a.click();
+  //     document.body.removeChild(a);
+  //     URL.revokeObjectURL(url);
+  //   } finally {
+  //     Swal.close();
+  //     setDownloading(false);
+  //   }
+  // }, [parsedSections, imageUrls, audioUrls, bookTitle, bookAuthor, hasAnySceneCraft, pvLight]);
 
   // Resolve inline image src (e.g. "images/photo.jpg") to blob URL
   const resolveImgSrc = useCallback((src: string | undefined): string | undefined => {
@@ -1342,7 +1344,7 @@ export default function FullBookView({
               </button>
             )}
             {/* Download button */}
-            <button onClick={handleDownload} disabled={downloading}
+            {/* <button onClick={handleDownload} disabled={downloading}
               title="Download as standalone HTML"
               style={{
                 fontSize: '11px', cursor: downloading ? 'default' : 'pointer',
@@ -1352,7 +1354,7 @@ export default function FullBookView({
                 color: downloading ? '#999' : '#22c55e',
               }}>
               {downloading ? 'Preparing...' : 'Download'}
-            </button>
+            </button> */}
           </div>
           {/* Book metadata */}
           <span style={{ fontSize: '13px', color: pvMuted, letterSpacing: '0.05em' }}>
@@ -1409,7 +1411,7 @@ export default function FullBookView({
           }}>
             {/* Dead zone before */}
             <div style={{ height: '50vh', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '2rem' }}>
-              <span style={{ fontSize: '10px', letterSpacing: '0.15em', color: pvLight ? '#bab5ae' : '#2a2620', fontStyle: 'italic' }}>{'\u2014'} silence {'\u2014'}</span>
+              <span dangerouslySetInnerHTML={{ __html: '&nbsp;' }} />
             </div>
 
             {/* Render all sections */}
@@ -1418,7 +1420,7 @@ export default function FullBookView({
                 {/* Section enter label */}
                 <div id={`section-enter-${si}`} style={{
                   textAlign: 'center', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
-                  color: 'rgba(255,120,68,0.25)',
+                  color: pvText,
                   marginBottom: showScOrange ? '3em' : 0,
                   paddingBottom: showScOrange ? '1em' : 0,
                   borderBottom: showScOrange ? `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}` : 'none',
@@ -1640,7 +1642,7 @@ export default function FullBookView({
                   marginTop: '3em', paddingTop: '1em',
                   borderTop: `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}`, fontStyle: 'italic',
                 }}>
-                  {'\u2014'} silence {'\u2014'}
+                  <span dangerouslySetInnerHTML={{ __html: '&nbsp;' }} />
                 </div>
               </div>
             ))}
