@@ -554,7 +554,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255,120,68,0.25);
+  color: #c8c0b4;
   margin-bottom: 3em;
   padding-bottom: 1em;
   border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -565,7 +565,7 @@ const SCENECRAFT_CSS = `/* ── SceneCraft immersive scroll-driven styles ─�
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255,120,68,0.15);
+  color: #c8c0b4;
   margin-top: 3em;
   padding-top: 1em;
   border-top: 1px solid rgba(255,255,255,0.03);
@@ -687,10 +687,6 @@ body.sc-overlay-hidden .sc-playhead-dot,
 body.sc-overlay-hidden .sc-info,
 body.sc-overlay-hidden .sc-dead-zone span {
   display: none !important;
-}
-body.sc-overlay-hidden .sc-enter,
-body.sc-overlay-hidden .sc-exit {
-  visibility: hidden !important;
 }
 /* ── Sticky-image enlarge: collapse stacking contexts so overlay reaches root ── */
 body:has(.sc-sticky-img input:checked) .sc-scene .sc-content {
@@ -1427,10 +1423,10 @@ ${textLines}
     <div class="sc-playhead"><div class="sc-playhead-dot"></div></div>
     <div class="sc-info"></div>
     <div class="sc-content">
-      <div class="sc-dead-zone"><span>&#8212; silence &#8212;</span></div>
+      <div class="sc-dead-zone"><span>&nbsp;</span></div>
       <div class="sc-enter">${escapeHtml(sectionTitle)}</div>
 ${blocksHtml}
-      <div class="sc-exit">&#8212; silence &#8212;</div>
+      <div class="sc-exit">&nbsp;</div>
       <div class="sc-dead-zone-after"></div>
     </div>
   </div>`;
