@@ -1421,11 +1421,9 @@ export default function FullBookView({
                 <div id={`section-enter-${si}`} style={{
                   textAlign: 'center', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
                   color: pvText,
-                  marginBottom: showScOrange ? '3em' : 0,
-                  paddingBottom: showScOrange ? '1em' : 0,
-                  borderBottom: showScOrange ? `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}` : 'none',
-                  height: showScOrange ? undefined : 0,
-                  overflow: showScOrange ? undefined : 'hidden',
+                  marginBottom: '3em',
+                  paddingBottom: '1em',
+                  borderBottom: `1px solid ${pvLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)'}`,
                 }}>
                   {section.title}
                 </div>
