@@ -125,6 +125,14 @@ export async function generateWebReadyZip(options: WebReadyOptions): Promise<Blo
     folder.file('autoplay.html', autoplayHtml, { compression: 'DEFLATE' });
   }
 
+  // Always generate Edge Read Aloud version (clean TTS-friendly HTML)
+  const edgeHtml = buildEdgeHtml({
+    title, author, year, sections, isDarkMode,
+    coverFilename, subtitle, publisher,
+    imageMap, audioMap,
+  });
+  folder.file('autoplay-via-edge.html', edgeHtml, { compression: 'DEFLATE' });
+
   return zip.generateAsync({ type: 'blob' });
 }
 
@@ -467,7 +475,152 @@ ${sceneCraftJsBlock}
 </html>`;
 }
 
+// ── Edge Read Aloud version ───────────────────────────────────────────────
+
+function buildEdgeHtml(opts: BuildHtmlOptions): string {
+  const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher, imageMap } = opts;
+
+  globalEnlargeCounter = 0;
+
+  const titleSlug = makeTitleSlug(title);
+  const sectionHtmls: string[] = [];
+  let hasAnyVnContent = false;
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]!;
+    const lower = section.title.toLowerCase().trim();
+
+    if (lower === 'contents' || lower === 'table of contents') continue;
+    if (lower === 'cover') continue;
+    if (lower === 'title page') continue;
+
+    // SceneCraft sections — render as regular chapters with images, no audio
+    if (section.sceneCraftConfig) {
+      sectionHtmls.push(generateEdgeSceneCraftHtml(
+        section.title, section.content, i, imageMap,
+      ));
+      continue;
+    }
+
+    let contentHtml = processContent(section.content);
+    contentHtml = normalizeMediaPaths(contentHtml);
+    contentHtml = stripAudioElements(contentHtml);
+    if (imageMap?.size) {
+      contentHtml = remapMediaPaths(contentHtml, imageMap ?? new Map(), new Map());
+    }
+    contentHtml = deduplicateEnlargeIds(contentHtml, i);
+    contentHtml = addTargetBlank(contentHtml);
+
+    if (lower === 'copyright') {
+      sectionHtmls.push(`
+  <section class="copyright-page" id="section-${i}">
+${contentHtml}
+  </section>`);
+    } else if (sectionHasVnContent(contentHtml)) {
+      hasAnyVnContent = true;
+      sectionHtmls.push(`
+  <article class="scene" id="section-${i}">
+    <h1 class="scene-title">${escapeHtml(section.title)}</h1>
+${contentHtml}
+  </article>`);
+    } else {
+      sectionHtmls.push(`
+  <section class="chapter" id="section-${i}">
+    <h1>${escapeHtml(section.title)}</h1>
+${contentHtml}
+  </section>`);
+    }
+  }
+
+  // Prepend cover, title page, and spoken intro (no TOC — Edge reads it aloud)
+  const coverHtml = generateCoverHtml(title, author, coverFilename);
+  const titlePageHtml = generateTitlePageHtml(title, author, subtitle, publisher);
+  const subtitleHtml = subtitle ? `\n    <p style="text-indent:0;text-align:center">${escapeHtml(subtitle)}</p>` : '';
+  const spokenIntro = `
+  <section class="chapter">
+    <h1>${escapeHtml(title)}</h1>${subtitleHtml}
+    <p style="text-indent:0;text-align:center">Written by ${escapeHtml(author)}.</p>
+  </section>`;
+  sectionHtmls.unshift(titlePageHtml);
+  sectionHtmls.unshift(coverHtml);
+
+  // Insert spoken intro after copyright (Edge skips cover/title/copyright)
+  const copyrightIdx = sectionHtmls.findIndex(h => h.includes('class="copyright-page"'));
+  if (copyrightIdx !== -1) {
+    sectionHtmls.splice(copyrightIdx + 1, 0, spokenIntro);
+  } else {
+    sectionHtmls.splice(2, 0, spokenIntro);
+  }
+
+  const allSectionsHtml = sectionHtmls.join('\n');
+
+  const vnCssBlock = hasAnyVnContent ? `\n/* ── Visual Narrative styles ──────────────── */\n${getVnClassRules()}` : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)} &#8212; Edge Read Aloud</title>
+  <base href="/${titleSlug}/" />
+  <style>
+${EPUB_BASE_CSS}
+${vnCssBlock}
+${HTML_SPECIFIC_CSS}
+  </style>
+</head>
+<body${isDarkMode ? ' class="dark-mode"' : ''}>
+${allSectionsHtml}
+
+  <div class="footer">
+    <div class="footer-buttons">
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">${isDarkMode ? '&#9728;&#65039;' : '&#127769;'}</button>
+    </div>
+    <div class="footer-info">
+      <span class="footer-title">${escapeHtml(title)}</span>
+      <span class="footer-author">by ${escapeHtml(author)}</span>
+      <span class="footer-copyright">&copy; ${escapeHtml(year)}</span>
+    </div>
+  </div>
+
+  <script>
+    var themeToggle = document.getElementById('themeToggle');
+    var body = document.body;
+
+    var savedTheme = localStorage.getItem('html-ebook-theme');
+    if (savedTheme === 'light' && body.classList.contains('dark-mode')) {
+      body.classList.remove('dark-mode');
+      themeToggle.textContent = '\u{1F319}';
+    } else if (savedTheme === 'dark' && !body.classList.contains('dark-mode')) {
+      body.classList.add('dark-mode');
+      themeToggle.textContent = '\u2600\uFE0F';
+    }
+
+    themeToggle.addEventListener('click', function() {
+      body.classList.toggle('dark-mode');
+      var isDark = body.classList.contains('dark-mode');
+      themeToggle.textContent = isDark ? '\u2600\uFE0F' : '\u{1F319}';
+      localStorage.setItem('html-ebook-theme', isDark ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>`;
+}
+
 // ── Internal helpers ──────────────────────────────────────────────────────
+
+/**
+ * Strip audio elements from HTML content (for Edge Read Aloud version).
+ * Removes <audio>, <div class="audio-block">, <div class="scene-audio">.
+ */
+function stripAudioElements(html: string): string {
+  return html
+    .replace(/<div\s+class="scene-audio"[^>]*>.*?<\/div>/gs, '')
+    .replace(/<div\s+class="audio-block"[^>]*>.*?<\/div>/gs, '')
+    .replace(/<audio[^>]*>.*?<\/audio>/gs, '')
+    .replace(/<p>\s*<\/p>/g, '')
+    .replace(/\n{3,}/g, '\n\n');
+}
 
 /**
  * Normalize media paths: strip ../ prefixes so EPUB xhtml content
@@ -1070,6 +1223,71 @@ ${blocksHtml}
       <div class="sc-dead-zone-after"></div>
     </div>
   </div>`;
+}
+
+/**
+ * Render a SceneCraft section as a regular chapter for Edge Read Aloud.
+ * Keeps images, strips audio/wallpaper/dead zones/playhead.
+ */
+function generateEdgeSceneCraftHtml(
+  sectionTitle: string,
+  xhtml: string,
+  sectionIndex: number,
+  imageMap?: Map<string, string>,
+): string {
+  const elements = parseSceneElements(xhtml);
+
+  const contentParts: string[] = [];
+
+  for (const item of elements) {
+    if (item.type === 'audio') continue;
+
+    if (item.type === 'dialogue') {
+      const spk = item.direction ? `${item.speaker} (${item.direction})` : (item.speaker || '');
+      contentParts.push(`    <p><strong>${escapeHtml(spk)}</strong> ${addTargetBlank(item.text)}</p>`);
+    } else if (item.type === 'sticky') {
+      if (item.imgSrc) {
+        const src = normalizeImgSrc(item.imgSrc);
+        contentParts.push(`    <div class="image-container"><img src="${src}" alt="${escapeHtml(item.alt || 'Image')}" style="max-width:100%;height:auto"/></div>`);
+      }
+      const lines = item.text.split('\n').filter(l => l.trim());
+      for (const line of lines) {
+        contentParts.push(`    <p>${addTargetBlank(line)}</p>`);
+      }
+    } else if (item.type === 'figure') {
+      if (item.imgSrc) {
+        const src = normalizeImgSrc(item.imgSrc);
+        contentParts.push(`    <figure${item.width ? ` style="max-width:${item.width}"` : ''}><img src="${src}" alt="${escapeHtml(item.alt || item.text)}" style="max-width:100%;height:auto"/><figcaption>${escapeHtml(item.alt || item.text)}</figcaption></figure>`);
+      }
+    } else if (item.type === 'emphasis') {
+      contentParts.push(`    <p style="text-align:center;font-style:italic">${addTargetBlank(item.text)}</p>`);
+    } else if (item.type === 'internal') {
+      contentParts.push(`    <p style="font-style:italic;padding-left:2em">${addTargetBlank(item.text)}</p>`);
+    } else if (item.type === 'quote') {
+      contentParts.push(`    <blockquote>${addTargetBlank(item.text)}</blockquote>`);
+    } else if (item.type === 'break') {
+      contentParts.push(`    <p style="text-align:center;letter-spacing:0.3em">${escapeHtml(item.text)}</p>`);
+    } else if (item.type === 'h1' || item.type === 'h2' || item.type === 'h3') {
+      contentParts.push(`    <${item.type}>${addTargetBlank(item.text)}</${item.type}>`);
+    } else if (item.type === 'divider') {
+      contentParts.push(`    <hr/>`);
+    } else if (item.type === 'linebreak') {
+      contentParts.push(`    <br/>`);
+    } else if (item.type === 'para') {
+      contentParts.push(`    <p>${addTargetBlank(item.text)}</p>`);
+    }
+  }
+
+  let contentHtml = contentParts.join('\n');
+  if (imageMap?.size) {
+    contentHtml = remapMediaPaths(contentHtml, imageMap, new Map());
+  }
+
+  return `
+  <section class="chapter" id="section-${sectionIndex}">
+    <h1>${escapeHtml(sectionTitle)}</h1>
+${contentHtml}
+  </section>`;
 }
 
 function generateCoverHtml(
