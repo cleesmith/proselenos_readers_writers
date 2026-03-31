@@ -141,7 +141,7 @@ let globalEnlargeCounter = 0;
 
 // ── Internal: build the full HTML string ──────────────────────────────────
 
-interface BuildHtmlOptions {
+export interface BuildHtmlOptions {
   title: string;
   author: string;
   year: string;
@@ -477,8 +477,8 @@ ${sceneCraftJsBlock}
 
 // ── Edge Read Aloud version ───────────────────────────────────────────────
 
-function buildEdgeHtml(opts: BuildHtmlOptions): string {
-  const { title, author, year, sections, isDarkMode, coverFilename, subtitle, publisher, imageMap } = opts;
+export function buildEdgeHtml(opts: BuildHtmlOptions): string {
+  const { title, author, year, sections, isDarkMode, subtitle, publisher, imageMap } = opts;
 
   globalEnlargeCounter = 0;
 
@@ -532,8 +532,7 @@ ${contentHtml}
     }
   }
 
-  // Prepend cover, title page, and spoken intro (no TOC — Edge reads it aloud)
-  const coverHtml = generateCoverHtml(title, author, coverFilename);
+  // Prepend title page and spoken intro — no cover (no TOC — Edge reads it aloud)
   const titlePageHtml = generateTitlePageHtml(title, author, subtitle, publisher);
   const subtitleHtml = subtitle ? `\n    <p style="text-indent:0;text-align:center">${escapeHtml(subtitle)}</p>` : '';
   const spokenIntro = `
@@ -542,14 +541,13 @@ ${contentHtml}
     <p style="text-indent:0;text-align:center">Written by ${escapeHtml(author)}.</p>
   </section>`;
   sectionHtmls.unshift(titlePageHtml);
-  sectionHtmls.unshift(coverHtml);
 
-  // Insert spoken intro after copyright (Edge skips cover/title/copyright)
+  // Insert spoken intro after copyright (Edge skips title/copyright)
   const copyrightIdx = sectionHtmls.findIndex(h => h.includes('class="copyright-page"'));
   if (copyrightIdx !== -1) {
     sectionHtmls.splice(copyrightIdx + 1, 0, spokenIntro);
   } else {
-    sectionHtmls.splice(2, 0, spokenIntro);
+    sectionHtmls.splice(1, 0, spokenIntro);
   }
 
   const allSectionsHtml = sectionHtmls.join('\n');

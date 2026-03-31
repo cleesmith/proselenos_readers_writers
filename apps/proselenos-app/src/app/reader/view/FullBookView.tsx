@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { SceneCraftConfig } from '@/services/manuscriptStorage';
-// import Swal from 'sweetalert2';
+import { buildEdgeHtml } from '@/lib/web-ready-generator';
 
 // ============================================================
 //  Types
@@ -984,6 +984,29 @@ export default function FullBookView({
   //   }
   // }, [parsedSections, imageUrls, audioUrls, bookTitle, bookAuthor, hasAnySceneCraft, pvLight]);
 
+  // ── Edge Read Aloud ────────────────────────────────────────
+  const handleEdgeReadAloud = useCallback(() => {
+    const edgeSections = sections.map(s => ({
+      title: s.title,
+      content: s.xhtml,
+      sceneCraftConfig: s.sceneCraftConfig ?? undefined,
+    }));
+    let html = buildEdgeHtml({
+      title: bookTitle || 'Untitled',
+      author: bookAuthor || '',
+      year: new Date().getFullYear().toString(),
+      sections: edgeSections,
+      isDarkMode: !pvLight,
+    });
+    // Replace image paths with blob URLs
+    for (const [filename, blobUrl] of imageUrls) {
+      html = html.replaceAll(`images/${filename}`, blobUrl);
+    }
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }, [sections, bookTitle, bookAuthor, pvLight, imageUrls]);
+
   // Resolve inline image src (e.g. "images/photo.jpg") to blob URL
   const resolveImgSrc = useCallback((src: string | undefined): string | undefined => {
     if (!src) return src;
@@ -1343,6 +1366,18 @@ export default function FullBookView({
                 </svg>
               </button>
             )}
+            {/* Edge Read Aloud button */}
+            <button onClick={handleEdgeReadAloud}
+              title="Open Microsoft Edge Read Aloud version"
+              style={{
+                fontSize: '11px', cursor: 'pointer',
+                padding: '4px 8px', letterSpacing: '0.05em', borderRadius: '4px',
+                backgroundColor: 'rgba(147,51,234,0.15)',
+                border: '1px solid rgba(147,51,234,0.3)',
+                color: '#9333ea',
+              }}>
+              Microsoft Edge Read Aloud
+            </button>
             {/* Download button */}
             {/* <button onClick={handleDownload} disabled={downloading}
               title="Download as standalone HTML"
