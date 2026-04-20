@@ -1,4 +1,4 @@
-// epub-to-pdf-square.tsx
+// apps/proselenos-app/src/lib/epub-to-pdf-square.tsx
 //
 // Client-side epub → 8.5×8.5 inch square PDF using JSZip + book-pdf
 // Cloned from epub-to-pdf.tsx — no page numbers, no running headers, no TOC.
@@ -76,9 +76,11 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   image: {
-    width: '100%',
+    width: 486,              // content width: 612 - 63 - 63 (0.875" margins)
     maxHeight: 558,          // content height: 612 - 27 - 27
     objectFit: 'contain',    // scale proportionally, never distort
+    alignSelf: 'center',
+    marginVertical: 15,
   },
   sceneBreak: {
     fontFamily: 'EBGaramond',
@@ -315,7 +317,7 @@ export const BookDocumentSquare: React.FC<{
         const pageStyle = pageNum % 2 === 1 ? styles.pageOdd : styles.pageEven;
         return (
           <Page size={[612, 612]} style={pageStyle} key={ch.id}>
-            <View style={{ flex: 1 }}>{convertHtmlToElements(ch.html)}</View>
+            {convertHtmlToElements(ch.html)}
           </Page>
         );
       })}
