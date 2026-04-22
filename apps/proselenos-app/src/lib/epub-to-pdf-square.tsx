@@ -296,6 +296,13 @@ export const BookDocumentSquare: React.FC<{
   chapters: ChapterData[];
   options: PdfOptions;
 }> = ({ chapters, options }) => {
+  // Drop chapters that convert to no renderable content (e.g. spine items
+  // that are only <h1>…</h1>, which convertNode filters to null). Emitting
+  // a Page for those would produce phantom blanks and flip recto/verso.
+  const renderedChapters = chapters
+    .map(ch => ({ id: ch.id, elements: convertHtmlToElements(ch.html) }))
+    .filter(ch => ch.elements.length > 0);
+
   return (
     <Document pageLayout="twoPageRight">
       {/* Page 1 (recto): Title Page */}
@@ -318,12 +325,12 @@ export const BookDocumentSquare: React.FC<{
       </Page>
 
       {/* Chapters — each starts on recto; a blank verso follows each (except the last) */}
-      {chapters.map((ch, i) => (
+      {renderedChapters.map((ch, i) => (
         <React.Fragment key={ch.id}>
           <Page size={[612, 612]} style={styles.pageOdd}>
-            {convertHtmlToElements(ch.html)}
+            {ch.elements}
           </Page>
-          {i < chapters.length - 1 && (
+          {i < renderedChapters.length - 1 && (
             <Page size={[612, 612]} style={styles.pageEven}>
               <View />
             </Page>
