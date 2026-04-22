@@ -325,7 +325,11 @@ function splitChapterForKidsBook(html: string): ChapterSplit | null {
   if (imgIndex === -1) return null;
 
   const imgEl = contentEls[imgIndex]!;
-  const textEls = contentEls.filter((_, i) => i !== imgIndex);
+  // Recto body: everything except the image (which goes on the verso)
+  // and the caption (the leaf right after the image, dropped entirely —
+  // never printed in the PDF).
+  const captionIndex = imgIndex + 1;
+  const textEls = contentEls.filter((_, i) => i !== imgIndex && i !== captionIndex);
 
   const versoElements: React.ReactNode[] = [];
   const imgNode = convertNode(imgEl);
