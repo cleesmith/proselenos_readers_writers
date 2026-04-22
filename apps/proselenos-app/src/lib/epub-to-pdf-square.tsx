@@ -325,20 +325,14 @@ function splitChapterForKidsBook(html: string): ChapterSplit | null {
   if (imgIndex === -1) return null;
 
   const imgEl = contentEls[imgIndex]!;
-  const afterImg = contentEls.slice(imgIndex + 1);
-  const captionEl: Element | null = afterImg[0] ?? null;
-  const bodyEls = afterImg.slice(1);
+  const textEls = contentEls.filter((_, i) => i !== imgIndex);
 
   const versoElements: React.ReactNode[] = [];
   const imgNode = convertNode(imgEl);
   if (imgNode) versoElements.push(imgNode);
-  if (captionEl) {
-    const capNode = convertNode(captionEl);
-    if (capNode) versoElements.push(capNode);
-  }
 
   const rectoElements: React.ReactNode[] = [];
-  for (const el of bodyEls) {
+  for (const el of textEls) {
     const n = convertNode(el);
     if (n) rectoElements.push(n);
   }
