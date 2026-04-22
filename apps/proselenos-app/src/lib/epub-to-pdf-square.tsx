@@ -325,26 +325,29 @@ function splitChapterForKidsBook(html: string): ChapterSplit | null {
 
   const imgIndex = contentEls.findIndex(el => el.tagName.toLowerCase() === 'img');
 
+  // versoElements / rectoElements name their final printed destination:
+  //   versoElements → left (verso) page of the spread
+  //   rectoElements → right (recto) page of the spread
   const versoElements: React.ReactNode[] = [];
-  let textEls: Element[];
+  const rectoElements: React.ReactNode[] = [];
 
   if (imgIndex === -1) {
-    // Back matter (no image): verso stays blank, all content flows to recto.
-    textEls = contentEls;
+    // Back matter (no image): all content on recto, verso blank.
+    for (const el of contentEls) {
+      const n = convertNode(el);
+      if (n) rectoElements.push(n);
+    }
   } else {
-    // Image chapter: verso holds the image; the caption (leaf right after
-    // the image) is dropped entirely; everything else goes on the recto.
+    // Image chapter: image on recto, body text on verso, caption dropped.
     const imgEl = contentEls[imgIndex]!;
     const imgNode = convertNode(imgEl);
-    if (imgNode) versoElements.push(imgNode);
+    if (imgNode) rectoElements.push(imgNode);
     const captionIndex = imgIndex + 1;
-    textEls = contentEls.filter((_, i) => i !== imgIndex && i !== captionIndex);
-  }
-
-  const rectoElements: React.ReactNode[] = [];
-  for (const el of textEls) {
-    const n = convertNode(el);
-    if (n) rectoElements.push(n);
+    const textEls = contentEls.filter((_, i) => i !== imgIndex && i !== captionIndex);
+    for (const el of textEls) {
+      const n = convertNode(el);
+      if (n) versoElements.push(n);
+    }
   }
 
   return { versoElements, rectoElements };
@@ -372,8 +375,14 @@ export const BookDocumentSquare: React.FC<{
         </View>
       </Page>
 
-      {/* Page 2 (verso): Copyright — always emitted (blank if none) */}
+      {/* Page 2 (verso): Blank — satisfies KDP's title-page convention
+          (back of title leaf is blank, representing the inside cover) */}
       <Page size={[612, 612]} style={styles.pageEven}>
+        <View />
+      </Page>
+
+      {/* Page 3 (recto): Copyright — always emitted (blank if none) */}
+      <Page size={[612, 612]} style={styles.pageOdd}>
         {options.copyrightHtml ? (
           <View style={styles.copyrightPage}>
             {convertHtmlToElements(options.copyrightHtml)}
@@ -383,20 +392,21 @@ export const BookDocumentSquare: React.FC<{
         )}
       </Page>
 
-      {/* Page 3 (recto): Forced blank so first chapter spread starts on verso */}
-      <Page size={[612, 612]} style={styles.pageOdd}>
+      {/* Page 4 (verso): Forced blank after copyright */}
+      <Page size={[612, 612]} style={styles.pageEven}>
         <View />
       </Page>
 
-      {/* Each entry: 2 pages. Image chapters: image verso, body recto.
-          Back matter (no image): blank verso, text recto. */}
+      {/* Each entry: 2 pages. First emitted page lands on recto (odd).
+          Image chapters: image recto, body text verso.
+          Back matter (no image): content recto, blank verso. */}
       {splits.map(({ id, versoElements, rectoElements }) => (
         <React.Fragment key={id}>
-          <Page size={[612, 612]} style={styles.pageEven}>
-            {versoElements.length > 0 ? versoElements : <View />}
-          </Page>
           <Page size={[612, 612]} style={styles.pageOdd}>
             {rectoElements.length > 0 ? rectoElements : <View />}
+          </Page>
+          <Page size={[612, 612]} style={styles.pageEven}>
+            {versoElements.length > 0 ? versoElements : <View />}
           </Page>
         </React.Fragment>
       ))}
