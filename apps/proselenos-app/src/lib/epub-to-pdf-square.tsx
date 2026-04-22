@@ -321,19 +321,25 @@ function splitChapterForKidsBook(html: string): ChapterSplit | null {
   };
   walk(root);
 
-  const imgIndex = contentEls.findIndex(el => el.tagName.toLowerCase() === 'img');
-  if (imgIndex === -1) return null;
+  if (contentEls.length === 0) return null;
 
-  const imgEl = contentEls[imgIndex]!;
-  // Recto body: everything except the image (which goes on the verso)
-  // and the caption (the leaf right after the image, dropped entirely —
-  // never printed in the PDF).
-  const captionIndex = imgIndex + 1;
-  const textEls = contentEls.filter((_, i) => i !== imgIndex && i !== captionIndex);
+  const imgIndex = contentEls.findIndex(el => el.tagName.toLowerCase() === 'img');
 
   const versoElements: React.ReactNode[] = [];
-  const imgNode = convertNode(imgEl);
-  if (imgNode) versoElements.push(imgNode);
+  let textEls: Element[];
+
+  if (imgIndex === -1) {
+    // Back matter (no image): verso stays blank, all content flows to recto.
+    textEls = contentEls;
+  } else {
+    // Image chapter: verso holds the image; the caption (leaf right after
+    // the image) is dropped entirely; everything else goes on the recto.
+    const imgEl = contentEls[imgIndex]!;
+    const imgNode = convertNode(imgEl);
+    if (imgNode) versoElements.push(imgNode);
+    const captionIndex = imgIndex + 1;
+    textEls = contentEls.filter((_, i) => i !== imgIndex && i !== captionIndex);
+  }
 
   const rectoElements: React.ReactNode[] = [];
   for (const el of textEls) {
@@ -382,11 +388,12 @@ export const BookDocumentSquare: React.FC<{
         <View />
       </Page>
 
-      {/* Chapters — verso: image+caption, recto: body text (or blank) */}
+      {/* Each entry: 2 pages. Image chapters: image verso, body recto.
+          Back matter (no image): blank verso, text recto. */}
       {splits.map(({ id, versoElements, rectoElements }) => (
         <React.Fragment key={id}>
           <Page size={[612, 612]} style={styles.pageEven}>
-            {versoElements}
+            {versoElements.length > 0 ? versoElements : <View />}
           </Page>
           <Page size={[612, 612]} style={styles.pageOdd}>
             {rectoElements.length > 0 ? rectoElements : <View />}
