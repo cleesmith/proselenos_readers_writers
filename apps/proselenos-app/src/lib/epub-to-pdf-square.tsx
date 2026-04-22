@@ -290,18 +290,73 @@ function collectInlineContent(el: Element): React.ReactNode[] {
   return results;
 }
 
+// ─── Kids-book chapter split: image+caption on verso, body text on recto ───
+
+interface ChapterSplit {
+  versoElements: React.ReactNode[];
+  rectoElements: React.ReactNode[];
+}
+
+function splitChapterForKidsBook(html: string): ChapterSplit | null {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+  const root = doc.body.firstChild as Element | null;
+  if (!root) return null;
+
+  // Collect renderable content elements in document order, flattening
+  // through container wrappers (div/section/etc.) but stopping at leaf
+  // content tags. Headings are dropped entirely.
+  const leafTags = new Set(['img', 'p', 'blockquote', 'ul', 'ol', 'hr']);
+  const contentEls: Element[] = [];
+  const walk = (node: Node): void => {
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const el = node as Element;
+    const tag = el.tagName.toLowerCase();
+    if (/^h[1-6]$/.test(tag)) return;
+    if (leafTags.has(tag)) {
+      contentEls.push(el);
+      return;
+    }
+    for (const child of Array.from(el.childNodes)) walk(child);
+  };
+  walk(root);
+
+  const imgIndex = contentEls.findIndex(el => el.tagName.toLowerCase() === 'img');
+  if (imgIndex === -1) return null;
+
+  const imgEl = contentEls[imgIndex]!;
+  const afterImg = contentEls.slice(imgIndex + 1);
+  const captionEl: Element | null = afterImg[0] ?? null;
+  const bodyEls = afterImg.slice(1);
+
+  const versoElements: React.ReactNode[] = [];
+  const imgNode = convertNode(imgEl);
+  if (imgNode) versoElements.push(imgNode);
+  if (captionEl) {
+    const capNode = convertNode(captionEl);
+    if (capNode) versoElements.push(capNode);
+  }
+
+  const rectoElements: React.ReactNode[] = [];
+  for (const el of bodyEls) {
+    const n = convertNode(el);
+    if (n) rectoElements.push(n);
+  }
+
+  return { versoElements, rectoElements };
+}
+
 // ─── BookDocumentSquare component (no header, no page numbers, no TOC) ───
 
 export const BookDocumentSquare: React.FC<{
   chapters: ChapterData[];
   options: PdfOptions;
 }> = ({ chapters, options }) => {
-  // Drop chapters that convert to no renderable content (e.g. spine items
-  // that are only <h1>…</h1>, which convertNode filters to null). Emitting
-  // a Page for those would produce phantom blanks and flip recto/verso.
-  const renderedChapters = chapters
-    .map(ch => ({ id: ch.id, elements: convertHtmlToElements(ch.html) }))
-    .filter(ch => ch.elements.length > 0);
+  const splits: Array<{ id: string } & ChapterSplit> = [];
+  for (const ch of chapters) {
+    const s = splitChapterForKidsBook(ch.html);
+    if (s) splits.push({ id: ch.id, ...s });
+  }
 
   return (
     <Document pageLayout="twoPageRight">
@@ -313,7 +368,7 @@ export const BookDocumentSquare: React.FC<{
         </View>
       </Page>
 
-      {/* Page 2 (verso): Copyright Page — always emitted (blank if epub has none) so chapters land on recto */}
+      {/* Page 2 (verso): Copyright — always emitted (blank if none) */}
       <Page size={[612, 612]} style={styles.pageEven}>
         {options.copyrightHtml ? (
           <View style={styles.copyrightPage}>
@@ -324,17 +379,20 @@ export const BookDocumentSquare: React.FC<{
         )}
       </Page>
 
-      {/* Chapters — each starts on recto; a blank verso follows each (except the last) */}
-      {renderedChapters.map((ch, i) => (
-        <React.Fragment key={ch.id}>
-          <Page size={[612, 612]} style={styles.pageOdd}>
-            {ch.elements}
+      {/* Page 3 (recto): Forced blank so first chapter spread starts on verso */}
+      <Page size={[612, 612]} style={styles.pageOdd}>
+        <View />
+      </Page>
+
+      {/* Chapters — verso: image+caption, recto: body text (or blank) */}
+      {splits.map(({ id, versoElements, rectoElements }) => (
+        <React.Fragment key={id}>
+          <Page size={[612, 612]} style={styles.pageEven}>
+            {versoElements}
           </Page>
-          {i < renderedChapters.length - 1 && (
-            <Page size={[612, 612]} style={styles.pageEven}>
-              <View />
-            </Page>
-          )}
+          <Page size={[612, 612]} style={styles.pageOdd}>
+            {rectoElements.length > 0 ? rectoElements : <View />}
+          </Page>
         </React.Fragment>
       ))}
     </Document>
