@@ -38,6 +38,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     lineHeight: 1.4,
   },
+  // Content pages (every page after the copyright page): same as pageOdd/
+  // pageEven but with an extra 0.5" of top padding.
+  contentPageOdd: {
+    paddingTop: 63,    // 27 + 36 (0.5") — extra breathing room at the top
+    paddingBottom: 27,
+    paddingLeft: 63,
+    paddingRight: 63,
+    fontFamily: 'EBGaramond',
+    fontSize: 22,
+    fontWeight: 'bold',
+    lineHeight: 1.4,
+  },
+  contentPageEven: {
+    paddingTop: 63,
+    paddingBottom: 27,
+    paddingLeft: 63,
+    paddingRight: 63,
+    fontFamily: 'EBGaramond',
+    fontSize: 22,
+    fontWeight: 'bold',
+    lineHeight: 1.4,
+  },
   // Title page
   titlePage: {
     flex: 1,
@@ -392,8 +414,9 @@ export const BookDocumentSquare: React.FC<{
         )}
       </Page>
 
-      {/* Page 4 (verso): Forced blank after copyright */}
-      <Page size={[612, 612]} style={styles.pageEven}>
+      {/* Page 4 (verso): Forced blank after copyright. From here on, every
+          page uses the contentPage styles which add 0.5" of top padding. */}
+      <Page size={[612, 612]} style={styles.contentPageEven}>
         <View />
       </Page>
 
@@ -402,10 +425,10 @@ export const BookDocumentSquare: React.FC<{
           Back matter (no image): content recto, blank verso. */}
       {splits.map(({ id, versoElements, rectoElements }) => (
         <React.Fragment key={id}>
-          <Page size={[612, 612]} style={styles.pageOdd}>
+          <Page size={[612, 612]} style={styles.contentPageOdd}>
             {rectoElements.length > 0 ? rectoElements : <View />}
           </Page>
-          <Page size={[612, 612]} style={styles.pageEven}>
+          <Page size={[612, 612]} style={styles.contentPageEven}>
             {versoElements.length > 0 ? versoElements : <View />}
           </Page>
         </React.Fragment>
