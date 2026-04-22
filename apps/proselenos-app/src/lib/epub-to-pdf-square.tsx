@@ -24,7 +24,8 @@ const styles = StyleSheet.create({
     paddingLeft: 63,   // 0.875" — matches Vellum
     paddingRight: 63,  // 0.875" — matches Vellum
     fontFamily: 'EBGaramond',
-    fontSize: 11,
+    fontSize: 22,
+    fontWeight: 'bold',
     lineHeight: 1.4,
   },
   pageEven: {
@@ -33,7 +34,8 @@ const styles = StyleSheet.create({
     paddingLeft: 63,   // 0.875" — matches Vellum
     paddingRight: 63,  // 0.875" — matches Vellum
     fontFamily: 'EBGaramond',
-    fontSize: 11,
+    fontSize: 22,
+    fontWeight: 'bold',
     lineHeight: 1.4,
   },
   // Title page
@@ -43,7 +45,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bookTitle: {
-    fontSize: 28,
+    fontSize: 40,
     fontFamily: 'EBGaramond',
     fontWeight: 'bold',
     textAlign: 'center',
@@ -51,7 +53,7 @@ const styles = StyleSheet.create({
     marginBottom: 120,
   },
   bookAuthor: {
-    fontSize: 16,
+    fontSize: 32,
     fontFamily: 'EBGaramond',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -64,7 +66,7 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   copyrightText: {
-    fontSize: 9,
+    fontSize: 18,
     fontFamily: 'EBGaramond',
     lineHeight: 1.6,
     marginBottom: 4,
@@ -72,6 +74,7 @@ const styles = StyleSheet.create({
   // Content styles
   paragraph: {
     fontFamily: 'EBGaramond',
+    fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'left',
   },
@@ -89,6 +92,7 @@ const styles = StyleSheet.create({
   },
   listItem: {
     fontFamily: 'EBGaramond',
+    fontWeight: 'bold',
     marginBottom: 4,
     paddingLeft: 15,
   },
@@ -170,12 +174,12 @@ function convertNode(node: Node): React.ReactNode {
     case 'hr':
       return (
         <View key={nextKey()} style={styles.sceneBreak}>
-          <Text style={{ fontFamily: 'EBGaramond' }}>* * *</Text>
+          <Text style={{ fontFamily: 'EBGaramond', fontWeight: 'bold' }}>* * *</Text>
         </View>
       );
 
     case 'br':
-      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond' }}>{'\n'}</Text>;
+      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond', fontWeight: 'bold' }}>{'\n'}</Text>;
 
     case 'ul':
     case 'ol': {
@@ -233,7 +237,7 @@ function convertNode(node: Node): React.ReactNode {
     case 'sub':
     case 'u':
     case 'a':
-      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond' }}>{el.textContent ?? ''}</Text>;
+      return <Text key={nextKey()} style={{ fontFamily: 'EBGaramond', fontWeight: 'bold' }}>{el.textContent ?? ''}</Text>;
 
     default: {
       const children = convertChildren(el);
@@ -293,8 +297,8 @@ export const BookDocumentSquare: React.FC<{
   options: PdfOptions;
 }> = ({ chapters, options }) => {
   return (
-    <Document>
-      {/* Page 1 (odd/recto): Title Page */}
+    <Document pageLayout="twoPageRight">
+      {/* Page 1 (recto): Title Page */}
       <Page size={[612, 612]} style={styles.pageOdd}>
         <View style={styles.titlePage}>
           <Text style={styles.bookTitle}>{options.title}</Text>
@@ -302,25 +306,30 @@ export const BookDocumentSquare: React.FC<{
         </View>
       </Page>
 
-      {/* Page 2 (even/verso): Copyright Page — only if the epub has one */}
-      {options.copyrightHtml && (
-        <Page size={[612, 612]} style={styles.pageEven}>
+      {/* Page 2 (verso): Copyright Page — always emitted (blank if epub has none) so chapters land on recto */}
+      <Page size={[612, 612]} style={styles.pageEven}>
+        {options.copyrightHtml ? (
           <View style={styles.copyrightPage}>
             {convertHtmlToElements(options.copyrightHtml)}
           </View>
-        </Page>
-      )}
+        ) : (
+          <View />
+        )}
+      </Page>
 
-      {/* Chapters — each starts on a new page, alternating odd/even */}
-      {chapters.map((ch, i) => {
-        const pageNum = i + 3;
-        const pageStyle = pageNum % 2 === 1 ? styles.pageOdd : styles.pageEven;
-        return (
-          <Page size={[612, 612]} style={pageStyle} key={ch.id}>
+      {/* Chapters — each starts on recto; a blank verso follows each (except the last) */}
+      {chapters.map((ch, i) => (
+        <React.Fragment key={ch.id}>
+          <Page size={[612, 612]} style={styles.pageOdd}>
             {convertHtmlToElements(ch.html)}
           </Page>
-        );
-      })}
+          {i < chapters.length - 1 && (
+            <Page size={[612, 612]} style={styles.pageEven}>
+              <View />
+            </Page>
+          )}
+        </React.Fragment>
+      ))}
     </Document>
   );
 };
