@@ -46,6 +46,7 @@ function reorderSectionsByVisualGroup<T extends { type?: ElementType }>(sections
 import TitlePagePanel, { BookMetadata } from './TitlePagePanel';
 import { parseEpub, ParsedEpub } from '@/services/epubService';
 import { parseDocx } from '@/services/docxService';
+import { parsePdf } from '@/lib/pdfToPages';
 import { countWords } from '@/services/htmlExtractor';
 import {
   loadFullWorkingCopy,
@@ -1057,6 +1058,69 @@ export default function AuthorsLayout({
     input.click();
   };
 
+  const handleOpenPdf = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          const parsed = await parsePdf(file);
+          await clearWorkingCopy();
+          await saveFullWorkingCopy({
+            title: parsed.title,
+            author: parsed.author,
+            language: parsed.language,
+            coverImage: parsed.coverImage,
+            sections: parsed.sections.map((s) => ({
+              id: s.id,
+              title: s.title,
+              xhtml: s.content
+                .split(/\n\s*\n/)
+                .filter((p: string) => p.trim())
+                .map((p: string) => `<p>${escapeHtmlForLayout(p.replace(/\n/g, ' ').trim())}</p>`)
+                .join('\n') || '<p></p>',
+            })),
+          });
+          const saved = await loadFullWorkingCopy();
+          if (saved) {
+            const loadedEpub: ParsedEpub = {
+              title: saved.title,
+              author: saved.author,
+              language: saved.language,
+              coverImage: saved.coverImage,
+              sections: saved.sections
+                .filter((s) => s.type !== 'cover')
+                .map((s) => ({
+                  id: s.id,
+                  title: s.title,
+                  href: `${s.id}.xhtml`,
+                  xhtml: s.xhtml,
+                  type: s.type,
+
+                  sceneCraftConfig: s.sceneCraftConfig,
+                })),
+            };
+            setEpub(loadedEpub);
+            setSelectedSectionId(loadedEpub.sections[0]?.id ?? null);
+          }
+          const meta = await loadWorkingCopyMeta();
+          if (meta) {
+            setBookMeta(meta);
+          }
+          await onResetTools?.();
+          showAlert(`Loaded "${parsed.title}" with ${parsed.sections.length} sections`, 'success', undefined, isDarkMode);
+        } catch (error) {
+          console.error('Error parsing pdf:', error);
+          const message = error instanceof Error ? error.message : 'Error parsing PDF file. Please try a different file.';
+          showAlert(message, 'error', undefined, isDarkMode);
+        }
+      }
+    };
+    input.click();
+  };
+
   // Handle opening a Fountain screenplay file
   // Parses .fountain tokens, splits on scene_heading, converts to XHTML sections
   // Preserves token types via data-fountain attributes for round-trip export
@@ -2054,6 +2118,7 @@ export default function AuthorsLayout({
         onNewClick={handleNew}
         onOpenClick={handleOpenEpub}
         onOpenDocxClick={handleOpenDocx}
+        onOpenPdfClick={handleOpenPdf}
         onOpenFountainClick={handleOpenFountain}
         onLoadFromLibraryClick={onLoadFromLibraryClick}
         onSaveClick={handleSave}

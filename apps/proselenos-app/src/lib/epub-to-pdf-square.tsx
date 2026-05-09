@@ -21,8 +21,8 @@ const styles = StyleSheet.create({
   pageOdd: {
     paddingTop: 27,
     paddingBottom: 27,
-    paddingLeft: 63,   // 0.875" — matches Vellum
-    paddingRight: 63,  // 0.875" — matches Vellum
+    paddingLeft: 63,   // 0.875"
+    paddingRight: 63,  // 0.875"
     fontFamily: 'EBGaramond',
     fontSize: 22,
     fontWeight: 'bold',
@@ -31,8 +31,8 @@ const styles = StyleSheet.create({
   pageEven: {
     paddingTop: 27,
     paddingBottom: 27,
-    paddingLeft: 63,   // 0.875" — matches Vellum
-    paddingRight: 63,  // 0.875" — matches Vellum
+    paddingLeft: 63,   // 0.875"
+    paddingRight: 63,  // 0.875"
     fontFamily: 'EBGaramond',
     fontSize: 22,
     fontWeight: 'bold',
