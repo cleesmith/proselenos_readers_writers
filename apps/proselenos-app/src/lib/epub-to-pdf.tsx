@@ -9,12 +9,18 @@ import JSZip from 'jszip';
 
 export interface PdfOptions {
   title: string;
+  subtitle?: string;       // printed on its own line under the title
   author: string;
   publisher?: string;      // e.g. "Slip the Trap"
   year?: string;           // e.g. "2026"
   copyrightHtml?: string;  // HTML from the epub's copyright.xhtml, or omit to skip
-  includeToc?: boolean;    // default true
+  includeToc?: boolean;    // default false
+  includeChapterHeadings?: boolean; // default false
 }
+
+// Passed as hyphenationCallback: every word is a single unbreakable
+// syllable, so title page text never gets split with a hyphen
+export const noHyphenation = (word: string): string[] => [word];
 
 // ─── 1. Parse the epub's OPF to get spine-ordered XHTML paths ───
 
@@ -178,7 +184,87 @@ export async function extractCopyrightHtml(
   return null;
 }
 
-// ─── 2b. Strip hyperlinks for print compliance ───
+// ─── 2b. Resolve title page text (title, subtitle, publisher) ───
+
+export interface TitlePageText {
+  title: string;
+  subtitle?: string;
+  publisher?: string;
+}
+
+/**
+ * Library metadata wins; anything missing falls back to the epub's own
+ * title-page.xhtml (subtitle is not in OPF metadata, only in
+ * <p class="book-subtitle"> — same lookup as epubService.ts).
+ */
+export async function resolveTitlePageText(
+  zip: JSZip,
+  spinePaths: string[],
+  known: TitlePageText
+): Promise<TitlePageText> {
+  let subtitle = known.subtitle?.trim() || undefined;
+  let publisher = known.publisher?.trim() || undefined;
+
+  if (!subtitle || !publisher) {
+    const titlePagePath = spinePaths.find((p) =>
+      /title[-_]?page/i.test(p.split('/').pop() ?? '')
+    );
+    const xhtml = titlePagePath ? await zip.file(titlePagePath)?.async('text') : undefined;
+    if (xhtml) {
+      const doc = new DOMParser().parseFromString(xhtml, 'application/xhtml+xml');
+      subtitle ??= doc.querySelector('.book-subtitle')?.textContent?.trim() || undefined;
+      publisher ??= doc.querySelector('.book-publisher')?.textContent?.trim() || undefined;
+    }
+  }
+
+  return { ...separateSubtitle(known.title, subtitle), publisher };
+}
+
+/**
+ * Keeps the subtitle off the title line. If the title already ends with
+ * the subtitle after a separator ("Main: Sub", "Main - Sub", "Main — Sub"),
+ * the subtitle is cut from the title so it prints only once, on its own line.
+ * A colon in a title with no known subtitle is left alone.
+ */
+function separateSubtitle(title: string, subtitle?: string): { title: string; subtitle?: string } {
+  const main = title.trim();
+  if (!subtitle) return { title: main };
+  if (main.toLowerCase() === subtitle.toLowerCase()) return { title: main };
+
+  const escaped = subtitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = main.match(new RegExp(`^(.+?)\\s*[:\\-–—]\\s*${escaped}$`, 'i'));
+  if (match?.[1]?.trim()) {
+    return { title: match[1].trim(), subtitle };
+  }
+  return { title: main, subtitle };
+}
+
+// ─── 2c. Remove the chapter's opening heading ───
+
+/**
+ * Drops the first h1/h2 (the one extractChapters uses as the chapter title),
+ * but only when nothing comes before it — a mid-chapter subheading stays.
+ */
+export function stripChapterHeading(html: string): string {
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+  const root = doc.body.firstElementChild;
+  const heading = root?.querySelector('h1, h2');
+  if (!root || !heading) return html;
+
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  for (let node = walker.nextNode(); node && node !== heading; node = walker.nextNode()) {
+    const precedesWithContent =
+      node.nodeType === Node.TEXT_NODE
+        ? (node.textContent ?? '').trim() !== ''
+        : (node as Element).tagName.toLowerCase() === 'img';
+    if (precedesWithContent) return html;
+  }
+
+  heading.remove();
+  return root.innerHTML;
+}
+
+// ─── 2d. Strip hyperlinks for print compliance ───
 
 function flattenLinksForPrint(container: Element): void {
   const anchors = Array.from(container.querySelectorAll('a'));
@@ -231,19 +317,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Title + subtitle stay together; the gap to the author lives here
+  titleBlock: {
+    alignSelf: 'stretch',
+    marginBottom: 120,
+  },
   bookTitle: {
     fontSize: 28,
     fontFamily: 'EBGaramond',
     fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 1.6,
-    marginBottom: 120,
+  },
+  bookSubtitle: {
+    fontSize: 18,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 1.4,
+    marginTop: 12,
   },
   bookAuthor: {
     fontSize: 16,
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 30,
+  },
+  bookPublisher: {
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 60,
   },
   // Copyright page
   copyrightPage: {
@@ -531,21 +633,30 @@ export const BookDocument: React.FC<{
   chapters: ChapterData[];
   options: PdfOptions;
 }> = ({ chapters, options }) => {
-  const includeToc = options.includeToc !== false;
+  const includeToc = options.includeToc === true;
+  const includeChapterHeadings = options.includeChapterHeadings === true;
 
   return (
     <Document>
       <Page size={[432, 648]} style={styles.page}>
         {/* Running header: hidden on first few pages */}
-        <Text style={styles.header} fixed render={({ pageNumber }: { pageNumber: number }) => {
+        <Text style={styles.header} fixed hyphenationCallback={noHyphenation} render={({ pageNumber }: { pageNumber: number }) => {
           if (pageNumber <= 3) return '';
           return pageNumber % 2 === 0 ? options.author : options.title;
         }} />
 
-        {/* Title Page */}
+        {/* Title Page — title, subtitle, author, publisher are never hyphenated */}
         <View style={styles.titlePage}>
-          <Text style={styles.bookTitle}>{options.title}</Text>
-          <Text style={styles.bookAuthor}>{options.author}</Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.bookTitle} hyphenationCallback={noHyphenation}>{options.title}</Text>
+            {options.subtitle && (
+              <Text style={styles.bookSubtitle} hyphenationCallback={noHyphenation}>{options.subtitle}</Text>
+            )}
+          </View>
+          <Text style={styles.bookAuthor} hyphenationCallback={noHyphenation}>{options.author}</Text>
+          {options.publisher && (
+            <Text style={styles.bookPublisher} hyphenationCallback={noHyphenation}>{options.publisher}</Text>
+          )}
         </View>
 
         {/* Copyright Page — only if the epub has one */}
@@ -568,7 +679,7 @@ export const BookDocument: React.FC<{
         {/* Chapters — each starts on a new page */}
         {chapters.map((ch) => (
           <View break key={ch.id}>
-            {convertHtmlToElements(ch.html)}
+            {convertHtmlToElements(includeChapterHeadings ? ch.html : stripChapterHeading(ch.html))}
           </View>
         ))}
 

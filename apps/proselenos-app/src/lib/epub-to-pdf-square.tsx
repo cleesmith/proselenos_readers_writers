@@ -10,6 +10,7 @@ import JSZip from 'jszip';
 import {
   getSpineItems,
   extractChapters,
+  noHyphenation,
   type PdfOptions,
   type ChapterData,
 } from './epub-to-pdf';
@@ -66,13 +67,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Title + subtitle stay together; the gap to the author lives here
+  titleBlock: {
+    alignSelf: 'stretch',
+    marginBottom: 120,
+  },
   bookTitle: {
     fontSize: 40,
     fontFamily: 'EBGaramond',
     fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 1.6,
-    marginBottom: 120,
+  },
+  bookSubtitle: {
+    fontSize: 28,
+    fontFamily: 'EBGaramond',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 1.4,
+    marginTop: 12,
   },
   bookAuthor: {
     fontSize: 32,
@@ -80,6 +93,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 30,
+  },
+  bookPublisher: {
+    fontSize: 20,
+    fontFamily: 'EBGaramond',
+    textAlign: 'center',
+    marginTop: 40,
   },
   // Copyright page
   copyrightPage: {
@@ -389,11 +408,20 @@ export const BookDocumentSquare: React.FC<{
 
   return (
     <Document pageLayout="twoPageRight">
-      {/* Page 1 (recto): Title Page */}
+      {/* Page 1 (recto): Title Page — title, subtitle, author, publisher
+          are never hyphenated */}
       <Page size={[612, 612]} style={styles.pageOdd}>
         <View style={styles.titlePage}>
-          <Text style={styles.bookTitle}>{options.title}</Text>
-          <Text style={styles.bookAuthor}>{options.author}</Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.bookTitle} hyphenationCallback={noHyphenation}>{options.title}</Text>
+            {options.subtitle && (
+              <Text style={styles.bookSubtitle} hyphenationCallback={noHyphenation}>{options.subtitle}</Text>
+            )}
+          </View>
+          <Text style={styles.bookAuthor} hyphenationCallback={noHyphenation}>{options.author}</Text>
+          {options.publisher && (
+            <Text style={styles.bookPublisher} hyphenationCallback={noHyphenation}>{options.publisher}</Text>
+          )}
         </View>
       </Page>
 

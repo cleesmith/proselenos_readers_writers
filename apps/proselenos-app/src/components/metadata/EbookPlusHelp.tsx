@@ -64,12 +64,12 @@ const bottomRowItems: HelpItem[] = [
   {
     icon: <MdPictureAsPdf size={ICON_SIZE} className="fill-red-400" />,
     name: 'Download 5x8 inch PDF (KDP)',
-    description: 'Generate a 5×8 inch print PDF for Amazon KDP. The most popular small paperback size.',
+    description: 'Generate a 5×8 inch print PDF for Amazon KDP. The most popular small paperback size. You can choose to include a Table of Contents and chapter headings.',
   },
   {
     icon: <MdOutlinePictureAsPdf size={ICON_SIZE} className="fill-red-500" />,
     name: 'Download 6x9 inch PDF (KDP)',
-    description: 'Generate a 6×9 inch print PDF for Amazon KDP. Uses embedded EB Garamond fonts.',
+    description: 'Generate a 6×9 inch print PDF for Amazon KDP. Uses embedded EB Garamond fonts. You can choose to include a Table of Contents and chapter headings.',
   },
   {
     icon: <MdPictureAsPdf size={ICON_SIZE} className="fill-red-700" />,

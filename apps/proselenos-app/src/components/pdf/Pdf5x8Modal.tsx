@@ -5,12 +5,13 @@ import JSZip from 'jszip';
 import { pdf } from 'book-pdf';
 import { Book } from '@/types/book';
 import { BookMetadata } from '@/libs/document';
-import { getLocalBookFilename } from '@/utils/book';
+import { formatPublisher, getLocalBookFilename } from '@/utils/book';
 import { useEnv } from '@/context/EnvContext';
 import {
   getSpineItems,
   extractChapters,
   extractCopyrightHtml,
+  resolveTitlePageText,
   type PdfOptions,
 } from '@/lib/epub-to-pdf';
 import {
@@ -23,6 +24,8 @@ interface Pdf5x8ModalProps {
   bookMeta: BookMetadata | null;
   isOpen: boolean;
   onClose: () => void;
+  includeToc: boolean;
+  includeChapterHeadings: boolean;
 }
 
 type Phase = 'loading' | 'done' | 'error';
@@ -32,7 +35,14 @@ interface Progress {
   percent: number;
 }
 
-const Pdf5x8Modal: React.FC<Pdf5x8ModalProps> = ({ book, bookMeta, isOpen, onClose }) => {
+const Pdf5x8Modal: React.FC<Pdf5x8ModalProps> = ({
+  book,
+  bookMeta,
+  isOpen,
+  onClose,
+  includeToc,
+  includeChapterHeadings,
+}) => {
   const { envConfig } = useEnv();
   const [phase, setPhase] = useState<Phase>('loading');
   const [progress, setProgress] = useState<Progress>({ message: 'Preparing...', percent: 0 });
@@ -88,14 +98,26 @@ const Pdf5x8Modal: React.FC<Pdf5x8ModalProps> = ({ book, bookMeta, isOpen, onClo
 
         if (cancelledRef.current) return;
 
+        setProgress({ message: 'Reading title page...', percent: 45 });
+        const titlePage = await resolveTitlePageText(zip, spinePaths, {
+          title: book.title || 'Untitled',
+          subtitle: bookMeta?.subtitle,
+          publisher: bookMeta?.publisher ? formatPublisher(bookMeta.publisher) : undefined,
+        });
+
+        if (cancelledRef.current) return;
+
         setProgress({ message: 'Laying out 5×8 pages...', percent: 50 });
 
         resetElementKeyCounter();
         const options: PdfOptions = {
-          title: book.title || 'Untitled',
+          title: titlePage.title,
+          subtitle: titlePage.subtitle,
           author: book.author || 'Unknown',
-          publisher: bookMeta?.publisher || undefined,
+          publisher: titlePage.publisher,
           copyrightHtml: copyrightHtml ?? undefined,
+          includeToc,
+          includeChapterHeadings,
         };
 
         const blob = await pdf(<BookDocument5x8 chapters={chapters} options={options} />).toBlob();
@@ -127,7 +149,7 @@ const Pdf5x8Modal: React.FC<Pdf5x8ModalProps> = ({ book, bookMeta, isOpen, onClo
     return () => {
       cancelledRef.current = true;
     };
-  }, [isOpen, book, envConfig]);
+  }, [isOpen, book, bookMeta, envConfig, includeToc, includeChapterHeadings]);
 
   // Escape key
   useEffect(() => {

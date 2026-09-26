@@ -11,6 +11,8 @@ import JSZip from 'jszip';
 import {
   getSpineItems,
   extractChapters,
+  noHyphenation,
+  stripChapterHeading,
   type PdfOptions,
   type ChapterData,
 } from './epub-to-pdf';
@@ -52,19 +54,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Title + subtitle stay together; the gap to the author lives here
+  titleBlock: {
+    alignSelf: 'stretch',
+    marginBottom: 100,
+  },
   bookTitle: {
     fontSize: 26,
     fontFamily: 'EBGaramond',
     fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 1.6,
-    marginBottom: 100,
+  },
+  bookSubtitle: {
+    fontSize: 17,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 1.4,
+    marginTop: 10,
   },
   bookAuthor: {
     fontSize: 15,
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 25,
+  },
+  bookPublisher: {
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 50,
   },
   // Copyright page
   copyrightPage: {
@@ -343,21 +361,30 @@ export const BookDocument5x8: React.FC<{
   chapters: ChapterData[];
   options: PdfOptions;
 }> = ({ chapters, options }) => {
-  const includeToc = options.includeToc !== false;
+  const includeToc = options.includeToc === true;
+  const includeChapterHeadings = options.includeChapterHeadings === true;
 
   return (
     <Document>
       <Page size={[360, 576]} style={styles.page}>
         {/* Running header: hidden on first few pages */}
-        <Text style={styles.header} fixed render={({ pageNumber }: { pageNumber: number }) => {
+        <Text style={styles.header} fixed hyphenationCallback={noHyphenation} render={({ pageNumber }: { pageNumber: number }) => {
           if (pageNumber <= 3) return '';
           return pageNumber % 2 === 0 ? options.author : options.title;
         }} />
 
-        {/* Title Page */}
+        {/* Title Page — title, subtitle, author, publisher are never hyphenated */}
         <View style={styles.titlePage}>
-          <Text style={styles.bookTitle}>{options.title}</Text>
-          <Text style={styles.bookAuthor}>{options.author}</Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.bookTitle} hyphenationCallback={noHyphenation}>{options.title}</Text>
+            {options.subtitle && (
+              <Text style={styles.bookSubtitle} hyphenationCallback={noHyphenation}>{options.subtitle}</Text>
+            )}
+          </View>
+          <Text style={styles.bookAuthor} hyphenationCallback={noHyphenation}>{options.author}</Text>
+          {options.publisher && (
+            <Text style={styles.bookPublisher} hyphenationCallback={noHyphenation}>{options.publisher}</Text>
+          )}
         </View>
 
         {/* Copyright Page — only if the epub has one */}
@@ -380,7 +407,7 @@ export const BookDocument5x8: React.FC<{
         {/* Chapters — each starts on a new page */}
         {chapters.map((ch) => (
           <View break key={ch.id}>
-            {convertHtmlToElements(ch.html)}
+            {convertHtmlToElements(includeChapterHeadings ? ch.html : stripChapterHeading(ch.html))}
           </View>
         ))}
 

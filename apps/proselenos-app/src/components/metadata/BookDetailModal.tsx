@@ -18,7 +18,13 @@ import BookDetailView from './BookDetailView';
 import BookDetailEdit from './BookDetailEdit';
 import { XrayModal } from '@/components/xray';
 import { AudiobookModal } from '@/components/audiobook';
-import { PdfModal, Pdf5x8Modal, PdfSquareModal } from '@/components/pdf';
+import {
+  PdfModal,
+  Pdf5x8Modal,
+  PdfSquareModal,
+  PdfOptionsDialog,
+  type PdfContentOptions,
+} from '@/components/pdf';
 import EbookPlusHelp from './EbookPlusHelp';
 import JSZip from 'jszip';
 import { stripEpubForBookseller } from '@/lib/bookseller-strip';
@@ -61,6 +67,11 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [showPdf5x8, setShowPdf5x8] = useState(false);
   const [showPdf, setShowPdf] = useState(false);
   const [showPdfSquare, setShowPdfSquare] = useState(false);
+  const [pdfOptionsFor, setPdfOptionsFor] = useState<'6x9' | '5x8' | null>(null);
+  const [pdfContentOptions, setPdfContentOptions] = useState<PdfContentOptions>({
+    includeToc: false,
+    includeChapterHeadings: false,
+  });
   const [showHelp, setShowHelp] = useState(false);
   const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
@@ -127,6 +138,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     setShowPdf5x8(false);
     setShowPdf(false);
     setShowPdfSquare(false);
+    setPdfOptionsFor(null);
     setShowHelp(false);
     onClose();
   };
@@ -214,8 +226,9 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
     await downloadBookAsWebReady(book, envConfig, isDarkMode);
   };
 
+  // 6x9 and 5x8 ask for TOC / chapter headings first; square builds directly
   const handlePdf5x8 = () => {
-    setShowPdf5x8(true);
+    setPdfOptionsFor('5x8');
   };
 
   const handleClosePdf5x8 = () => {
@@ -223,7 +236,14 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   };
 
   const handlePdf = () => {
-    setShowPdf(true);
+    setPdfOptionsFor('6x9');
+  };
+
+  const handleCreatePdf = (options: PdfContentOptions) => {
+    setPdfContentOptions(options);
+    if (pdfOptionsFor === '5x8') setShowPdf5x8(true);
+    if (pdfOptionsFor === '6x9') setShowPdf(true);
+    setPdfOptionsFor(null);
   };
 
   const handleClosePdf = () => {
@@ -352,11 +372,20 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
         onClose={handleCloseAudiobook}
       />
 
+      <PdfOptionsDialog
+        isOpen={pdfOptionsFor !== null}
+        formatLabel={pdfOptionsFor === '5x8' ? '5x8 inch PDF (KDP)' : '6x9 inch PDF (KDP)'}
+        onCancel={() => setPdfOptionsFor(null)}
+        onCreate={handleCreatePdf}
+      />
+
       <Pdf5x8Modal
         book={book}
         bookMeta={bookMeta}
         isOpen={showPdf5x8}
         onClose={handleClosePdf5x8}
+        includeToc={pdfContentOptions.includeToc}
+        includeChapterHeadings={pdfContentOptions.includeChapterHeadings}
       />
 
       <PdfModal
@@ -364,6 +393,8 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
         bookMeta={bookMeta}
         isOpen={showPdf}
         onClose={handleClosePdf}
+        includeToc={pdfContentOptions.includeToc}
+        includeChapterHeadings={pdfContentOptions.includeChapterHeadings}
       />
 
       <PdfSquareModal

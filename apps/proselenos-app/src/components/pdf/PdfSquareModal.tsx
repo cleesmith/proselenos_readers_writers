@@ -5,12 +5,13 @@ import JSZip from 'jszip';
 import { pdf } from 'book-pdf';
 import { Book } from '@/types/book';
 import { BookMetadata } from '@/libs/document';
-import { getLocalBookFilename } from '@/utils/book';
+import { formatPublisher, getLocalBookFilename } from '@/utils/book';
 import { useEnv } from '@/context/EnvContext';
 import {
   getSpineItems,
   extractChapters,
   extractCopyrightHtml,
+  resolveTitlePageText,
   type PdfOptions,
 } from '@/lib/epub-to-pdf';
 import {
@@ -88,13 +89,23 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
 
         if (cancelledRef.current) return;
 
+        setProgress({ message: 'Reading title page...', percent: 45 });
+        const titlePage = await resolveTitlePageText(zip, spinePaths, {
+          title: book.title || 'Untitled',
+          subtitle: bookMeta?.subtitle,
+          publisher: bookMeta?.publisher ? formatPublisher(bookMeta.publisher) : undefined,
+        });
+
+        if (cancelledRef.current) return;
+
         setProgress({ message: 'Laying out square pages...', percent: 50 });
 
         resetElementKeyCounter();
         const options: PdfOptions = {
-          title: book.title || 'Untitled',
+          title: titlePage.title,
+          subtitle: titlePage.subtitle,
           author: book.author || 'Unknown',
-          publisher: bookMeta?.publisher || undefined,
+          publisher: titlePage.publisher,
           copyrightHtml: copyrightHtml ?? undefined,
         };
 
@@ -127,7 +138,7 @@ const PdfSquareModal: React.FC<PdfSquareModalProps> = ({ book, bookMeta, isOpen,
     return () => {
       cancelledRef.current = true;
     };
-  }, [isOpen, book, envConfig]);
+  }, [isOpen, book, bookMeta, envConfig]);
 
   // Escape key
   useEffect(() => {
