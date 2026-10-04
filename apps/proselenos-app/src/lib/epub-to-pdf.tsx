@@ -283,12 +283,17 @@ function flattenLinksForPrint(container: Element): void {
 
 // ─── 3. book-pdf styles ───
 
+const PAGE_W = 432;  // 6" × 72
+const PAGE_H = 648;  // 9" × 72
+const PAD_X = 63;    // 0.875" — matches Vellum
+const PAD_Y = 50;
+
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 50,
-    paddingBottom: 50,
-    paddingLeft: 63,   // 0.875" — matches Vellum
-    paddingRight: 63,  // 0.875" — matches Vellum
+    paddingTop: PAD_Y,
+    paddingBottom: PAD_Y,
+    paddingLeft: PAD_X,
+    paddingRight: PAD_X,
     fontFamily: 'EBGaramond',
     fontSize: 11,
     lineHeight: 1.4,
@@ -400,7 +405,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   image: {
-    width: 200,
+    width: PAGE_W - 2 * PAD_X,      // full text-block width
+    maxHeight: PAGE_H - 2 * PAD_Y,  // never taller than the text block
+    objectFit: 'contain',           // scale proportionally, never distort
     marginVertical: 15,
     alignSelf: 'center' as const,
   },
@@ -638,7 +645,7 @@ export const BookDocument: React.FC<{
 
   return (
     <Document>
-      <Page size={[432, 648]} style={styles.page}>
+      <Page size={[PAGE_W, PAGE_H]} style={styles.page}>
         {/* Running header: hidden on first few pages */}
         <Text style={styles.header} fixed hyphenationCallback={noHyphenation} render={({ pageNumber }: { pageNumber: number }) => {
           if (pageNumber <= 3) return '';

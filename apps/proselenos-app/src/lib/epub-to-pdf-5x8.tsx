@@ -20,12 +20,17 @@ import {
 
 // ─── Styles (5×8 format) ───
 
+const PAGE_W = 360;  // 5" × 72
+const PAGE_H = 576;  // 8" × 72
+const PAD_X = 63;    // 0.875"
+const PAD_Y = 45;
+
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 45,
-    paddingBottom: 45,
-    paddingLeft: 63,
-    paddingRight: 63,
+    paddingTop: PAD_Y,
+    paddingBottom: PAD_Y,
+    paddingLeft: PAD_X,
+    paddingRight: PAD_X,
     fontFamily: 'EBGaramond',
     fontSize: 11,
     lineHeight: 1.4,
@@ -137,7 +142,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   image: {
-    width: 180,
+    width: PAGE_W - 2 * PAD_X,      // full text-block width
+    maxHeight: PAGE_H - 2 * PAD_Y,  // never taller than the text block
+    objectFit: 'contain',           // scale proportionally, never distort
     marginVertical: 15,
     alignSelf: 'center' as const,
   },
@@ -366,7 +373,7 @@ export const BookDocument5x8: React.FC<{
 
   return (
     <Document>
-      <Page size={[360, 576]} style={styles.page}>
+      <Page size={[PAGE_W, PAGE_H]} style={styles.page}>
         {/* Running header: hidden on first few pages */}
         <Text style={styles.header} fixed hyphenationCallback={noHyphenation} render={({ pageNumber }: { pageNumber: number }) => {
           if (pageNumber <= 3) return '';
