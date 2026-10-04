@@ -137,102 +137,8 @@ export default function AboutModal({
               &quot;Load from Library&quot; - import an ebook from your e-reader Library.
             </p>
             <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6' }}>
-              That&apos;s it - you can now create and edit ebooks entirely by hand, <br />
-              and/or proceed to the following setup to get AI editing and writing assistance.
+              That&apos;s it - you can now create and edit your ebook.
             </p>
-          </div>
-
-          {/* Want AI Writing & Editing Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              marginBottom: '12px',
-              color: '#10b981'
-            }}>
-              Want AI Editing and Writing?
-            </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '16px' }}>
-              Optionally, if you want to use the AI features, complete these 3 steps:
-            </p>
-
-            {/* Step 1 */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div style={{
-                background: '#10b981',
-                color: 'white',
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: '600',
-                marginRight: '12px',
-                flexShrink: 0
-              }}>1</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                  Add OpenRouter API Key
-                </div>
-                <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                  Click the hamburger menu (&#9776;) then &quot;Key&quot; to add your <a href="https://openrouter.ai" target="_blank" style={{ color: '#4285F4', textDecoration: 'none' }}>OpenRouter</a> API key.
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div style={{
-                background: '#10b981',
-                color: 'white',
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: '600',
-                marginRight: '12px',
-                flexShrink: 0
-              }}>2</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                  Choose AI Model
-                </div>
-                <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                  Click the hamburger menu (&#9776;) then &quot;Models&quot; to select which AI model to use.
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div style={{
-                background: '#10b981',
-                color: 'white',
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: '600',
-                marginRight: '12px',
-                flexShrink: 0
-              }}>3</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                  Test with Chat
-                </div>
-                <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280', lineHeight: '1.4' }}>
-                  Click the hamburger menu (&#9776;) then &quot;Chat&quot; to verify your setup is working correctly.
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* How Your Ebook Works */}
@@ -249,68 +155,10 @@ export default function AboutModal({
               Your ebook is stored entirely in your web browser:
             </p>
             <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere (<i>except when using OpenRouter/AI</i>)</li>
+              <li style={{ marginBottom: '8px' }}>All data stays on your computer - nothing is uploaded anywhere</li>
               <li style={{ marginBottom: '8px' }}>Organized into sections: front matter, chapters, and back matter - the ebook is your manuscript</li>
               <li style={{ marginBottom: '8px' }}>Click &quot;Publish&quot; to export as EPUB and add to your Library for instant reading and listening</li>
               <li style={{ marginBottom: '8px' }}>No accounts, no sign up, no sign in, no emails - completely private</li>
-            </ul>
-          </div>
-
-          {/* AI Editing */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              marginBottom: '12px',
-              color: '#10b981'
-            }}>
-              AI Editing
-            </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
-              Select a chapter, then use the AI Editing tools:
-            </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Line Editing:</strong> Fix grammar, improve sentences one-at-a-time with AI suggestions</li>
-              <li style={{ marginBottom: '8px' }}><strong>Content Analysis:</strong> Character development, plot consistency, pacing feedback</li>
-              <li style={{ marginBottom: '8px' }}><strong>Custom Tools:</strong> Specialized and customizable editing/writing <b>prompts</b> for specific needs</li>
-              <li style={{ marginBottom: '8px' }}><strong><i>Note</i>:</strong> Most of the AI Editing tools will use your entire Ebook as a <b><i>manuscript</i></b> along with the instruction <b>prompt</b></li>
-            </ul>
-          </div>
-
-          {/* AI Writing */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              marginBottom: '12px',
-              color: '#10b981'
-            }}>
-              AI Writing
-            </h3>
-            <p style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', marginBottom: '12px' }}>
-              Click &quot;AI Writing&quot; to access writing tools:
-            </p>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Brainstorm:</strong> Develop characters, plot ideas, and settings</li>
-              <li style={{ marginBottom: '8px' }}><strong>Outline:</strong> Generate outlines and story structures</li>
-              <li style={{ marginBottom: '8px' }}><strong>World:</strong> Creates a world file based on your outline and brainstorm</li>
-              <li style={{ marginBottom: '8px' }}><strong>Chapter Writing:</strong> Generate rough draft chapters using the outline and world files, that are aware of previous chapters</li>
-            </ul>
-          </div>
-
-          {/* Why OpenRouter */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              marginBottom: '12px',
-              color: '#10b981'
-            }}>
-              Why OpenRouter?
-            </h3>
-            <ul style={{ fontSize: '14px', color: isDarkMode ? '#d1d5db' : '#374151', lineHeight: '1.6', paddingLeft: '24px' }}>
-              <li style={{ marginBottom: '8px' }}><strong>Model Variety:</strong> Access OpenAI, Anthropic, Google, and more from that one OpenRouter API key</li>
-              <li style={{ marginBottom: '8px' }}><strong>Flexibility:</strong> Switch models based on your needs</li>
             </ul>
           </div>
 

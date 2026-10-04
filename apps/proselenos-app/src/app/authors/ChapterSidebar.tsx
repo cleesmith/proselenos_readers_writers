@@ -38,7 +38,6 @@ interface ChapterSidebarProps {
   onMoveUp?: (sectionId: string) => void;
   onMoveDown?: (sectionId: string) => void;
   onMoveToArea?: (sectionId: string, area: number) => void; // Move section to different area
-  toolExecuting?: boolean; // When true, disable all interactive elements
   existingTypes?: ElementType[]; // Types already in manuscript (for add element filtering)
   isLastChapter?: boolean; // True if selected section is the last chapter
   // Search props
@@ -66,7 +65,6 @@ export default function ChapterSidebar({
   onMoveUp,
   onMoveDown,
   onMoveToArea,
-  toolExecuting = false,
   existingTypes = [],
   isLastChapter = false,
   searchQuery = '',
@@ -168,8 +166,8 @@ export default function ChapterSidebar({
       <div style={{ padding: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
         {/* Cover thumbnail - clickable to change */}
         <div
-          onClick={toolExecuting ? undefined : onCoverClick}
-          title={toolExecuting ? undefined : "Click to change cover"}
+          onClick={onCoverClick}
+          title="Click to change cover"
           style={{
             width: '40px',
             height: '60px',
@@ -180,8 +178,7 @@ export default function ChapterSidebar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: toolExecuting ? 'not-allowed' : 'pointer',
-            opacity: toolExecuting ? 0.5 : 1,
+            cursor: 'pointer',
           }}
         >
           {coverUrl ? (
@@ -285,15 +282,14 @@ export default function ChapterSidebar({
             return (
               <div
                 key={section.id}
-                onClick={toolExecuting ? undefined : () => onSelectSection(section.id)}
+                onClick={() => onSelectSection(section.id)}
                 style={{
                   padding: '4px 8px',
-                  cursor: toolExecuting ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
                   backgroundColor: bgColor,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  opacity: toolExecuting ? 0.5 : 1,
                 }}
               >
                 {isSelected && <span style={{ color: '#6366f1', fontSize: '8px' }}>●</span>}
@@ -442,7 +438,6 @@ export default function ChapterSidebar({
               }
             }}
             placeholder="Search..."
-            disabled={toolExecuting}
             style={{
               flex: 1,
               padding: '4px 6px',
@@ -458,12 +453,11 @@ export default function ChapterSidebar({
           {searchQuery && (
             <button
               onClick={() => onSearchClose?.()}
-              disabled={toolExecuting}
               style={{
                 background: 'none',
                 border: 'none',
                 color: mutedText,
-                cursor: toolExecuting ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 padding: '2px',
                 fontSize: '12px',
                 lineHeight: 1,
@@ -492,7 +486,7 @@ export default function ChapterSidebar({
             <StyledSmallButton
               theme={theme}
               onClick={() => setMoveDropdownOpen(!moveDropdownOpen)}
-              disabled={toolExecuting || isProtectedSection || !selectedSectionId}
+              disabled={isProtectedSection || !selectedSectionId}
               title={isProtectedSection ? "Cannot move protected section" : "Move to area"}
             >
               <PiArrowsDownUp size={11} />
@@ -578,13 +572,12 @@ export default function ChapterSidebar({
             theme={theme}
             isDarkMode={isDarkMode}
             onAddElement={onAddElement || (() => {})}
-            disabled={toolExecuting}
             existingTypes={existingTypes}
           />
           <StyledSmallButton
             theme={theme}
             onClick={handleMoveUp}
-            disabled={toolExecuting || !canMoveUp}
+            disabled={!canMoveUp}
             title="Move Element up"
           >
             <PiCaretUp size={11} />
@@ -592,7 +585,7 @@ export default function ChapterSidebar({
           <StyledSmallButton
             theme={theme}
             onClick={handleMoveDown}
-            disabled={toolExecuting || !canMoveDown}
+            disabled={!canMoveDown}
             title="Move Element down"
           >
             <PiCaretDown size={11} />
@@ -600,7 +593,7 @@ export default function ChapterSidebar({
           <StyledSmallButton
             theme={theme}
             onClick={handleRemove}
-            disabled={toolExecuting || isProtectedSection}
+            disabled={isProtectedSection}
             title={isProtectedSection ? "Cannot remove protected section" : "Remove Element"}
           >
             <PiMinus size={11} />

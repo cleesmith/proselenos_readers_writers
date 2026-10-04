@@ -2,35 +2,25 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getTheme } from '../shared/theme';
 import AuthorsLayout from './AuthorsLayout';
 import AboutModal from '@/components/AboutModal';
 import StorageModal from '@/components/StorageModal';
 import FilesModal from '@/app/projects/FilesModal';
-import SettingsDialog from '@/components/SettingsDialog';
-import ModelsDropdown from '@/components/ModelsDropdown';
-import AISettingsModal from '@/components/AISettingsModal';
 import EditorModal from '@/app/proselenos/EditorModal';
-import WritingAssistantModal from '@/app/writing-assistant/WritingAssistantModal';
-import SimpleChatModal from '@/components/SimpleChatModal';
 import BookInfoModal from './BookInfoModal';
 import LibraryBooksModal from './LibraryBooksModal';
 import CoverModal from './CoverModal';
 import ManuscriptXrayModal from '@/components/xray/ManuscriptXrayModal';
-import PromptEditorModal from '@/components/PromptEditorModal';
-import { loadApiKey, loadAppSettings, saveAppSettings, listToolsByCategory, getToolPrompt, initWritingAssistantPrompts, loadChatFile, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveManuscriptAudio, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
+import { loadAppSettings, saveAppSettings, clearWorkingCopy, saveFullWorkingCopy, saveManuscriptImage, saveManuscriptAudio, saveWorkingCopyMeta, loadWorkingCopyMeta } from '@/services/manuscriptStorage';
 import { parseEpub } from '@/services/epubService';
 import { Book } from '@/types/book';
 import { getLocalBookFilename } from '@/utils/book';
-import { generateAIReportEpub } from '@/lib/ai-report-generator';
 import environmentConfig from '@/services/environment';
 import Swal from 'sweetalert2';
-import { initializeToolPrompts } from '@/services/toolPromptsLoader';
-import { useToolsManager } from '../ai-tools/useToolsManager';
 import { showAlert } from '../shared/alerts';
-import DualPanelEditor from '../ai-tools/DualPanelEditor';
 
 export default function AuthorsClient() {
   // Theme state
@@ -54,27 +44,8 @@ export default function AuthorsClient() {
   // Sidebar visibility state
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
-  // Settings dialog state (for API Key)
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState<boolean>(false);
-  const [currentProvider] = useState('openrouter');
-
-  // Models dropdown state
-  const [showModelsDropdown, setShowModelsDropdown] = useState(false);
-  const [currentModel, setCurrentModel] = useState('');
-
-  // AI Settings modal state
-  const [showAISettingsModal, setShowAISettingsModal] = useState(false);
-
   // Editor modal state
   const [showEditor, setShowEditor] = useState(false);
-  const [editorInitialFile, setEditorInitialFile] = useState<{ key: string; store: string } | null>(null);
-
-  // AI Writing modal state
-  const [showAIWriting, setShowAIWriting] = useState(false);
-
-  // Chat modal state
-  const [showChat, setShowChat] = useState(false);
 
   // Book Info modal state
   const [showBookInfo, setShowBookInfo] = useState(false);
@@ -86,20 +57,11 @@ export default function AuthorsClient() {
   const [showCoverModal, setShowCoverModal] = useState(false);
   // X-Ray modal state
   const [showXrayModal, setShowXrayModal] = useState(false);
-  // Prompt Editor modal state
-  const [showPromptEditor, setShowPromptEditor] = useState(false);
   const [coverTitle, setCoverTitle] = useState('');
   const [coverAuthor, setCoverAuthor] = useState('');
 
-  // AI Tools state
-  const [toolsState, toolsActions] = useToolsManager();
-  const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
-  const [showDualEditor, setShowDualEditor] = useState(false);
-
   // Refresh key to trigger AuthorsLayout to reload Working Copy
   const [refreshKey, setRefreshKey] = useState(0);
-  // Section ID to select after refresh (for new chapters)
-  const [pendingSectionId, setPendingSectionId] = useState<string | null>(null);
 
   const theme = getTheme(isDarkMode);
   const router = useRouter();
@@ -110,59 +72,9 @@ export default function AuthorsClient() {
     router.prefetch('/reader');
   }, [router]);
 
-  // Open file in editor (for AI Tools results or prompt editing)
-  const handleLoadFileIntoEditor = (_content: string, fileName: string, _filePath?: string) => {
-    // Handle prompt: prefix
-    if (fileName.startsWith('prompt:')) {
-      const toolId = fileName.substring(7);
-      setEditorInitialFile({ key: `prompt:${toolId}`, store: 'prompt' });
-      setShowEditor(true);
-      return;
-    }
-    // Handle writing-assistant/ prefix
-    if (fileName.startsWith('writing-assistant/')) {
-      const stepId = fileName.substring(18);
-      setEditorInitialFile({ key: `wa:${stepId}`, store: 'ai' });
-      setShowEditor(true);
-      return;
-    }
-    // Handle workflow files
-    const workflowFiles = ['brainstorm.txt', 'outline.txt', 'world.txt'];
-    if (workflowFiles.includes(fileName)) {
-      setEditorInitialFile({ key: fileName, store: 'ai' });
-      setShowEditor(true);
-      return;
-    }
-    // Handle manuscript.txt
-    if (fileName === 'manuscript.txt') {
-      setEditorInitialFile({ key: 'manuscript.txt', store: 'manuscript' });
-      setShowEditor(true);
-      return;
-    }
-    // Default
-    setEditorInitialFile({ key: fileName, store: 'ai' });
-    setShowEditor(true);
-  };
-
-  // Check if API key exists and load it
-  const checkApiKey = useCallback(async () => {
-    try {
-      const key = await loadApiKey();
-      setHasApiKey(!!key);
-    } catch (error) {
-      console.error('Error checking API key:', error);
-      setHasApiKey(false);
-    }
-  }, []);
-
-  // Check API key and load model on mount, and show About if needed
+  // Show About on startup if needed
   useEffect(() => {
-    checkApiKey();
-    // Load current model and check if About should auto-show
     loadAppSettings().then((settings) => {
-      if (settings?.selectedModel) {
-        setCurrentModel(settings.selectedModel);
-      }
       // Show About on startup if hideAboutModal is not set or false
       const shouldHide = settings?.hideAboutModal ?? false;
       setHideAboutOnStartup(shouldHide);
@@ -170,55 +82,14 @@ export default function AuthorsClient() {
         setShowAboutModal(true);
       }
     });
-  }, [checkApiKey]);
-
-  // Initialize AI tools on mount
-  useEffect(() => {
-    const initTools = async () => {
-      try {
-        // Initialize tool prompts from defaults
-        await initializeToolPrompts();
-        await initWritingAssistantPrompts();
-
-        // Load tools from IndexedDB
-        const toolsByCategory = await listToolsByCategory();
-        const allTools = toolsByCategory.flatMap(({ category, tools }) =>
-          tools.map((t) => ({
-            id: t.id,
-            name: t.name,
-            category,
-          }))
-        );
-
-        toolsActions.setAvailableTools(allTools);
-        toolsActions.setToolsReady(true);
-      } catch (error) {
-        console.error('Failed to load tool prompts:', error);
-        toolsActions.setToolsReady(true);
-      }
-    };
-    initTools();
-  }, [isDarkMode, toolsActions]);
-
-  // Model selection handler
-  const handleModelSelect = async (model: string) => {
-    const settings = await loadAppSettings() || { darkMode: isDarkMode, selectedModel: '' };
-    settings.selectedModel = model;
-    await saveAppSettings(settings);
-    setCurrentModel(model);
-  };
+  }, []);
 
   // Toggle "Don't show About on startup" setting
   const handleToggleHideAboutOnStartup = async (hide: boolean) => {
     setHideAboutOnStartup(hide);
-    const settings = await loadAppSettings() || { darkMode: isDarkMode, selectedModel: '' };
+    const settings = await loadAppSettings() || { darkMode: isDarkMode };
     settings.hideAboutModal = hide;
     await saveAppSettings(settings);
-  };
-
-  // Settings save handler
-  const handleSettingsSave = async () => {
-    await checkApiKey();
   };
 
   // Load book from Library handler
@@ -294,9 +165,6 @@ export default function AuthorsClient() {
         }
       }
 
-      // Reset AI Editing state
-      await toolsActions.resetAllTools();
-
       // Trigger AuthorsLayout to reload from Working Copy
       setRefreshKey(prev => prev + 1);
 
@@ -329,128 +197,6 @@ export default function AuthorsClient() {
     setRefreshKey(prev => prev + 1);
   };
 
-  // AI Tools handlers
-  const handleCategoryChange = (category: string) => {
-    toolsActions.setSelectedCategory(category);
-    toolsActions.setSelectedTool('');
-    // Filter tools for this category (already in manifest order)
-    const filtered = toolsState.availableTools.filter((t) => t.category === category);
-    toolsActions.setToolsInCategory(filtered);
-  };
-
-  const handleToolChange = (tool: string) => {
-    toolsActions.setSelectedTool(tool);
-  };
-
-  const handleExecuteTool = (currentEditorText: string) => {
-    if (toolsState.selectedTool && hasApiKey && currentModel) {
-      toolsActions.executeAITool(currentProvider, currentModel, isDarkMode, currentEditorText);
-    }
-  };
-
-  const handlePromptEdit = async () => {
-    if (!toolsState.selectedTool || isLoadingPrompt) return;
-    setIsLoadingPrompt(true);
-    try {
-      const content = await getToolPrompt(toolsState.selectedTool);
-      if (content) {
-        handleLoadFileIntoEditor(content, `prompt:${toolsState.selectedTool}`, toolsState.selectedTool);
-      } else {
-        showAlert('Failed to load tool prompt', 'error', undefined, isDarkMode);
-      }
-    } catch {
-      showAlert('Error loading tool prompt', 'error', undefined, isDarkMode);
-    } finally {
-      setIsLoadingPrompt(false);
-    }
-  };
-
-  const handleReport = async () => {
-    if (!toolsState.toolResult) {
-      showAlert('No AI report to save', 'warning', undefined, isDarkMode);
-      return;
-    }
-
-    try {
-      // Get the request content from IndexedDB
-      const requestContent = await loadChatFile('ai_request.txt') || 'Request content not available';
-
-      // Get tool name from selected tool (format: "Category/tool_name.txt")
-      const toolName = toolsState.selectedTool
-        ? toolsState.selectedTool.split('/').pop()?.replace('.txt', '').replace(/_/g, ' ') || 'Unknown Tool'
-        : 'Unknown Tool';
-
-      // Generate the epub
-      const epubData = await generateAIReportEpub(
-        toolName,
-        toolsState.toolResult,
-        requestContent,
-        currentProvider,
-        currentModel
-      );
-
-      // Create File object with timestamp in filename (local time)
-      const timestamp = new Date().toLocaleString().replace(/[/:]/g, '-').replace(/,?\s+/g, '_');
-      const filename = `AI_Report_${timestamp}.epub`;
-      const blob = new Blob([epubData as BlobPart], { type: 'application/epub+zip' });
-      const file = new File([blob], filename, { type: 'application/epub+zip' });
-
-      // Import to library
-      const appService = await environmentConfig.getAppService();
-      const books = await appService.loadLibraryBooks();
-      const book = await appService.importBook(file, books);
-
-      if (book) {
-        await appService.saveLibraryBooks(books);
-
-        await Swal.fire({
-          title: 'Report Saved!',
-          text: 'AI Report saved to Library. You can read it in the Library.',
-          icon: 'success',
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#28a745',
-          background: isDarkMode ? '#222' : '#fff',
-          color: isDarkMode ? '#fff' : '#333',
-        });
-      } else {
-        showAlert('Failed to add report to library', 'error', undefined, isDarkMode);
-      }
-    } catch (error) {
-      console.error('Error creating report epub:', error);
-      showAlert(`Error creating report: ${(error as Error).message}`, 'error', undefined, isDarkMode);
-    }
-  };
-
-  // Handler for when prompts are changed in PromptEditorModal
-  // Re-initializes tool prompts and refreshes the toolbar
-  const handlePromptsChanged = useCallback(async () => {
-    try {
-      // Re-initialize tool prompts from IndexedDB
-      await initializeToolPrompts();
-      await initWritingAssistantPrompts();
-
-      // Reload tools list to refresh the toolbar
-      const toolsByCategory = await listToolsByCategory();
-      const allTools = toolsByCategory.flatMap(({ category, tools }) =>
-        tools.map((t) => ({
-          id: t.id,
-          name: t.name,
-          category,
-        }))
-      );
-
-      toolsActions.setAvailableTools(allTools);
-
-      // If a category is selected, refresh its tools list
-      if (toolsState.selectedCategory) {
-        const filtered = allTools.filter((t) => t.category === toolsState.selectedCategory);
-        toolsActions.setToolsInCategory(filtered);
-      }
-    } catch (error) {
-      console.error('Failed to refresh tool prompts:', error);
-    }
-  }, [toolsActions, toolsState.selectedCategory]);
-
   return (
     <>
       <AuthorsLayout
@@ -462,41 +208,12 @@ export default function AuthorsClient() {
         onFilesClick={() => setShowFilesModal(true)}
         sidebarVisible={sidebarVisible}
         onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
-        onKeyClick={() => setShowSettingsDialog(true)}
-        onModelsClick={() => setShowModelsDropdown(true)}
-        onAISettingsClick={() => setShowAISettingsModal(true)}
         onEditorClick={() => setShowEditor(true)}
-        onAIWritingClick={() => setShowAIWriting(true)}
-        onChatClick={() => setShowChat(true)}
-        onPromptsClick={() => setShowPromptEditor(true)}
         onCoverClick={handleOpenCoverModal}
         onXrayClick={() => setShowXrayModal(true)}
         onLoadFromLibraryClick={() => setShowLibraryModal(true)}
-        hasApiKey={hasApiKey}
-        currentModel={currentModel}
-        currentProvider={currentProvider}
-        // AI Tools props
-        selectedCategory={toolsState.selectedCategory}
-        selectedTool={toolsState.selectedTool}
-        toolsInCategory={toolsState.toolsInCategory}
-        toolsReady={toolsState.toolsReady}
-        toolExecuting={toolsState.toolExecuting}
-        toolResult={toolsState.toolResult}
-        elapsedTime={toolsState.elapsedTime}
-        toolJustFinished={toolsState.toolJustFinished}
-        manuscriptContent={toolsState.manuscriptContent}
-        onCategoryChange={handleCategoryChange}
-        onToolChange={handleToolChange}
-        onClearTool={toolsActions.clearTool}
-        onPromptEdit={handlePromptEdit}
-        onExecuteTool={handleExecuteTool}
-        onReport={handleReport}
-        isLoadingPrompt={isLoadingPrompt}
-        onResetTools={toolsActions.resetAllTools}
         // Working Copy refresh props
         refreshKey={refreshKey}
-        pendingSectionId={pendingSectionId}
-        onPendingSectionHandled={() => setPendingSectionId(null)}
       />
 
       {/* About Modal */}
@@ -525,73 +242,11 @@ export default function AuthorsClient() {
         theme={theme}
       />
 
-      {/* Settings Dialog (API Key) */}
-      <SettingsDialog
-        isOpen={showSettingsDialog}
-        onClose={() => setShowSettingsDialog(false)}
-        onSave={handleSettingsSave}
-        isDarkMode={isDarkMode}
-        theme={theme}
-        currentProvider="openrouter"
-      />
-
-      {/* Models Dropdown */}
-      <ModelsDropdown
-        isOpen={showModelsDropdown}
-        onClose={() => setShowModelsDropdown(false)}
-        onSelectModel={handleModelSelect}
-        isDarkMode={isDarkMode}
-        theme={theme}
-        currentModel={currentModel}
-      />
-
-      {/* AI Settings Modal */}
-      <AISettingsModal
-        isOpen={showAISettingsModal}
-        onClose={() => setShowAISettingsModal(false)}
-        isDarkMode={isDarkMode}
-        theme={theme}
-      />
-
       {/* Editor Modal */}
       <EditorModal
         isOpen={showEditor}
-        onClose={() => {
-          setShowEditor(false);
-          setEditorInitialFile(null);
-        }}
+        onClose={() => setShowEditor(false)}
         theme={theme}
-        isDarkMode={isDarkMode}
-        initialFile={editorInitialFile}
-      />
-
-      {/* AI Writing Modal */}
-      <WritingAssistantModal
-        isOpen={showAIWriting}
-        onClose={() => setShowAIWriting(false)}
-        theme={theme}
-        isDarkMode={isDarkMode}
-        currentProvider={currentProvider}
-        currentModel={currentModel}
-        session={null}
-        onLoadFileIntoEditor={handleLoadFileIntoEditor}
-        onModalCloseReopen={() => {
-          setShowAIWriting(false);
-          setTimeout(() => setShowAIWriting(true), 150);
-        }}
-        onOpenChat={() => setShowChat(true)}
-        onChapterAdded={(chapterId) => {
-          // Set the section to select after refresh
-          setPendingSectionId(chapterId);
-          // Trigger AuthorsLayout to reload Working Copy
-          setRefreshKey(prev => prev + 1);
-        }}
-      />
-
-      {/* Chat Modal */}
-      <SimpleChatModal
-        isOpen={showChat}
-        onClose={() => setShowChat(false)}
         isDarkMode={isDarkMode}
       />
 
@@ -630,29 +285,6 @@ export default function AuthorsClient() {
         bookTitle={coverTitle || undefined}
         isDarkMode={isDarkMode}
       />
-
-      {/* Prompt Editor Modal */}
-      <PromptEditorModal
-        isOpen={showPromptEditor}
-        onClose={() => setShowPromptEditor(false)}
-        onPromptsChanged={handlePromptsChanged}
-        theme={theme}
-        isDarkMode={isDarkMode}
-      />
-
-      {/* Dual Panel Editor (View-Edit for AI tool results) */}
-      {showDualEditor && toolsState.manuscriptContent && (
-        <DualPanelEditor
-          isVisible={showDualEditor}
-          onClose={() => setShowDualEditor(false)}
-          manuscriptContent={toolsState.manuscriptContent}
-          manuscriptName="manuscript.txt"
-          aiReport={toolsState.toolResult}
-          savedReportFileName={toolsState.savedReportFileName}
-          theme={theme}
-          isDarkMode={isDarkMode}
-        />
-      )}
     </>
   );
 }

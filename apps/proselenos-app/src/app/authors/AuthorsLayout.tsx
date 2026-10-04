@@ -77,8 +77,6 @@ import { exportWorkspaceToDocx } from '@/lib/workspace-to-docx';
 import { exportWorkspaceToFountain } from '@/lib/fountain-generator';
 import { xhtmlToPlainText } from '@/lib/plateXhtml';
 import environmentConfig from '@/services/environment';
-import { parseToolReport } from '@/utils/parseToolReport';
-import { ReportIssueWithStatus } from '@/types/oneByOne';
 
 // Helper to escape HTML for XHTML storage
 function escapeHtmlForLayout(text: string): string {
@@ -86,12 +84,6 @@ function escapeHtmlForLayout(text: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-}
-
-interface Tool {
-  id: string;
-  name: string;
-  category: string;
 }
 
 interface AuthorsLayoutProps {
@@ -103,41 +95,12 @@ interface AuthorsLayoutProps {
   onFilesClick: () => void;
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
-  onKeyClick: () => void;
-  onModelsClick: () => void;
-  onAISettingsClick: () => void;
   onEditorClick: () => void;
-  onAIWritingClick: () => void;
-  onChatClick: () => void;
-  onPromptsClick: () => void;
   onCoverClick: () => void;
   onXrayClick?: () => void;
   onLoadFromLibraryClick: () => void;
-  hasApiKey: boolean;
-  currentModel: string;
-  currentProvider: string;
-  // AI Tools props
-  selectedCategory: string;
-  selectedTool: string;
-  toolsInCategory: Tool[];
-  toolsReady: boolean;
-  toolExecuting: boolean;
-  toolResult: string;
-  elapsedTime: number;
-  toolJustFinished: boolean;
-  manuscriptContent: string;
-  onCategoryChange: (category: string) => void;
-  onToolChange: (tool: string) => void;
-  onClearTool: () => void;
-  onPromptEdit: () => void;
-  onExecuteTool: (currentText: string) => void;
-  onReport: () => void;
-  isLoadingPrompt: boolean;
-  onResetTools?: () => Promise<void>;
-  // Working Copy refresh props (for Chapter Writer)
+  // Working Copy refresh props
   refreshKey?: number;
-  pendingSectionId?: string | null;
-  onPendingSectionHandled?: () => void;
 }
 
 export default function AuthorsLayout({
@@ -149,41 +112,12 @@ export default function AuthorsLayout({
   onFilesClick,
   sidebarVisible,
   onToggleSidebar,
-  onKeyClick,
-  onModelsClick,
-  onAISettingsClick,
   onEditorClick,
-  onAIWritingClick,
-  onChatClick,
-  onPromptsClick,
   onCoverClick,
   onXrayClick,
   onLoadFromLibraryClick,
-  hasApiKey,
-  currentModel,
-  currentProvider,
-  // AI Tools
-  selectedCategory,
-  selectedTool,
-  toolsInCategory,
-  toolsReady,
-  toolExecuting,
-  toolResult,
-  elapsedTime,
-  toolJustFinished,
-  manuscriptContent,
-  onCategoryChange,
-  onToolChange,
-  onClearTool,
-  onPromptEdit,
-  onExecuteTool,
-  onReport,
-  isLoadingPrompt,
-  onResetTools,
   // Working Copy refresh props
   refreshKey,
-  pendingSectionId,
-  onPendingSectionHandled,
 }: AuthorsLayoutProps) {
   // Epub state
   const [epub, setEpub] = useState<ParsedEpub | null>(null);
@@ -241,11 +175,8 @@ export default function AuthorsLayout({
     };
   }, []);
 
-  // One-by-one inline editing state
+  // Editor panel ref (used by full-text search to scroll to matches)
   const editorPanelRef = useRef<EditorPanelRef>(null);
-  const [oneByOneActive, setOneByOneActive] = useState(false);
-  const [oneByOneIssues, setOneByOneIssues] = useState<ReportIssueWithStatus[]>([]);
-  const [oneByOneIndex, setOneByOneIndex] = useState(0);
 
   // Full-text search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -280,201 +211,6 @@ export default function AuthorsLayout({
   // Check if current section is Title Page
   const isTitlePage = selectedSection?.id === 'title-page' ||
     selectedSection?.title?.toLowerCase() === 'title page';
-
-  // One-by-one: Open panel and parse issues from tool result
-  const handleOneByOneOpen = useCallback(() => {
-    if (!toolResult) return;
-    const issues = parseToolReport(toolResult);
-    if (issues.length === 0) {
-      showAlert('No editable issues found in the report', 'warning', undefined, isDarkMode);
-      return;
-    }
-    setOneByOneIssues(issues);
-    setOneByOneIndex(0);
-    setOneByOneActive(true);
-    // Scroll to first passage
-    setTimeout(() => {
-      if (issues[0] && editorPanelRef.current) {
-        editorPanelRef.current.scrollToPassage(issues[0].passage);
-      }
-    }, 100);
-  }, [toolResult, isDarkMode]);
-
-  // One-by-one: Accept current suggestion
-  // XHTML-Native: Works on plain text, but saves back as XHTML
-  const handleOneByOneAccept = useCallback(async () => {
-    const currentIssue = oneByOneIssues[oneByOneIndex];
-    if (!currentIssue || !editorPanelRef.current || !selectedSectionId) return;
-
-    // Get current editor content (plain text from XHTML)
-    const content = editorPanelRef.current.getContent();
-
-    // Check if passage exists
-    if (!content.includes(currentIssue.passage)) {
-      showAlert('Passage not found - may have been changed by a previous edit', 'warning', undefined, isDarkMode);
-      return;
-    }
-
-    // Apply replacement
-    const newContent = content.replace(currentIssue.passage, currentIssue.replacement);
-    editorPanelRef.current.updateContent(newContent);
-
-    // Mark issue as accepted
-    const updatedIssues = [...oneByOneIssues];
-    updatedIssues[oneByOneIndex] = { ...currentIssue, status: 'accepted' };
-    setOneByOneIssues(updatedIssues);
-
-    // Save to IndexedDB
-    // XHTML-Native: Convert plain text to XHTML paragraphs
-    if (selectedSection) {
-      const newXhtml = newContent
-        .split(/\n\s*\n/)
-        .filter((p: string) => p.trim())
-        .map((p: string) => `<p>${escapeHtmlForLayout(p.replace(/\n/g, ' ').trim())}</p>`)
-        .join('\n') || '<p></p>';
-
-      await saveSection({
-        id: selectedSectionId,
-        title: selectedSection.title,
-        xhtml: newXhtml,
-        type: selectedSection.type || 'section',
-      });
-      // Update in-memory epub
-      if (epub) {
-        const updatedSections = epub.sections.map((s) =>
-          s.id === selectedSectionId ? { ...s, xhtml: newXhtml } : s
-        );
-        setEpub({ ...epub, sections: updatedSections });
-      }
-    }
-
-    // Auto-advance to next issue
-    if (oneByOneIndex < oneByOneIssues.length - 1) {
-      const nextIndex = oneByOneIndex + 1;
-      setOneByOneIndex(nextIndex);
-      // Scroll to next passage
-      setTimeout(() => {
-        const nextIssue = updatedIssues[nextIndex];
-        if (nextIssue && editorPanelRef.current) {
-          editorPanelRef.current.scrollToPassage(nextIssue.passage);
-        }
-      }, 100);
-    }
-  }, [oneByOneIssues, oneByOneIndex, selectedSectionId, selectedSection, epub, isDarkMode]);
-
-  // One-by-one: Apply custom replacement
-  // XHTML-Native: Works on plain text, but saves back as XHTML
-  const handleOneByOneCustom = useCallback(async (customText: string) => {
-    const currentIssue = oneByOneIssues[oneByOneIndex];
-    if (!currentIssue || !editorPanelRef.current || !selectedSectionId) return;
-
-    // Get current editor content (plain text from XHTML)
-    const content = editorPanelRef.current.getContent();
-
-    // Check if passage exists
-    if (!content.includes(currentIssue.passage)) {
-      showAlert('Passage not found - may have been changed by a previous edit', 'warning', undefined, isDarkMode);
-      return;
-    }
-
-    // Apply custom replacement
-    const newContent = content.replace(currentIssue.passage, customText);
-    editorPanelRef.current.updateContent(newContent);
-
-    // Mark issue as custom
-    const updatedIssues = [...oneByOneIssues];
-    updatedIssues[oneByOneIndex] = { ...currentIssue, status: 'custom', customReplacement: customText };
-    setOneByOneIssues(updatedIssues);
-
-    // Save to IndexedDB
-    // XHTML-Native: Convert plain text to XHTML paragraphs
-    if (selectedSection) {
-      const newXhtml = newContent
-        .split(/\n\s*\n/)
-        .filter((p: string) => p.trim())
-        .map((p: string) => `<p>${escapeHtmlForLayout(p.replace(/\n/g, ' ').trim())}</p>`)
-        .join('\n') || '<p></p>';
-
-      await saveSection({
-        id: selectedSectionId,
-        title: selectedSection.title,
-        xhtml: newXhtml,
-        type: selectedSection.type || 'section',
-      });
-      // Update in-memory epub
-      if (epub) {
-        const updatedSections = epub.sections.map((s) =>
-          s.id === selectedSectionId ? { ...s, xhtml: newXhtml } : s
-        );
-        setEpub({ ...epub, sections: updatedSections });
-      }
-    }
-
-    // Auto-advance to next issue
-    if (oneByOneIndex < oneByOneIssues.length - 1) {
-      const nextIndex = oneByOneIndex + 1;
-      setOneByOneIndex(nextIndex);
-      // Scroll to next passage
-      setTimeout(() => {
-        const nextIssue = updatedIssues[nextIndex];
-        if (nextIssue && editorPanelRef.current) {
-          editorPanelRef.current.scrollToPassage(nextIssue.passage);
-        }
-      }, 100);
-    }
-  }, [oneByOneIssues, oneByOneIndex, selectedSectionId, selectedSection, epub, isDarkMode]);
-
-  // One-by-one: Skip current issue
-  const handleOneByOneSkip = useCallback(() => {
-    if (oneByOneIndex < oneByOneIssues.length - 1) {
-      const nextIndex = oneByOneIndex + 1;
-      setOneByOneIndex(nextIndex);
-      // Scroll to next passage
-      setTimeout(() => {
-        const nextIssue = oneByOneIssues[nextIndex];
-        if (nextIssue && editorPanelRef.current) {
-          editorPanelRef.current.scrollToPassage(nextIssue.passage);
-        }
-      }, 100);
-    }
-  }, [oneByOneIndex, oneByOneIssues]);
-
-  // One-by-one: Close panel
-  const handleOneByOneClose = useCallback(() => {
-    setOneByOneActive(false);
-    setOneByOneIssues([]);
-    setOneByOneIndex(0);
-  }, []);
-
-  // One-by-one: Navigate to previous issue
-  const handleOneByOnePrev = useCallback(() => {
-    if (oneByOneIndex > 0) {
-      const prevIndex = oneByOneIndex - 1;
-      setOneByOneIndex(prevIndex);
-      // Scroll to passage
-      setTimeout(() => {
-        const prevIssue = oneByOneIssues[prevIndex];
-        if (prevIssue && editorPanelRef.current) {
-          editorPanelRef.current.scrollToPassage(prevIssue.passage);
-        }
-      }, 100);
-    }
-  }, [oneByOneIndex, oneByOneIssues]);
-
-  // One-by-one: Navigate to next issue
-  const handleOneByOneNext = useCallback(() => {
-    if (oneByOneIndex < oneByOneIssues.length - 1) {
-      const nextIndex = oneByOneIndex + 1;
-      setOneByOneIndex(nextIndex);
-      // Scroll to passage
-      setTimeout(() => {
-        const nextIssue = oneByOneIssues[nextIndex];
-        if (nextIssue && editorPanelRef.current) {
-          editorPanelRef.current.scrollToPassage(nextIssue.passage);
-        }
-      }, 100);
-    }
-  }, [oneByOneIndex, oneByOneIssues]);
 
   // Full-text search: perform search across all sections
   // XHTML-Native: Search in plain text extracted from XHTML
@@ -725,12 +461,6 @@ export default function AuthorsLayout({
           ),
         };
         setEpub(newEpub);
-
-        // Select the pending section if provided
-        if (pendingSectionId) {
-          setSelectedSectionId(pendingSectionId);
-          onPendingSectionHandled?.();
-        }
       }
       // Also reload metadata
       const meta = await loadWorkingCopyMeta();
@@ -739,7 +469,7 @@ export default function AuthorsLayout({
       }
     };
     reloadData();
-  }, [refreshKey, pendingSectionId, onPendingSectionHandled]);
+  }, [refreshKey]);
 
   // Load manuscript images on mount and when bookMeta changes
   useEffect(() => {
@@ -972,8 +702,6 @@ export default function AuthorsLayout({
           if (meta) {
             setBookMeta(meta);
           }
-          // Reset AI Editing state
-          await onResetTools?.();
         } catch (error) {
           console.error('Error parsing epub:', error);
           alert('Error parsing epub file. Please try a different file.');
@@ -1046,8 +774,6 @@ export default function AuthorsLayout({
           if (meta) {
             setBookMeta(meta);
           }
-          // Reset AI Editing state
-          await onResetTools?.();
           showAlert(`Loaded "${parsed.title}" with ${parsed.sections.length} sections`, 'success', undefined, isDarkMode);
         } catch (error) {
           console.error('Error parsing docx:', error);
@@ -1109,7 +835,6 @@ export default function AuthorsLayout({
           if (meta) {
             setBookMeta(meta);
           }
-          await onResetTools?.();
           showAlert(`Loaded "${parsed.title}" with ${parsed.sections.length} sections`, 'success', undefined, isDarkMode);
         } catch (error) {
           console.error('Error parsing pdf:', error);
@@ -1380,8 +1105,6 @@ export default function AuthorsLayout({
             setBookMeta(meta);
           }
 
-          // Reset AI Editing state
-          await onResetTools?.();
           showAlert(`Loaded "${title}" with ${chapters.length} scenes from Fountain screenplay`, 'success', undefined, isDarkMode);
         } catch (error) {
           console.error('Error parsing Fountain file:', error);
@@ -1477,8 +1200,6 @@ export default function AuthorsLayout({
     if (meta) {
       setBookMeta(meta);
     }
-    // Reset AI Editing state
-    await onResetTools?.();
   };
 
   // Helper to find the correct insertion index for a section type
@@ -2037,8 +1758,6 @@ export default function AuthorsLayout({
     setHasUnsavedChanges(false);
     setPendingXhtml('');
     setPendingTitle('');
-    onResetTools?.();
-    handleOneByOneClose();
     setSelectedSectionId(sectionId);
   };
 
@@ -2109,12 +1828,7 @@ export default function AuthorsLayout({
         onAboutClick={onAboutClick}
         onStorageClick={onStorageClick}
         onFilesClick={onFilesClick}
-        onKeyClick={onKeyClick}
-        onModelsClick={onModelsClick}
-        onAISettingsClick={onAISettingsClick}
         onEditorClick={onEditorClick}
-        onChatClick={onChatClick}
-        onPromptsClick={onPromptsClick}
         onNewClick={handleNew}
         onOpenClick={handleOpenEpub}
         onOpenDocxClick={handleOpenDocx}
@@ -2122,10 +1836,6 @@ export default function AuthorsLayout({
         onOpenFountainClick={handleOpenFountain}
         onLoadFromLibraryClick={onLoadFromLibraryClick}
         onSaveClick={handleSave}
-        hasApiKey={hasApiKey}
-        currentModel={currentModel}
-        currentProvider={currentProvider}
-        toolExecuting={toolExecuting}
         onSearchClose={handleSearchClose}
         onCoverClick={onCoverClick}
         onDocxExportClick={handleDocxExport}
@@ -2162,7 +1872,6 @@ export default function AuthorsLayout({
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
             onMoveToArea={handleMoveToArea}
-            toolExecuting={toolExecuting}
             isLastChapter={(() => {
               if (!selectedSectionId || !epub) return false;
               const selectedIdx = epub.sections.findIndex(s => s.id === selectedSectionId);
@@ -2207,9 +1916,6 @@ export default function AuthorsLayout({
             isDarkMode={isDarkMode}
             onToggleSidebar={onToggleSidebar}
             onSave={saveCurrentSection}
-            onAIWritingClick={async () => { await saveCurrentSection(); onAIWritingClick(); }}
-            hasApiKey={hasApiKey}
-            currentModel={currentModel}
             sectionId={selectedSectionId || undefined}
             sectionTitle={selectedSection?.title ?? ''}
             sectionXhtml={selectedSection?.xhtml ?? '<p></p>'}
@@ -2221,38 +1927,6 @@ export default function AuthorsLayout({
             onNextSection={handleNextSection}
             hasPrevSection={hasPrevSection}
             hasNextSection={hasNextSection}
-            selectedCategory={selectedCategory}
-            selectedTool={selectedTool}
-            toolsInCategory={toolsInCategory}
-            toolsReady={toolsReady}
-            toolExecuting={toolExecuting}
-            toolResult={toolResult}
-            elapsedTime={elapsedTime}
-            toolJustFinished={toolJustFinished}
-            manuscriptContent={manuscriptContent}
-            onCategoryChange={onCategoryChange}
-            onToolChange={onToolChange}
-            onClearTool={onClearTool}
-            onPromptEdit={onPromptEdit}
-            onExecuteTool={() => {
-              // XHTML-Native: Get plain text from XHTML for AI tools
-              const currentXhtml = pendingXhtml || selectedSection?.xhtml || '';
-              const currentText = xhtmlToPlainText(currentXhtml);
-              onExecuteTool(currentText);
-            }}
-            onReport={onReport}
-            onOneByOne={handleOneByOneOpen}
-            isLoadingPrompt={isLoadingPrompt}
-            // One-by-one inline panel props
-            oneByOneActive={oneByOneActive}
-            oneByOneIssues={oneByOneIssues}
-            oneByOneIndex={oneByOneIndex}
-            onOneByOneAccept={handleOneByOneAccept}
-            onOneByOneCustom={handleOneByOneCustom}
-            onOneByOneSkip={handleOneByOneSkip}
-            onOneByOneClose={handleOneByOneClose}
-            onOneByOnePrev={handleOneByOnePrev}
-            onOneByOneNext={handleOneByOneNext}
             // Search panel props
             searchActive={searchActive}
             searchResults={searchResults}

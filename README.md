@@ -15,7 +15,7 @@ Your personal ebook library with complete control over how you read.
 - **Reading Essentials** — Highlight passages, bookmark pages, take notes, and search across your entire library
 - **Make It Yours** — Adjust fonts, layouts, and colors to create your perfect reading environment
 - **Smart Tools** — Look up words with the built-in dictionary or explore topics with Wikipedia integration
-- **Read Aloud** — Listen to your books with AI-powered text-to-speech
+- **Read Aloud** — Listen to your books with natural-sounding text-to-speech
 - **Parallel Reading** — Read two books side by side with synchronized navigation
 
 Click "**+Ebook**" to add your EPUB files and start reading.
@@ -35,24 +35,6 @@ What you write is what readers get.
 - **Organized by Chapters** — Front matter, numbered chapters, back matter - all in plain text
 - **Always Export-Ready** — Send your ebook to the Library instantly for reading and listening
 
-### AI Assistance (__Optional__)
-
-If you want AI help, connect your own [OpenRouter](https://openrouter.ai) API key (__stored in your browser__) to access models from: <br /> 
-Anthropic, OpenAI, Google, and more.
-
-**AI Editing:**
-- Line editing with suggestions
-- Content analysis for character, plot, and pacing
-- Custom prompts for your specific needs
-
-**AI Writing:**
-- Brainstorm characters, plots, and settings
-- Generate outlines and story structures
-- Build your world from your outline
-- Draft chapters that know what came before
-
-*Note: AI features require an OpenRouter account. Usage is pay-as-you-go based on the model you choose.*
-
 ---
 
 ## Getting Started
@@ -67,9 +49,6 @@ Anthropic, OpenAI, Google, and more.
 1. Click "**Authors**"
 2. Start writing and add chapters, front matter, back matter, no matter (inside author's head)
 1. Click "**Open**" to select other ways to start
-3. For AI features: <br/>
-**Menu** > **Key** to add your OpenRouter API key, <br/>
-then **Menu** > **Models** to choose your AI
 
 ---
 
@@ -78,7 +57,7 @@ then **Menu** > **Models** to choose your AI
 - **Everything stays local** — Your ebooks (_manuscripts_) are stored in your browser, on your computer
 - **No accounts needed** — No sign up, no sign in, no emails
 - **No tracking** — What you read and write is your business
-- **Nothing uploaded** — The only exception is when you choose to use AI features, which sends manuscript text to an AI Model at OpenRouter
+- **Nothing uploaded** — Your manuscript never leaves your browser
 
 ---
 
@@ -124,8 +103,7 @@ Press Ctrl+C to quit.
                                                                                                    
 - Your data stays on your computer - stored in your browser, never uploaded anywhere
 - Back up your work - use Storage to Export/Import all your data
-- Except AI usage, you can turn off WiFi and internet
-- AI features are optional - require an https://openrouter.ai API key and the internet
+- You can turn off WiFi and internet
 
 ---
 
@@ -235,20 +213,6 @@ The `editor-kit.tsx` loads an impressive stack of plugin kits:
 
 The conversion layer (`plateXhtml.ts`) bridges between PlateJS's internal Value format and XHTML, so you edit visually but the underlying data stays EPUB-native.
 
-**AI Integration (OpenRouter)**
-
-4 categories, **33 AI tools total**:
-
-- **AI Writing** (4): brainstorm, chapter_writer, outline_writer, world_writer
-- **Core Editing Tools** (7): line editing (per-chapter scope), copy editing, developmental editing, narrative analysis (internal + unresolved), proofreader (plot consistency + punctuation)
-- **Other Editing Tools** (16): character analyzer, conflict analyzer, crowding/leaping evaluator, dangling modifier checker, foreshadowing tracker, KDP publishing prep, manuscript-to-characters/outline/world, plot thread tracker, rhythm analyzer, Surmelian analysis, tense consistency checker, adjective/adverb optimizer, Opinionated Critique
-- **User Tools** (6): anything goes, NLP, nonfiction creative/integrity/self-help editing, sourcing audit
-
-Tools are loaded from text prompts in `public/tool-prompts/` and can be **customized by users** (originals vs customized stored in IndexedDB). 
-The `useToolsManager.ts` handles execution, timing, and results display. 
-
-The **Writing Assistant** (`WritingAssistantModal.tsx`) is a separate multi-step workflow: Brainstorm → Outline → World Building → Chapters — a guided pipeline for creating a new book from scratch.
-
 **Publish to Library**
 
 `AuthorsLayout.tsx:1820` — the `handleSave` function:
@@ -284,7 +248,6 @@ Images and audio are managed through dedicated picker modals with upload/delete.
 - **Export formats** — .epub, .docx, HTML, web-ready zip, 3 PDF sizes
 - **Bookseller download** — EPUBCheck-clean EPUB for submission to bookstores
 - **Manuscript X-Ray** — `ManuscriptXrayModal.tsx` for inspecting the working copy's internal structure
-- **Chat** — `SimpleChatModal.tsx` for general AI chat
 - **Cover editor** — `CoverModal.tsx` for setting/changing book cover
 - **Book metadata** — `BookInfoModal.tsx` for title, author, publisher, etc.
 
@@ -311,7 +274,7 @@ The dual-mode (reader + author) sharing the same EPUB format means what you writ
 
 The feature density per 55K lines is high. 
 Scenecraft (immersive scroll-driven audio/visual storytelling), 
-client-side M4B audiobook building, three KDP PDF formats, 33 AI editing tools, 
+client-side M4B audiobook building, three KDP PDF formats, 
 a full PlateJS rich-text editor, web-ready deployable exports 
 — each of these would be a product feature at a commercial tool. 
 Having them all in one local-first app is the value proposition against Atticus and Vellum.

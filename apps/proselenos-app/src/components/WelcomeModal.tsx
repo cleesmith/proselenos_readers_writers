@@ -115,7 +115,7 @@ export default function WelcomeModal({
                 <strong>Smart Tools</strong> — Use built-in dictionary and Wikipedia for effortless understanding
               </li>
               <li style={{ marginBottom: '8px' }}>
-                <strong>Read Aloud</strong> — Read aloud your books with AI-powered text-to-speech (TTS) functionality
+                <strong>Read Aloud</strong> — Read aloud your books with natural-sounding text-to-speech (TTS) functionality
               </li>
               <li style={{ marginBottom: '8px' }}>
                 <strong>Parallel Read</strong> — Synchronize views seamlessly while reading two documents side by side
@@ -145,13 +145,7 @@ export default function WelcomeModal({
               margin: 0
             }}>
               <li style={{ marginBottom: '8px' }}>
-                <strong>Writing Work Space</strong> — Create directly in EPUB format with or without AI
-              </li>
-              <li style={{ marginBottom: '8px' }}>
-                <strong>AI Editing Tools</strong> — Powered by <a href="https://openrouter.ai" target="_blank" style={{ color: '#4285F4', textDecoration: 'none' }}>OpenRouter</a> with access to Anthropic, OpenAI, Google, and more (<i>AI usage is <b>NOT</b> free</i>)
-              </li>
-              <li style={{ marginBottom: '8px' }}>
-                <strong>AI Writing</strong> — Brainstorm, outline, world, and very rough chapter drafts
+                <strong>Writing Work Space</strong> — Create directly in EPUB format
               </li>
             </ul>
           </div>

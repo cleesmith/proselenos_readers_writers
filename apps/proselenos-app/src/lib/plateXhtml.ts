@@ -4,7 +4,7 @@
  * Bidirectional converters for EPUB-native content pipeline:
  * - plateToXhtml: PlateJS JSON → Clean EPUB3 XHTML
  * - xhtmlToPlate: EPUB3 XHTML → PlateJS JSON
- * - plateToPlainText: PlateJS JSON → Plain text (for word count, search, AI)
+ * - plateToPlainText: PlateJS JSON → Plain text (for word count, search)
  */
 
 import type { Value } from 'platejs';
@@ -1061,7 +1061,6 @@ function parseChildren(el: Element): (PlateElement | PlateText)[] {
  * Extracts plain text from Slate value for:
  * - Word count
  * - Full-text search
- * - AI tools input
  */
 export function plateToPlainText(value: Value): string {
   if (!value || !Array.isArray(value)) {
@@ -1148,7 +1147,6 @@ function escapeAttr(text: string): string {
  * Extracts plain text from XHTML for:
  * - Word count
  * - Full-text search
- * - AI tools input
  *
  * This is a direct XHTML parser that doesn't go through PlateJS.
  */
@@ -1161,7 +1159,7 @@ export function xhtmlToPlainText(xhtml: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xhtml, 'text/html');
 
-  // Step 1: Remove elements that should NOT appear in AI text
+  // Step 1: Remove elements that should NOT appear in plain text
   // - sticky image wraps (caption "Space", img, enlarge UI)
   // - figures with figcaptions (character portraits like "Vapo", "Cramb")
   // - audio blocks (scene audio and toolbar-inserted audio)

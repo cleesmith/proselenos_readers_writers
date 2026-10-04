@@ -21,7 +21,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name='apple-mobile-web-app-title' content='EverythingEbooks' />
         <meta
           name='description'
-          content='EverythingEbooks is an open-source eBook reader and an AI assistant for editing, writing, and publishing manuscripts.'
+          content='EverythingEbooks is an open-source eBook reader and writing workspace for editing and publishing manuscripts.'
         />
         <meta name='format-detection' content='telephone=no' />
         <meta name='mobile-web-app-capable' content='yes' />

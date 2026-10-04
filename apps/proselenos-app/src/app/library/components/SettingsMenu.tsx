@@ -307,7 +307,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ setIsDropdownOpen }) => {
       />
       <MenuItem
         label={_('Authors')}
-        description={_('use AI and non-AI tools to help with editing, writing, and publishing your manuscripts')}
+        description={_('write, edit, and publish your manuscripts as ebooks')}
         Icon={PiPencil}
         buttonClass='bg-blue-600/20 hover:!bg-blue-600/30'
         onClick={switchToAuthorsMode}

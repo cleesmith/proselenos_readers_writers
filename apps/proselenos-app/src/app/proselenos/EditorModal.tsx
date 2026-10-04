@@ -15,13 +15,7 @@ import {
   loadChatFile,
   saveChatFile,
   listFiles,
-  FileInfo,
-  getToolPrompt,
-  updateToolPrompt,
-  resetToolPrompt,
-  isToolPromptCustomized,
-  getWritingAssistantPrompt,
-  saveWritingAssistantPrompt
+  FileInfo
 } from '@/services/manuscriptStorage';
 
 // Helper to strip Markdown formatting from a string
@@ -113,11 +107,6 @@ export default function EditorModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Prompt editing state
-  const [isPromptMode, setIsPromptMode] = useState(false);
-  const [promptToolId, setPromptToolId] = useState<string | null>(null);
-  const [isCustomized, setIsCustomized] = useState(false);
-
   // File selector state
   const [showFileSelector, setShowFileSelector] = useState(false);
   const [availableFiles, setAvailableFiles] = useState<FileInfo[]>([]);
@@ -128,34 +117,12 @@ export default function EditorModal({
     const loadContent = async () => {
       if (!isOpen) return;
 
-      // Reset prompt mode state
-      setIsPromptMode(false);
-      setPromptToolId(null);
-      setIsCustomized(false);
-
       if (initialFile) {
         setIsLoading(true);
         let content: string | null = null;
 
         try {
-          // Check if this is a prompt file (key starts with "prompt:")
-          if (initialFile.key.startsWith('prompt:')) {
-            const toolId = initialFile.key.substring(7); // Remove "prompt:" prefix
-            content = await getToolPrompt(toolId);
-            const customized = await isToolPromptCustomized(toolId);
-            setIsPromptMode(true);
-            setPromptToolId(toolId);
-            setIsCustomized(customized);
-            setCurrentFile(toolId.split('/').pop() || toolId); // Show just filename
-          } else if (initialFile.key.startsWith('wa:')) {
-            // AI Writing prompts (stored separately in IndexedDB)
-            const stepId = initialFile.key.substring(3); // Remove "wa:" prefix
-            content = await getWritingAssistantPrompt(stepId);
-            setIsPromptMode(true);
-            setPromptToolId(`wa:${stepId}`); // Mark as WA prompt for saving
-            setIsCustomized(false); // WA prompts don't track customization
-            setCurrentFile(`${stepId} prompt`); // Show friendly name
-          } else if (initialFile.key === 'manuscript.txt') {
+          if (initialFile.key === 'manuscript.txt') {
             content = await loadManuscript();
           } else if (initialFile.key === 'report.txt') {
             content = await loadReport();
@@ -168,10 +135,7 @@ export default function EditorModal({
         }
 
         setEditorContent(content || '');
-        // currentFile is already set in the prompt case above
-        if (!initialFile.key.startsWith('prompt:')) {
-          setCurrentFile(initialFile.key);
-        }
+        setCurrentFile(initialFile.key);
         setIsLoading(false);
       } else {
         // Blank editor
@@ -206,19 +170,7 @@ export default function EditorModal({
 
     setIsSaving(true);
     try {
-      // Handle prompt saves
-      if (isPromptMode && promptToolId) {
-        // Check if this is a AI Writing prompt (wa: prefix)
-        if (promptToolId.startsWith('wa:')) {
-          const stepId = promptToolId.substring(3); // Remove "wa:" prefix
-          await saveWritingAssistantPrompt(stepId, editorContent);
-          showAlert(`✅ AI Writing prompt updated: ${stepId}`, 'success', undefined, isDarkMode);
-        } else {
-          await updateToolPrompt(promptToolId, editorContent);
-          setIsCustomized(true);
-          showAlert(`✅ Prompt updated: ${currentFile}`, 'success', undefined, isDarkMode);
-        }
-      } else if (currentFile === null || currentFile === 'manuscript.txt') {
+      if (currentFile === null || currentFile === 'manuscript.txt') {
         await saveManuscript(editorContent);
         setCurrentFile('manuscript.txt');
         showAlert('✅ Saved as manuscript.txt', 'success', undefined, isDarkMode);
@@ -232,26 +184,6 @@ export default function EditorModal({
       showAlert('❌ Error saving!', 'error', undefined, isDarkMode);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // Reset prompt to original
-  const handleResetPrompt = async () => {
-    if (!isPromptMode || !promptToolId) return;
-
-    setIsLoading(true);
-    try {
-      await resetToolPrompt(promptToolId);
-      // Reload the original content
-      const content = await getToolPrompt(promptToolId);
-      setEditorContent(content || '');
-      setIsCustomized(false);
-      showAlert('✅ Prompt reset to original', 'success', undefined, isDarkMode);
-    } catch (error) {
-      console.error('Error resetting prompt:', error);
-      showAlert('❌ Error resetting prompt', 'error', undefined, isDarkMode);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -341,8 +273,7 @@ export default function EditorModal({
           }}
         >
           <span>
-            {isPromptMode ? 'Prompt: ' : ''}{currentFile || 'New'}
-            {isPromptMode && isCustomized && <span style={{ color: '#f59e0b', marginLeft: '4px' }}>(modified)</span>}
+            {currentFile || 'New'}
           </span>
           <span>{wordCount.toLocaleString()} words</span>
           {isLoading && <span>Loading...</span>}
@@ -353,47 +284,29 @@ export default function EditorModal({
           <StyledSmallButton
             onClick={handleSave}
             disabled={isSaving || isLoading}
-            title={isPromptMode ? "Save prompt changes" : "Save as manuscript.txt"}
+            title="Save as manuscript.txt"
             theme={theme}
           >
-            {isSaving ? 'Saving…' : isPromptMode ? 'Save Prompt' : isUpdate ? 'Update' : 'Save as .txt'}
+            {isSaving ? 'Saving…' : isUpdate ? 'Update' : 'Save as .txt'}
           </StyledSmallButton>
 
-          {/* Reset button - only show in prompt mode when customized */}
-          {isPromptMode && isCustomized && (
-            <StyledSmallButton
-              onClick={handleResetPrompt}
-              disabled={isLoading}
-              title="Reset to original prompt"
-              theme={theme}
-            >
-              Reset
-            </StyledSmallButton>
-          )}
+          <StyledSmallButton
+            onClick={handleOpen}
+            disabled={isLoading || isLoadingFiles}
+            title="Open file from storage"
+            theme={theme}
+          >
+            {isLoadingFiles ? 'Loading…' : 'Open'}
+          </StyledSmallButton>
 
-          {/* Open button - hide in prompt mode */}
-          {!isPromptMode && (
-            <StyledSmallButton
-              onClick={handleOpen}
-              disabled={isLoading || isLoadingFiles}
-              title="Open file from storage"
-              theme={theme}
-            >
-              {isLoadingFiles ? 'Loading…' : 'Open'}
-            </StyledSmallButton>
-          )}
-
-          {/* Clean button - hide in prompt mode */}
-          {!isPromptMode && (
-            <StyledSmallButton
-              onClick={handleCleanMarkdown}
-              disabled={!editorContent || !editorContent.trim() || isLoading}
-              title="Remove Markdown formatting"
-              theme={theme}
-            >
-              Clean
-            </StyledSmallButton>
-          )}
+          <StyledSmallButton
+            onClick={handleCleanMarkdown}
+            disabled={!editorContent || !editorContent.trim() || isLoading}
+            title="Remove Markdown formatting"
+            theme={theme}
+          >
+            Clean
+          </StyledSmallButton>
 
           <StyledSmallButton
             onClick={onClose}

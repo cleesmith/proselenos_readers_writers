@@ -5,14 +5,10 @@
 import { useState, useRef, useEffect, useCallback, useImperativeHandle, forwardRef, useMemo } from 'react';
 import { ThemeConfig } from '../shared/theme';
 import StyledSmallButton from '@/components/StyledSmallButton';
-import ToolProgressIndicator from '../ai-tools/ToolProgressIndicator';
-import { isValidToolReport } from '@/utils/parseToolReport';
-import OneByOnePanel from './OneByOnePanel';
 import SearchResultsPanel, { SearchResult } from './SearchResultsPanel';
 import ImagePickerModal from './ImagePickerModal';
 import AudioPickerModal from './AudioPickerModal';
 import SceneCraftModal from './SceneCraftModal';
-import { ReportIssueWithStatus } from '@/types/oneByOne';
 import { ImageLibraryProvider } from '@/contexts/ImageLibraryContext';
 import { AudioLibraryProvider } from '@/contexts/AudioLibraryContext';
 import type { SceneCraftConfig } from '@/services/manuscriptStorage';
@@ -22,7 +18,7 @@ import type { SceneCraftConfig } from '@/services/manuscriptStorage';
 import { Plate, usePlateEditor } from 'platejs/react';
 import { EditorKit } from '@/components/plate-editor/editor-kit';
 import { EditorContainer, Editor } from '@/components/plate-ui/editor';
-import { createEmptyValue, plateToPlainText, xhtmlToPlate, plateToXhtml } from '@/lib/plateXhtml';
+import { createEmptyValue, xhtmlToPlate, plateToXhtml } from '@/lib/plateXhtml';
 import type { Value } from 'platejs';
 import { FindReplacePlugin } from '@platejs/find-replace';
 import { cn } from '@/lib/utils';
@@ -37,20 +33,11 @@ interface AudioInfo {
   size: number;
 }
 
-interface Tool {
-  id: string;
-  name: string;
-  category: string;
-}
-
 interface EditorPanelProps {
   theme: ThemeConfig;
   isDarkMode: boolean;
   onToggleSidebar: () => void;
   onSave?: () => Promise<void>;
-  onAIWritingClick: () => void;
-  hasApiKey: boolean;
-  currentModel: string;
   // Section content - XHTML-Native: Single source of truth
   sectionId?: string;
   sectionTitle: string;
@@ -65,34 +52,6 @@ interface EditorPanelProps {
   onNextSection?: () => void;
   hasPrevSection?: boolean;
   hasNextSection?: boolean;
-  // AI Tools
-  selectedCategory: string;
-  selectedTool: string;
-  toolsInCategory: Tool[];
-  toolsReady: boolean;
-  toolExecuting: boolean;
-  toolResult: string;
-  elapsedTime: number;
-  toolJustFinished: boolean;
-  manuscriptContent: string;
-  onCategoryChange: (category: string) => void;
-  onToolChange: (tool: string) => void;
-  onClearTool: () => void;
-  onPromptEdit: () => void;
-  onExecuteTool: () => void;
-  onReport: () => void;
-  onOneByOne?: () => void;
-  isLoadingPrompt: boolean;
-  // One-by-one inline panel props
-  oneByOneActive?: boolean;
-  oneByOneIssues?: ReportIssueWithStatus[];
-  oneByOneIndex?: number;
-  onOneByOneAccept?: () => void;
-  onOneByOneCustom?: (customText: string) => void;
-  onOneByOneSkip?: () => void;
-  onOneByOneClose?: () => void;
-  onOneByOnePrev?: () => void;
-  onOneByOneNext?: () => void;
   // Search panel props
   searchActive?: boolean;
   searchResults?: SearchResult[];
@@ -121,8 +80,6 @@ interface EditorPanelProps {
 // Ref handle for parent to control editor
 export interface EditorPanelRef {
   scrollToPassage: (passage: string, startIndex?: number) => boolean;
-  updateContent: (content: string) => void;
-  getContent: () => string;
 }
 
 const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function EditorPanel({
@@ -130,9 +87,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   isDarkMode,
   onToggleSidebar,
   onSave,
-  onAIWritingClick,
-  hasApiKey,
-  currentModel,
   sectionId,
   sectionTitle,
   sectionXhtml,
@@ -140,33 +94,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   sectionWordCount,
   onContentChange,
   onTitleChange,
-  selectedCategory,
-  selectedTool,
-  toolsInCategory,
-  toolsReady,
-  toolExecuting,
-  toolResult,
-  elapsedTime,
-  toolJustFinished: _toolJustFinished,
-  manuscriptContent: _manuscriptContent,
-  onCategoryChange,
-  onToolChange,
-  onClearTool,
-  onPromptEdit,
-  onExecuteTool,
-  onReport,
-  onOneByOne,
-  isLoadingPrompt,
-  // One-by-one inline panel props
-  oneByOneActive,
-  oneByOneIssues,
-  oneByOneIndex,
-  onOneByOneAccept,
-  onOneByOneCustom,
-  onOneByOneSkip,
-  onOneByOneClose,
-  onOneByOnePrev,
-  onOneByOneNext,
   // Search panel props
   searchActive,
   searchResults,
@@ -192,9 +119,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
 }, ref) {
   const borderColor = isDarkMode ? '#404040' : '#e5e5e5';
   const mutedText = isDarkMode ? '#888' : '#666';
-
-  // AI features require both API key AND a selected model
-  const aiReady = hasApiKey && !!currentModel;
 
   // Editable chapter title state (initialized from prop, but editable locally for now)
   const [chapterTitle, setChapterTitle] = useState(sectionTitle);
@@ -443,41 +367,10 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
     return true;
   }, [editor]);
 
-  // Update content programmatically (for One-by-one Accept)
-  // XHTML-Native: Takes plain text and converts to XHTML paragraphs
-  const updateContent = useCallback((content: string) => {
-    if (!editor) return;
-
-    // Convert plain text to paragraphs
-    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
-    const value: Value = paragraphs.length > 0
-      ? paragraphs.map(p => ({
-          type: 'p',
-          children: [{ text: p.replace(/\n/g, ' ').trim() }],
-        }))
-      : createEmptyValue();
-
-    editor.tf.reset();
-    editor.tf.setValue(value);
-
-    // Convert to XHTML and notify parent
-    const xhtml = plateToXhtml(value);
-    onContentChange?.(xhtml !== originalXhtml, xhtml);
-  }, [editor, originalXhtml, onContentChange]);
-
-  // Get current content as plain text (for compatibility with One-by-one, search, etc.)
-  const getContent = useCallback(() => {
-    if (!editor) return plateToPlainText(xhtmlToPlate(sectionXhtml));
-    const plateValue = editor.children as Value;
-    return plateToPlainText(plateValue);
-  }, [editor, sectionXhtml]);
-
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     scrollToPassage,
-    updateContent,
-    getContent,
-  }), [scrollToPassage, updateContent, getContent]);
+  }), [scrollToPassage]);
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -488,7 +381,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
   }, [isEditingTitle]);
 
   const handleTitleClick = () => {
-    if (toolExecuting) return; // Don't allow title editing while AI tool is running
     setEditedTitle(chapterTitle);
     setIsEditingTitle(true);
   };
@@ -619,7 +511,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           flexWrap: 'wrap',
         }}
       >
-        <StyledSmallButton theme={theme} onClick={onToggleSidebar} title="Toggle sidebar" disabled={toolExecuting}>
+        <StyledSmallButton theme={theme} onClick={onToggleSidebar} title="Toggle sidebar">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="9" y1="3" x2="9" y2="21" />
@@ -631,7 +523,7 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           theme={theme}
           onClick={handleSaveClick}
           title={hasChanges ? "Unsaved changes - click to save (Ctrl+S)" : "Save current section (Ctrl+S)"}
-          disabled={toolExecuting || isSaving}
+          disabled={isSaving}
           styleOverrides={{
             backgroundColor: isSaving ? '#28a745' : hasChanges ? '#dc3545' : undefined,
             color: (isSaving || hasChanges) ? 'white' : undefined,
@@ -645,7 +537,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           theme={theme}
           onClick={() => setShowSceneCraft(true)}
           title="Open Scenecraft immersive editor"
-          disabled={toolExecuting}
           styleOverrides={{
             backgroundColor: 'rgba(255, 120, 68, 0.15)',
             borderColor: 'rgba(255, 120, 68, 0.25)',
@@ -654,125 +545,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
         >
           Scenecraft
         </StyledSmallButton>
-
-        {/* AI Section with green background */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            flexWrap: 'wrap',
-            background: 'rgba(34, 197, 94, 0.2)',
-            padding: '4px 8px',
-            marginLeft: '4px',
-            marginRight: '-8px',
-            paddingRight: '12px',
-          }}
-        >
-        <StyledSmallButton
-          theme={theme}
-          onClick={onAIWritingClick}
-          disabled={!aiReady || toolExecuting}
-          styleOverrides={{
-            backgroundColor: isDarkMode ? 'rgba(124, 58, 237, 0.5)' : 'rgba(91, 33, 182, 0.35)',
-            borderColor: isDarkMode ? 'rgba(124, 58, 237, 0.65)' : 'rgba(91, 33, 182, 0.5)',
-          }}
-        >
-          AI Writing
-        </StyledSmallButton>
-
-        <span style={{ fontSize: '11px', color: theme.textMuted, marginLeft: '8px', opacity: aiReady ? 1 : 0.4 }}>AI Editing:</span>
-
-        {/* Category dropdown */}
-        <select
-          value={selectedCategory}
-          onChange={(e) => onCategoryChange(e.target.value)}
-          disabled={!toolsReady || toolExecuting || !aiReady}
-          style={{
-            padding: '2px 6px',
-            backgroundColor: (toolsReady && aiReady) ? theme.inputBg : '#666',
-            color: (toolsReady && aiReady) ? theme.text : '#999',
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            fontSize: '11px',
-            cursor: (toolsReady && aiReady) ? 'pointer' : 'not-allowed',
-            opacity: aiReady ? 1 : 0.4,
-          }}
-        >
-          <option value="">Category...</option>
-          <option value="Core Editing Tools">Core Editing Tools</option>
-          <option value="Other Editing Tools">Other Editing Tools</option>
-          <option value="User Tools">User Tools</option>
-        </select>
-
-        {/* Tool dropdown */}
-        <select
-          value={selectedTool}
-          onChange={(e) => onToolChange(e.target.value)}
-          disabled={!selectedCategory || !toolsReady || toolExecuting || !aiReady}
-          style={{
-            padding: '2px 6px',
-            backgroundColor: selectedCategory && toolsReady ? theme.inputBg : '#666',
-            color: selectedCategory && toolsReady ? theme.text : '#999',
-            border: `1px solid ${theme.border}`,
-            borderRadius: '3px',
-            fontSize: '11px',
-            cursor: selectedCategory && toolsReady ? 'pointer' : 'not-allowed',
-            maxWidth: '150px',
-          }}
-        >
-          <option value="">
-            {!toolsReady ? 'Loading...' : selectedCategory ? 'Tool...' : 'Select category'}
-          </option>
-          {toolsInCategory.map((tool) => (
-            <option key={tool.id} value={tool.id}>
-              {tool.name
-                .split('_')
-                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' ')}
-            </option>
-          ))}
-        </select>
-
-        {/* Prompt button */}
-        <StyledSmallButton
-          onClick={onPromptEdit}
-          disabled={!selectedTool || !toolsReady || toolExecuting || isLoadingPrompt || !aiReady}
-          theme={theme}
-        >
-          {isLoadingPrompt ? '...' : 'Prompt'}
-        </StyledSmallButton>
-
-        {/* Run button */}
-        <StyledSmallButton
-          onClick={onExecuteTool}
-          disabled={!selectedTool || !toolsReady || toolExecuting || !aiReady}
-          theme={theme}
-        >
-          {toolExecuting ? 'Running...' : 'Send'}
-        </StyledSmallButton>
-
-        {/* Clear button */}
-        <StyledSmallButton
-          onClick={onClearTool}
-          disabled={(!toolResult && elapsedTime === 0) || toolExecuting}
-          theme={theme}
-        >
-          Clear
-        </StyledSmallButton>
-
-        {/* Timer + Report + One-by-one */}
-        <ToolProgressIndicator
-          toolExecuting={toolExecuting}
-          elapsedTime={elapsedTime}
-          theme={theme}
-          toolResult={toolResult}
-          onReportClick={onReport}
-          onOneByOneClick={onOneByOne}
-          showOneByOneButton={isValidToolReport(toolResult)}
-        />
-        </div>
       </div>
 
       {/* Editor content area - PlateJS editor (always visible; preview is now a full-screen overlay) */}
@@ -810,22 +582,6 @@ const EditorPanel = forwardRef<EditorPanelRef, EditorPanelProps>(function Editor
           </EditorContainer>
         </Plate>
       </div>
-
-      {/* One-by-one inline panel */}
-      {oneByOneActive && oneByOneIssues && (
-        <OneByOnePanel
-          theme={theme}
-          isDarkMode={isDarkMode}
-          issues={oneByOneIssues}
-          currentIndex={oneByOneIndex ?? 0}
-          onAccept={onOneByOneAccept ?? (() => {})}
-          onCustom={onOneByOneCustom ?? (() => {})}
-          onSkip={onOneByOneSkip ?? (() => {})}
-          onClose={onOneByOneClose ?? (() => {})}
-          onPrev={onOneByOnePrev ?? (() => {})}
-          onNext={onOneByOneNext ?? (() => {})}
-        />
-      )}
 
       {/* Search results panel */}
       {searchActive && searchResults && searchResults.length > 0 && (

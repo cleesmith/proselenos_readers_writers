@@ -4,7 +4,7 @@
 
 /**
  * Search Results panel for full-text manuscript search
- * Appears below the editor textarea (same pattern as OneByOnePanel)
+ * Appears below the editor textarea
  * Shows search matches with context snippets
  */
 

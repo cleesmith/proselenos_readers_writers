@@ -11,14 +11,14 @@ const title = 'EverythingEbooks — Read and Write';
 const url = 'https://everythingebooks.org';
 const description =
   'EverythingEbooks is an ebook reader for EPUB files with text-to-speech read-aloud, highlighting, notes, and access to a ebooks store. ' +
-  'Authors and Writers offers AI chat, AI Writing for brainstorming, outlining, world-building, and chapter writing, AI editing tools, and an editor with read-aloud. ' +
+  'Authors and Writers offers an editor with read-aloud for writing directly in EPUB. ' +
   'Generate EPUBs.';
 
 export const metadata = {
   title,
   description,
   generator: 'Next.js',
-  keywords: ['epub', 'ebook', 'reader', 'writing', 'publishing', 'AI'],
+  keywords: ['epub', 'ebook', 'reader', 'writing', 'publishing'],
   authors: [
     {
       name: 'EverythingEbooks',
